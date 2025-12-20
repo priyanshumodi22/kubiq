@@ -1,0 +1,17 @@
+{
+  "name": "kubiq-backend",
+  "version": "1.0.0",
+  "bin": "bundle/index.js",
+  "pkg": {
+    "targets": [
+      "node20-linux-x64",
+      "node20-linux-arm64"
+    ],
+    "outputPath": "release",
+    "assets": [
+      "config/**/*",
+      "data/**/*"
+    ],
+    "scripts": []
+  }
+}

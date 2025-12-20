@@ -1,0 +1,116 @@
+stages: # List of stages for jobs, and their order of execution
+  - build
+
+build-job: # This job runs in the build stage, which runs first.
+  stage: build
+  only:
+    - tags
+  script:
+    - echo "Setting up Node.js environment..."
+    - export PATH=/app/software/binaries/node-v18.14.2-linux-x64/bin/:$PATH
+
+    # Build Frontend
+    - echo "Building frontend..."
+    - cd frontend
+    - echo "Installing frontend npm packages..."
+    - rm -rf package-lock.json node_modules
+    - npm i --force
+    - echo "Building React application..."
+    - export NODE_OPTIONS="--max-old-space-size=4096"
+    - CI=false npm run build
+    - cd ..
+
+    # Build Backend
+    - echo "Building backend..."
+    - cd backend
+    - echo "Installing backend npm packages..."
+    - rm -rf package-lock.json node_modules
+    - npm i --force
+    - echo "Compiling TypeScript to JavaScript..."
+    - npm run build
+    - cd ..
+
+    # Create deployment package
+    - echo "Creating deployment directory structure..."
+    - mkdir -p deployment
+
+    # Copy backend compiled files
+    - echo "Copying backend dist files..."
+    - cp -r backend/dist deployment/.
+    - cp backend/package.json backend/package-lock.json deployment/.
+
+    # Copy frontend build as public folder
+    - echo "Copying frontend build to public..."
+    - cp -r frontend/dist deployment/public
+
+    # Copy configuration files
+    - echo "Copying configuration files..."
+    - cp backend/.env deployment/.
+
+    # Create data directory and copy services config
+    - echo "Setting up data directory..."
+    - mkdir -p deployment/data
+    - cp backend/config/services.ini deployment/data/services.ini
+
+    # Copy Kubernetes Yamls
+    - echo "Copying Kubernetes yamls..."
+    - cp -r Yamls deployment/.
+
+    # Copy Dockerfile
+    - echo "Copying Dockerfile..."
+    - cp Dockerfile deployment/.
+
+    # Install production dependencies
+    - echo "Installing production dependencies..."
+    - cd deployment
+    - npm ci --only=production
+
+    # Create logs directory
+    - echo "Creating logs directory..."
+    - mkdir -p logs
+
+    # Create startup script
+    - echo "Creating startup script..."
+    - |
+      cat > startup.sh << 'EOF'
+      #!/bin/bash
+      export NODE_ENV=production
+      export PORT=3001
+      export DATA_DIR=./data
+      export SERVICES_CONFIG_PATH=./data/services.ini
+      export FRONTEND_CONTEXT_PATH=/kubiq
+      export BACKEND_CONTEXT_PATH=/kubiq-api
+
+      # Create logs directory
+      mkdir -p logs
+
+      # Start the application
+      node dist/server.js > logs/kubiq.log 2>&1 &
+      echo $! > kubiq.pid
+      echo "Kubiq started with PID $(cat kubiq.pid)"
+      echo "Logs: tail -f logs/kubiq.log"
+      EOF
+    - chmod +x startup.sh
+    # Create stop script
+    - echo "Creating stop script..."
+    - |
+      cat > stop.sh << 'EOF'
+      #!/bin/bash
+      if [ -f kubiq.pid ]; then
+        PID=$(cat kubiq.pid)
+        kill $PID
+        rm kubiq.pid
+        echo "Kubiq stopped (PID: $PID)"
+      else
+        echo "No PID file found"
+      fi
+      EOF
+    - chmod +x stop.sh
+    - echo "Listing files in deployment directory:"
+    - ls -ltrha
+
+    - echo "Generating application release information..."
+    - echo "{\"applications\":[{\"application_name\":\"kubiq\",\"version\":\"$CI_COMMIT_TAG\",\"source_path\":\"$PWD\"}]}"
+
+    - echo "Running release generation script..."
+    - bash /hobs/hobs-party/Scripts/generate_releases.sh "{\"applications\":[{\"application_name\":\"kubiq\",\"version\":\"$CI_COMMIT_TAG\",\"source_path\":\"$PWD\"}]}"

@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubiq
+  namespace: default
+  labels:
+    app: kubiq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubiq
+  template:
+    metadata:
+      labels:
+        app: kubiq
+    spec:
+      containers:
+        - name: kubiq-backend
+          image: kubiq:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3001
+              name: backend
+              protocol: TCP
+          # command: ["node"]
+          # args: ["dist/server.js"]
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - node dist/server.js
+            - tail -f /dev/null
+          envFrom:
+            - configMapRef:
+                name: kubiq-config
+            - secretRef:
+                name: kubiq-secrets
+          volumeMounts:
+            - name: kubiq-data
+              mountPath: /app/kubiq/data
+          resources:
+            requests:
+              memory: '256Mi'
+              cpu: '250m'
+            limits:
+              memory: '512Mi'
+              cpu: '500m'
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3001
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3001
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: kubiq-data
+          persistentVolumeClaim:
+            claimName: kubiq-pvc
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubiq-service
+  namespace: default
+  labels:
+    app: kubiq
+spec:
+  type: ClusterIP
+  selector:
+    app: kubiq
+  ports:
+    - name: kubiq-service
+      port: 80
+      targetPort: 3001
+      protocol: TCP
+  sessionAffinity: None

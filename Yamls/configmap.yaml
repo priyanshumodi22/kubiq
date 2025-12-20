@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubiq-config
+  namespace: default
+  labels:
+    app: kubiq
+data:
+  # Backend Configuration
+  PORT: '3001'
+  NODE_ENV: 'production'
+  BACKEND_CONTEXT_PATH: '/kubiq-api'
+  FRONTEND_CONTEXT_PATH: '/kubiq'
+
+  # Service Configuration
+  POLL_INTERVAL: '30000'
+  REQUEST_TIMEOUT: '5000'
+
+  # Data Persistence (matches Docker /app/kubiq structure)
+  ENABLE_PERSISTENCE: 'true'
+  DATA_DIR: '/app/kubiq/data'
+  SERVICES_CONFIG_PATH: '/app/kubiq/data/services.ini'
+  SNAPSHOT_INTERVAL: '300000'
+
+  # Health Check Configuration
+  MAX_HISTORY_SIZE: '100'
+  HEALTH_CHECK_TIMEOUT: '5000'
+
+  # Keycloak OIDC Configuration
+  KEYCLOAK_ENABLED: 'true'
+  KEYCLOAK_REALM: 'realm-name'
+  KEYCLOAK_CLIENT_ID: 'kubiq'

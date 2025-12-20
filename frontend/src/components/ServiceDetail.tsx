@@ -1,0 +1,241 @@
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { X, TrendingUp, Clock, Activity, PlayCircle } from 'lucide-react';
+import { ServiceStatus } from '../types';
+import { useServiceHistory } from '../hooks/useServices';
+import { apiClient } from '../services/api';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
+
+interface ServiceDetailProps {
+  service: ServiceStatus;
+  onClose: () => void;
+}
+
+export default function ServiceDetail({ service, onClose }: ServiceDetailProps) {
+  const { history, loading, refresh } = useServiceHistory(service.name, 50);
+  const [customEndpoint, setCustomEndpoint] = useState('');
+  const [customResult, setCustomResult] = useState<any>(null);
+  const [checkingCustom, setCheckingCustom] = useState(false);
+  const [manualChecking, setManualChecking] = useState(false);
+
+  const chartData = history.map((check) => ({
+    time: new Date(check.timestamp).toLocaleTimeString(),
+    responseTime: check.responseTime,
+    success: check.success,
+  }));
+
+  const handleManualCheck = async () => {
+    setManualChecking(true);
+    try {
+      await apiClient.checkService(service.name);
+      setTimeout(refresh, 500); // Refresh after check
+    } catch (error) {
+      console.error('Manual check failed:', error);
+    } finally {
+      setManualChecking(false);
+    }
+  };
+
+  const handleCustomCheck = async () => {
+    if (!customEndpoint.trim()) return;
+
+    setCheckingCustom(true);
+    setCustomResult(null);
+
+    try {
+      const result = await apiClient.customCheck(service.name, customEndpoint);
+      setCustomResult(result);
+    } catch (error: any) {
+      setCustomResult({
+        status: 'error',
+        message: error.message,
+      });
+    } finally {
+      setCheckingCustom(false);
+    }
+  };
+
+  const modalContent = (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-bg-surface rounded-xl border border-gray-800 max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto scrollbar-hide">
+        {/* Header */}
+        <div className="sticky top-0 bg-bg-surface border-b border-gray-800 p-4 sm:p-6 flex items-center justify-between z-10 gap-2 sm:gap-4">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg sm:text-2xl font-bold text-text truncate">{service.name}</h2>
+            <p className="text-xs sm:text-sm text-text-dim mt-1 truncate">{service.endpoint}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 sm:p-2 hover:bg-bg-elevated rounded-lg transition-colors flex-shrink-0"
+          >
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <StatCard
+              icon={Activity}
+              label="Status"
+              value={service.currentStatus}
+              color={service.currentStatus === 'healthy' ? 'success' : 'error'}
+            />
+            <StatCard
+              icon={Clock}
+              label="Response Time"
+              value={`${service.lastCheck?.responseTime || 0}ms`}
+            />
+            <StatCard
+              icon={TrendingUp}
+              label="Avg Response"
+              value={`${Math.round(service.averageResponseTime || 0)}ms`}
+            />
+            <StatCard
+              icon={Activity}
+              label="Uptime"
+              value={`${(service.uptime || 0).toFixed(1)}%`}
+              color={service.uptime && service.uptime > 95 ? 'success' : 'warning'}
+            />
+          </div>
+
+          {/* Manual Check Button */}
+          <button
+            onClick={handleManualCheck}
+            disabled={manualChecking}
+            className="w-full py-2.5 sm:py-3 text-sm sm:text-base bg-primary hover:bg-primary/80 disabled:bg-primary/50 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            <PlayCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden xs:inline">
+              {manualChecking ? 'Checking...' : 'Run Manual Health Check'}
+            </span>
+            <span className="xs:hidden">{manualChecking ? 'Checking...' : 'Run Check'}</span>
+          </button>
+
+          {/* Response Time Chart */}
+          {!loading && history.length > 0 && (
+            <div className="bg-bg-elevated rounded-lg p-3 sm:p-4">
+              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
+                Response Time History
+              </h3>
+              <ResponsiveContainer width="100%" height={180}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis dataKey="time" stroke="#888" fontSize={12} />
+                  <YAxis stroke="#888" fontSize={12} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1a1a1a',
+                      border: '1px solid #333',
+                      borderRadius: '8px',
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="responseTime"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    dot={{ fill: '#3b82f6', r: 3 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Custom Endpoint Check */}
+          <div className="bg-bg-elevated rounded-lg p-3 sm:p-4">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
+              Custom Endpoint Check
+            </h3>
+            <div className="flex flex-col sm:flex-row gap-2 mb-4">
+              <input
+                type="text"
+                value={customEndpoint}
+                onChange={(e) => setCustomEndpoint(e.target.value)}
+                placeholder="/custom-endpoint"
+                className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base bg-bg rounded-lg border border-gray-700 focus:border-primary focus:outline-none"
+              />
+              <button
+                onClick={handleCustomCheck}
+                disabled={checkingCustom || !customEndpoint.trim()}
+                className="px-4 sm:px-6 py-2 text-sm sm:text-base bg-primary hover:bg-primary/80 disabled:bg-primary/50 rounded-lg font-medium transition-colors whitespace-nowrap"
+              >
+                {checkingCustom ? 'Checking...' : 'Check'}
+              </button>
+            </div>
+
+            {customResult && (
+              <div className="mt-4 p-4 bg-bg rounded-lg border border-gray-700 font-mono text-sm overflow-x-auto">
+                <pre className="text-text-dim">{JSON.stringify(customResult, null, 2)}</pre>
+              </div>
+            )}
+          </div>
+
+          {/* Recent Checks */}
+          {!loading && history.length > 0 && (
+            <div className="bg-bg-elevated rounded-lg p-3 sm:p-4">
+              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Recent Checks</h3>
+              <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-hide">
+                {history
+                  .slice(-10)
+                  .reverse()
+                  .map((check, idx) => (
+                    <div
+                      key={idx}
+                      className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2 p-2.5 sm:p-3 bg-bg rounded-lg text-xs sm:text-sm"
+                    >
+                      <span className="text-text-dim truncate">
+                        {new Date(check.timestamp).toLocaleString()}
+                      </span>
+                      <div className="flex items-center gap-2 sm:gap-4">
+                        <span className="font-mono text-text">{check.responseTime}ms</span>
+                        <span
+                          className={`px-2 py-0.5 sm:py-1 rounded text-xs font-medium ${
+                            check.success ? 'bg-success/20 text-success' : 'bg-error/20 text-error'
+                          }`}
+                        >
+                          {check.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  return createPortal(modalContent, document.body);
+}
+
+function StatCard({ icon: Icon, label, value, color }: any) {
+  const colorClass =
+    color === 'success'
+      ? 'text-success'
+      : color === 'error'
+      ? 'text-error'
+      : color === 'warning'
+      ? 'text-warning'
+      : 'text-primary';
+
+  return (
+    <div className="bg-bg-elevated rounded-lg p-3 sm:p-4">
+      <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+        <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${colorClass}`} />
+        <span className="text-xs text-text-dim truncate">{label}</span>
+      </div>
+      <div className={`text-lg sm:text-xl font-bold ${colorClass} truncate`}>{value}</div>
+    </div>
+  );
+}
