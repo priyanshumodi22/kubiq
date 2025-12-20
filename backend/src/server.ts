@@ -50,14 +50,17 @@ app.use(`${BACKEND_CONTEXT_PATH}/api/services`, authMiddleware, servicesRouter);
 const frontendPath = path.join(__dirname, '../public');
 app.use(`${FRONTEND_CONTEXT_PATH}`, express.static(frontendPath));
 
-// Fallback to index.html for client-side routing
-app.get(`${FRONTEND_CONTEXT_PATH}/*`, (req: Request, res: Response) => {
-  // Don't override API routes
-  if (req.path.startsWith(`${BACKEND_CONTEXT_PATH}/api`)) {
-    return res.status(404).json({ error: 'Not Found' });
+// Fallback to index.html for client-side routing (Express 5 regex syntax)
+app.get(
+  new RegExp(`^${FRONTEND_CONTEXT_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/.*`),
+  (req: Request, res: Response) => {
+    // Don't override API routes
+    if (req.path.startsWith(`${BACKEND_CONTEXT_PATH}/api`)) {
+      return res.status(404).json({ error: 'Not Found' });
+    }
+    res.sendFile(path.join(frontendPath, 'index.html'));
   }
-  res.sendFile(path.join(frontendPath, 'index.html'));
-});
+);
 
 // Error handling
 app.use(errorHandler);
