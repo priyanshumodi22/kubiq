@@ -5,12 +5,16 @@ build
 .git
 .gitignore
 README.md
-.env
-.env.*
-data
+.env.local
+.env.*.local
 logs
 *.log
 coverage
 .vscode
 .idea
 *.md
+
+# Allow backend production config
+!backend/.env
+!backend/config/
+!backend/config/services.ini
