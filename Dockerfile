@@ -33,12 +33,12 @@ RUN npm ci --only=production
 # Copy frontend built files to be served by backend
 COPY --from=frontend-builder /app/frontend/dist ./public
 
-# Copy configuration files
-COPY backend/.env ./
-COPY backend/config/services.ini ./data/services.ini 
-
 # Create directories for persistence and logs
 RUN mkdir -p /app/kubiq/data /app/kubiq/logs
+
+# Copy configuration files
+COPY backend/.env ./
+COPY backend/config/services.ini ./data/services.ini
 
 # Expose port
 EXPOSE 3001
