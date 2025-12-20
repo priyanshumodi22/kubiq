@@ -26,6 +26,7 @@ RUN apk add --no-cache curl busybox-extras iputils
 # Copy backend compiled files
 COPY --from=backend-builder /app/backend/dist ./dist
 COPY --from=backend-builder /app/backend/package*.json ./
+COPY --from=backend-builder /app/backend/config/services.ini ./config-temp/services.ini
 
 # Install production dependencies only
 RUN npm ci --only=production
@@ -38,7 +39,7 @@ RUN mkdir -p /app/kubiq/data /app/kubiq/logs
 
 # Copy configuration files
 COPY backend/.env ./
-COPY backend/config/services.ini ./data/services.ini
+RUN mv ./config-temp/services.ini ./data/services.ini && rm -rf ./config-temp
 
 # Expose port
 EXPOSE 3001
