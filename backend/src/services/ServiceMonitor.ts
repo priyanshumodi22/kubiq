@@ -346,6 +346,7 @@ export class ServiceMonitor {
     try {
       const response = await axios.get(fullUrl, {
         timeout: this.requestTimeout,
+        maxRedirects: 0, // Don't follow redirects
         validateStatus: () => true,
       });
 
