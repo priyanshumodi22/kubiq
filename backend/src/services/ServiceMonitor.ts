@@ -161,6 +161,7 @@ export class ServiceMonitor {
     try {
       const response = await axios.get(service.endpoint, {
         timeout: this.requestTimeout,
+        maxRedirects: 0, // Don't follow redirects - just check if service responds
         validateStatus: () => true, // Accept any status code
       });
 
@@ -169,7 +170,7 @@ export class ServiceMonitor {
         status: response.status,
         responseTime,
         timestamp: Date.now(),
-        success: response.status >= 200 && response.status < 400, // Accept 2xx and 3xx (redirects)
+        success: [200, 202, 204, 301, 302, 303, 307, 308].includes(response.status), // Accept OK and standard redirects
         data: response.data,
       };
 
