@@ -36,7 +36,15 @@ export default function Login() {
         {/* Logo and Title */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary/20 to-primary/5 rounded-3xl mb-6 shadow-lg shadow-primary/10">
-            <img src="/logo/kubiq_logo.png" alt="Kubiq Logo" className="w-16 h-16 object-contain" />
+            <img
+              src={`${
+                import.meta.env.BASE_URL.endsWith('/')
+                  ? import.meta.env.BASE_URL
+                  : import.meta.env.BASE_URL + '/'
+              }logo/kubiq_logo.png`}
+              alt="Kubiq Logo"
+              className="w-16 h-16 object-contain"
+            />
           </div>
           <h1 className="text-4xl font-bold text-text mb-3 tracking-tight">kubiq</h1>
           <p className="text-text-dim text-sm">Cloud-Native Service Health Dashboard</p>

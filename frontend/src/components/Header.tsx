@@ -45,7 +45,11 @@ export default function Header() {
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className="inline-flex items-center justify-center w-12 h-12 sm:w-12 sm:h-12 bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl shadow-lg shadow-primary/10">
               <img
-                src="/logo/kubiq_logo.png"
+                src={`${
+                  import.meta.env.BASE_URL.endsWith('/')
+                    ? import.meta.env.BASE_URL
+                    : import.meta.env.BASE_URL + '/'
+                }logo/kubiq_logo.png`}
                 alt="Kubiq Logo"
                 className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
               />
