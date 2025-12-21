@@ -50,12 +50,12 @@ export default function ServiceCard({
       {/* Service Name and Endpoint */}
       <div className="pr-6 mb-3">
         <h3 className="text-base font-semibold text-text mb-1 truncate">{service.name}</h3>
-        <p className="text-xs text-text-dim truncate">
-          {service.endpoint}
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-text-dim truncate flex-1">{service.endpoint}</p>
           {service.headers && Object.keys(service.headers).length > 0 && (
-            <span className="text-blue-400 ml-2">- Headers</span>
+            <span className="text-xs text-blue-400 flex-shrink-0">- Headers</span>
           )}
-        </p>
+        </div>
       </div>
 
       {/* Metrics Grid */}
