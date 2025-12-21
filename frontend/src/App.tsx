@@ -29,6 +29,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  console.log('🚀 [App] BASE_URL:', import.meta.env.BASE_URL);
+
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <AuthProvider>
