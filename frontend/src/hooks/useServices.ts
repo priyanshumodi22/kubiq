@@ -63,7 +63,7 @@ export function useServices() {
   const setupSSE = useCallback(() => {
     const backendUrl = import.meta.env.VITE_BACKEND_DNS || window.location.origin;
     const contextPath = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '/kubiq-api';
-    const eventSource = new EventSource(`${backendUrl}${contextPath}/services/stream`);
+    const eventSource = new EventSource(`${backendUrl}${contextPath}/api/services/stream`);
 
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
