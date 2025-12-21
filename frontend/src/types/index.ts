@@ -16,6 +16,7 @@ export interface HealthCheck {
 export interface ServiceStatus {
   name: string;
   endpoint: string;
+  headers?: Record<string, string>;
   currentStatus: 'healthy' | 'unhealthy' | 'unknown';
   lastCheck?: HealthCheck;
   history: HealthCheck[];

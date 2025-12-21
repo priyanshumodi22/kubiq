@@ -71,6 +71,18 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
           <div className="min-w-0 flex-1">
             <h2 className="text-lg sm:text-2xl font-bold text-text truncate">{service.name}</h2>
             <p className="text-xs sm:text-sm text-text-dim mt-1 truncate">{service.endpoint}</p>
+            {service.headers && Object.keys(service.headers).length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {Object.entries(service.headers).map(([key, value]) => (
+                  <span
+                    key={key}
+                    className="text-xs bg-blue-900/30 text-blue-300 px-2 py-0.5 rounded font-mono"
+                  >
+                    {key}: {value}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
           <button
             onClick={onClose}

@@ -281,6 +281,7 @@ export default function Dashboard() {
             }}
             serviceName={editService.name}
             currentEndpoint={editService.endpoint}
+            currentHeaders={editService.headers}
           />
         )}
 

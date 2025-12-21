@@ -28,9 +28,10 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
         return;
       }
 
-      // Validate URL
+      // Validate URL (extract base URL before |)
       try {
-        new URL(endpoint);
+        const baseUrl = endpoint.includes('|') ? endpoint.split('|')[0] : endpoint;
+        new URL(baseUrl);
       } catch {
         setError('Invalid endpoint URL');
         return;
@@ -103,14 +104,16 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
             </label>
             <input
               id="serviceEndpoint"
-              type="url"
+              type="text"
               value={endpoint}
               onChange={(e) => setEndpoint(e.target.value)}
-              placeholder="https://api.example.com/endpoint"
+              placeholder="https://api.example.com/health|Header1:Value1|Header2:Value2"
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isSubmitting}
             />
-            <p className="mt-1 text-xs text-gray-400">or http://service-name:80/endpoint</p>
+            <p className="mt-1 text-xs text-gray-400">
+              URL with optional headers: endpoint|Header1:Value1|Header2:Value2
+            </p>
           </div>
 
           {/* Actions */}

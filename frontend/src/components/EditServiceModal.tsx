@@ -8,6 +8,7 @@ interface EditServiceModalProps {
   onSuccess: () => void;
   serviceName: string;
   currentEndpoint: string;
+  currentHeaders?: Record<string, string>;
 }
 
 export function EditServiceModal({
@@ -16,14 +17,23 @@ export function EditServiceModal({
   onSuccess,
   serviceName,
   currentEndpoint,
+  currentHeaders,
 }: EditServiceModalProps) {
   const [endpoint, setEndpoint] = useState(currentEndpoint);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    setEndpoint(currentEndpoint);
-  }, [currentEndpoint, isOpen]);
+    // Reconstruct full format: endpoint|Header1:Value1|Header2:Value2
+    let fullEndpoint = currentEndpoint;
+    if (currentHeaders && Object.keys(currentHeaders).length > 0) {
+      const headerParts = Object.entries(currentHeaders)
+        .map(([key, value]) => `${key}:${value}`)
+        .join('|');
+      fullEndpoint = `${currentEndpoint}|${headerParts}`;
+    }
+    setEndpoint(fullEndpoint);
+  }, [currentEndpoint, currentHeaders, isOpen]);
 
   if (!isOpen) return null;
 
@@ -39,9 +49,10 @@ export function EditServiceModal({
         return;
       }
 
-      // Validate URL
+      // Validate URL (extract base URL before |)
       try {
-        new URL(endpoint);
+        const baseUrl = endpoint.includes('|') ? endpoint.split('|')[0] : endpoint;
+        new URL(baseUrl);
       } catch {
         setError('Invalid endpoint URL');
         return;
@@ -59,7 +70,14 @@ export function EditServiceModal({
   };
 
   const handleClose = () => {
-    setEndpoint(currentEndpoint);
+    let fullEndpoint = currentEndpoint;
+    if (currentHeaders && Object.keys(currentHeaders).length > 0) {
+      const headerParts = Object.entries(currentHeaders)
+        .map(([key, value]) => `${key}:${value}`)
+        .join('|');
+      fullEndpoint = `${currentEndpoint}|${headerParts}`;
+    }
+    setEndpoint(fullEndpoint);
     setError('');
     onClose();
   };
@@ -109,14 +127,16 @@ export function EditServiceModal({
             </label>
             <input
               id="serviceEndpoint"
-              type="url"
+              type="text"
               value={endpoint}
               onChange={(e) => setEndpoint(e.target.value)}
-              placeholder="https://api.example.com/health"
+              placeholder="https://api.example.com/health|Header1:Value1|Header2:Value2"
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isSubmitting}
             />
-            <p className="mt-1 text-xs text-gray-400">Full URL to the service health endpoint</p>
+            <p className="mt-1 text-xs text-gray-400">
+              URL with optional headers: endpoint|Header1:Value1|Header2:Value2
+            </p>
           </div>
 
           {/* Actions */}
