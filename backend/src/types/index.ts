@@ -1,6 +1,7 @@
 export interface ServiceConfig {
   name: string;
   endpoint: string;
+  headers?: Record<string, string>;
   enabled?: boolean;
 }
 
@@ -16,7 +17,8 @@ export interface HealthCheck {
 export interface ServiceStatus {
   name: string;
   endpoint: string;
-  currentStatus: "healthy" | "unhealthy" | "unknown";
+  headers?: Record<string, string>;
+  currentStatus: 'healthy' | 'unhealthy' | 'unknown';
   lastCheck?: HealthCheck;
   history: HealthCheck[];
   uptime?: number;
@@ -29,7 +31,7 @@ export interface CustomCheckRequest {
 }
 
 export interface CustomCheckResponse {
-  status: "success" | "error";
+  status: 'success' | 'error';
   data?: any;
   message?: string;
   responseTime?: number;

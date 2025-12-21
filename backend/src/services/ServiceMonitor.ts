@@ -65,11 +65,29 @@ export class ServiceMonitor {
       const lines = configData.split('\n').filter((line) => line.trim() && !line.startsWith('#'));
 
       lines.forEach((line) => {
-        const [name, endpoint] = line.split('=').map((s) => s.trim());
-        if (name && endpoint) {
+        const [name, configValue] = line.split('=').map((s) => s.trim());
+        if (name && configValue) {
+          // Parse format: endpoint|Header1:Value1|Header2:Value2
+          const parts = configValue.split('|');
+          const endpoint = parts[0];
+          const headers: Record<string, string> = {};
+
+          // Parse headers if present (backward compatible - optional)
+          for (let i = 1; i < parts.length; i++) {
+            const colonIndex = parts[i].indexOf(':');
+            if (colonIndex > 0) {
+              const headerName = parts[i].substring(0, colonIndex).trim();
+              const headerValue = parts[i].substring(colonIndex + 1).trim();
+              if (headerName && headerValue) {
+                headers[headerName] = headerValue;
+              }
+            }
+          }
+
           this.services.set(name, {
             name,
             endpoint,
+            headers: Object.keys(headers).length > 0 ? headers : undefined,
             currentStatus: 'unknown',
             history: [],
           });
@@ -163,6 +181,7 @@ export class ServiceMonitor {
         timeout: this.requestTimeout,
         maxRedirects: 0, // Don't follow redirects - just check if service responds
         validateStatus: () => true, // Accept any status code
+        headers: service.headers || {}, // Apply custom headers if defined
       });
 
       const responseTime = Date.now() - startTime;
@@ -348,6 +367,7 @@ export class ServiceMonitor {
         timeout: this.requestTimeout,
         maxRedirects: 0, // Don't follow redirects
         validateStatus: () => true,
+        headers: service.headers || {}, // Apply custom headers if defined
       });
 
       return {
@@ -394,7 +414,15 @@ export class ServiceMonitor {
       content += `# Last updated: ${new Date().toISOString()}\n\n`;
 
       this.services.forEach((service) => {
-        content += `${service.name}=${service.endpoint}\n`;
+        const headerParts = service.headers
+          ? Object.entries(service.headers)
+              .map(([k, v]) => `${k}:${v}`)
+              .join('|')
+          : '';
+        const configLine = headerParts
+          ? `${service.name}=${service.endpoint}|${headerParts}`
+          : `${service.name}=${service.endpoint}`;
+        content += `${configLine}\n`;
       });
 
       // Atomic write: write to temp file then rename
@@ -409,7 +437,11 @@ export class ServiceMonitor {
     }
   }
 
-  public addService(name: string, endpoint: string): ServiceStatus {
+  public addService(
+    name: string,
+    endpoint: string,
+    headers?: Record<string, string>
+  ): ServiceStatus {
     if (this.services.has(name)) {
       throw new Error(`Service ${name} already exists`);
     }
@@ -424,6 +456,7 @@ export class ServiceMonitor {
     const newService: ServiceStatus = {
       name,
       endpoint,
+      headers,
       currentStatus: 'unknown',
       history: [],
     };
@@ -443,7 +476,11 @@ export class ServiceMonitor {
     return newService;
   }
 
-  public updateService(name: string, endpoint: string): ServiceStatus {
+  public updateService(
+    name: string,
+    endpoint: string,
+    headers?: Record<string, string>
+  ): ServiceStatus {
     const service = this.services.get(name);
     if (!service) {
       throw new Error(`Service ${name} not found`);
@@ -457,6 +494,7 @@ export class ServiceMonitor {
     }
 
     service.endpoint = endpoint;
+    service.headers = headers;
     // Reset status since endpoint changed
     service.currentStatus = 'unknown';
     service.history = [];

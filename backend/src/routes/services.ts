@@ -196,7 +196,7 @@ router.post(
   requireRole('kubiq-admin'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { name, endpoint } = req.body;
+      const { name, endpoint, headers } = req.body;
 
       if (!name || !endpoint) {
         return res.status(400).json({
@@ -205,7 +205,7 @@ router.post(
         });
       }
 
-      const newService = monitor.addService(name, endpoint);
+      const newService = monitor.addService(name, endpoint, headers);
       res.status(201).json({
         message: 'Service created successfully',
         service: newService,
@@ -229,7 +229,7 @@ router.put(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { name } = req.params;
-      const { endpoint } = req.body;
+      const { endpoint, headers } = req.body;
 
       if (!endpoint) {
         return res.status(400).json({
@@ -238,7 +238,7 @@ router.put(
         });
       }
 
-      const updatedService = monitor.updateService(name, endpoint);
+      const updatedService = monitor.updateService(name, endpoint, headers);
       res.json({
         message: 'Service updated successfully',
         service: updatedService,
