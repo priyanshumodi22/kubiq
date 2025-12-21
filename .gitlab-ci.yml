@@ -57,7 +57,7 @@ build-job: # This job runs in the build stage, which runs first.
 
     # Copy Kubernetes Yamls
     - echo "Copying Kubernetes yamls..."
-    - cp -r Yamls deployment/.
+    - cp -r yamls deployment/.
 
     # Copy Dockerfile
     - echo "Copying Dockerfile..."

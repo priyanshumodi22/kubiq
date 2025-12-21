@@ -169,7 +169,7 @@ export class ServiceMonitor {
         status: response.status,
         responseTime,
         timestamp: Date.now(),
-        success: response.status >= 200 && response.status < 300,
+        success: response.status >= 200 && response.status < 400, // Accept 2xx and 3xx (redirects)
         data: response.data,
       };
 

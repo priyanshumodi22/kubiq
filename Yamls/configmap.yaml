@@ -16,7 +16,7 @@ data:
   POLL_INTERVAL: '30000'
   REQUEST_TIMEOUT: '5000'
 
-  # Data Persistence (matches Docker /app/kubiq structure)
+  # Data Persistence
   ENABLE_PERSISTENCE: 'true'
   DATA_DIR: '/app/kubiq/data'
   SERVICES_CONFIG_PATH: '/app/kubiq/data/services.ini'

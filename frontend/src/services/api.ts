@@ -16,8 +16,6 @@ const BACKEND_DNS = getBackendDNS();
 const BACKEND_CONTEXT = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
 const BASE_PATH = `${BACKEND_DNS}${BACKEND_CONTEXT}`;
 
-console.log('API Client configured:', { BACKEND_DNS, BACKEND_CONTEXT, BASE_PATH });
-
 class ApiClient {
   private client: AxiosInstance;
   private token: string | null = null;

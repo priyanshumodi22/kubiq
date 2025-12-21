@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kubiq
-  namespace: default
+  namespace: hobs
   labels:
     app: kubiq
 spec:
@@ -16,8 +16,8 @@ spec:
         app: kubiq
     spec:
       containers:
-        - name: kubiq-backend
-          image: kubiq:latest
+        - name: kubiq
+          image: 303971190271.dkr.ecr.us-east-1.amazonaws.com/hobs/kubiq:v2.0.6
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3001
@@ -37,18 +37,18 @@ spec:
             - secretRef:
                 name: kubiq-secrets
           volumeMounts:
-            - name: kubiq-data
+            - name: shared-pv
               mountPath: /app/kubiq/data
           resources:
             requests:
-              memory: '256Mi'
-              cpu: '250m'
-            limits:
               memory: '512Mi'
-              cpu: '500m'
+              cpu: '512m'
+            limits:
+              memory: '1Gi'
+              cpu: '700m'
           livenessProbe:
             httpGet:
-              path: /api/health
+              path: /kubiq-api/api/health
               port: 3001
             initialDelaySeconds: 30
             periodSeconds: 10
@@ -56,23 +56,23 @@ spec:
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /api/health
+              path: /kubiq-api/api/health
               port: 3001
             initialDelaySeconds: 15
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3
       volumes:
-        - name: kubiq-data
+        - name: shared-pv
           persistentVolumeClaim:
-            claimName: kubiq-pvc
+            claimName: shared-pvc
       restartPolicy: Always
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: kubiq-service
-  namespace: default
+  namespace: hobs
   labels:
     app: kubiq
 spec:

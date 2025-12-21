@@ -15,7 +15,3 @@ data:
 
     # Example services (update with your actual services)
     backend-api=http://localhost:3001/health
-    httpbin-status=https://httpbin.org/status/200
-    httpbin-delay=https://httpbin.org/delay/1
-    jsonplaceholder=https://jsonplaceholder.typicode.com/posts/1
-    github-api=https://api.github.com/status

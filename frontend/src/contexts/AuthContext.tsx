@@ -34,11 +34,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const initAuth = async () => {
-      console.log('🔐 [AuthContext] Starting auth initialization...');
-
       // If already initialized, sync state and return immediately
       if (globalKeycloak !== null) {
-        console.log('🔐 [AuthContext] Already initialized, syncing state');
         setKeycloak(globalKeycloak);
         setIsAuthenticated(globalIsAuthenticated);
         setAuthEnabled(globalAuthEnabled);
@@ -50,7 +47,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // If currently initializing, wait for it
       if (initPromise !== null) {
-        console.log('🔐 [AuthContext] Init already in progress, waiting...');
         await initPromise;
         setKeycloak(globalKeycloak);
         setIsAuthenticated(globalIsAuthenticated);
@@ -62,29 +58,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Create initialization promise
-      console.log('🔐 [AuthContext] Creating new init promise...');
       initPromise = (async () => {
         try {
           // Fetch auth config from backend
-          console.log('🔐 [AuthContext] Fetching auth config from backend...');
           const config = await apiClient.getAuthConfig();
-          console.log('🔐 [AuthContext] Auth config received:', {
-            enabled: config.enabled,
-            url: config.url,
-            realm: config.realm,
-            clientId: config.clientId,
-          });
           globalAuthEnabled = config.enabled;
           setAuthEnabled(config.enabled);
 
           if (!config.enabled) {
-            console.log('🔐 [AuthContext] Auth is disabled, skipping Keycloak init');
             setIsLoading(false);
             return;
           }
 
           // Initialize Keycloak
-          console.log('🔐 [AuthContext] Creating Keycloak instance...');
           const kc = new Keycloak({
             url: config.url,
             realm: config.realm,
@@ -97,12 +83,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               : import.meta.env.BASE_URL + '/'
           }silent-check-sso.html`;
 
-          console.log('🔐 [AuthContext] Initializing Keycloak with:', {
-            onLoad: 'check-sso',
-            silentCheckSsoRedirectUri: silentCheckSsoUrl,
-            BASE_URL: import.meta.env.BASE_URL,
-          });
-
           const authenticated = await kc.init({
             onLoad: 'check-sso',
             silentCheckSsoRedirectUri: silentCheckSsoUrl,
@@ -110,15 +90,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             checkLoginIframe: false,
           });
 
-          console.log('🔐 [AuthContext] Keycloak init completed, authenticated:', authenticated);
-
           globalKeycloak = kc;
           globalIsAuthenticated = authenticated;
           setKeycloak(kc);
           setIsAuthenticated(authenticated);
 
           if (authenticated && kc.token) {
-            console.log('🔐 [AuthContext] User is authenticated, setting up token...');
             apiClient.setToken(kc.token);
 
             const tokenParsed = kc.tokenParsed as any;
@@ -163,7 +140,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
           console.error('🔐 [AuthContext] ❌ Auth initialization error:', error);
         } finally {
-          console.log('🔐 [AuthContext] ✅ Init complete, setting isLoading=false');
           setIsLoading(false);
         }
       })();

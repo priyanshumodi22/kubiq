@@ -7,12 +7,9 @@ export default function Login() {
   const { login, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
-  console.log('🔵 [Login] Render state:', { isLoading, isAuthenticated });
-
   useEffect(() => {
     // If already authenticated, redirect to dashboard
     if (!isLoading && isAuthenticated) {
-      console.log('🔵 [Login] User authenticated, redirecting to dashboard');
       navigate('/dashboard', { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate]);
