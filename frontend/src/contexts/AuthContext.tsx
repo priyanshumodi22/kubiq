@@ -182,9 +182,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     if (keycloak) {
-      // Always use window.location.origin for universal deployment
+      // Redirect to base URL (e.g., /kubiq) after logout
       keycloak.logout({
-        redirectUri: window.location.origin,
+        redirectUri: `${window.location.origin}${import.meta.env.BASE_URL}`,
       });
     }
   };

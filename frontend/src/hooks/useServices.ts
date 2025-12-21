@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const POLL_INTERVAL = parseInt(import.meta.env.VITE_POLL_INTERVAL || '5000', 10);
 const FULL_DATA_INTERVAL = 30000; // Fetch full data every 30 seconds
 const USE_SSE = import.meta.env.VITE_USE_SSE === 'true'; // Optional SSE support
 
 export function useServices() {
+  const { keycloak } = useAuth();
   const [services, setServices] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -63,7 +65,14 @@ export function useServices() {
   const setupSSE = useCallback(() => {
     const backendUrl = import.meta.env.VITE_BACKEND_DNS || window.location.origin;
     const contextPath = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '/kubiq-api';
-    const eventSource = new EventSource(`${backendUrl}${contextPath}/api/services/stream`);
+
+    // Add token to URL query parameter for SSE authentication
+    const token = keycloak?.token || '';
+    const sseUrl = `${backendUrl}${contextPath}/api/services/stream${
+      token ? `?token=${encodeURIComponent(token)}` : ''
+    }`;
+
+    const eventSource = new EventSource(sseUrl);
 
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -88,7 +97,7 @@ export function useServices() {
     };
 
     return eventSource;
-  }, [fetchStatus]);
+  }, [fetchStatus, keycloak]);
 
   useEffect(() => {
     isMountedRef.current = true;

@@ -24,16 +24,24 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
   }
 
   try {
+    // Check Authorization header first, then query parameter (for SSE)
     const authHeader = req.headers.authorization;
+    const queryToken = req.query.token as string;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    let token: string | undefined;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else if (queryToken) {
+      token = queryToken;
+    }
+
+    if (!token) {
       return res.status(401).json({
         error: 'Unauthorized',
         message: 'No valid authorization token provided',
       });
     }
-
-    const token = authHeader.substring(7);
 
     // Check cache first
     const cached = tokenCache.get(token);
