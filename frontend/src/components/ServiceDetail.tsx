@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, TrendingUp, Clock, Activity, PlayCircle } from 'lucide-react';
+import { X, TrendingUp, Clock, Activity, PlayCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { ServiceStatus } from '../types';
 import { useServiceHistory } from '../hooks/useServices';
 import { apiClient } from '../services/api';
@@ -25,6 +25,7 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
   const [customResult, setCustomResult] = useState<any>(null);
   const [checkingCustom, setCheckingCustom] = useState(false);
   const [manualChecking, setManualChecking] = useState(false);
+  const [showHeaders, setShowHeaders] = useState(false);
 
   const chartData = history.map((check) => ({
     time: new Date(check.timestamp).toLocaleTimeString(),
@@ -70,16 +71,29 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
         <div className="sticky top-0 bg-bg-surface border-b border-gray-800 p-4 sm:p-6 flex items-center justify-between z-10 gap-2 sm:gap-4">
           <div className="min-w-0 flex-1">
             <h2 className="text-lg sm:text-2xl font-bold text-text truncate">{service.name}</h2>
-            <p className="text-xs sm:text-sm text-text-dim mt-1 truncate">{service.endpoint}</p>
-            {service.headers && Object.keys(service.headers).length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
+            <div className="flex items-center gap-3 mt-1">
+              <p className="text-xs sm:text-sm text-text-dim truncate flex-1">{service.endpoint}</p>
+              {service.headers && Object.keys(service.headers).length > 0 && (
+                <button
+                  onClick={() => setShowHeaders(!showHeaders)}
+                  className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 flex-shrink-0"
+                >
+                  {showHeaders ? (
+                    <ChevronUp className="w-3 h-3" />
+                  ) : (
+                    <ChevronDown className="w-3 h-3" />
+                  )}
+                  Headers
+                </button>
+              )}
+            </div>
+            {showHeaders && service.headers && (
+              <div className="mt-2 p-2 bg-gray-800 rounded text-xs space-y-1">
                 {Object.entries(service.headers).map(([key, value]) => (
-                  <span
-                    key={key}
-                    className="text-xs bg-blue-900/30 text-blue-300 px-2 py-0.5 rounded font-mono"
-                  >
-                    {key}: {value}
-                  </span>
+                  <div key={key} className="flex gap-2">
+                    <span className="text-blue-400 font-mono">{key}:</span>
+                    <span className="text-gray-300 font-mono">{value}</span>
+                  </div>
                 ))}
               </div>
             )}

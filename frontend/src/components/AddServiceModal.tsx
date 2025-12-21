@@ -100,7 +100,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
               htmlFor="serviceEndpoint"
               className="block text-sm font-medium text-gray-300 mb-1"
             >
-              Endpoint URL
+              Endpoint URL  | headers (optional)
             </label>
             <input
               id="serviceEndpoint"
@@ -112,7 +112,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
               disabled={isSubmitting}
             />
             <p className="mt-1 text-xs text-gray-400">
-              URL with optional headers: endpoint|Header1:Value1|Header2:Value2
+              or e.g, http://service-name:port/endpoint|Header1:Value1
             </p>
           </div>
 

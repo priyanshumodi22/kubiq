@@ -1,6 +1,5 @@
-import { Clock, Edit2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Clock, Edit2, Trash2 } from 'lucide-react';
 import { ServiceStatus } from '../types';
-import { useState } from 'react';
 
 interface ServiceCardProps {
   service: ServiceStatus;
@@ -17,8 +16,6 @@ export default function ServiceCard({
   onDelete,
   isAdmin,
 }: ServiceCardProps) {
-  const [showHeaders, setShowHeaders] = useState(false);
-
   const statusConfig = {
     healthy: { color: 'bg-green-500', label: 'Healthy' },
     unhealthy: { color: 'bg-red-500', label: 'Unhealthy' },
@@ -53,35 +50,12 @@ export default function ServiceCard({
       {/* Service Name and Endpoint */}
       <div className="pr-6 mb-3">
         <h3 className="text-base font-semibold text-text mb-1 truncate">{service.name}</h3>
-        <div className="flex items-center gap-2">
-          <p className="text-xs text-text-dim truncate flex-1">{service.endpoint}</p>
+        <p className="text-xs text-text-dim truncate">
+          {service.endpoint}
           {service.headers && Object.keys(service.headers).length > 0 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowHeaders(!showHeaders);
-              }}
-              className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 flex-shrink-0"
-            >
-              {showHeaders ? (
-                <ChevronUp className="w-3 h-3" />
-              ) : (
-                <ChevronDown className="w-3 h-3" />
-              )}
-              Headers
-            </button>
+            <span className="text-blue-400 ml-2">- Headers</span>
           )}
-        </div>
-        {showHeaders && service.headers && (
-          <div className="mt-2 p-2 bg-gray-800 rounded text-xs space-y-1">
-            {Object.entries(service.headers).map(([key, value]) => (
-              <div key={key} className="flex gap-2">
-                <span className="text-blue-400 font-mono">{key}:</span>
-                <span className="text-gray-300 font-mono">{value}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        </p>
       </div>
 
       {/* Metrics Grid */}
