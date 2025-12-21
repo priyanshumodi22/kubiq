@@ -446,17 +446,40 @@ export class ServiceMonitor {
       throw new Error(`Service ${name} already exists`);
     }
 
+    // Parse format: endpoint|Header1:Value1|Header2:Value2 (if headers not provided separately)
+    let actualEndpoint = endpoint;
+    let actualHeaders = headers;
+
+    if (!headers && endpoint.includes('|')) {
+      const parts = endpoint.split('|');
+      actualEndpoint = parts[0];
+      const parsedHeaders: Record<string, string> = {};
+
+      for (let i = 1; i < parts.length; i++) {
+        const colonIndex = parts[i].indexOf(':');
+        if (colonIndex > 0) {
+          const headerName = parts[i].substring(0, colonIndex).trim();
+          const headerValue = parts[i].substring(colonIndex + 1).trim();
+          if (headerName && headerValue) {
+            parsedHeaders[headerName] = headerValue;
+          }
+        }
+      }
+
+      actualHeaders = Object.keys(parsedHeaders).length > 0 ? parsedHeaders : undefined;
+    }
+
     // Validate endpoint URL
     try {
-      new URL(endpoint);
+      new URL(actualEndpoint);
     } catch {
       throw new Error('Invalid endpoint URL');
     }
 
     const newService: ServiceStatus = {
       name,
-      endpoint,
-      headers,
+      endpoint: actualEndpoint,
+      headers: actualHeaders,
       currentStatus: 'unknown',
       history: [],
     };
@@ -486,15 +509,38 @@ export class ServiceMonitor {
       throw new Error(`Service ${name} not found`);
     }
 
+    // Parse format: endpoint|Header1:Value1|Header2:Value2 (if headers not provided separately)
+    let actualEndpoint = endpoint;
+    let actualHeaders = headers;
+
+    if (!headers && endpoint.includes('|')) {
+      const parts = endpoint.split('|');
+      actualEndpoint = parts[0];
+      const parsedHeaders: Record<string, string> = {};
+
+      for (let i = 1; i < parts.length; i++) {
+        const colonIndex = parts[i].indexOf(':');
+        if (colonIndex > 0) {
+          const headerName = parts[i].substring(0, colonIndex).trim();
+          const headerValue = parts[i].substring(colonIndex + 1).trim();
+          if (headerName && headerValue) {
+            parsedHeaders[headerName] = headerValue;
+          }
+        }
+      }
+
+      actualHeaders = Object.keys(parsedHeaders).length > 0 ? parsedHeaders : undefined;
+    }
+
     // Validate endpoint URL
     try {
-      new URL(endpoint);
+      new URL(actualEndpoint);
     } catch {
       throw new Error('Invalid endpoint URL');
     }
 
-    service.endpoint = endpoint;
-    service.headers = headers;
+    service.endpoint = actualEndpoint;
+    service.headers = actualHeaders;
     // Reset status since endpoint changed
     service.currentStatus = 'unknown';
     service.history = [];
