@@ -28,7 +28,23 @@ const BACKEND_CONTEXT_PATH = process.env.BACKEND_CONTEXT_PATH || '';
 const FRONTEND_CONTEXT_PATH = process.env.FRONTEND_CONTEXT_PATH || '';
 
 // Middleware
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"], // Allow inline scripts for Keycloak silent-check-sso.html
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'", 'https://demo.cloud-tcshobs.com'],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'self'", 'https://demo.cloud-tcshobs.com'], // Allow Keycloak iframes
+      },
+    },
+  })
+);
 app.use(
   cors({
     origin: process.env.FRONTEND_DNS || process.env.CORS_ORIGIN || 'http://localhost:3000',
