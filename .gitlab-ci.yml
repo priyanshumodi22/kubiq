@@ -52,6 +52,9 @@ build-job: # This job runs in the build stage, which runs first.
     - mkdir -p deployment/data
     - cp backend/config/services.ini deployment/data/services.ini
 
+    - echo "Listing files in deployment/data directory:"
+    - ls -ltrha deployment/data
+
     # Copy Kubernetes Yamls
     - echo "Copying Kubernetes yamls..."
     - cp -r Yamls deployment/.
