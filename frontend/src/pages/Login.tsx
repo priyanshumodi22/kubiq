@@ -2,6 +2,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Shield } from 'lucide-react';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Footer from '../components/Footer';
 
 export default function Login() {
   const { login, isAuthenticated, isLoading } = useAuth();
@@ -23,7 +24,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-bg via-bg to-bg-surface flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-bg via-bg to-bg-surface flex items-center justify-center p-4 pb-20 relative overflow-hidden">
       {/* Subtle animated background effect */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.03),transparent_50%)]"></div>
       <div className="absolute top-20 left-20 w-72 h-72 bg-primary/5 rounded-full blur-3xl"></div>
@@ -62,6 +63,7 @@ export default function Login() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

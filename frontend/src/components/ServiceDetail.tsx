@@ -68,7 +68,7 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-2 sm:p-4">
       <div className="bg-bg-surface rounded-xl border border-gray-800 max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto scrollbar-hide">
         {/* Header */}
-        <div className="sticky top-0 bg-bg-surface border-b border-gray-800 p-4 sm:p-6 flex items-center justify-between z-10 gap-2 sm:gap-4">
+        <div className="sticky top-0 bg-bg-surface border-b border-gray-800 p-4 sm:p-6 flex items-start justify-between z-10 gap-2 sm:gap-4">
           <div className="min-w-0 flex-1">
             <h2 className="text-lg sm:text-2xl font-bold text-text truncate">{service.name}</h2>
             <div className="flex items-center gap-3 mt-1">
