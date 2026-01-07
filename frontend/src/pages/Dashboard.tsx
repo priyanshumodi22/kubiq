@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { RefreshCw, Search, Filter, Plus, ChevronDown } from 'lucide-react';
+import { RefreshCw, Search, Filter, Plus, ChevronDown, Globe } from 'lucide-react';
 import { useServices } from '../hooks/useServices';
 import { useAuth } from '../contexts/AuthContext';
 import ServiceCard from '../components/ServiceCard';
@@ -7,6 +7,7 @@ import ServiceDetail from '../components/ServiceDetail';
 import { AddServiceModal } from '../components/AddServiceModal';
 import { EditServiceModal } from '../components/EditServiceModal';
 import { DeleteConfirmDialog } from '../components/DeleteConfirmDialog';
+import { StatusPageConfigModal } from '../components/StatusPageConfigModal';
 import { ServiceStatus } from '../types';
 
 export default function Dashboard() {
@@ -20,12 +21,13 @@ export default function Dashboard() {
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
   const [editService, setEditService] = useState<ServiceStatus | null>(null);
   const [deleteService, setDeleteService] = useState<ServiceStatus | null>(null);
 
   const isAdmin = hasRole('kubiq-admin');
 
-  // Close filter dropdown when clicking outside
+  // ... (handleClickOutside remains same)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target as Node)) {
@@ -216,21 +218,31 @@ export default function Dashboard() {
             <button
               onClick={refresh}
               disabled={loading}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-800 hover:bg-blue-500 disabled:bg-blue-600 rounded-lg transition-colors whitespace-nowrap h-[42px]"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-bg-elevated border border-gray-700 hover:border-blue-500 text-text hover:text-blue-400 rounded-lg transition-all whitespace-nowrap h-[42px] disabled:opacity-50"
             >
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </button>
 
-            {/* Add Service (Admin Only) */}
+            {/* Admin Actions */}
             {isAdmin && (
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg transition-colors whitespace-nowrap h-[42px]"
-              >
-                <Plus className="w-5 h-5" />
-                Add Service
-              </button>
+              <>
+                <button
+                  onClick={() => setShowStatusModal(true)}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-bg-elevated border border-gray-700 hover:border-cyan-500 hover:text-cyan-400 text-text rounded-lg transition-all whitespace-nowrap h-[42px]"
+                  title="Configure Public Status Page"
+                >
+                  <Globe className="w-5 h-5" />
+                  <span className="hidden xl:inline">Status Page</span>
+                </button>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors whitespace-nowrap h-[42px] shadow-lg shadow-indigo-900/20"
+                >
+                  <Plus className="w-5 h-5" />
+                  <span className="hidden sm:inline">Add Service</span>
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -260,15 +272,21 @@ export default function Dashboard() {
           <ServiceDetail service={selectedService} onClose={() => setSelectedService(null)} />
         )}
 
-        {/* Add Service Modal (Admin Only) */}
+        {/* Configuration Modals (Admin Only) */}
         {isAdmin && (
-          <AddServiceModal
-            isOpen={showAddModal}
-            onClose={() => setShowAddModal(false)}
-            onSuccess={() => {
-              refresh();
-            }}
-          />
+          <>
+            <AddServiceModal
+              isOpen={showAddModal}
+              onClose={() => setShowAddModal(false)}
+              onSuccess={() => {
+                refresh();
+              }}
+            />
+            <StatusPageConfigModal
+              isOpen={showStatusModal}
+              onClose={() => setShowStatusModal(false)}
+            />
+          </>
         )}
 
         {/* Edit Service Modal (Admin Only) */}
@@ -277,7 +295,7 @@ export default function Dashboard() {
             isOpen={!!editService}
             onClose={() => setEditService(null)}
             onSuccess={() => {
-              refresh();
+               refresh();
             }}
             serviceName={editService.name}
             currentEndpoint={editService.endpoint}

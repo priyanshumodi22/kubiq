@@ -1,6 +1,16 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, TrendingUp, Clock, Activity, PlayCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  X,
+  TrendingUp,
+  Clock,
+  Activity,
+  PlayCircle,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import { ServiceStatus } from '../types';
 import { useServiceHistory } from '../hooks/useServices';
 import { apiClient } from '../services/api';
@@ -13,6 +23,47 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import Combobox from './Combobox';
+
+const COMMON_HEADERS = [
+  'Accept',
+  'Accept-Charset',
+  'Accept-Encoding',
+  'Accept-Language',
+  'Authorization',
+  'Cache-Control',
+  'Connection',
+  'Content-Length',
+  'Content-Type',
+  'Cookie',
+  'Date',
+  'Host',
+  'If-Modified-Since',
+  'If-None-Match',
+  'Origin',
+  'Referer',
+  'User-Agent',
+  'X-Requested-With',
+  'X-Forwarded-For',
+  'X-Forwarded-Proto',
+];
+
+const COMMON_HEADER_VALUES: Record<string, string[]> = {
+  Accept: ['application/json', 'application/xml', 'text/html', 'text/plain', '*/*'],
+  'Accept-Encoding': ['gzip', 'deflate', 'br', 'identity'],
+  Authorization: ['Bearer ', 'Basic '],
+  'Cache-Control': ['no-cache', 'no-store', 'max-age=0', 'no-transform'],
+  Connection: ['keep-alive', 'close'],
+  'Content-Type': [
+    'application/json',
+    'application/x-www-form-urlencoded',
+    'multipart/form-data',
+    'text/plain',
+    'application/xml',
+    'application/javascript',
+  ],
+  'User-Agent': ['Mozilla/5.0', 'PostmanRuntime/7.26.8'],
+};
 
 interface ServiceDetailProps {
   service: ServiceStatus;
@@ -26,6 +77,30 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
   const [checkingCustom, setCheckingCustom] = useState(false);
   const [manualChecking, setManualChecking] = useState(false);
   const [showHeaders, setShowHeaders] = useState(false);
+
+  // Custom check detailed state
+  const [method, setMethod] = useState('GET');
+  const [requestHeaders, setRequestHeaders] = useState<{ key: string; value: string }[]>([]);
+  const [requestBody, setRequestBody] = useState('');
+  const [showRequestOptions, setShowRequestOptions] = useState(false);
+
+  const methods = ['GET', 'POST', 'PUT'];
+
+  const addHeader = () => {
+    setRequestHeaders([...requestHeaders, { key: '', value: '' }]);
+  };
+
+  const removeHeader = (index: number) => {
+    const newHeaders = [...requestHeaders];
+    newHeaders.splice(index, 1);
+    setRequestHeaders(newHeaders);
+  };
+
+  const updateHeader = (index: number, field: 'key' | 'value', value: string) => {
+    const newHeaders = [...requestHeaders];
+    newHeaders[index][field] = value;
+    setRequestHeaders(newHeaders);
+  };
 
   const chartData = history.map((check) => ({
     time: new Date(check.timestamp).toLocaleTimeString(),
@@ -52,7 +127,34 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
     setCustomResult(null);
 
     try {
-      const result = await apiClient.customCheck(service.name, customEndpoint);
+      let bodyData = undefined;
+      if (requestBody.trim()) {
+        try {
+          bodyData = JSON.parse(requestBody);
+        } catch (e) {
+          setCustomResult({
+            status: 'error',
+            message: 'Invalid JSON in request body',
+          });
+          setCheckingCustom(false);
+          return;
+        }
+      }
+
+      const headersMap: Record<string, string> = {};
+      requestHeaders.forEach((h) => {
+        if (h.key.trim()) {
+          headersMap[h.key.trim()] = h.value;
+        }
+      });
+
+      const result = await apiClient.customCheck(
+        service.name,
+        customEndpoint,
+        method,
+        headersMap,
+        bodyData
+      );
       setCustomResult(result);
     } catch (error: any) {
       setCustomResult({
@@ -157,7 +259,16 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                   <XAxis dataKey="time" stroke="#888" fontSize={12} />
-                  <YAxis stroke="#888" fontSize={12} />
+                  <YAxis
+                    stroke="#888"
+                    fontSize={12}
+                    label={{
+                      value: 'Resp. Time (ms)',
+                      angle: -90,
+                      position: 'insideLeft',
+                      style: { fill: '#888', fontSize: 12, textAnchor: 'middle' },
+                    }}
+                  />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#1a1a1a',
@@ -182,21 +293,114 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
             <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
               Custom Endpoint Check
             </h3>
-            <div className="flex flex-col sm:flex-row gap-2 mb-4">
-              <input
-                type="text"
-                value={customEndpoint}
-                onChange={(e) => setCustomEndpoint(e.target.value)}
-                placeholder="/custom-endpoint"
-                className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base bg-bg rounded-lg border border-gray-700 focus:border-primary focus:outline-none"
-              />
+            <div className="flex flex-col gap-3 mb-4">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative w-full sm:w-24 flex-shrink-0">
+                   <div className="relative">
+                    <select
+                      value={method}
+                      onChange={(e) => setMethod(e.target.value)}
+                      className="w-full pl-3 pr-8 py-2 text-sm sm:text-base font-medium bg-bg rounded-lg border border-gray-700 focus:border-primary focus:outline-none appearance-none cursor-pointer hover:bg-bg-elevated transition-colors"
+                    >
+                      {methods.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                   </div>
+                </div>
+                <input
+                  type="text"
+                  value={customEndpoint}
+                  onChange={(e) => setCustomEndpoint(e.target.value)}
+                  placeholder="/custom-endpoint"
+                  className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base bg-bg rounded-lg border border-gray-700 focus:border-primary focus:outline-none"
+                />
+                <button
+                  onClick={handleCustomCheck}
+                  disabled={checkingCustom || !customEndpoint.trim()}
+                  className="px-4 sm:px-6 py-2 text-sm sm:text-base bg-primary hover:bg-primary/80 disabled:bg-primary/50 rounded-lg font-medium transition-colors whitespace-nowrap"
+                >
+                  {checkingCustom ? 'Checking...' : 'Check'}
+                </button>
+              </div>
+
               <button
-                onClick={handleCustomCheck}
-                disabled={checkingCustom || !customEndpoint.trim()}
-                className="px-4 sm:px-6 py-2 text-sm sm:text-base bg-primary hover:bg-primary/80 disabled:bg-primary/50 rounded-lg font-medium transition-colors whitespace-nowrap"
+                onClick={() => setShowRequestOptions(!showRequestOptions)}
+                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 self-start"
               >
-                {checkingCustom ? 'Checking...' : 'Check'}
+                {showRequestOptions ? (
+                  <ChevronUp className="w-3 h-3" />
+                ) : (
+                  <ChevronDown className="w-3 h-3" />
+                )}
+                Advanced Options (Headers & Body)
               </button>
+
+              {showRequestOptions && (
+                <div className="space-y-4 p-3 bg-bg rounded-lg border border-gray-800">
+                  {/* Headers Section */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold text-text-dim">Request Headers</span>
+                      <button
+                        onClick={addHeader}
+                        className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" /> Add Header
+                      </button>
+                    </div>
+
+                    {requestHeaders.length === 0 && (
+                      <div className="text-xs text-text-dim italic">No custom headers</div>
+                    )}
+
+                    <div className="space-y-2">
+                      {requestHeaders.map((header, idx) => (
+                        <div key={idx} className="flex gap-2">
+                          <Combobox
+                            value={header.key}
+                            onChange={(val) => updateHeader(idx, 'key', val)}
+                            options={COMMON_HEADERS}
+                            placeholder="Key"
+                            className="flex-1 min-w-0"
+                          />
+                          <Combobox
+                            value={header.value}
+                            onChange={(val) => updateHeader(idx, 'value', val)}
+                            options={COMMON_HEADER_VALUES[header.key] || []}
+                            placeholder="Value"
+                            className="flex-1 min-w-0"
+                          />
+                          <button
+                            onClick={() => removeHeader(idx)}
+                            className="p-1.5 text-error hover:bg-error/10 rounded self-start mt-0.5"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Body Section */}
+                  {method !== 'GET' && method !== 'HEAD' && (
+                    <div>
+                      <span className="text-xs font-semibold text-text-dim mb-2 block">
+                        Request Body (JSON)
+                      </span>
+                      <textarea
+                        value={requestBody}
+                        onChange={(e) => setRequestBody(e.target.value)}
+                        placeholder='{"key": "value"}'
+                        className="w-full h-32 px-3 py-2 text-xs font-mono bg-bg-surface rounded border border-gray-700 focus:border-primary focus:outline-none resize-none"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {customResult && (

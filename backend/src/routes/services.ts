@@ -163,7 +163,7 @@ router.post('/:name/check', async (req: Request, res: Response, next: NextFuncti
 // POST /api/services/custom-check - Custom endpoint check
 router.post('/custom-check', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { service, endpoint } = req.body;
+    const { service, endpoint, method, headers, body } = req.body;
 
     if (!service || !endpoint) {
       return res.status(400).json({
@@ -172,9 +172,13 @@ router.post('/custom-check', async (req: Request, res: Response, next: NextFunct
       });
     }
 
-    console.log(`🔍 Custom endpoint check: Service="${service}", Endpoint="${endpoint}"`);
+    console.log(
+      `🔍 Custom endpoint check: Service="${service}", Endpoint="${endpoint}", Method="${
+        method || 'GET'
+      }"`
+    );
 
-    const result = await monitor.customEndpointCheck(service, endpoint);
+    const result = await monitor.customEndpointCheck(service, endpoint, method, headers, body);
 
     console.log(
       `✅ Custom check result: Status=${result.status}, ResponseTime=${result.responseTime}ms`
@@ -274,6 +278,31 @@ router.delete(
           message: error.message,
         });
       }
+      next(error);
+    }
+  }
+);
+
+// GET /api/services/status-page/config - Get config (Admin/Auth)
+router.get('/status-page/config', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const config = monitor.getStatusPageConfig();
+    res.json(config);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// PUT /api/services/status-page/config - Update config (Admin only)
+router.put(
+  '/status-page/config',
+  requireRole('kubiq-admin'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { slug, title, refreshInterval } = req.body;
+      const config = monitor.updateStatusPageConfig({ slug, title, refreshInterval });
+      res.json(config);
+    } catch (error) {
       next(error);
     }
   }

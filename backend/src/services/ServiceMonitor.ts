@@ -4,6 +4,12 @@ import fs from 'fs';
 import path from 'path';
 import { ServiceConfig, HealthCheck, ServiceStatus } from '../types';
 
+export interface StatusPageConfig {
+  slug: string | null;
+  title: string;
+  refreshInterval: number;
+}
+
 export class ServiceMonitor {
   private static instance: ServiceMonitor;
   private services: Map<string, ServiceStatus> = new Map();
@@ -16,6 +22,11 @@ export class ServiceMonitor {
   private readonly persistenceEnabled: boolean;
   private readonly dataDir: string;
   private persistenceInterval?: NodeJS.Timeout;
+  private statusConfig: StatusPageConfig = {
+    slug: null,
+    title: 'System Status',
+    refreshInterval: 300,
+  };
 
   private constructor() {
     this.maxHistorySize = parseInt(process.env.MAX_HISTORY_SIZE || '100', 10);
@@ -32,6 +43,7 @@ export class ServiceMonitor {
 
     this.loadServicesFromConfig();
     this.loadPersistedData();
+    this.loadStatusConfig();
   }
 
   public static getInstance(): ServiceMonitor {
@@ -348,7 +360,13 @@ export class ServiceMonitor {
     return limit ? history.slice(-limit) : history;
   }
 
-  public async customEndpointCheck(serviceName: string, endpoint: string): Promise<any> {
+  public async customEndpointCheck(
+    serviceName: string,
+    endpoint: string,
+    method: string = 'GET',
+    headers: Record<string, string> = {},
+    body?: any
+  ): Promise<any> {
     const service = this.services.get(serviceName);
     if (!service) {
       throw new Error(`Service ${serviceName} not found`);
@@ -363,11 +381,16 @@ export class ServiceMonitor {
     const startTime = Date.now();
 
     try {
-      const response = await axios.get(fullUrl, {
+      const mergedHeaders = { ...(service.headers || {}), ...headers };
+
+      const response = await axios({
+        url: fullUrl,
+        method,
+        headers: mergedHeaders,
+        data: body,
         timeout: this.requestTimeout,
-        maxRedirects: 0, // Don't follow redirects
+        maxRedirects: 0,
         validateStatus: () => true,
-        headers: service.headers || {}, // Apply custom headers if defined
       });
 
       return {
@@ -375,6 +398,7 @@ export class ServiceMonitor {
         data: response.data,
         responseTime: Date.now() - startTime,
         statusCode: response.status,
+        headers: response.headers,
       };
     } catch (error) {
       return {
@@ -581,5 +605,47 @@ export class ServiceMonitor {
     this.cache.del('services:all');
 
     console.log(`🗑️  Deleted service: ${name}`);
+  }
+
+  private loadStatusConfig(): void {
+    try {
+      if (!fs.existsSync(this.dataDir)) {
+        fs.mkdirSync(this.dataDir, { recursive: true });
+      }
+
+      const configFile = path.join(this.dataDir, 'status-page-config.json');
+      if (fs.existsSync(configFile)) {
+        const fileContent = fs.readFileSync(configFile, 'utf-8');
+        const config = JSON.parse(fileContent);
+        this.statusConfig = { ...this.statusConfig, ...config };
+        console.log('📄 Loaded status page config');
+      }
+    } catch (error) {
+      console.error('❌ Error loading status config:', error);
+    }
+  }
+
+  private saveStatusConfig(): void {
+    try {
+      if (!fs.existsSync(this.dataDir)) {
+        fs.mkdirSync(this.dataDir, { recursive: true });
+      }
+
+      const configFile = path.join(this.dataDir, 'status-page-config.json');
+      fs.writeFileSync(configFile, JSON.stringify(this.statusConfig, null, 2));
+      console.log('💾 Saved status page config');
+    } catch (error) {
+      console.error('❌ Error saving status config:', error);
+    }
+  }
+
+  public getStatusPageConfig(): StatusPageConfig {
+    return { ...this.statusConfig };
+  }
+
+  public updateStatusPageConfig(config: Partial<StatusPageConfig>): StatusPageConfig {
+    this.statusConfig = { ...this.statusConfig, ...config };
+    this.saveStatusConfig();
+    return this.statusConfig;
   }
 }

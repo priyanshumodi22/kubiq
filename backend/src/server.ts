@@ -55,9 +55,12 @@ app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+import { publicStatusRouter } from './routes/publicStatus';
+
 // Public routes
 app.use(`${BACKEND_CONTEXT_PATH}/api/health`, healthRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/auth`, authRouter);
+app.use(`${BACKEND_CONTEXT_PATH}/api/public`, publicStatusRouter);
 
 // Protected routes (with optional Keycloak auth)
 app.use(`${BACKEND_CONTEXT_PATH}/api/services`, authMiddleware, servicesRouter);

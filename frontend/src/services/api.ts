@@ -94,10 +94,19 @@ class ApiClient {
     return response.data;
   }
 
-  async customCheck(service: string, endpoint: string) {
+  async customCheck(
+    service: string,
+    endpoint: string,
+    method?: string,
+    headers?: Record<string, string>,
+    body?: any
+  ) {
     const response = await this.client.post('/api/services/custom-check', {
       service,
       endpoint,
+      method,
+      headers,
+      body,
     });
     return response.data;
   }
@@ -126,6 +135,27 @@ class ApiClient {
   // Health endpoint
   async getHealth() {
     const response = await this.client.get('/api/health');
+    return response.data;
+  }
+
+  // Status Page (Admin)
+  async getStatusPageConfig() {
+    const response = await this.client.get('/api/services/status-page/config');
+    return response.data;
+  }
+
+  async updateStatusPageConfig(config: {
+    slug: string | null;
+    title: string;
+    refreshInterval: number;
+  }) {
+    const response = await this.client.put('/api/services/status-page/config', config);
+    return response.data;
+  }
+
+  // Public Status Page
+  async getPublicStatus(slug: string) {
+    const response = await this.client.get(`/api/public/status-page/${slug}`);
     return response.data;
   }
 }
