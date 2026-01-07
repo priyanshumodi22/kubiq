@@ -56,7 +56,14 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
 
   if (!isOpen) return null;
 
-  const publicUrl = slug ? `${window.location.origin}/status/${slug}` : null;
+  // Use BASE_URL from Vite config (e.g. "/" or "/kubiq/")
+  // Remove trailing slash from BASE_URL for display/usage consistency if needed, 
+  // but usually we want to construct: origin + base + "status/" + slug
+  const baseUrl = import.meta.env.BASE_URL;
+  // Ensure we don't end up with //status if base is /
+  const pathPrefix = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+
+  const publicUrl = slug ? `${window.location.origin}${pathPrefix}status/${slug}` : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -92,14 +99,14 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
                   URL Slug
                 </label>
                 <div className="flex items-center">
-                  <span className="text-text-dim text-sm mr-2 bg-bg-elevated px-2 py-2 rounded-l-lg border border-r-0 border-gray-700">
-                    /status/
+                  <span className="text-text-dim text-sm mr-2 bg-bg-elevated px-2 py-2 rounded-l-lg border border-r-0 border-gray-700 whitespace-nowrap">
+                    {pathPrefix}status/
                   </span>
                   <input
                     type="text"
                     value={slug}
                     onChange={(e) => setSlug(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-bg rounded-r-lg border border-gray-700 text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="flex-1 px-3 py-2 bg-bg rounded-r-lg border border-gray-700 text-text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary min-w-0"
                     placeholder="my-status-page"
                   />
                 </div>
