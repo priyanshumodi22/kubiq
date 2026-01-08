@@ -258,18 +258,18 @@ export default function StatusPage() {
           {data.services
              .filter(service => service.name.toLowerCase().includes(searchQuery.toLowerCase()))
              .map((service) => {
-               // Filter history to last 24 hours
-               const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000; 
-               const fullHistory = service.history.filter(h => h.timestamp > oneDayAgo);
+               // Filter history to last 6 hours
+               const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000; 
+               const fullHistory = service.history.filter(h => h.timestamp > sixHoursAgo);
                
-               // Calculate stats from full history (up to 24h)
+               // Calculate stats from full history (up to 6h)
                const downtimeCount = fullHistory.filter(h => !h.success).length;
                const uptime = fullHistory.length > 0 
                   ? (fullHistory.filter(h => h.success).length / fullHistory.length) * 100 
                   : 100;
 
                const isCritical = service.currentStatus !== 'healthy';
-               const isDegraded = !isCritical && uptime < 90; // If currently UP but historically bad (<90%)
+               const isDegraded = !isCritical && uptime < 90; 
                
                let statusLabel = 'NOMINAL';
                let statusColorClazz = 'text-success';
@@ -282,54 +282,46 @@ export default function StatusPage() {
                    statusColorClazz = 'text-warning'; 
                }
 
-               // Aggregation Logic for Visualization
-               // Divide timeline into 60 blocks (each represents ~24 mins if full 24h)
+               // Aggregation Logic for Visualization (6 Hour Window)
+               // Divide timeline into 60 blocks (each represents 6 minutes)
                const BARS = 60;
                const now = Date.now();
-               // We want fixed start time? No, relative to now is better for rolling window
-               // Bin size = 24h / 60 = 24 minutes per bar
-               const WINDOW = 24 * 60 * 60 * 1000;
+               const WINDOW = 6 * 60 * 60 * 1000;
                const binSize = WINDOW / BARS;
                const timelineStart = now - WINDOW;
 
                const aggregatedBars = [];
-               if (fullHistory.length === 0) {
-                   // Render empty line if no data
-                   aggregatedBars.push({ empty: true });
-               } else {
-                   for (let i = 0; i < BARS; i++) {
-                       const binStart = timelineStart + (i * binSize);
-                       const binEnd = binStart + binSize;
-                       // Find checks in this bin
-                       const checks = fullHistory.filter(h => h.timestamp >= binStart && h.timestamp < binEnd);
+               // Always generate 60 bars for consistent layout
+               for (let i = 0; i < BARS; i++) {
+                   const binStart = timelineStart + (i * binSize);
+                   const binEnd = binStart + binSize;
+                   // Find checks in this bin
+                   const checks = fullHistory.filter(h => h.timestamp >= binStart && h.timestamp < binEnd);
+                   
+                   if (checks.length === 0) {
+                       aggregatedBars.push({ 
+                           empty: true, 
+                           timestamp: binStart 
+                       });
+                   } else {
+                       // Analyze bin
+                       const failures = checks.filter(c => !c.success);
+                       const isFailure = failures.length > 0;
                        
-                       if (checks.length === 0) {
-                           // No checks in this specific 24min window?
-                           // If it's in the past (before data collection started), it's unknown/empty.
-                           // If it's effectively "now" but empty, handle gracefully.
-                           // For now, push nothing or a specific 'no-data' block?
-                           // To keep alignment, we push 'empty'.
-                           aggregatedBars.push({ 
-                               empty: true, 
-                               timestamp: binStart 
-                           });
-                       } else {
-                           // Analyze bin
-                           const failures = checks.filter(c => !c.success);
-                           const isFailure = failures.length > 0;
-                           const avgResponse = checks.reduce((a, b) => a + b.responseTime, 0) / checks.length;
-                           
-                           aggregatedBars.push({
-                               empty: false,
-                               success: !isFailure, // If ANY failure, mark bin as red
-                               count: checks.length,
-                               failureCount: failures.length,
-                               avgResponse,
-                               timestamp: binStart,
-                               // Use the last check in bin for detailed error if any
-                               lastError: failures.length > 0 ? failures[failures.length-1].status : null
-                           });
-                       }
+                       // Extract unique error codes
+                       const errorCodes = [...new Set(failures.map(f => f.status).filter(s => s > 0))];
+                       
+                       const avgResponse = checks.reduce((a, b) => a + b.responseTime, 0) / checks.length;
+                       
+                       aggregatedBars.push({
+                           empty: false,
+                           success: !isFailure,
+                           count: checks.length,
+                           failureCount: failures.length,
+                           avgResponse,
+                           timestamp: binStart,
+                           errorCodes
+                       });
                    }
                }
                
@@ -386,7 +378,12 @@ export default function StatusPage() {
                                                  </span>
                                              ) : (
                                                  <span className="flex items-center gap-2">
-                                                     Downtime/Degraded
+                                                     Downtime
+                                                     {bar.errorCodes && bar.errorCodes.length > 0 && (
+                                                         <span className="text-text-dim font-normal border-l border-gray-700 pl-2 ml-1 text-[10px] font-mono">
+                                                             Error {bar.errorCodes.join(', ')}
+                                                         </span>
+                                                     )}
                                                  </span>
                                              )}
                                           </div>
@@ -407,7 +404,7 @@ export default function StatusPage() {
                        {/* Minimalist Footer Info */}
                        <div className="flex items-center justify-between text-[10px] font-medium text-text-dim mt-2">
                           <div>
-                            Past 24 Hours
+                            Past 6 Hours
                           </div>
                           
                           {downtimeCount > 0 && (

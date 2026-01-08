@@ -29,7 +29,7 @@ export class ServiceMonitor {
   };
 
   private constructor() {
-    this.maxHistorySize = parseInt(process.env.MAX_HISTORY_SIZE || '3000', 10);
+    this.maxHistorySize = parseInt(process.env.MAX_HISTORY_SIZE || '6000', 10);
     this.pollInterval = parseInt(process.env.POLL_INTERVAL || '30000', 10);
     this.requestTimeout = parseInt(process.env.HEALTH_CHECK_TIMEOUT || '5000', 10);
     this.persistenceEnabled = process.env.ENABLE_PERSISTENCE === 'true';
