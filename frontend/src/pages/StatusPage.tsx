@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Settings, RefreshCw, AlertCircle, Clock } from 'lucide-react';
+import { Settings, RefreshCw, AlertCircle, Clock, CheckCircle, AlertTriangle, XCircle, Share2, Check } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Layout from '../components/Layout';
@@ -39,6 +39,13 @@ export default function StatusPage() {
   const [editInterval, setEditInterval] = useState(300);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const fetchData = useCallback(async () => {
     if (!slug) return;
@@ -159,6 +166,13 @@ export default function StatusPage() {
             </div>
             
             <div className="flex items-center gap-2">
+              <button
+                 onClick={handleShare}
+                 className="p-2 text-text-dim hover:text-primary hover:bg-bg-elevated rounded-lg transition-colors border border-transparent hover:border-gray-700 relative"
+                 title="Copy Link"
+              >
+                 {copied ? <Check className="w-5 h-5 text-success" /> : <Share2 className="w-5 h-5" />}
+              </button>
               {isAuthenticated && (
                 <button
                   onClick={handleEditOpen}
@@ -180,6 +194,52 @@ export default function StatusPage() {
           </div>
         </div>
 
+        {/* Overall Status Banner */}
+        {(() => {
+           const criticalCount = data.services.filter(s => s.currentStatus === 'unhealthy').length;
+           // Approximate calculation for banner degraded state (using raw checks if needed or just skip logic for perf)
+           // Let's stick to current status count for speed, or partial calc.
+           // A service requires detailed history loop for precise uptime. Let's do a quick calc.
+           const degradedCount = data.services.filter(s => {
+               if (s.currentStatus === 'unhealthy') return false;
+               const rec = s.history.slice(-120); // Last ~1 hour
+               const up = rec.length > 0 ? (rec.filter(x => x.success).length / rec.length) : 1;
+               return up < 0.9;
+           }).length;
+
+           if (criticalCount > 0) {
+               return (
+                  <div className="bg-error/10 border border-error/50 rounded-xl p-6 flex items-start gap-4">
+                      <XCircle className="w-8 h-8 text-error shrink-0" />
+                      <div>
+                          <h2 className="text-xl font-bold text-error">Major System Outage</h2>
+                          <p className="text-text-dim mt-1">Some systems are currently experiencing critical issues. Our team is investigating.</p>
+                      </div>
+                  </div>
+               );
+           } else if (degradedCount > 0) {
+               return (
+                  <div className="bg-warning/10 border border-warning/50 rounded-xl p-6 flex items-start gap-4">
+                      <AlertTriangle className="w-8 h-8 text-warning shrink-0" />
+                      <div>
+                          <h2 className="text-xl font-bold text-warning">Partial System Outage</h2>
+                          <p className="text-text-dim mt-1">Some services are experiencing degraded performance.</p>
+                      </div>
+                  </div>
+               );
+           } else {
+               return (
+                  <div className="bg-success/10 border border-success/50 rounded-xl p-6 flex items-center gap-4">
+                      <CheckCircle className="w-8 h-8 text-success shrink-0" />
+                      <div>
+                          <h2 className="text-xl font-bold text-success">All Systems Operational</h2>
+                          <p className="text-text-dim mt-1">All services are functioning normally.</p>
+                      </div>
+                  </div>
+               );
+           }
+        })()}
+
         {/* Search and Filter */}
         <div className="flex items-center gap-4">
            <div className="relative flex-1">
@@ -198,18 +258,81 @@ export default function StatusPage() {
           {data.services
              .filter(service => service.name.toLowerCase().includes(searchQuery.toLowerCase()))
              .map((service) => {
-               // Filter history to last 1 hour
-               const oneHourAgo = Date.now() - 60 * 60 * 1000; 
-               // Ensure we have at least one check to avoid total collision
-               const recentHistory = service.history.filter(h => h.timestamp > oneHourAgo);
+               // Filter history to last 24 hours
+               const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000; 
+               const fullHistory = service.history.filter(h => h.timestamp > oneDayAgo);
                
-               // Calculate downtime incidents for the footer label
-               const downtimeCount = recentHistory.filter(h => !h.success).length;
-
-               const uptime = recentHistory.length > 0 
-                  ? (recentHistory.filter(h => h.success).length / recentHistory.length) * 100 
+               // Calculate stats from full history (up to 24h)
+               const downtimeCount = fullHistory.filter(h => !h.success).length;
+               const uptime = fullHistory.length > 0 
+                  ? (fullHistory.filter(h => h.success).length / fullHistory.length) * 100 
                   : 100;
 
+               const isCritical = service.currentStatus !== 'healthy';
+               const isDegraded = !isCritical && uptime < 90; // If currently UP but historically bad (<90%)
+               
+               let statusLabel = 'NOMINAL';
+               let statusColorClazz = 'text-success';
+               
+               if (isCritical) {
+                   statusLabel = 'CRITICAL';
+                   statusColorClazz = 'text-error';
+               } else if (isDegraded) {
+                   statusLabel = 'DEGRADED';
+                   statusColorClazz = 'text-warning'; 
+               }
+
+               // Aggregation Logic for Visualization
+               // Divide timeline into 60 blocks (each represents ~24 mins if full 24h)
+               const BARS = 60;
+               const now = Date.now();
+               // We want fixed start time? No, relative to now is better for rolling window
+               // Bin size = 24h / 60 = 24 minutes per bar
+               const WINDOW = 24 * 60 * 60 * 1000;
+               const binSize = WINDOW / BARS;
+               const timelineStart = now - WINDOW;
+
+               const aggregatedBars = [];
+               if (fullHistory.length === 0) {
+                   // Render empty line if no data
+                   aggregatedBars.push({ empty: true });
+               } else {
+                   for (let i = 0; i < BARS; i++) {
+                       const binStart = timelineStart + (i * binSize);
+                       const binEnd = binStart + binSize;
+                       // Find checks in this bin
+                       const checks = fullHistory.filter(h => h.timestamp >= binStart && h.timestamp < binEnd);
+                       
+                       if (checks.length === 0) {
+                           // No checks in this specific 24min window?
+                           // If it's in the past (before data collection started), it's unknown/empty.
+                           // If it's effectively "now" but empty, handle gracefully.
+                           // For now, push nothing or a specific 'no-data' block?
+                           // To keep alignment, we push 'empty'.
+                           aggregatedBars.push({ 
+                               empty: true, 
+                               timestamp: binStart 
+                           });
+                       } else {
+                           // Analyze bin
+                           const failures = checks.filter(c => !c.success);
+                           const isFailure = failures.length > 0;
+                           const avgResponse = checks.reduce((a, b) => a + b.responseTime, 0) / checks.length;
+                           
+                           aggregatedBars.push({
+                               empty: false,
+                               success: !isFailure, // If ANY failure, mark bin as red
+                               count: checks.length,
+                               failureCount: failures.length,
+                               avgResponse,
+                               timestamp: binStart,
+                               // Use the last check in bin for detailed error if any
+                               lastError: failures.length > 0 ? failures[failures.length-1].status : null
+                           });
+                       }
+                   }
+               }
+               
                return (
                   <div key={service.name} className="bg-bg-elevated rounded-xl p-4 border border-gray-800 hover:border-gray-700 transition-colors shadow-lg">
                     {/* Header: Name + Uptime and Status Badge */}
@@ -222,10 +345,8 @@ export default function StatusPage() {
                            {uptime.toFixed(1)}%
                         </span>
                       </div>
-                      <div className={`text-xs font-bold uppercase tracking-wider ${
-                           service.currentStatus === 'healthy' ? 'text-success' : 'text-error'
-                       }`}>
-                           {service.currentStatus === 'healthy' ? 'NOMINAL' : 'CRITICAL'}
+                      <div className={`text-xs font-bold uppercase tracking-wider ${statusColorClazz}`}>
+                           {statusLabel}
                       </div>
                     </div>
 
@@ -233,53 +354,73 @@ export default function StatusPage() {
                     <div className="w-full relative py-1">
                        {/* Container for the line segments */}
                        <div className="flex items-center w-full h-3 gap-[2px]">
-                           {recentHistory.map((check, idx) => (
-                              <div key={idx} className="group relative flex-1 h-full flex items-center">
-                                 {/* The Line Segment */}
-                                 <div 
-                                    className={`w-full rounded-full transition-all duration-300 ${
-                                       check.success 
-                                          ? 'h-[2px] bg-success' 
-                                          : 'h-2.5 bg-error shadow-[0_0_8px_rgba(239,68,68,0.6)]'
-                                    }`}
-                                 />
-                                 
-                                 {/* Tooltip on Hover */}
-                                 <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 hidden group-hover:block z-20 whitespace-nowrap pointer-events-none">
-                                    <div className="bg-gray-900/95 backdrop-blur text-xs text-text border border-gray-700 rounded-lg px-3 py-2 shadow-xl transform transition-all">
-                                       <div className={`font-bold mb-1 flex items-center gap-2 ${check.success ? 'text-success' : 'text-error'}`}>
-                                          <div className={`w-1.5 h-1.5 rounded-full ${check.success ? 'bg-success' : 'bg-error'}`}></div>
-                                          {uptime.toFixed(1)}% Uptime
+                           {aggregatedBars.map((bar, idx) => {
+                               if (bar.empty) {
+                                   return (
+                                       <div key={idx} className="flex-1 h-[2px] bg-gray-800/50 rounded-full" />
+                                   );
+                               }
+                               return (
+                                  <div key={idx} className="group relative flex-1 h-full flex items-center">
+                                     {/* The Line Segment */}
+                                     {/* If 24h view, bars are small. */}
+                                     <div 
+                                        className={`w-full rounded-full transition-all duration-300 ${
+                                           bar.success 
+                                              ? 'h-[2px] bg-success' 
+                                              : 'h-2.5 bg-error shadow-[0_0_8px_rgba(239,68,68,0.6)]'
+                                        }`}
+                                     />
+                                     
+                                     {/* Tooltip on Hover */}
+                                     <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 hidden group-hover:block z-20 whitespace-nowrap pointer-events-none">
+                                        <div className="bg-gray-900/95 backdrop-blur text-xs text-text border border-gray-700 rounded-lg px-3 py-2 shadow-xl transform transition-all">
+                                          <div className={`font-bold mb-1 flex items-center gap-2 ${bar.success ? 'text-success' : 'text-error'}`}>
+                                             <div className={`w-1.5 h-1.5 rounded-full ${bar.success ? 'bg-success' : 'bg-error'}`}></div>
+                                             {bar.success ? (
+                                                 <span className="flex items-center gap-2">
+                                                     Operational
+                                                     <span className="text-text-dim font-normal border-l border-gray-700 pl-2 ml-1 text-[10px] font-mono">
+                                                         ~{Math.round(bar.avgResponse!)}ms
+                                                     </span>
+                                                 </span>
+                                             ) : (
+                                                 <span className="flex items-center gap-2">
+                                                     Downtime/Degraded
+                                                 </span>
+                                             )}
+                                          </div>
+                                          <div className="text-text-dim font-mono mb-0 text-[10px] uppercase tracking-wider">
+                                             {new Date(bar.timestamp!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                             {' - '}
+                                             {new Date(bar.timestamp! + binSize).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                          </div>
                                        </div>
-                                       <div className="text-text-dim font-mono mb-0 text-[10px] uppercase tracking-wider">
-                                          {new Date(check.timestamp).toLocaleDateString()} • {new Date(check.timestamp).toLocaleTimeString()}
-                                       </div>
+                                       {/* Arrow */}
+                                       <div className="w-2 h-2 bg-gray-900 border-r border-b border-gray-700 transform rotate-45 absolute -bottom-1 left-1/2 -translate-x-1/2"></div>
                                     </div>
-                                    {/* Arrow */}
-                                    <div className="w-2 h-2 bg-gray-900 border-r border-b border-gray-700 transform rotate-45 absolute -bottom-1 left-1/2 -translate-x-1/2"></div>
                                  </div>
-                              </div>
-                           ))}
-                           {recentHistory.length === 0 && (
-                              <div className="w-full h-[2px] bg-gray-800 rounded-full flex items-center justify-center">
-                              </div>
-                           )}
+                              );
+                           })}
                        </div>
                        
                        {/* Minimalist Footer Info */}
                        <div className="flex items-center justify-between text-[10px] font-medium text-text-dim mt-2">
                           <div>
-                            Last 1 hr
+                            Past 24 Hours
                           </div>
                           
                           {downtimeCount > 0 && (
                             <div className="flex items-center gap-1.5 text-text-dim">
                                <AlertCircle className="w-3 h-3 text-error" />
-                               <span>{downtimeCount} Incidents reported</span>
+                               <span>{downtimeCount} checks failed</span>
                             </div>
                           )}
                           {downtimeCount === 0 && (
-                            <div className="opacity-0">Placeholder</div>
+                            <div className="flex items-center gap-1.5 text-success/80">
+                               <CheckCircle className="w-3 h-3" />
+                               <span>100% Uptime</span>
+                            </div>
                           )}
                        </div>
                     </div>
