@@ -258,9 +258,9 @@ export default function StatusPage() {
           {data.services
              .filter(service => service.name.toLowerCase().includes(searchQuery.toLowerCase()))
              .map((service) => {
-               // Filter history to last 6 hours
-               const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000; 
-               const fullHistory = service.history.filter(h => h.timestamp > sixHoursAgo);
+               // Filter history to last 1 hour
+               const oneHourAgo = Date.now() - 60 * 60 * 1000; 
+               const fullHistory = service.history.filter(h => h.timestamp > oneHourAgo);
                
                // Calculate stats from full history (up to 6h)
                const downtimeCount = fullHistory.filter(h => !h.success).length;
@@ -282,11 +282,11 @@ export default function StatusPage() {
                    statusColorClazz = 'text-warning'; 
                }
 
-               // Aggregation Logic for Visualization (6 Hour Window)
-               // Divide timeline into 60 blocks (each represents 6 minutes)
+               // Aggregation Logic for Visualization (1 Hour Window)
+               // Divide timeline into 60 blocks (each represents 1 minute)
                const BARS = 60;
                const now = Date.now();
-               const WINDOW = 6 * 60 * 60 * 1000;
+               const WINDOW = 60 * 60 * 1000;
                const binSize = WINDOW / BARS;
                const timelineStart = now - WINDOW;
 
@@ -404,7 +404,7 @@ export default function StatusPage() {
                        {/* Minimalist Footer Info */}
                        <div className="flex items-center justify-between text-[10px] font-medium text-text-dim mt-2">
                           <div>
-                            Past 6 Hours
+                            Past 1 Hour
                           </div>
                           
                           {downtimeCount > 0 && (
