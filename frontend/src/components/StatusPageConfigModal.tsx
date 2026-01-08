@@ -56,12 +56,22 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
 
   if (!isOpen) return null;
 
-  // Use BASE_URL from Vite config (e.g. "/" or "/kubiq/")
-  // Remove trailing slash from BASE_URL for display/usage consistency if needed, 
-  // but usually we want to construct: origin + base + "status/" + slug
-  const baseUrl = import.meta.env.BASE_URL;
-  // Ensure we don't end up with //status if base is /
-  const pathPrefix = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  // Dynamic base URL detection to handle deployment inconsistencies
+  // We try to detect the context path from the current URL if possible
+  let pathPrefix = import.meta.env.BASE_URL;
+  if (!pathPrefix.endsWith('/')) pathPrefix += '/';
+
+  // If we are on the dashboard, we can accurately determine the prefix
+  // independent of build-time constants (which might differ in some setups)
+  const currentPath = window.location.pathname;
+  if (currentPath.includes('/dashboard')) {
+      // Extract everything before /dashboard
+      const prefix = currentPath.substring(0, currentPath.indexOf('/dashboard'));
+      // Normalize to ensure trailing slash
+      pathPrefix = prefix.endsWith('/') ? prefix : `${prefix}/`;
+      // Handle the case where prefix might be empty string (root)
+      if (pathPrefix === '') pathPrefix = '/';
+  }
 
   const publicUrl = slug ? `${window.location.origin}${pathPrefix}status/${slug}` : null;
 
