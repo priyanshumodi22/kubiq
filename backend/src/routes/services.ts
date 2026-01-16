@@ -97,7 +97,7 @@ router.get('/stream', async (req: Request, res: Response) => {
 router.get('/:name', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name } = req.params;
-    const service = monitor.getService(name);
+    const service = monitor.getServiceByName(name as string);
 
     if (!service) {
       return res.status(404).json({
@@ -118,7 +118,7 @@ router.get('/:name/history', async (req: Request, res: Response, next: NextFunct
     const { name } = req.params;
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
 
-    const service = monitor.getService(name);
+    const service = monitor.getServiceByName(name as string);
     if (!service) {
       return res.status(404).json({
         error: 'Not Found',
@@ -126,7 +126,7 @@ router.get('/:name/history', async (req: Request, res: Response, next: NextFunct
       });
     }
 
-    const history = monitor.getServiceHistory(name, limit);
+    const history = await monitor.getServiceHistory(name as string, limit);
     res.json({
       name,
       history,
@@ -142,7 +142,7 @@ router.post('/:name/check', async (req: Request, res: Response, next: NextFuncti
   try {
     const { name } = req.params;
 
-    const service = monitor.getService(name);
+    const service = monitor.getServiceByName(name as string);
     if (!service) {
       return res.status(404).json({
         error: 'Not Found',
@@ -150,7 +150,7 @@ router.post('/:name/check', async (req: Request, res: Response, next: NextFuncti
       });
     }
 
-    const result = await monitor.checkServiceHealth(name);
+    const result = await monitor.checkServiceHealth(name as string);
     res.json({
       name,
       result,
@@ -209,7 +209,7 @@ router.post(
         });
       }
 
-      const newService = monitor.addService(name, endpoint, headers);
+      const newService = await monitor.addService({ name, endpoint, headers });
       res.status(201).json({
         message: 'Service created successfully',
         service: newService,
@@ -242,7 +242,7 @@ router.put(
         });
       }
 
-      const updatedService = monitor.updateService(name, endpoint, headers);
+      const updatedService = await monitor.updateService(name as string, { endpoint, headers });
       res.json({
         message: 'Service updated successfully',
         service: updatedService,
@@ -267,7 +267,7 @@ router.delete(
     try {
       const { name } = req.params;
 
-      monitor.deleteService(name);
+      await monitor.deleteService(name as string);
       res.json({
         message: `Service '${name}' deleted successfully`,
       });
@@ -300,7 +300,7 @@ router.put(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { slug, title, refreshInterval } = req.body;
-      const config = monitor.updateStatusPageConfig({ slug, title, refreshInterval });
+      const config = await monitor.updateStatusPageConfig({ slug, dashboardTitle: title, refreshInterval });
       res.json(config);
     } catch (error) {
       next(error);

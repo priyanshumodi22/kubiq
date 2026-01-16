@@ -249,11 +249,11 @@ export default function Dashboard() {
 
         {/* Services Grid */}
         {filteredServices.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-12 animate-scale-up">
             <p className="text-sm sm:text-base text-text-dim">No services found</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 animate-scale-up">
             {filteredServices.map((service) => (
               <ServiceCard
                 key={service.name}

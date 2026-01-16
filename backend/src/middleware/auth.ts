@@ -17,32 +17,57 @@ const keycloakConfig: KeycloakConfig = {
 // Cache for validated tokens (in production, use Redis or similar)
 const tokenCache = new Map<string, { exp: number; user: any }>();
 
+import jwt from 'jsonwebtoken';
+
+// ... config ...
+
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  // Skip auth if not enabled
+  // Check Authorization header first, then query parameter
+  const authHeader = req.headers.authorization;
+  const queryToken = req.query.token as string;
+
+  let token: string | undefined;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7);
+  } else if (queryToken) {
+    token = queryToken;
+  }
+
+  if (!token) {
+    // If auth is disabled completely? No, logic says skip if not enabled. 
+    // But now we have TWO providers.
+    // If Keycloak disabled AND Native disabled (implied?), then skip?
+    // Let's assume protection is required if middleware is used.
+    if (!keycloakConfig.enabled && process.env.AUTH_PROVIDER !== 'kubiq') {
+        return next();
+    }
+    return res.status(401).json({
+      error: 'Unauthorized',
+      message: 'No valid authorization token provided',
+    });
+  }
+
+  // 1. Try Native Auth (JWT Verify)
+  try {
+      const secret = process.env.JWT_SECRET;
+      if (secret) {
+          const decoded = jwt.verify(token, secret) as any;
+          if (decoded && decoded.type === 'native') {
+              req.user = decoded; // { sub, preferred_username, roles, type }
+              return next();
+          }
+      }
+  } catch (err) {
+      // Ignore error, try Keycloak next
+  }
+
+  // 2. Try Keycloak (Existing logic)
   if (!keycloakConfig.enabled) {
-    return next();
+      return res.status(401).json({ message: 'Native auth failed and Keycloak disabled' });
   }
 
   try {
-    // Check Authorization header first, then query parameter (for SSE)
-    const authHeader = req.headers.authorization;
-    const queryToken = req.query.token as string;
-
-    let token: string | undefined;
-
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.substring(7);
-    } else if (queryToken) {
-      token = queryToken;
-    }
-
-    if (!token) {
-      return res.status(401).json({
-        error: 'Unauthorized',
-        message: 'No valid authorization token provided',
-      });
-    }
-
     // Check cache first
     const cached = tokenCache.get(token);
     if (cached && cached.exp > Date.now() / 1000) {
@@ -50,9 +75,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
       return next();
     }
 
-    // Decode JWT token (without verification for now - Keycloak validates on frontend)
-    // In production, you should verify the signature with Keycloak's public key
-    try {
+    // Decode (Keycloak)
       const tokenParts = token.split('.');
       if (tokenParts.length !== 3) {
         throw new Error('Invalid token format');
@@ -90,6 +113,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
         given_name: payload.given_name,
         family_name: payload.family_name,
         roles: [...new Set(roles)], // Remove duplicates
+        type: 'keycloak'
       };
 
       // Cache the validated token
@@ -101,13 +125,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
       // Attach user info to request
       req.user = enrichedUser;
       next();
-    } catch (decodeError) {
-      console.error('Token decode error:', decodeError);
-      return res.status(401).json({
-        error: 'Unauthorized',
-        message: 'Invalid token format',
-      });
-    }
+
   } catch (error) {
     console.error('Auth error:', error);
     res.status(401).json({
@@ -159,3 +177,5 @@ declare global {
     }
   }
 }
+
+export const requireAuth = authMiddleware;

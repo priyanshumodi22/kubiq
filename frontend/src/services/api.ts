@@ -62,9 +62,66 @@ class ApiClient {
     return response.data;
   }
 
-  async getCurrentUser() {
-    const response = await this.client.get('/api/auth/user');
+  async login(credentials: any) {
+    const response = await this.client.post('/api/auth/login', credentials);
     return response.data;
+  }
+
+  async register(data: any) {
+    const response = await this.client.post('/api/auth/register', data);
+    return response.data;
+  }
+
+  async getCurrentUser() {
+    const response = await this.client.get('/api/auth/me'); // Updated endpoint
+    return response.data;
+  }
+
+  // WebAuthn / Biometrics
+  async registerPasskeyOptions() {
+    const response = await this.client.get('/api/auth/webauthn/register/options');
+    return response.data;
+  }
+
+  async registerPasskeyVerify(data: any) {
+    const response = await this.client.post('/api/auth/webauthn/register/verify', data);
+    return response.data;
+  }
+
+  async loginPasskeyOptions(username: string) {
+    const response = await this.client.post('/api/auth/webauthn/login/options', { username });
+    return response.data;
+  }
+
+  async loginPasskeyVerify(username: string, data: any) {
+    const response = await this.client.post('/api/auth/webauthn/login/verify', { username, ...data });
+    return response.data;
+  }
+
+  // Profile Management
+  async updateProfile(data: { username: string; email: string }) {
+      const response = await this.client.put('/api/auth/profile', data);
+      return response.data;
+  }
+
+  async changePassword(data: any) {
+      const response = await this.client.put('/api/auth/change-password', data);
+      return response.data;
+  }
+
+  async getPasskeys() {
+      const response = await this.client.get('/api/auth/webauthn/passkeys');
+      return response.data;
+  }
+
+  async renamePasskey(id: string, name: string) {
+      const response = await this.client.put(`/api/auth/webauthn/passkeys/${id}`, { name });
+      return response.data;
+  }
+
+  async deletePasskey(id: string) {
+      const response = await this.client.delete(`/api/auth/webauthn/passkeys/${id}`);
+      return response.data;
   }
 
   // Service endpoints
@@ -157,6 +214,53 @@ class ApiClient {
   async getPublicStatus(slug: string) {
     const response = await this.client.get(`/api/public/status-page/${slug}`);
     return response.data;
+  }
+
+  // Notification endpoints
+  async getNotificationChannels() {
+    const response = await this.client.get('/api/notifications');
+    return response.data;
+  }
+
+  async createNotificationChannel(data: any) {
+    const response = await this.client.post('/api/notifications', data);
+    return response.data;
+  }
+
+  async updateNotificationChannel(id: string, data: any) {
+    const response = await this.client.put(`/api/notifications/${id}`, data);
+    return response.data;
+  }
+
+  async deleteNotificationChannel(id: string) {
+    const response = await this.client.delete(`/api/notifications/${id}`);
+    return response.data;
+  }
+
+  async testNotificationChannel(id: string) {
+    const response = await this.client.post(`/api/notifications/${id}/test`);
+    return response.data;
+  }
+
+  // Admin User Management
+  async getUsers() {
+      const response = await this.client.get('/api/users');
+      return response.data;
+  }
+
+  async updateUserRole(userId: string, role: string) {
+      const response = await this.client.put(`/api/users/${userId}/role`, { role });
+      return response.data;
+  }
+
+  async updateUserStatus(userId: string, enabled: boolean) {
+      const response = await this.client.put(`/api/users/${userId}/status`, { enabled });
+      return response.data;
+  }
+
+  async deleteUser(userId: string) {
+      const response = await this.client.delete(`/api/users/${userId}`);
+      return response.data;
   }
 }
 

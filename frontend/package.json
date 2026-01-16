@@ -5,7 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
@@ -14,6 +14,7 @@
     "lint:fix": "eslint . --ext ts,tsx --fix"
   },
   "dependencies": {
+    "@simplewebauthn/browser": "^13.2.2",
     "axios": "^1.13.2",
     "clsx": "^2.1.1",
     "keycloak-js": "^26.2.2",

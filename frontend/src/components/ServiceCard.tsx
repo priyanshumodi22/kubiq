@@ -20,7 +20,7 @@ export default function ServiceCard({
     healthy: { color: 'bg-green-500', label: 'Healthy' },
     unhealthy: { color: 'bg-red-500', label: 'Unhealthy' },
     unknown: { color: 'bg-yellow-500', label: 'Unknown' },
-  }[service.currentStatus];
+  }[service.currentStatus] || { color: 'bg-yellow-500', label: 'Unknown' };
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -35,7 +35,7 @@ export default function ServiceCard({
   return (
     <div
       onClick={onClick}
-      className="relative p-4 rounded-lg border border-gray-700 bg-bg-surface cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-lg hover:shadow-primary/10"
+      className="relative p-4 rounded-lg border border-gray-700 bg-bg-surface cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.02]"
     >
       {/* Status Indicator Dot */}
       <div className="absolute top-3 right-3">

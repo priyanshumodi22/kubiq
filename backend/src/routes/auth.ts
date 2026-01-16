@@ -1,12 +1,15 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../middleware/auth';
 
+import { AuthController } from '../controllers/AuthController';
+
 const router = Router();
 
 // GET /api/auth/config - Get Keycloak config for frontend
 router.get('/config', (req: Request, res: Response) => {
   const config = {
     enabled: process.env.KEYCLOAK_ENABLED === 'true',
+    nativeEnabled: true, // Always enable native for now, or flag?
     realm: process.env.KEYCLOAK_REALM || 'kubiq',
     url: process.env.KEYCLOAK_URL || 'http://localhost:8080/auth',
     clientId: process.env.KEYCLOAK_CLIENT_ID || 'kubiq-dashboard',
@@ -15,7 +18,21 @@ router.get('/config', (req: Request, res: Response) => {
   res.json(config);
 });
 
-// GET /api/auth/user - Get current user info
+// Native Auth Routes
+router.post('/login', AuthController.login);
+router.post('/register', AuthController.register);
+
+// GET /api/auth/me - Get current user info (Unified)
+router.get('/me', authMiddleware, AuthController.me);
+
+// PUT /api/auth/profile - Update user profile
+router.put('/profile', authMiddleware, AuthController.updateProfile);
+
+// PUT /api/auth/change-password - Change user password
+router.put('/change-password', authMiddleware, AuthController.changePassword);
+
+// GET /api/auth/user - Legacy endpoint (kept for backward compat or unified?)
+// Redirecting to use same logic or keeping simple
 router.get('/user', authMiddleware, (req: Request, res: Response) => {
   res.json({
     user: req.user || null,
@@ -23,31 +40,10 @@ router.get('/user', authMiddleware, (req: Request, res: Response) => {
   });
 });
 
-// GET /api/auth/me - Get current user info with roles
-router.get('/me', authMiddleware, (req: Request, res: Response) => {
-  const user = req.user as any;
-
-  if (!user) {
-    return res.status(401).json({
-      error: 'Unauthorized',
-      message: 'Not authenticated',
-    });
-  }
-
-  res.json({
-    username: user.preferred_username || user.sub,
-    email: user.email,
-    name: user.name,
-    roles: user.roles || [],
-    authenticated: true,
-  });
-});
-
 // POST /api/auth/logout - Logout endpoint
 router.post('/logout', (req: Request, res: Response) => {
-  // In a stateless JWT setup, logout is handled client-side
-  // Just return success
-  res.json({ success: true });
+    // Client side clears token.
+    res.json({ success: true });
 });
 
 export { router as authRouter };

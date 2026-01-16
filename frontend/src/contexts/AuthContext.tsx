@@ -2,75 +2,59 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import Keycloak from 'keycloak-js';
 import { apiClient } from '../services/api';
 
-interface AuthContextType {
+export type AuthProviderType = 'keycloak' | 'native';
+
+export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
-  authEnabled: boolean;
+  authEnabled: boolean; // Keycloak enabled
+  nativeAuthEnabled: boolean; // Native auth enabled
+  provider: AuthProviderType | null;
   user: any | null;
   roles: string[];
-  login: () => void;
+  
+  // Actions
+  loginKeycloak: () => void;
+  loginNative: (credentials: any) => Promise<void>;
+  loginWithToken: (token: string, user: any) => void;
+  registerNative: (data: any) => Promise<void>;
   logout: () => void;
+  
+  // Helpers
   keycloak: Keycloak | null;
   hasRole: (role: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Global state - survives component remounts
+// Global state for singleton persistence across HMR
+// @ts-ignore
 let globalKeycloak: Keycloak | null = null;
-let globalAuthEnabled = false;
-let globalUser: any | null = null;
-let globalRoles: string[] = [];
-let globalIsAuthenticated = false;
-let initPromise: Promise<void> | null = null;
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(globalIsAuthenticated);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [authEnabled, setAuthEnabled] = useState(globalAuthEnabled);
-  const [user, setUser] = useState<any | null>(globalUser);
-  const [roles, setRoles] = useState<string[]>(globalRoles);
-  const [keycloak, setKeycloak] = useState<Keycloak | null>(globalKeycloak);
+  const [authEnabled, setAuthEnabled] = useState(false);
+  const [nativeAuthEnabled, setNativeAuthEnabled] = useState(false);
+  const [provider, setProvider] = useState<AuthProviderType | null>(null);
+  const [user, setUser] = useState<any | null>(null);
+  const [roles, setRoles] = useState<string[]>([]);
+  const [keycloak, setKeycloak] = useState<Keycloak | null>(null);
 
   useEffect(() => {
-    const initAuth = async () => {
-      // If already initialized, sync state and return immediately
-      if (globalKeycloak !== null) {
-        setKeycloak(globalKeycloak);
-        setIsAuthenticated(globalIsAuthenticated);
-        setAuthEnabled(globalAuthEnabled);
-        setUser(globalUser);
-        setRoles(globalRoles);
-        setIsLoading(false);
-        return;
-      }
+    initAuth();
+  }, []);
 
-      // If currently initializing, wait for it
-      if (initPromise !== null) {
-        await initPromise;
-        setKeycloak(globalKeycloak);
-        setIsAuthenticated(globalIsAuthenticated);
-        setAuthEnabled(globalAuthEnabled);
-        setUser(globalUser);
-        setRoles(globalRoles);
-        setIsLoading(false);
-        return;
-      }
+  const initAuth = async () => {
+    try {
+      // 1. Get Config
+      const config = await apiClient.getAuthConfig();
+      setAuthEnabled(config.enabled);
+      setNativeAuthEnabled(config.nativeEnabled !== false); // Default true if undefined
 
-      // Create initialization promise
-      initPromise = (async () => {
-        try {
-          // Fetch auth config from backend
-          const config = await apiClient.getAuthConfig();
-          globalAuthEnabled = config.enabled;
-          setAuthEnabled(config.enabled);
-
-          if (!config.enabled) {
-            setIsLoading(false);
-            return;
-          }
-
-          // Initialize Keycloak
+      // 2. Try Keycloak (if enabled)
+      let kcAuthenticated = false;
+      if (config.enabled) {
           const kc = new Keycloak({
             url: config.url,
             realm: config.realm,
@@ -83,91 +67,137 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               : import.meta.env.BASE_URL + '/'
           }silent-check-sso.html`;
 
-          const authenticated = await kc.init({
+          kcAuthenticated = await kc.init({
             onLoad: 'check-sso',
             silentCheckSsoRedirectUri: silentCheckSsoUrl,
             pkceMethod: 'S256',
             checkLoginIframe: false,
           });
 
-          globalKeycloak = kc;
-          globalIsAuthenticated = authenticated;
-          setKeycloak(kc);
-          setIsAuthenticated(authenticated);
-
-          if (authenticated && kc.token) {
-            apiClient.setToken(kc.token);
-
-            const tokenParsed = kc.tokenParsed as any;
-
-            globalUser = {
-              id: tokenParsed?.sub,
-              username: tokenParsed?.preferred_username,
-              email: tokenParsed?.email,
-              firstName: tokenParsed?.given_name,
-              lastName: tokenParsed?.family_name,
-              name: tokenParsed?.name,
-            };
-            setUser(globalUser);
-
-            const extractedRoles: string[] = [];
-
-            if (tokenParsed?.realm_access?.roles) {
-              extractedRoles.push(...tokenParsed.realm_access.roles);
-            }
-
-            const clientId = config.clientId;
-            if (tokenParsed?.resource_access?.[clientId]?.roles) {
-              extractedRoles.push(...tokenParsed.resource_access[clientId].roles);
-            }
-
-            globalRoles = [...new Set(extractedRoles)];
-            setRoles(globalRoles);
-
-            // Setup token refresh
-            setInterval(() => {
-              kc.updateToken(70)
-                .then((refreshed) => {
-                  if (refreshed && kc.token) {
-                    apiClient.setToken(kc.token);
-                  }
-                })
-                .catch(() => {
-                  console.error('Failed to refresh token');
-                });
-            }, 60000);
+          if (kcAuthenticated) {
+             handleKeycloakSuccess(kc);
+             setIsLoading(false);
+             return; 
           }
-        } catch (error) {
-          console.error('🔐 [AuthContext] ❌ Auth initialization error:', error);
-        } finally {
-          setIsLoading(false);
-        }
-      })();
+          
+          setKeycloak(kc); // Save instance even if not authenticated (for login())
+      }
 
-      await initPromise;
-    };
+      // 3. Try Native (if not Keycloak authenticated)
+      if (!kcAuthenticated && (config.nativeEnabled !== false)) {
+          const storedToken = localStorage.getItem('kubiq_token');
+          if (storedToken) {
+              apiClient.setToken(storedToken);
+              try {
+                  const currentUser = await apiClient.getCurrentUser();
+                  handleNativeSuccess(currentUser); // Fixed: removed token arg
+                  setIsLoading(false);
+                  return;
+              } catch (e) {
+                  console.warn('Native token invalid', e);
+                  localStorage.removeItem('kubiq_token');
+                  apiClient.clearToken();
+              }
+          }
+      }
 
-    initAuth();
-  }, []);
-
-  const login = () => {
-    if (keycloak) {
-      keycloak.login();
+    } catch (error) {
+       console.error('Auth initialization failed', error);
+    } finally {
+       setIsLoading(false);
     }
+  };
+
+  const handleKeycloakSuccess = (kc: Keycloak) => {
+      setKeycloak(kc);
+      setIsAuthenticated(true);
+      setProvider('keycloak');
+      apiClient.setToken(kc.token!);
+      
+      const tokenParsed = kc.tokenParsed as any;
+      const u = {
+          id: tokenParsed?.sub,
+          username: tokenParsed?.preferred_username,
+          email: tokenParsed?.email,
+          name: tokenParsed?.name,
+      };
+      setUser(u);
+
+      const r: string[] = [];
+       if (tokenParsed?.realm_access?.roles) r.push(...tokenParsed.realm_access.roles);
+       const clientId = kc.clientId;
+       if (clientId && tokenParsed?.resource_access?.[clientId]?.roles) {
+           r.push(...tokenParsed.resource_access[clientId].roles);
+       }
+       setRoles([...new Set(r)]);
+       
+       // Periodically refresh token
+       setInterval(() => {
+           kc.updateToken(70).then(refreshed => {
+               if (refreshed) apiClient.setToken(kc.token!);
+           });
+       }, 60000);
+  };
+
+  const handleNativeSuccess = (userData: any) => {
+      setIsAuthenticated(true);
+      setProvider('native');
+      setUser({
+          username: userData.username,
+          email: userData.email,
+          name: userData.name
+      });
+      const r: string[] = [];
+      if (userData.role) r.push(userData.role);
+      if (userData.roles && Array.isArray(userData.roles)) r.push(...userData.roles);
+      setRoles(r);
+      // Token is already set in apiClient before calling this
+  };
+
+  const loginKeycloak = () => {
+    if (keycloak) keycloak.login();
+  };
+
+  const loginNative = async (credentials: any) => {
+      const res = await apiClient.login(credentials);
+      if (res.token) {
+          localStorage.setItem('kubiq_token', res.token);
+          apiClient.setToken(res.token);
+          handleNativeSuccess(res.user);
+      }
+  };
+
+  const loginWithToken = (token: string, user: any) => {
+      localStorage.setItem('kubiq_token', token);
+      apiClient.setToken(token);
+      handleNativeSuccess(user);
+  };
+
+  const registerNative = async (data: any) => {
+      await apiClient.register(data);
+      // Auto-login after register? Or redirect?
+      // For now, let caller handle redirect to login
   };
 
   const logout = () => {
-    if (keycloak) {
-      // Redirect to base URL (e.g., /kubiq) after logout
-      keycloak.logout({
-        redirectUri: `${window.location.origin}${import.meta.env.BASE_URL}`,
-      });
+    if (provider === 'keycloak' && keycloak) {
+        keycloak.logout({
+            redirectUri: `${window.location.origin}${import.meta.env.BASE_URL}`,
+        });
+    } else {
+        // Native Logout
+        localStorage.removeItem('kubiq_token');
+        apiClient.clearToken();
+        setIsAuthenticated(false);
+        setUser(null);
+        setRoles([]);
+        setProvider(null);
+        // Reload to reset state fully or just redirect
+        window.location.href = '/'; 
     }
   };
 
-  const hasRole = (role: string): boolean => {
-    return roles.includes(role);
-  };
+  const hasRole = (role: string) => roles.includes(role);
 
   return (
     <AuthContext.Provider
@@ -175,9 +205,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated,
         isLoading,
         authEnabled,
+        nativeAuthEnabled,
+        provider,
         user,
         roles,
-        login,
+        loginKeycloak,
+        loginNative,
+        loginWithToken,
+        registerNative,
         logout,
         keycloak,
         hasRole,

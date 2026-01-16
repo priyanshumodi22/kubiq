@@ -1,18 +1,13 @@
 import axios, { AxiosError } from 'axios';
 import NodeCache from 'node-cache';
-import fs from 'fs';
-import path from 'path';
-import { ServiceConfig, HealthCheck, ServiceStatus } from '../types';
-
-export interface StatusPageConfig {
-  slug: string | null;
-  title: string;
-  refreshInterval: number;
-}
+import { ServiceConfig, HealthCheck, ServiceStatus, SystemConfig } from '../types';
+import { DatabaseFactory } from '../database/DatabaseFactory';
+import { IServiceRepository } from '../database/interfaces/IServiceRepository';
 
 export class ServiceMonitor {
   private static instance: ServiceMonitor;
   private services: Map<string, ServiceStatus> = new Map();
+  private repository!: IServiceRepository;
   private cache: NodeCache;
   private pollIntervals: Map<string, NodeJS.Timeout> = new Map();
   private isRunning: boolean = false;
@@ -22,9 +17,9 @@ export class ServiceMonitor {
   private readonly persistenceEnabled: boolean;
   private readonly dataDir: string;
   private persistenceInterval?: NodeJS.Timeout;
-  private statusConfig: StatusPageConfig = {
+  private statusConfig: SystemConfig = {
     slug: null,
-    title: 'System Status',
+    dashboardTitle: 'System Status',
     refreshInterval: 300,
   };
 
@@ -40,10 +35,8 @@ export class ServiceMonitor {
       stdTTL: 60, // 1 minute TTL for cached responses
       checkperiod: 120,
     });
-
-    this.loadServicesFromConfig();
-    this.loadPersistedData();
-    this.loadStatusConfig();
+    
+    // Config loading moved to initialize()
   }
 
   public static getInstance(): ServiceMonitor {
@@ -53,132 +46,36 @@ export class ServiceMonitor {
     return ServiceMonitor.instance;
   }
 
-  private loadServicesFromConfig(): void {
-    const configPath = process.env.SERVICES_CONFIG_PATH || '/etc/kubiq/services';
-
+  /**
+   * Initialize the monitor and database connection.
+   * MUST be called before start().
+   */
+  public async initialize(): Promise<void> {
     try {
-      // Auto-create config file if it doesn't exist
-      if (!fs.existsSync(configPath)) {
-        const configDir = path.dirname(configPath);
-        if (!fs.existsSync(configDir)) {
-          fs.mkdirSync(configDir, { recursive: true });
-        }
+      this.repository = await DatabaseFactory.getServiceRepository();
+      console.log('🔌 Database Repository Initialized');
 
-        // Create empty config file with comments
-        const initialContent = `# Kubiq Services Configuration
-# Format: service-name=endpoint-url
-# Example: backend-api=http://localhost:3001/health
-`;
-        fs.writeFileSync(configPath, initialContent, 'utf-8');
-        console.log(`📝 Created new services config at ${configPath}`);
-      }
-
-      const configData = fs.readFileSync(configPath, 'utf-8');
-      const lines = configData.split('\n').filter((line) => line.trim() && !line.startsWith('#'));
-
-      lines.forEach((line) => {
-        const [name, configValue] = line.split('=').map((s) => s.trim());
-        if (name && configValue) {
-          // Parse format: endpoint|Header1:Value1|Header2:Value2
-          const parts = configValue.split('|');
-          const endpoint = parts[0];
-          const headers: Record<string, string> = {};
-
-          // Parse headers if present (backward compatible - optional)
-          for (let i = 1; i < parts.length; i++) {
-            const colonIndex = parts[i].indexOf(':');
-            if (colonIndex > 0) {
-              const headerName = parts[i].substring(0, colonIndex).trim();
-              const headerValue = parts[i].substring(colonIndex + 1).trim();
-              if (headerName && headerValue) {
-                headers[headerName] = headerValue;
-              }
-            }
-          }
-
-          this.services.set(name, {
-            name,
-            endpoint,
-            headers: Object.keys(headers).length > 0 ? headers : undefined,
-            currentStatus: 'unknown',
-            history: [],
-          });
-        }
-      });
-
-      console.log(`📋 Loaded ${this.services.size} services from config`);
-
+      // Load initial state from repository
+      const services = await this.repository.getAllServices();
+      this.services.clear();
+      services.forEach(s => this.services.set(s.name, s));
+      
+      console.log(`📋 Loaded ${this.services.size} services from repository`);
+      
+      // Load System Config
+      this.statusConfig = await this.repository.getSystemConfig();
+      console.log(`⚙️  Loaded System Config (Title: ${this.statusConfig.dashboardTitle})`);
+      
       if (this.services.size === 0) {
-        console.log('⚠️  No services configured, add services via API');
+        console.log('⚠️  No services configured');
       }
     } catch (error) {
-      console.error('❌ Error loading services config:', error);
+      console.error('❌ Failed to initialize ServiceMonitor:', error);
+      throw error;
     }
   }
 
-  private loadDefaultServices(): void {
-    // Fallback default services for local development
-    const defaults: ServiceConfig[] = [
-      { name: 'example-service', endpoint: 'http://localhost:8080/health' },
-    ];
-
-    defaults.forEach((config) => {
-      this.services.set(config.name, {
-        name: config.name,
-        endpoint: config.endpoint,
-        currentStatus: 'unknown',
-        history: [],
-      });
-    });
-  }
-
-  private loadPersistedData(): void {
-    if (!this.persistenceEnabled) return;
-
-    try {
-      const dataFile = path.join(this.dataDir, 'kubiq-history.json');
-      if (fs.existsSync(dataFile)) {
-        const fileContent = fs.readFileSync(dataFile, 'utf-8').trim();
-
-        // Skip if file is empty
-        if (!fileContent) {
-          console.log('📁 Persisted data file is empty, starting fresh');
-          return;
-        }
-
-        const data = JSON.parse(fileContent);
-        data.forEach(([name, status]: [string, ServiceStatus]) => {
-          if (this.services.has(name)) {
-            const existing = this.services.get(name)!;
-            existing.history = status.history || [];
-            existing.lastCheck = status.lastCheck;
-            existing.currentStatus = status.currentStatus;
-            this.services.set(name, existing);
-          }
-        });
-        console.log('💾 Loaded persisted data');
-      }
-    } catch (error) {
-      console.error('❌ Error loading persisted data:', error);
-      console.log('📁 Starting with fresh data');
-    }
-  }
-
-  private persistData(): void {
-    if (!this.persistenceEnabled) return;
-
-    try {
-      if (!fs.existsSync(this.dataDir)) {
-        fs.mkdirSync(this.dataDir, { recursive: true });
-      }
-
-      const dataFile = path.join(this.dataDir, 'kubiq-history.json');
-      const data = Array.from(this.services.entries());
-      fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
-    } catch (error) {
-      console.error('❌ Error persisting data:', error);
-    }
-  }
+  // --- Core Monitoring Logic ---
 
   public async checkServiceHealth(serviceName: string): Promise<HealthCheck> {
     const service = this.services.get(serviceName);
@@ -191,175 +88,202 @@ export class ServiceMonitor {
     try {
       const response = await axios.get(service.endpoint, {
         timeout: this.requestTimeout,
-        maxRedirects: 0, // Don't follow redirects - just check if service responds
-        validateStatus: () => true, // Accept any status code
-        headers: service.headers || {}, // Apply custom headers if defined
+        maxRedirects: 0,
+        validateStatus: () => true,
+        headers: service.headers || {},
       });
 
       const responseTime = Date.now() - startTime;
-      const healthCheck: HealthCheck = {
+      const success = response.status >= 200 && response.status < 400;
+
+      const check: HealthCheck = {
         status: response.status,
         responseTime,
         timestamp: Date.now(),
-        success: [200, 202, 204, 301, 302, 303, 307, 308].includes(response.status), // Accept OK and standard redirects
-        data: response.data,
+        success,
+        error: success ? undefined : `Status Code: ${response.status}`,
       };
 
-      this.addHealthCheck(serviceName, healthCheck);
-      return healthCheck;
-    } catch (error) {
+      // Update Service State and Notifications
+      await this.updateServiceState(service, check);
+
+      return check;
+
+    } catch (error: any) {
       const responseTime = Date.now() - startTime;
-      const healthCheck: HealthCheck = {
+      const check: HealthCheck = {
         status: 0,
         responseTime,
         timestamp: Date.now(),
         success: false,
-        error: error instanceof AxiosError ? error.message : 'Unknown error',
+        error: error.message || 'Network Error',
       };
 
-      this.addHealthCheck(serviceName, healthCheck);
-      return healthCheck;
+      await this.updateServiceState(service, check);
+      return check;
     }
   }
 
-  private addHealthCheck(serviceName: string, check: HealthCheck): void {
-    const service = this.services.get(serviceName);
-    if (!service) return;
+  private async updateServiceState(service: ServiceStatus, check: HealthCheck): Promise<void> {
+    const oldStatus = service.currentStatus;
+    const newStatus = check.success ? 'healthy' : 'unhealthy';
+    const serviceName = service.name;
 
-    // Add to history with circular buffer (keep only maxHistorySize)
+    // Update local state
+    service.lastCheck = check;
+    service.currentStatus = newStatus;
     service.history.push(check);
     if (service.history.length > this.maxHistorySize) {
-      service.history.shift();
+        service.history.shift();
     }
-
-    // Update current status
-    service.lastCheck = check;
-    service.currentStatus = check.success ? 'healthy' : 'unhealthy';
-
-    // Calculate average response time
-    const recentChecks = service.history.slice(-20); // Last 20 checks
-    const validChecks = recentChecks.filter((c) => c.success);
-    if (validChecks.length > 0) {
-      service.averageResponseTime =
-        validChecks.reduce((sum, c) => sum + c.responseTime, 0) / validChecks.length;
+    this.updateStats(service);
+    
+    // Trigger notification if status changed (and it's not the first check/unknown)
+    if (oldStatus !== 'unknown' && oldStatus !== newStatus) {
+       // Dynamic require to avoid circular dependency if Manager imports Monitor
+       const NotificationManager = require('../services/NotificationManager').NotificationManager;
+       NotificationManager.getInstance().notifyStatusChange(
+          serviceName, 
+          newStatus, 
+          check.success ? undefined : (check.error || `Status Code: ${check.status}`)
+       );
     }
-
-    // Calculate uptime percentage
-    const successCount = service.history.filter((c) => c.success).length;
-    service.uptime = (successCount / service.history.length) * 100;
-
-    this.services.set(serviceName, service);
-
-    // Invalidate cache for this service
-    this.cache.del(`service:${serviceName}`);
-    this.cache.del('services:all');
-  }
-
-  private async pollService(serviceName: string): Promise<void> {
+    
+    // Persist check result via Repository
     try {
-      await this.checkServiceHealth(serviceName);
-    } catch (error) {
-      console.error(`Error polling ${serviceName}:`, error);
+        await this.repository.saveCheckResult(serviceName, check);
+    } catch (err) {
+        console.error(`Failed to persist check result for ${serviceName}`, err);
     }
   }
 
   public start(): void {
-    if (this.isRunning) {
-      console.warn('⚠️  ServiceMonitor is already running');
-      return;
-    }
-
+    if (this.isRunning) return;
     this.isRunning = true;
-    console.log('🚀 Starting ServiceMonitor...');
-
-    // Start polling for each service (staggered to avoid thundering herd)
-    let delay = 0;
-    this.services.forEach((service, name) => {
-      setTimeout(() => {
-        // Initial check
-        this.pollService(name);
-
-        // Set up interval for continuous polling
-        const interval = setInterval(() => {
-          this.pollService(name);
-        }, this.pollInterval);
-
-        this.pollIntervals.set(name, interval);
-      }, delay);
-
-      // Stagger by 1 second to distribute load
-      delay += 1000;
-    });
-
-    // Set up persistence interval
-    if (this.persistenceEnabled) {
-      const snapshotInterval = parseInt(process.env.SNAPSHOT_INTERVAL || '300000', 10);
-      this.persistenceInterval = setInterval(() => {
-        this.persistData();
-      }, snapshotInterval);
-    }
-
-    console.log(`✅ Monitoring ${this.services.size} services`);
+    
+    // Start polling all services
+    this.services.forEach(service => this.startPolling(service.name));
+    console.log('🚀 Service Monitoring Started');
   }
 
   public stop(): void {
     if (!this.isRunning) return;
-
-    console.log('🛑 Stopping ServiceMonitor...');
     this.isRunning = false;
-
-    // Clear all polling intervals
-    this.pollIntervals.forEach((interval) => clearInterval(interval));
+    
+    this.pollIntervals.forEach(interval => clearInterval(interval));
     this.pollIntervals.clear();
-
-    // Clear persistence interval
-    if (this.persistenceInterval) {
-      clearInterval(this.persistenceInterval);
+    
+    if (this.repository) {
+        this.repository.close();
     }
-
-    // Final data persistence
-    if (this.persistenceEnabled) {
-      this.persistData();
-    }
-
-    console.log('✅ ServiceMonitor stopped');
+    console.log('🛑 Service Monitoring Stopped');
   }
+
+  private startPolling(serviceName: string): void {
+    if (this.pollIntervals.has(serviceName)) return;
+
+    // Initial check
+    this.checkServiceHealth(serviceName).catch(console.error);
+
+    const interval = setInterval(() => {
+      this.checkServiceHealth(serviceName).catch(console.error);
+    }, this.pollInterval);
+
+    this.pollIntervals.set(serviceName, interval);
+  }
+
+  // --- CRUD Operations ---
 
   public getAllServices(): ServiceStatus[] {
-    // Check cache first
-    const cached = this.cache.get<ServiceStatus[]>('services:all');
-    if (cached) {
-      return cached;
-    }
-
-    const services = Array.from(this.services.values());
-    this.cache.set('services:all', services, 5); // Cache for 5 seconds
-    return services;
+    return Array.from(this.services.values());
   }
 
-  public getService(name: string): ServiceStatus | undefined {
-    // Check cache first
-    const cacheKey = `service:${name}`;
-    const cached = this.cache.get<ServiceStatus>(cacheKey);
-    if (cached) {
-      return cached;
-    }
-
-    const service = this.services.get(name);
-    if (service) {
-      this.cache.set(cacheKey, service, 5); // Cache for 5 seconds
-    }
-    return service;
+  public getServiceByName(name: string): ServiceStatus | undefined {
+    return this.services.get(name);
   }
 
-  public getServiceHistory(name: string, limit?: number): HealthCheck[] {
-    const service = this.services.get(name);
-    if (!service) return [];
-
-    const history = service.history;
-    return limit ? history.slice(-limit) : history;
+  public async addService(config: ServiceConfig): Promise<ServiceStatus> {
+     // Persist via Repo first
+     const newService = await this.repository.addService(config);
+     
+     // Update in-memory map
+     this.services.set(newService.name, newService);
+     
+     // Start monitoring
+     if (this.isRunning) {
+         this.startPolling(newService.name);
+     }
+     
+     return newService;
   }
 
+  public async updateService(name: string, config: Partial<ServiceConfig>): Promise<ServiceStatus> {
+      // Persist via Repo
+      const updatedService = await this.repository.updateService(name, config);
+      
+      // Update in-memory: Repo 'updateService' might not return the FULL object with history
+      // if it just updates DB. But interface says Returns ServiceStatus.
+      // We should be careful to merge history if the repo doesn't return it.
+      // My implementation of JsonServiceRepository returns the modified object from map (so has history).
+      // My implementation of MysqlServiceRepository returns object, but history might be empty?
+      // Let's check MysqlServiceRepository::updateService.
+      // It returns `service` from map.
+      // So history is preserved in memory map in Repo.
+      // Wait, MysqlServiceRepository caches map? 
+      // Yes, I implemented a Map cache in MysqlServiceRepository as well.
+      // So `this.services.set(name, updatedService)` replaces the memory object.
+      // Does Repo map have history? In `loadInitialState` I loaded 50.
+      // In `updateService`, I modify endpoint. History remains.
+      // So it is safe.
+      
+      // However, ServiceMonitor ALSO has a map `this.services`.
+      // We are updating `this.services` with result from repo.
+      // If repo result is fresh without history (e.g. if I fetched from DB), we lose history.
+      // But implementation uses a local map in repo.
+      
+      // Ideally, ServiceMonitor shouldn't maintain a separate map if Repo does.
+      // But ServiceMonitor needs it for polling loop.
+      // And ServiceMonitor IS the source of truth for runtime state (timers, etc).
+      // The Repository is for PERSISTENCE.
+      // It's a bit duplicate.
+      // But fine for now.
+      
+      this.updateStats(updatedService);
+      this.services.set(name, updatedService);
+      
+      // Restart polling if endpoint changed?
+      if (this.isRunning) {
+          clearInterval(this.pollIntervals.get(name));
+          this.pollIntervals.delete(name);
+          this.startPolling(name);
+      }
+      
+      return updatedService;
+  }
+
+  public async deleteService(name: string): Promise<void> {
+      await this.repository.deleteService(name);
+      
+      this.services.delete(name);
+      if (this.pollIntervals.has(name)) {
+          clearInterval(this.pollIntervals.get(name));
+          this.pollIntervals.delete(name);
+      }
+  }
+
+  // --- System Config ---
+
+  public getStatusPageConfig(): SystemConfig {
+    return { ...this.statusConfig };
+  }
+
+  public async updateStatusPageConfig(config: Partial<SystemConfig>): Promise<SystemConfig> {
+    this.statusConfig = { ...this.statusConfig, ...config };
+    await this.repository.saveSystemConfig(this.statusConfig);
+    return this.statusConfig;
+  }
+  
+  // Custom Endpoint Check
   public async customEndpointCheck(
     serviceName: string,
     endpoint: string,
@@ -368,21 +292,15 @@ export class ServiceMonitor {
     body?: any
   ): Promise<any> {
     const service = this.services.get(serviceName);
-    if (!service) {
-      throw new Error(`Service ${serviceName} not found`);
-    }
+    if (!service) throw new Error(`Service ${serviceName} not found`);
 
-    // Append custom endpoint to the service's base endpoint
-    // Remove trailing slash from base endpoint and leading slash from custom endpoint if needed
     const baseEndpoint = service.endpoint.replace(/\/$/, '');
     const customPath = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     const fullUrl = `${baseEndpoint}${customPath}`;
-
     const startTime = Date.now();
 
     try {
       const mergedHeaders = { ...(service.headers || {}), ...headers };
-
       const response = await axios({
         url: fullUrl,
         method,
@@ -409,243 +327,57 @@ export class ServiceMonitor {
     }
   }
 
-  public getStats() {
-    const services = this.getAllServices();
+  // --- Stats & History ---
+
+  public getStats(): { 
+    totalServices: number; 
+    healthyServices: number; 
+    unhealthyServices: number; 
+    unknownServices: number; 
+    averageUptime: number; 
+    averageResponseTime: number 
+  } {
+    const services = Array.from(this.services.values());
+    if (services.length === 0) {
+      return { 
+        totalServices: 0, 
+        healthyServices: 0, 
+        unhealthyServices: 0, 
+        unknownServices: 0, 
+        averageUptime: 0, 
+        averageResponseTime: 0 
+      };
+    }
+
+    const totalUptime = services.reduce((sum, s) => sum + (s.uptime || 0), 0);
+    const totalResponseTime = services.reduce((sum, s) => sum + (s.averageResponseTime || 0), 0);
+    
+    const healthyServices = services.filter(s => s.currentStatus === 'healthy').length;
+    const unhealthyServices = services.filter(s => s.currentStatus === 'unhealthy').length;
+    // Catch-all for unknown, matching frontend fallback logic
+    const unknownServices = services.length - (healthyServices + unhealthyServices);
+
     return {
       totalServices: services.length,
-      healthyServices: services.filter((s) => s.currentStatus === 'healthy').length,
-      unhealthyServices: services.filter((s) => s.currentStatus === 'unhealthy').length,
-      unknownServices: services.filter((s) => s.currentStatus === 'unknown').length,
-      isRunning: this.isRunning,
-      pollInterval: this.pollInterval,
-      maxHistorySize: this.maxHistorySize,
-      persistenceEnabled: this.persistenceEnabled,
+      healthyServices,
+      unhealthyServices,
+      unknownServices,
+      averageUptime: parseFloat((totalUptime / services.length).toFixed(2)),
+      averageResponseTime: Math.round(totalResponseTime / services.length),
     };
   }
 
-  private saveServicesConfig(): void {
-    const configPath = process.env.SERVICES_CONFIG_PATH || '/etc/kubiq/services';
+  public async getServiceHistory(serviceName: string, limit: number = 50): Promise<HealthCheck[]> {
+      return this.repository.getServiceHistory(serviceName, limit);
+  }
 
-    try {
-      const configDir = path.dirname(configPath);
-      if (!fs.existsSync(configDir)) {
-        fs.mkdirSync(configDir, { recursive: true });
+  private updateStats(service: ServiceStatus): void {
+      const recent = service.history.slice(-20);
+      const valid = recent.filter(c => c.success);
+      if (valid.length) {
+          service.averageResponseTime = valid.reduce((sum, c) => sum + c.responseTime, 0) / valid.length;
       }
-
-      // Build config content
-      let content = `# Kubiq Services Configuration\n`;
-      content += `# Format: service-name=endpoint-url\n`;
-      content += `# Last updated: ${new Date().toISOString()}\n\n`;
-
-      this.services.forEach((service) => {
-        const headerParts = service.headers
-          ? Object.entries(service.headers)
-              .map(([k, v]) => `${k}:${v}`)
-              .join('|')
-          : '';
-        const configLine = headerParts
-          ? `${service.name}=${service.endpoint}|${headerParts}`
-          : `${service.name}=${service.endpoint}`;
-        content += `${configLine}\n`;
-      });
-
-      // Atomic write: write to temp file then rename
-      const tempPath = `${configPath}.tmp`;
-      fs.writeFileSync(tempPath, content, 'utf-8');
-      fs.renameSync(tempPath, configPath);
-
-      console.log(`💾 Saved ${this.services.size} services to config`);
-    } catch (error) {
-      console.error('❌ Error saving services config:', error);
-      throw new Error('Failed to save services configuration');
-    }
-  }
-
-  public addService(
-    name: string,
-    endpoint: string,
-    headers?: Record<string, string>
-  ): ServiceStatus {
-    if (this.services.has(name)) {
-      throw new Error(`Service ${name} already exists`);
-    }
-
-    // Parse format: endpoint|Header1:Value1|Header2:Value2 (if headers not provided separately)
-    let actualEndpoint = endpoint;
-    let actualHeaders = headers;
-
-    if (!headers && endpoint.includes('|')) {
-      const parts = endpoint.split('|');
-      actualEndpoint = parts[0];
-      const parsedHeaders: Record<string, string> = {};
-
-      for (let i = 1; i < parts.length; i++) {
-        const colonIndex = parts[i].indexOf(':');
-        if (colonIndex > 0) {
-          const headerName = parts[i].substring(0, colonIndex).trim();
-          const headerValue = parts[i].substring(colonIndex + 1).trim();
-          if (headerName && headerValue) {
-            parsedHeaders[headerName] = headerValue;
-          }
-        }
-      }
-
-      actualHeaders = Object.keys(parsedHeaders).length > 0 ? parsedHeaders : undefined;
-    }
-
-    // Validate endpoint URL
-    try {
-      new URL(actualEndpoint);
-    } catch {
-      throw new Error('Invalid endpoint URL');
-    }
-
-    const newService: ServiceStatus = {
-      name,
-      endpoint: actualEndpoint,
-      headers: actualHeaders,
-      currentStatus: 'unknown',
-      history: [],
-    };
-
-    this.services.set(name, newService);
-    this.saveServicesConfig();
-
-    // Start monitoring this service
-    if (this.isRunning) {
-      this.pollService(name);
-    }
-
-    // Invalidate cache
-    this.cache.del('services:all');
-
-    console.log(`➕ Added service: ${name}`);
-    return newService;
-  }
-
-  public updateService(
-    name: string,
-    endpoint: string,
-    headers?: Record<string, string>
-  ): ServiceStatus {
-    const service = this.services.get(name);
-    if (!service) {
-      throw new Error(`Service ${name} not found`);
-    }
-
-    // Parse format: endpoint|Header1:Value1|Header2:Value2 (if headers not provided separately)
-    let actualEndpoint = endpoint;
-    let actualHeaders = headers;
-
-    if (!headers && endpoint.includes('|')) {
-      const parts = endpoint.split('|');
-      actualEndpoint = parts[0];
-      const parsedHeaders: Record<string, string> = {};
-
-      for (let i = 1; i < parts.length; i++) {
-        const colonIndex = parts[i].indexOf(':');
-        if (colonIndex > 0) {
-          const headerName = parts[i].substring(0, colonIndex).trim();
-          const headerValue = parts[i].substring(colonIndex + 1).trim();
-          if (headerName && headerValue) {
-            parsedHeaders[headerName] = headerValue;
-          }
-        }
-      }
-
-      actualHeaders = Object.keys(parsedHeaders).length > 0 ? parsedHeaders : undefined;
-    }
-
-    // Validate endpoint URL
-    try {
-      new URL(actualEndpoint);
-    } catch {
-      throw new Error('Invalid endpoint URL');
-    }
-
-    service.endpoint = actualEndpoint;
-    service.headers = actualHeaders;
-    // Reset status since endpoint changed
-    service.currentStatus = 'unknown';
-    service.history = [];
-
-    this.services.set(name, service);
-    this.saveServicesConfig();
-
-    // Restart monitoring for this service
-    if (this.isRunning) {
-      this.pollService(name);
-    }
-
-    // Invalidate cache
-    this.cache.del(`service:${name}`);
-    this.cache.del('services:all');
-
-    console.log(`✏️  Updated service: ${name}`);
-    return service;
-  }
-
-  public deleteService(name: string): void {
-    if (!this.services.has(name)) {
-      throw new Error(`Service ${name} not found`);
-    }
-
-    // Stop polling for this service
-    const interval = this.pollIntervals.get(name);
-    if (interval) {
-      clearInterval(interval);
-      this.pollIntervals.delete(name);
-    }
-
-    this.services.delete(name);
-    this.saveServicesConfig();
-
-    // Invalidate cache
-    this.cache.del(`service:${name}`);
-    this.cache.del('services:all');
-
-    console.log(`🗑️  Deleted service: ${name}`);
-  }
-
-  private loadStatusConfig(): void {
-    try {
-      if (!fs.existsSync(this.dataDir)) {
-        fs.mkdirSync(this.dataDir, { recursive: true });
-      }
-
-      const configFile = path.join(this.dataDir, 'status-page-config.json');
-      if (fs.existsSync(configFile)) {
-        const fileContent = fs.readFileSync(configFile, 'utf-8');
-        const config = JSON.parse(fileContent);
-        this.statusConfig = { ...this.statusConfig, ...config };
-        console.log('📄 Loaded status page config');
-      }
-    } catch (error) {
-      console.error('❌ Error loading status config:', error);
-    }
-  }
-
-  private saveStatusConfig(): void {
-    try {
-      if (!fs.existsSync(this.dataDir)) {
-        fs.mkdirSync(this.dataDir, { recursive: true });
-      }
-
-      const configFile = path.join(this.dataDir, 'status-page-config.json');
-      fs.writeFileSync(configFile, JSON.stringify(this.statusConfig, null, 2));
-      console.log('💾 Saved status page config');
-    } catch (error) {
-      console.error('❌ Error saving status config:', error);
-    }
-  }
-
-  public getStatusPageConfig(): StatusPageConfig {
-    return { ...this.statusConfig };
-  }
-
-  public updateStatusPageConfig(config: Partial<StatusPageConfig>): StatusPageConfig {
-    this.statusConfig = { ...this.statusConfig, ...config };
-    this.saveStatusConfig();
-    return this.statusConfig;
+      const successCount = service.history.filter(c => c.success).length;
+      service.uptime = service.history.length ? (successCount / service.history.length) * 100 : 100;
   }
 }

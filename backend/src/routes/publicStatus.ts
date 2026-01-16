@@ -39,7 +39,7 @@ router.get('/status-page/:slug', async (req: Request, res: Response) => {
     }));
 
     res.json({
-      pageTitle: config.title,
+      pageTitle: config.dashboardTitle,
       refreshInterval: config.refreshInterval,
       services,
       lastUpdated: new Date().toISOString(),
