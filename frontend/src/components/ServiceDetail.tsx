@@ -290,7 +290,7 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
 
 
           {/* Custom Endpoint Check - Only for HTTP(s) */}
-          {(!service.type || service.type === 'http' || service.type === 'https') && (
+          {(!service.type || service.type === 'http') && (
             <div className="bg-bg-elevated rounded-lg p-3 sm:p-4">
               <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
                 Custom Endpoint Check
