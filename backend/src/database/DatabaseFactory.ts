@@ -1,20 +1,7 @@
 import { IServiceRepository } from './interfaces/IServiceRepository';
 import { INotificationRepository } from './interfaces/INotificationRepository';
 import { IUserRepository } from './interfaces/IUserRepository';
-import { JsonServiceRepository } from './adapters/json/JsonServiceRepository';
-import { MysqlServiceRepository } from './adapters/mysql/MysqlServiceRepository';
-import { MongoServiceRepository } from './adapters/mongo/MongoServiceRepository';
-import { JsonNotificationRepository } from './adapters/json/JsonNotificationRepository';
-import { MysqlNotificationRepository } from './adapters/mysql/MysqlNotificationRepository';
-import { MongoNotificationRepository } from './adapters/mongo/MongoNotificationRepository';
-import { JsonUserRepository } from './adapters/json/JsonUserRepository';
-import { MysqlUserRepository } from './adapters/mysql/MysqlUserRepository';
-import { MongoUserRepository } from './adapters/mongo/MongoUserRepository';
-
 import { IPasskeyRepository } from './interfaces/IPasskeyRepository';
-import { JsonPasskeyRepository } from './adapters/json/JsonPasskeyRepository';
-import { MongoPasskeyRepository } from './adapters/mongo/MongoPasskeyRepository';
-import { MysqlPasskeyRepository } from './adapters/mysql/MysqlPasskeyRepository';
 
 export class DatabaseFactory {
   private static serviceRepository: IServiceRepository;
@@ -28,20 +15,22 @@ export class DatabaseFactory {
     }
 
     const startArgs = process.env.DB_TYPE || 'json';
-
     console.log(`🔌 Initializing Database Adapter: ${startArgs}`);
 
     switch (startArgs.toLowerCase()) {
       case 'mysql':
       case 'mariadb':
+        const { MysqlServiceRepository } = await import('./adapters/mysql/MysqlServiceRepository');
         this.serviceRepository = new MysqlServiceRepository();
         break;
       case 'mongo':
       case 'mongodb':
+        const { MongoServiceRepository } = await import('./adapters/mongo/MongoServiceRepository');
         this.serviceRepository = new MongoServiceRepository();
         break;
       case 'json':
       default:
+        const { JsonServiceRepository } = await import('./adapters/json/JsonServiceRepository');
         this.serviceRepository = new JsonServiceRepository();
         break;
     }
@@ -56,20 +45,22 @@ export class DatabaseFactory {
     }
 
     const startArgs = process.env.DB_TYPE || 'json';
-
     console.log(`🔌 Initializing Notification Adapter: ${startArgs}`);
 
     switch (startArgs.toLowerCase()) {
       case 'mysql':
       case 'mariadb':
+        const { MysqlNotificationRepository } = await import('./adapters/mysql/MysqlNotificationRepository');
         this.notificationRepository = new MysqlNotificationRepository();
         break;
       case 'mongo':
       case 'mongodb':
+        const { MongoNotificationRepository } = await import('./adapters/mongo/MongoNotificationRepository');
         this.notificationRepository = new MongoNotificationRepository();
         break;
       case 'json':
       default:
+        const { JsonNotificationRepository } = await import('./adapters/json/JsonNotificationRepository');
         this.notificationRepository = new JsonNotificationRepository();
         break;
     }
@@ -84,20 +75,22 @@ export class DatabaseFactory {
     }
 
     const startArgs = process.env.DB_TYPE || 'json';
-
     console.log(`🔌 Initializing User Repository: ${startArgs}`);
 
     switch (startArgs.toLowerCase()) {
       case 'mysql':
       case 'mariadb':
+        const { MysqlUserRepository } = await import('./adapters/mysql/MysqlUserRepository');
         this.userRepository = new MysqlUserRepository();
         break;
       case 'mongo':
       case 'mongodb':
+        const { MongoUserRepository } = await import('./adapters/mongo/MongoUserRepository');
         this.userRepository = new MongoUserRepository();
         break;
       case 'json':
       default:
+        const { JsonUserRepository } = await import('./adapters/json/JsonUserRepository');
         this.userRepository = new JsonUserRepository();
         break;
     }
@@ -112,20 +105,22 @@ export class DatabaseFactory {
     }
 
     const startArgs = process.env.DB_TYPE || 'json';
-
     console.log(`🔌 Initializing Passkey Repository: ${startArgs}`);
 
     switch (startArgs.toLowerCase()) {
       case 'mysql':
       case 'mariadb':
+        const { MysqlPasskeyRepository } = await import('./adapters/mysql/MysqlPasskeyRepository');
         this.passkeyRepository = new MysqlPasskeyRepository();
         break;
       case 'mongo':
       case 'mongodb':
+        const { MongoPasskeyRepository } = await import('./adapters/mongo/MongoPasskeyRepository');
         this.passkeyRepository = new MongoPasskeyRepository();
         break;
       case 'json':
       default:
+        const { JsonPasskeyRepository } = await import('./adapters/json/JsonPasskeyRepository');
         this.passkeyRepository = new JsonPasskeyRepository();
         break;
     }
