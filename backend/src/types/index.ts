@@ -1,7 +1,7 @@
 export interface ServiceConfig {
   name: string;
   endpoint: string;
-  type?: 'http' | 'tcp' | 'icmp'; // Added type
+  type?: 'http' | 'tcp' | 'icmp' | 'mysql' | 'mongodb'; // Added type
   interval?: number;
   timeout?: number;
   headers?: Record<string, string>;
@@ -21,7 +21,7 @@ export interface ServiceStatus {
   id?: string;
   name: string;
   endpoint: string;
-  type?: 'http' | 'tcp' | 'icmp'; // Added type
+  type?: 'http' | 'tcp' | 'icmp' | 'mysql' | 'mongodb'; // Added type
   interval?: number;
   timeout?: number;
   headers?: Record<string, string>;

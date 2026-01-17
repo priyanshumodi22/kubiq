@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS services (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     endpoint VARCHAR(1024) NOT NULL,
+    type VARCHAR(20) DEFAULT 'http', -- 'http', 'tcp', 'mysql', 'mongodb'
     current_status VARCHAR(50) DEFAULT 'unknown',
     uptime FLOAT DEFAULT 100.0,
     average_response_time FLOAT DEFAULT 0.0,

@@ -80,6 +80,7 @@ export class MysqlServiceRepository implements IServiceRepository {
       const service: ServiceStatus = {
         name: row.name,
         endpoint: row.endpoint,
+        type: row.type as any || 'http',
         headers: typeof row.headers === 'string' ? JSON.parse(row.headers) : (row.headers || undefined),
         currentStatus: row.current_status || 'unknown',
         history: [], // History loaded lazily or separate query?
@@ -127,13 +128,14 @@ export class MysqlServiceRepository implements IServiceRepository {
         await connection.beginTransaction();
 
         const [result] = await connection.execute<ResultSetHeader>(
-            'INSERT INTO services (name, endpoint, headers) VALUES (?, ?, ?)',
-            [config.name, config.endpoint, JSON.stringify(config.headers || {})]
+            'INSERT INTO services (name, endpoint, type, headers) VALUES (?, ?, ?, ?)',
+            [config.name, config.endpoint, config.type || 'http', JSON.stringify(config.headers || {})]
         );
         
         const newService: ServiceStatus = {
             name: config.name,
             endpoint: config.endpoint,
+            type: config.type || 'http',
             headers: config.headers,
             currentStatus: 'unknown',
             history: []
@@ -156,12 +158,13 @@ export class MysqlServiceRepository implements IServiceRepository {
     if (!service) throw new Error(`Service ${name} not found`);
 
     if (config.endpoint) service.endpoint = config.endpoint;
+    if (config.type) service.type = config.type;
     if (config.headers) service.headers = config.headers;
     
     // Update DB
     await this.pool.execute(
-        'UPDATE services SET endpoint = ?, headers = ? WHERE name = ?',
-        [service.endpoint, JSON.stringify(service.headers || {}), name]
+        'UPDATE services SET endpoint = ?, type = ?, headers = ? WHERE name = ?',
+        [service.endpoint, service.type || 'http', JSON.stringify(service.headers || {}), name]
     );
 
     this.services.set(name, service);

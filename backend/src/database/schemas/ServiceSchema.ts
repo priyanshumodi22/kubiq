@@ -9,7 +9,7 @@ export interface IServiceDocument extends Omit<ServiceConfig, 'id'>, Document {
 const ServiceSchema: Schema = new Schema({
     name: { type: String, required: true, unique: true },
     endpoint: { type: String, required: true },
-    type: { type: String, enum: ['http', 'tcp', 'icmp'], default: 'http', required: true },
+    type: { type: String, enum: ['http', 'tcp', 'icmp', 'mysql', 'mongodb'], default: 'http', required: true },
     interval: { type: Number, default: 30000 }, // ms
     timeout: { type: Number, default: 5000 },
     headers: { type: Map, of: String },

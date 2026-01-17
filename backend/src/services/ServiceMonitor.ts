@@ -1,6 +1,10 @@
 import axios, { AxiosError } from 'axios';
 import NodeCache from 'node-cache';
 import { ServiceConfig, HealthCheck, ServiceStatus, SystemConfig } from '../types';
+import type { ConnectionOptions } from 'mysql2';
+import mysql from 'mysql2/promise';
+import mongoose from 'mongoose';
+import net from 'net';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { IServiceRepository } from '../database/interfaces/IServiceRepository';
 
@@ -84,39 +88,65 @@ export class ServiceMonitor {
     }
 
     const startTime = Date.now();
+    let check: HealthCheck;
 
     try {
-      const response = await axios.get(service.endpoint, {
-        timeout: this.requestTimeout,
-        maxRedirects: 0,
-        validateStatus: () => true,
-        headers: service.headers || {},
-      });
+      if (service.type === 'tcp') {
+        const success = await this.checkTcp(service.endpoint);
+        check = {
+            status: success ? 200 : 0,
+            responseTime: Date.now() - startTime,
+            timestamp: Date.now(),
+            success,
+            error: success ? undefined : 'Connection Refused',
+        };
+      } else if (service.type === 'mysql') {
+        const success = await this.checkMysql(service.endpoint);
+        check = {
+            status: success ? 200 : 0,
+            responseTime: Date.now() - startTime,
+            timestamp: Date.now(),
+            success,
+            error: success ? undefined : 'Connection Failed',
+        };
+      } else if (service.type === 'mongodb') {
+        const success = await this.checkMongo(service.endpoint);
+        check = {
+            status: success ? 200 : 0,
+            responseTime: Date.now() - startTime,
+            timestamp: Date.now(),
+            success,
+            error: success ? undefined : 'Connection Failed',
+        };
+      } else {
+        // HTTP Default
+        const response = await axios.get(service.endpoint, {
+            timeout: this.requestTimeout,
+            maxRedirects: 0,
+            validateStatus: () => true,
+            headers: service.headers || {},
+        });
+        const success = response.status >= 200 && response.status < 400;
+        check = {
+            status: response.status,
+            responseTime: Date.now() - startTime,
+            timestamp: Date.now(),
+            success,
+            error: success ? undefined : `Status Code: ${response.status}`,
+        };
+      }
 
-      const responseTime = Date.now() - startTime;
-      const success = response.status >= 200 && response.status < 400;
-
-      const check: HealthCheck = {
-        status: response.status,
-        responseTime,
-        timestamp: Date.now(),
-        success,
-        error: success ? undefined : `Status Code: ${response.status}`,
-      };
-
-      // Update Service State and Notifications
       await this.updateServiceState(service, check);
-
       return check;
 
     } catch (error: any) {
       const responseTime = Date.now() - startTime;
-      const check: HealthCheck = {
+      check = {
         status: 0,
         responseTime,
         timestamp: Date.now(),
         success: false,
-        error: error.message || 'Network Error',
+        error: error.message || 'Check Failed',
       };
 
       await this.updateServiceState(service, check);
@@ -200,6 +230,64 @@ export class ServiceMonitor {
 
   public getServiceByName(name: string): ServiceStatus | undefined {
     return this.services.get(name);
+  }
+
+  private checkTcp(endpoint: string): Promise<boolean> {
+     return new Promise((resolve) => {
+         // Endpoint should be host:port
+         const [host, portStr] = endpoint.split(':');
+         const port = parseInt(portStr);
+         
+         if (!host || isNaN(port)) {
+             resolve(false); // Invalid config
+             return;
+         }
+
+         const socket = new net.Socket();
+         socket.setTimeout(this.requestTimeout);
+         
+         socket.on('connect', () => {
+             socket.destroy();
+             resolve(true);
+         });
+         
+         socket.on('error', () => resolve(false));
+         socket.on('timeout', () => {
+             socket.destroy();
+             resolve(false);
+         });
+         
+         socket.connect(port, host);
+     });
+  }
+
+  private async checkMysql(connectionString: string): Promise<boolean> {
+      let connection;
+      try {
+          connection = await mysql.createConnection(connectionString);
+          await connection.ping(); // Simple ping
+          return true;
+      } catch (err) {
+          return false;
+      } finally {
+          if (connection) await connection.end();
+      }
+  }
+
+  private async checkMongo(connectionString: string): Promise<boolean> {
+      // Create a separate connection just for this check, don't use global mongoose connection
+      try {
+          // Use mongoose.createConnection to avoid messing with global state
+          const conn = await mongoose.createConnection(connectionString, {
+              serverSelectionTimeoutMS: this.requestTimeout,
+              connectTimeoutMS: this.requestTimeout
+          }).asPromise();
+          
+          await conn.close();
+          return true;
+      } catch (err) {
+          return false;
+      }
   }
 
   public async addService(config: ServiceConfig): Promise<ServiceStatus> {

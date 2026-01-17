@@ -169,10 +169,11 @@ class ApiClient {
   }
 
   // Service CRUD operations (admin only)
-  async createService(name: string, endpoint: string) {
+  async createService(name: string, endpoint: string, type: 'http' | 'tcp' | 'mysql' | 'mongodb' = 'http') {
     const response = await this.client.post('/api/services', {
       name,
       endpoint,
+      type,
     });
     return response.data;
   }

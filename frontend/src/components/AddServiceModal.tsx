@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Server, Link as LinkIcon, AlertCircle } from 'lucide-react';
+import { X, Server, Link as LinkIcon, AlertCircle, Database, Activity } from 'lucide-react';
 import { apiClient } from '../services/api';
 
 interface AddServiceModalProps {
@@ -10,9 +10,16 @@ interface AddServiceModalProps {
   onSuccess: () => void;
 }
 
+type MonitorType = 'http' | 'tcp' | 'mysql' | 'mongodb';
+
 export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalProps) {
   const [name, setName] = useState('');
-  const [endpoint, setEndpoint] = useState('');
+  const [type, setType] = useState<MonitorType>('http');
+  const [endpoint, setEndpoint] = useState(''); // Holds URL for HTTP/DB
+  // TCP Specific
+  const [hostname, setHostname] = useState('');
+  const [port, setPort] = useState('');
+  
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -25,25 +32,43 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
 
     try {
       // Validate inputs
-      if (!name.trim() || !endpoint.trim()) {
-        setError('Name and endpoint are required');
+      if (!name.trim()) {
+        setError('Service Name is required');
         return;
       }
 
-      // Validate URL (extract base URL before |)
-      try {
-        const baseUrl = endpoint.includes('|') ? endpoint.split('|')[0] : endpoint;
-        new URL(baseUrl);
-      } catch {
-        setError('Invalid endpoint URL');
-        return;
+      let finalEndpoint = '';
+
+      if (type === 'tcp') {
+          if (!hostname.trim() || !port.trim()) {
+              setError('Hostname and Port are required for TCP monitoring');
+              return;
+          }
+          finalEndpoint = `${hostname.trim()}:${port.trim()}`;
+      } else {
+          // HTTP / Database
+          if (!endpoint.trim()) {
+             setError(type === 'http' ? 'Endpoint URL is required' : 'Connection String is required');
+             return;
+          }
+          finalEndpoint = endpoint.trim();
       }
 
-      await apiClient.createService(name.trim(), endpoint.trim());
+      // Basic Validation depending on type
+      if (type === 'http') {
+          try {
+            const baseUrl = finalEndpoint.includes('|') ? finalEndpoint.split('|')[0] : finalEndpoint;
+            new URL(baseUrl);
+          } catch {
+            setError('Invalid endpoint URL');
+            return;
+          }
+      }
+
+      await apiClient.createService(name.trim(), finalEndpoint, type);
 
       // Reset form and close
-      setName('');
-      setEndpoint('');
+      resetForm();
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -53,14 +78,19 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
     }
   };
 
-  const handleClose = () => {
+  const resetForm = () => {
     setName('');
     setEndpoint('');
+    setHostname('');
+    setPort('');
+    setType('http');
     setError('');
-    onClose();
   };
 
-  if (!isOpen) return null;
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -87,9 +117,31 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
           )}
 
           <div className="space-y-4">
+             {/* Monitor Type Selector */}
+             <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-gray-400 ml-1">
+                  Monitor Type
+                </label>
+                <div className="relative group">
+                   <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">
+                      <Activity className="w-5 h-5" />
+                   </div>
+                   <select
+                     value={type}
+                     onChange={(e) => setType(e.target.value as MonitorType)}
+                     className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all appearance-none cursor-pointer"
+                   >
+                      <option value="http">HTTP(s)</option>
+                      <option value="tcp">TCP Port</option>
+                      <option value="mysql">MySQL / MariaDB</option>
+                      <option value="mongodb">MongoDB</option>
+                   </select>
+                </div>
+             </div>
+
             <div className="space-y-1.5">
               <label htmlFor="serviceName" className="block text-sm font-medium text-gray-400 ml-1">
-                Service Name
+                Friendly Name
               </label>
               <div className="relative group">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">
@@ -100,39 +152,76 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Backend API"
+                  placeholder="e.g. Production DB"
                   className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
                   disabled={isSubmitting}
-                  autoFocus
                 />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label
-                htmlFor="serviceEndpoint"
-                className="block text-sm font-medium text-gray-400 ml-1"
-              >
-                Endpoint URL <span className="text-gray-600">| headers (optional)</span>
-              </label>
-              <div className="relative group">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">
-                  <LinkIcon className="w-5 h-5" />
+            {/* TCP Inputs */}
+            {type === 'tcp' && (
+                <div className="flex gap-3">
+                    <div className="space-y-1.5 flex-1">
+                        <label className="block text-sm font-medium text-gray-400 ml-1">Hostname</label>
+                        <input
+                            type="text"
+                            value={hostname}
+                            onChange={(e) => setHostname(e.target.value)}
+                            placeholder="e.g. 192.168.1.100"
+                            className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
+                            disabled={isSubmitting}
+                        />
+                    </div>
+                    <div className="space-y-1.5 w-1/3">
+                        <label className="block text-sm font-medium text-gray-400 ml-1">Port</label>
+                        <input
+                            type="number"
+                            value={port}
+                            onChange={(e) => setPort(e.target.value)}
+                            placeholder="3306"
+                            className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
+                            disabled={isSubmitting}
+                        />
+                    </div>
                 </div>
-                <input
-                  id="serviceEndpoint"
-                  type="text"
-                  value={endpoint}
-                  onChange={(e) => setEndpoint(e.target.value)}
-                  placeholder="https://api.example.com/health"
-                  className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
-                  disabled={isSubmitting}
-                />
-              </div>
-              <p className="mt-1.5 text-xs text-gray-500 pl-1">
-                Format: <code className="bg-white/5 px-1 py-0.5 rounded">url</code> or <code className="bg-white/5 px-1 py-0.5 rounded">url|Header:Value</code>
-              </p>
-            </div>
+            )}
+
+            {/* HTTP / DB Inputs */}
+            {type !== 'tcp' && (
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="serviceEndpoint"
+                    className="block text-sm font-medium text-gray-400 ml-1"
+                  >
+                    {type === 'http' ? 'Endpoint URL' : 'Connection String'}
+                    {type === 'http' && <span className="text-gray-600"> | headers (optional)</span>}
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">
+                      {type === 'http' ? <LinkIcon className="w-5 h-5" /> : <Database className="w-5 h-5" />}
+                    </div>
+                    <input
+                      id="serviceEndpoint"
+                      type="text"
+                      value={endpoint}
+                      onChange={(e) => setEndpoint(e.target.value)}
+                      placeholder={
+                          type === 'http' ? "https://api.example.com/health" :
+                          type === 'mysql' ? "mysql://user:pass@host:3306" :
+                          "mongodb://user:pass@host:27017"
+                      }
+                      className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  {type === 'http' && (
+                    <p className="mt-1.5 text-xs text-gray-500 pl-1">
+                        Format: <code className="bg-white/5 px-1 py-0.5 rounded">url</code> or <code className="bg-white/5 px-1 py-0.5 rounded">url|Header:Value</code>
+                    </p>
+                  )}
+                </div>
+            )}
           </div>
 
           {/* Actions */}

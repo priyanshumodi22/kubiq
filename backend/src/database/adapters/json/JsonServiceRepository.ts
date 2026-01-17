@@ -66,6 +66,7 @@ export class JsonServiceRepository implements IServiceRepository {
     const newService: ServiceStatus = {
       name: config.name,
       endpoint: config.endpoint,
+      type: config.type || 'http',
       headers: config.headers,
       currentStatus: 'unknown',
       history: []
@@ -143,6 +144,9 @@ export class JsonServiceRepository implements IServiceRepository {
              this.services.set(name, {
                  name, 
                  endpoint: parts[0],
+                 // parts[1] is headers (JSON string) usually, let's assume standard format is: endpoint|headers|type
+                 headers: parts[1] && parts[1] !== 'undefined' ? JSON.parse(parts[1]) : undefined,
+                 type: (parts[2] as any) || 'http',
                  currentStatus: 'unknown',
                  history: []
              });
@@ -168,22 +172,21 @@ export class JsonServiceRepository implements IServiceRepository {
   }
 
   private saveServicesConfig(): void {
-     // implementation omit for brevity, similar to current ServiceMonitor logic
-     // In real implementation I would copy the exact logic from ServiceMonitor.ts
-     // For this prototype, I am writing a placeholder.
-     // WAIT: I should probably copy the exact logic to be safe.
-     // I will refine this in a follow-up if needed, or put the real logic now.
-     // Let's put a simplified real logic.
-     
      const lines = ['# Kubiq Services'];
      this.services.forEach(s => {
-         let line = `${s.name}=${s.endpoint}`;
-         if (s.headers) {
-             // serialize headers
-         }
+         let headers = s.headers ? JSON.stringify(s.headers) : 'undefined';
+         let type = s.type || 'http';
+         // Format: name=endpoint|headers|type
+         let line = `${s.name}=${s.endpoint}|${headers}|${type}`;
          lines.push(line);
      });
-     fs.writeFileSync(this.servicesConfigPath, lines.join('\n'));
+     try {
+        const dir = path.dirname(this.servicesConfigPath);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(this.servicesConfigPath, lines.join('\n'));
+     } catch (e) {
+         console.error('Failed to save config', e);
+     }
   }
 
   private saveHistory(): void {
