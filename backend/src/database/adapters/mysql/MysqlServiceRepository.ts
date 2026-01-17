@@ -80,7 +80,7 @@ export class MysqlServiceRepository implements IServiceRepository {
       const service: ServiceStatus = {
         name: row.name,
         endpoint: row.endpoint,
-        headers: row.headers ? row.headers : undefined,
+        headers: typeof row.headers === 'string' ? JSON.parse(row.headers) : (row.headers || undefined),
         currentStatus: row.current_status || 'unknown',
         history: [], // History loaded lazily or separate query?
         // If we load history here it might be heavy. 

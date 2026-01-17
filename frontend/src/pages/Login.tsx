@@ -104,7 +104,7 @@ export default function Login() {
              />
           </div>
           <h1 className="text-4xl font-bold text-text mb-2 tracking-tight">kubiq</h1>
-          <p className="text-text-dim text-sm">Cloud-Native Service Health Dashboard</p>
+          <p className="text-text-dim text-sm">High-Availability Monitor</p>
         </div>
 
         {/* Sign In Card */}

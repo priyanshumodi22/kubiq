@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ExternalLink, Globe, Layout, Clock, Save } from 'lucide-react';
 import { apiClient } from '../services/api';
 
@@ -70,8 +71,8 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
 
   const publicUrl = slug ? `${window.location.origin}${pathPrefix}status/${slug}` : null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden">
         
         {/* Header */}
@@ -203,6 +204,7 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -59,7 +59,7 @@ export default function Header() {
             </div>
             <div className="min-w-0">
               <h1 className="text-lg sm:text-xl font-bold text-text">kubiq</h1>
-              <p className="text-xs text-text-dim hidden sm:block">Service Health Dashboard</p>
+              <p className="text-xs text-text-dim hidden sm:block">Uptime Radar</p>
             </div>
           </Link>
 

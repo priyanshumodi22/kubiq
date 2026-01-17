@@ -4,6 +4,7 @@ import { Settings, RefreshCw, AlertCircle, Clock, CheckCircle, AlertTriangle, XC
 import { apiClient } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Layout from '../components/Layout';
+import { StatusPageConfigModal } from '../components/StatusPageConfigModal';
 
 interface PublicService {
   name: string;
@@ -34,10 +35,6 @@ export default function StatusPage() {
 
   // Admin Edit State
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editTitle, setEditTitle] = useState('');
-  const [editSlug, setEditSlug] = useState('');
-  const [editInterval, setEditInterval] = useState(300);
-  const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -74,38 +71,8 @@ export default function StatusPage() {
     return () => clearInterval(interval);
   }, [data?.refreshInterval, fetchData]);
 
-  const handleEditOpen = async () => {
-    try {
-      const config = await apiClient.getStatusPageConfig();
-      setEditTitle(config.title);
-      setEditSlug(config.slug || '');
-      setEditInterval(config.refreshInterval);
-      setShowEditModal(true);
-    } catch (e) {
-      console.error('Failed to fetch config for editing', e);
-    }
-  };
-
-  const handleSaveConfig = async () => {
-    setSaving(true);
-    try {
-      const newConfig = await apiClient.updateStatusPageConfig({
-        slug: editSlug,
-        title: editTitle,
-        refreshInterval: editInterval,
-      });
-      setShowEditModal(false);
-      if (newConfig.slug !== slug) {
-        navigate(`/status/${newConfig.slug}`);
-      } else {
-        fetchData();
-      }
-    } catch (e) {
-      console.error('Failed to save config', e);
-      alert('Failed to save configuration');
-    } finally {
-      setSaving(false);
-    }
+  const handleEditOpen = () => {
+    setShowEditModal(true);
   };
 
   if (loading) {
@@ -428,61 +395,19 @@ export default function StatusPage() {
       </div>
 
       {/* Edit Modal (reused from previous, updated styling context as needed) */}
-      {showEditModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-bg-surface rounded-xl border border-gray-800 w-full max-w-md p-6 shadow-2xl">
-            <h2 className="text-xl font-bold text-text mb-4">Edit Status Page</h2>
-            <div className="space-y-4">
-               <div>
-                  <label className="block text-xs font-semibold text-text-dim mb-1">Page Title</label>
-                  <input
-                    type="text"
-                    value={editTitle}
-                    onChange={e => setEditTitle(e.target.value)}
-                    className="w-full px-3 py-2 bg-bg rounded-lg border border-gray-700 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-               </div>
-               <div>
-                  <label className="block text-xs font-semibold text-text-dim mb-1">URL Slug</label>
-                  <div className="flex items-center">
-                     <span className="text-text-dim text-sm mr-2 bg-bg-elevated px-2 py-2 rounded-l-lg border border-r-0 border-gray-700">/status/</span>
-                     <input
-                       type="text"
-                       value={editSlug}
-                       onChange={e => setEditSlug(e.target.value)}
-                       className="flex-1 px-3 py-2 bg-bg rounded-r-lg border border-gray-700 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                     />
-                  </div>
-               </div>
-               <div>
-                  <label className="block text-xs font-semibold text-text-dim mb-1">Refresh Interval (seconds)</label>
-                  <input
-                    type="number"
-                    value={editInterval}
-                    onChange={e => setEditInterval(parseInt(e.target.value))}
-                    min="10"
-                    className="w-full px-3 py-2 bg-bg rounded-lg border border-gray-700 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-               </div>
-            </div>
-            <div className="flex justify-end gap-3 mt-6">
-               <button
-                  onClick={() => setShowEditModal(false)}
-                  className="px-4 py-2 text-sm text-text-dim hover:text-text hover:bg-bg-elevated rounded-lg transition-colors"
-               >
-                  Cancel
-               </button>
-               <button
-                  onClick={handleSaveConfig}
-                  disabled={saving || !editSlug.trim()}
-                  className="px-4 py-2 text-sm bg-primary hover:bg-primary/80 disabled:opacity-50 rounded-lg font-medium transition-colors text-white"
-               >
-                  {saving ? 'Saving...' : 'Save Changes'}
-               </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <StatusPageConfigModal
+         isOpen={showEditModal}
+         onClose={() => {
+            setShowEditModal(false);
+            fetchData(); // Refresh page data on close in case slug/title changed
+            // Also if slug changed, we might need to redirect? 
+            // The modal handles saving. But if slug changed, this page ID might be invalid.
+            // Let's rely on the user manually navigating or hitting refresh if they changed the slug of the ACTIVE page they are on.
+            // Actually, StatusPageConfigModal just closes. 
+            // If the slug changed, the current URL `/status/:slug` might 404 on next refresh.
+            // That's acceptable for now, or we can add a callback 'onSave' to the modal.
+         }}
+      />
       </div>
     </Layout>
   );

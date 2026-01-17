@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { LogOut } from 'lucide-react';
 import Keycloak from 'keycloak-js';
 import { apiClient } from '../services/api';
 
@@ -179,22 +180,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // For now, let caller handle redirect to login
   };
 
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   const logout = () => {
-    if (provider === 'keycloak' && keycloak) {
-        keycloak.logout({
-            redirectUri: `${window.location.origin}${import.meta.env.BASE_URL}`,
-        });
-    } else {
-        // Native Logout
-        localStorage.removeItem('kubiq_token');
-        apiClient.clearToken();
-        setIsAuthenticated(false);
-        setUser(null);
-        setRoles([]);
-        setProvider(null);
-        // Reload to reset state fully or just redirect
-        window.location.href = '/'; 
-    }
+    setIsLoggingOut(true);
+    
+    // Delay for animation
+    setTimeout(() => {
+        if (provider === 'keycloak' && keycloak) {
+            keycloak.logout({
+                redirectUri: window.location.origin + '/login',
+            });
+        } else {
+            // Native Logout
+            localStorage.removeItem('kubiq_token');
+            apiClient.clearToken();
+            setIsAuthenticated(false);
+            setUser(null);
+            setRoles([]);
+            setProvider(null);
+            // Reload to reset state fully or just redirect
+            window.location.href = '/login'; 
+        }
+    }, 1500);
   };
 
   const hasRole = (role: string) => roles.includes(role);
@@ -219,6 +227,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
+
+      {/* Premium Logout Modal */}
+      {isLoggingOut && (
+         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+             <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl scale-100 animate-in zoom-in-95 duration-300 flex flex-col items-center">
+                 <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mb-6 animate-bounce">
+                     <LogOut className="w-8 h-8 text-primary" />
+                 </div>
+                 <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent mb-2">
+                    Logging Out
+                 </h2>
+                 <p className="text-text-dim">
+                    See you again soon! 👋
+                 </p>
+                 <div className="mt-8 w-full bg-white/5 rounded-full h-1 overflow-hidden">
+                     <div className="h-full bg-primary animate-progress-indeterminate"></div>
+                 </div>
+             </div>
+         </div>
+      )}
     </AuthContext.Provider>
   );
 }

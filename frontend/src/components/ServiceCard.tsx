@@ -52,9 +52,23 @@ export default function ServiceCard({
         <h3 className="text-base font-semibold text-text mb-1 truncate">{service.name}</h3>
         <div className="flex items-center gap-2">
           <p className="text-xs text-text-dim truncate flex-1">{service.endpoint}</p>
-          {service.headers && Object.keys(service.headers).length > 0 && (
-            <span className="text-xs text-blue-400 flex-shrink-0">- Headers</span>
-          )}
+          {(() => {
+            if (!service.headers) return null;
+            let headerCount = 0;
+            if (typeof service.headers === 'string') {
+                try {
+                    const parsed = JSON.parse(service.headers);
+                    headerCount = Object.keys(parsed).length;
+                } catch { headerCount = 0; }
+            } else {
+                headerCount = Object.keys(service.headers).length;
+            }
+            
+            if (headerCount > 0) {
+                return <span className="text-xs text-blue-400 flex-shrink-0">- Headers</span>;
+            }
+            return null;
+          })()}
         </div>
       </div>
 
