@@ -2,12 +2,14 @@ import { IServiceRepository } from './interfaces/IServiceRepository';
 import { INotificationRepository } from './interfaces/INotificationRepository';
 import { IUserRepository } from './interfaces/IUserRepository';
 import { IPasskeyRepository } from './interfaces/IPasskeyRepository';
+import { ISystemRepository } from './interfaces/ISystemRepository';
 
 export class DatabaseFactory {
   private static serviceRepository: IServiceRepository;
   private static notificationRepository: INotificationRepository;
   private static userRepository: IUserRepository; 
   private static passkeyRepository: IPasskeyRepository; 
+  private static systemRepository: ISystemRepository;
 
   public static async getServiceRepository(): Promise<IServiceRepository> {
     if (this.serviceRepository) {
@@ -127,5 +129,36 @@ export class DatabaseFactory {
     
     await this.passkeyRepository.initialize();
     return this.passkeyRepository;
+
+  }
+
+  public static async getSystemRepository(): Promise<ISystemRepository> {
+    if (this.systemRepository) {
+      return this.systemRepository;
+    }
+
+    const startArgs = process.env.DB_TYPE || 'json';
+    console.log(`🔌 Initializing System Repository: ${startArgs}`);
+
+    switch (startArgs.toLowerCase()) {
+      case 'mysql':
+      case 'mariadb':
+        const { MysqlSystemRepository } = await import('./adapters/mysql/MysqlSystemRepository');
+        this.systemRepository = new MysqlSystemRepository();
+        break;
+      case 'mongo':
+      case 'mongodb':
+        const { MongoSystemRepository } = await import('./adapters/mongo/MongoSystemRepository');
+        this.systemRepository = new MongoSystemRepository();
+        break;
+      case 'json':
+      default:
+        const { JsonSystemRepository } = await import('./adapters/json/JsonSystemRepository');
+        this.systemRepository = new JsonSystemRepository();
+        break;
+    }
+    
+    await this.systemRepository.initialize();
+    return this.systemRepository;
   }
 }

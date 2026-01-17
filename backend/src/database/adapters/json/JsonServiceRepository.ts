@@ -68,6 +68,7 @@ export class JsonServiceRepository implements IServiceRepository {
       endpoint: config.endpoint,
       type: config.type || 'http',
       headers: config.headers,
+      ignoreSSL: config.ignoreSSL,
       currentStatus: 'unknown',
       history: []
     };
@@ -83,6 +84,8 @@ export class JsonServiceRepository implements IServiceRepository {
 
     if (config.endpoint) service.endpoint = config.endpoint;
     if (config.headers) service.headers = config.headers;
+    if (config.type) service.type = config.type;
+    if (config.ignoreSSL !== undefined) service.ignoreSSL = config.ignoreSSL;
     
     // Note: We deliberately do NOT reset status/history here to preserve state (as fixed previously)
     
@@ -98,12 +101,15 @@ export class JsonServiceRepository implements IServiceRepository {
     this.saveHistory(); // Clean up history file too
   }
 
-  async saveCheckResult(serviceName: string, result: HealthCheck): Promise<void> {
+  async saveCheckResult(serviceName: string, result: HealthCheck, extraData?: { sslExpiry?: Date | null }): Promise<void> {
     const service = this.services.get(serviceName);
     if (!service) return;
 
     service.lastCheck = result;
     service.currentStatus = result.success ? 'healthy' : 'unhealthy';
+    if (extraData && extraData.sslExpiry !== undefined) {
+        service.sslExpiry = extraData.sslExpiry;
+    }
     
     // Add to history
     service.history.push(result);
@@ -149,10 +155,11 @@ export class JsonServiceRepository implements IServiceRepository {
                  name, 
                  endpoint: parts[0],
                  // parts[1] is headers (JSON string) usually, let's assume standard format is: endpoint|headers|type
-                 headers: parts[1] && parts[1] !== 'undefined' ? JSON.parse(parts[1]) : undefined,
-                 type: (parts[2] as any) || 'http',
-                 currentStatus: 'unknown',
-                 history: []
+                  headers: parts[1] && parts[1] !== 'undefined' ? JSON.parse(parts[1]) : undefined,
+                  type: (parts[2] as any) || 'http',
+                  ignoreSSL: parts[3] === 'true', // ignoreSSL
+                  currentStatus: 'unknown',
+                  history: []
              });
         }
       });
@@ -180,8 +187,9 @@ export class JsonServiceRepository implements IServiceRepository {
      this.services.forEach(s => {
          let headers = s.headers ? JSON.stringify(s.headers) : 'undefined';
          let type = s.type || 'http';
-         // Format: name=endpoint|headers|type
-         let line = `${s.name}=${s.endpoint}|${headers}|${type}`;
+         let ignoreSSL = s.ignoreSSL || false;
+         // Format: name=endpoint|headers|type|ignoreSSL
+         let line = `${s.name}=${s.endpoint}|${headers}|${type}|${ignoreSSL}`;
          lines.push(line);
      });
      try {

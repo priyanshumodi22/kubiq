@@ -1,11 +1,12 @@
 export interface ServiceConfig {
   name: string;
   endpoint: string;
-  type?: 'http' | 'tcp' | 'icmp' | 'mysql' | 'mongodb'; // Added type
+  type?: 'http' | 'tcp' | 'icmp' | 'mysql' | 'mongodb';
   interval?: number;
   timeout?: number;
   headers?: Record<string, string>;
   enabled?: boolean;
+  ignoreSSL?: boolean; // New
 }
 
 export interface HealthCheck {
@@ -21,7 +22,7 @@ export interface ServiceStatus {
   id?: string;
   name: string;
   endpoint: string;
-  type?: 'http' | 'tcp' | 'icmp' | 'mysql' | 'mongodb'; // Added type
+  type?: 'http' | 'tcp' | 'icmp' | 'mysql' | 'mongodb';
   interval?: number;
   timeout?: number;
   headers?: Record<string, string>;
@@ -30,6 +31,8 @@ export interface ServiceStatus {
   history: HealthCheck[];
   uptime?: number;
   averageResponseTime?: number;
+  ignoreSSL?: boolean; // New
+  sslExpiry?: Date | null; // New
 }
 
 export interface CustomCheckRequest {
@@ -106,4 +109,26 @@ export interface Passkey {
   deviceType: string;
   backedUp: boolean;
   createdAt: number;
+}
+
+export interface DiskInfo {
+  fs: string;
+  type: string;
+  size: number;
+  used: number;
+  available: number;
+  use: number;
+  mount: string;
+}
+
+export interface SystemMetrics {
+  cpuLoad: number; // Percentage
+  memory: {
+    total: number;
+    active: number;
+    used: number;
+  };
+  uptime: number;
+  disks: DiskInfo[];
+  timestamp?: number;
 }

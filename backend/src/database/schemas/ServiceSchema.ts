@@ -20,6 +20,10 @@ const ServiceSchema: Schema = new Schema({
     lastCheck: { type: Number },
     responseTime: { type: Number },
     
+    // SSL Monitoring
+    ignoreSSL: { type: Boolean, default: false },
+    sslExpiry: { type: Date, default: null },
+    
     // History (embedded array for simplicity, capped could be better but array is fine for now)
     history: [{
         timestamp: Number,

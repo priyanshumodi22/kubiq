@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { apiClient } from '../services/api';
+import { useToast } from '../contexts/ToastContext';
 
 type MonitorType = 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp';
 
@@ -11,6 +12,7 @@ interface EditServiceModalProps {
   serviceName: string;
   currentEndpoint: string;
   currentHeaders?: Record<string, string>;
+  currentIgnoreSSL?: boolean;
   type?: MonitorType;
 }
 
@@ -21,12 +23,15 @@ export function EditServiceModal({
   serviceName,
   currentEndpoint,
   currentHeaders,
+  currentIgnoreSSL,
   type: initialType = 'http', // Default to http
 }: EditServiceModalProps) {
   const [type, setType] = useState<MonitorType>(initialType);
   const [endpoint, setEndpoint] = useState('');
   const [hostname, setHostname] = useState('');
   const [port, setPort] = useState('');
+  const [ignoreSSL, setIgnoreSSL] = useState(false);
+  const toast = useToast();
   
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,7 +39,7 @@ export function EditServiceModal({
   useEffect(() => {
     if (isOpen) {
         setType(initialType);
-        if (initialType === 'tcp') {
+            if (initialType === 'tcp') {
             const parts = currentEndpoint.split(':');
             if (parts.length >= 2) {
                 setHostname(parts[0]);
@@ -54,9 +59,10 @@ export function EditServiceModal({
             }
             setEndpoint(fullEndpoint);
         }
+        setIgnoreSSL(currentIgnoreSSL || false);
         setError('');
     }
-  }, [currentEndpoint, currentHeaders, isOpen, initialType]);
+  }, [currentEndpoint, currentHeaders, currentIgnoreSSL, isOpen, initialType]);
 
   if (!isOpen) return null;
 
@@ -94,8 +100,9 @@ export function EditServiceModal({
       }
 
       // Pass the CURRENT type state to updateService
-      await apiClient.updateService(serviceName, finalEndpoint, type);
+      await apiClient.updateService(serviceName, finalEndpoint, type, ignoreSSL);
 
+      toast.success('Service updated successfully');
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -197,9 +204,23 @@ export function EditServiceModal({
                         disabled={isSubmitting}
                     />
                     {type === 'http' && (
-                        <p className="mt-1.5 text-xs text-gray-500 pl-1">
-                             Use <code>|Header:Value</code> to add headers
-                        </p>
+                        <>
+                            <p className="mt-1.5 text-xs text-gray-500 pl-1">
+                                 Use <code>|Header:Value</code> to add headers
+                            </p>
+                            <div className="flex items-center space-x-2 pt-2">
+                                <input
+                                    type="checkbox"
+                                    id="ignoreSSL"
+                                    checked={ignoreSSL}
+                                    onChange={(e) => setIgnoreSSL(e.target.checked)}
+                                    className="w-4 h-4 rounded border-gray-600 bg-black/20 text-primary focus:ring-primary/50 cursor-pointer"
+                                />
+                                <label htmlFor="ignoreSSL" className="text-sm text-gray-400 cursor-pointer select-none">
+                                    Ignore SSL/TLS Certificate Errors (Self-Signed)
+                                </label>
+                            </div>
+                        </>
                     )}
                 </div>
             )}

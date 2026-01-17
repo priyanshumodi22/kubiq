@@ -178,10 +178,11 @@ class ApiClient {
     return response.data;
   }
 
-  async updateService(name: string, endpoint: string, type?: 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp') {
+  async updateService(name: string, endpoint: string, type?: 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp', ignoreSSL?: boolean) {
     const response = await this.client.put(`/api/services/${name}`, {
       endpoint,
       type,
+      ignoreSSL,
     });
     return response.data;
   }
@@ -263,6 +264,32 @@ class ApiClient {
   async deleteUser(userId: string) {
       const response = await this.client.delete(`/api/users/${userId}`);
       return response.data;
+  }
+
+  // System Monitoring
+  async getSystemStats() {
+    const response = await this.client.get('/api/system/stats');
+    return response.data;
+  }
+
+  async getAllDisks() {
+    const response = await this.client.get('/api/system/disks');
+    return response.data;
+  }
+
+  async getMonitoredDisksConfig() {
+    const response = await this.client.get('/api/system/disks/config');
+    return response.data;
+  }
+
+  async updateMonitoredDisks(mounts: string[]) {
+    const response = await this.client.put('/api/system/disks/config', { mounts });
+    return response.data;
+  }
+
+  async getStoragePrediction() {
+    const response = await this.client.get('/api/system/prediction');
+    return response.data;
   }
 }
 

@@ -5,6 +5,9 @@ import type { ConnectionOptions } from 'mysql2';
 import mysql from 'mysql2/promise';
 import mongoose from 'mongoose';
 import net from 'net';
+import https from 'https';
+import tls from 'tls';
+import { URL } from 'url';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { IServiceRepository } from '../database/interfaces/IServiceRepository';
 
@@ -119,13 +122,42 @@ export class ServiceMonitor {
             error: success ? undefined : 'Connection Failed',
         };
       } else {
-        // HTTP Default
+        // HTTP/HTTPS Default
+        const isHttps = service.endpoint.startsWith('https:');
+        const httpsAgent = isHttps ? new https.Agent({ 
+            rejectUnauthorized: !service.ignoreSSL, // Allow self-signed if ignoreSSL is true
+            keepAlive: false // Disable keep-alive to ensure we get the certificate every time
+        }) : undefined;
+
         const response = await axios.get(service.endpoint, {
             timeout: this.requestTimeout,
             maxRedirects: 0,
             validateStatus: () => true,
             headers: service.headers || {},
+            httpsAgent: httpsAgent
         });
+
+        // Capture SSL Expiry - Robust Strategy
+        // If Axios request object has cert, use it.
+        // If not (e.g. 302 Redirect + fast socket close), fallback to specialized TLS probe.
+        if (isHttps) {
+            let cert: any = response.request?.res?.socket?.getPeerCertificate?.();
+            
+            // Fallback if empty, but only if request itself was technically successful (got a response)
+            // We use response.status to check success since 'success' var is defined later
+            if ((!cert || Object.keys(cert).length === 0) && response.status < 400) {
+                 try {
+                     cert = await this.checkTlsRaw(service.endpoint);
+                 } catch (tlsErr) {
+                     console.warn(`TLS Fallback Failed for ${service.name}`, tlsErr);
+                 }
+            }
+
+            if (cert && cert.valid_to) {
+                service.sslExpiry = new Date(cert.valid_to);
+            }
+        }
+
         const success = response.status >= 200 && response.status < 400;
         check = {
             status: response.status,
@@ -181,7 +213,7 @@ export class ServiceMonitor {
     
     // Persist check result via Repository
     try {
-        await this.repository.saveCheckResult(serviceName, check);
+        await this.repository.saveCheckResult(serviceName, check, { sslExpiry: service.sslExpiry });
     } catch (err) {
         console.error(`Failed to persist check result for ${serviceName}`, err);
     }
@@ -259,6 +291,40 @@ export class ServiceMonitor {
          
          socket.connect(port, host);
      });
+  }
+
+  private checkTlsRaw(urlStr: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+        try {
+            const u = new URL(urlStr);
+            const port = u.port ? parseInt(u.port, 10) : 443;
+            const options = {
+                host: u.hostname,
+                port: port,
+                servername: u.hostname, // SNI Support
+                rejectUnauthorized: false // We just want the cert, don't fail on validation here (Axios handles that validation)
+            };
+
+            const socket = tls.connect(options, () => {
+                const cert = socket.getPeerCertificate();
+                socket.end();
+                resolve(cert);
+            });
+
+            socket.on('error', (err) => {
+                // If handshake fails, we might not get cert, but resolve empty to avoid crash
+                // Unless it's a timeout
+                resolve(null); 
+            });
+            
+            socket.setTimeout(this.requestTimeout, () => {
+                socket.destroy();
+                resolve(null);
+            });
+        } catch (e) {
+            resolve(null);
+        }
+    });
   }
 
   private async checkMysql(connectionString: string): Promise<boolean> {

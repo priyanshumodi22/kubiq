@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { RefreshCw, Search, Filter, Plus, ChevronDown, Globe } from 'lucide-react';
 import { useServices } from '../hooks/useServices';
@@ -9,6 +10,8 @@ import { EditServiceModal } from '../components/EditServiceModal';
 import { DeleteConfirmDialog } from '../components/DeleteConfirmDialog';
 import { StatusPageConfigModal } from '../components/StatusPageConfigModal';
 import { ServiceStatus } from '../types';
+import { SystemResourcesWidget } from '../components/SystemResourcesWidget';
+import { StorageAnalyticsWidget } from '../components/StorageAnalyticsWidget';
 
 export default function Dashboard() {
   const { services, stats, loading, error, refresh } = useServices();
@@ -24,10 +27,10 @@ export default function Dashboard() {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [editService, setEditService] = useState<ServiceStatus | null>(null);
   const [deleteService, setDeleteService] = useState<ServiceStatus | null>(null);
+  const [activeTab, setActiveTab] = useState<'services' | 'system'>('services');
 
   const isAdmin = hasRole('kubiq-admin');
 
-  // ... (handleClickOutside remains same)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target as Node)) {
@@ -50,13 +53,9 @@ export default function Dashboard() {
   if (loading && services.length === 0) {
     return (
       <div className="relative min-h-screen">
-        {/* Background Effects */}
         <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-          {/* Gradient base */}
           <div className="absolute inset-0 bg-gradient-to-br from-bg via-bg to-bg-surface"></div>
-          {/* Radial gradient overlay */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
-          {/* Blur orbs */}
           <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
           <div className="absolute top-1/3 -right-20 w-80 h-80 bg-primary/3 rounded-full blur-3xl"></div>
           <div className="absolute bottom-20 left-1/4 w-72 h-72 bg-primary/4 rounded-full blur-3xl"></div>
@@ -75,13 +74,9 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="relative min-h-screen">
-        {/* Background Effects */}
         <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-          {/* Gradient base */}
           <div className="absolute inset-0 bg-gradient-to-br from-bg via-bg to-bg-surface"></div>
-          {/* Radial gradient overlay */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
-          {/* Blur orbs */}
           <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
           <div className="absolute top-1/3 -right-20 w-80 h-80 bg-primary/3 rounded-full blur-3xl"></div>
           <div className="absolute bottom-20 left-1/4 w-72 h-72 bg-primary/4 rounded-full blur-3xl"></div>
@@ -105,28 +100,63 @@ export default function Dashboard() {
 
   return (
     <div className="relative min-h-screen">
-      {/* Background Effects */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        {/* Gradient base */}
         <div className="absolute inset-0 bg-gradient-to-br from-bg via-bg to-bg-surface"></div>
-        {/* Radial gradient overlay */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
-        {/* Blur orbs */}
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
         <div className="absolute top-1/3 -right-20 w-80 h-80 bg-primary/3 rounded-full blur-3xl"></div>
         <div className="absolute bottom-20 left-1/4 w-72 h-72 bg-primary/4 rounded-full blur-3xl"></div>
       </div>
 
       <div className="space-y-6 relative">
-        {/* Stats Overview */}
-        {stats && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <StatsCard label="Total Services" value={stats.totalServices} color="text-primary" />
-            <StatsCard label="Healthy" value={stats.healthyServices} color="text-success" />
-            <StatsCard label="Unhealthy" value={stats.unhealthyServices} color="text-error" />
-            <StatsCard label="Unknown" value={stats.unknownServices} color="text-warning" />
-          </div>
+        
+        {/* Main Tab Switcher */}
+        {isAdmin && (
+            <div className="flex justify-center mb-6">
+                <div className="bg-bg-card border border-border-color p-1 rounded-xl flex space-x-1 shadow-lg backdrop-blur-md">
+                    <button
+                        onClick={() => setActiveTab('services')}
+                        className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                            activeTab === 'services' 
+                            ? 'bg-primary text-white shadow-md' 
+                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        Services
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('system')}
+                        className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                            activeTab === 'system' 
+                            ? 'bg-primary text-white shadow-md' 
+                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        System Health
+                    </button>
+                </div>
+            </div>
         )}
+
+        {/* SYSTEM HEALTH TAB */}
+        {activeTab === 'system' && isAdmin && (
+            <div className="animate-fade-in-down">
+                <SystemResourcesWidget />
+                <StorageAnalyticsWidget />
+            </div>
+        )}
+
+        {/* SERVICES TAB */}
+        <div className={`${activeTab === 'services' ? 'block animate-fade-in space-y-6' : 'hidden'}`}>
+            {/* Stats Overview */}
+            {stats && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+                <StatsCard label="Total Services" value={stats.totalServices} color="text-primary" />
+                <StatsCard label="Healthy" value={stats.healthyServices} color="text-success" />
+                <StatsCard label="Unhealthy" value={stats.unhealthyServices} color="text-error" />
+                <StatsCard label="Unknown" value={stats.unknownServices} color="text-warning" />
+            </div>
+            )}
 
         {/* Filters and Search */}
         <div className="bg-bg-surface rounded-lg p-3 sm:p-4 border border-gray-800">
@@ -300,6 +330,7 @@ export default function Dashboard() {
             serviceName={editService.name}
             currentEndpoint={editService.endpoint}
             currentHeaders={editService.headers}
+            currentIgnoreSSL={editService.ignoreSSL}
             type={editService.type}
           />
         )}
@@ -315,6 +346,8 @@ export default function Dashboard() {
             serviceName={deleteService.name}
           />
         )}
+        </div> {/* End Services Tab */}
+
       </div>
     </div>
   );

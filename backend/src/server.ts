@@ -89,6 +89,7 @@ app.use(express.urlencoded({ extended: true }));
 import { publicStatusRouter } from './routes/publicStatus';
 import { notificationsRouter } from './routes/notifications';
 import { usersRouter } from './routes/users';
+import { systemRouter } from './routes/system';
 import { DatabaseFactory } from './database/DatabaseFactory';
 
 // Public routes
@@ -101,6 +102,7 @@ app.use(`${BACKEND_CONTEXT_PATH}/api/public`, publicStatusRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/services`, authMiddleware, servicesRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/notifications`, authMiddleware, notificationsRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/users`, authMiddleware, usersRouter);
+app.use(`${BACKEND_CONTEXT_PATH}/api/system`, authMiddleware, systemRouter); // New System Routes
 
 // Serve frontend static files
 const frontendPath = path.join(__dirname, '../public');
@@ -124,6 +126,7 @@ app.use(errorHandler);
 // Initialize Service Monitor
 const serviceMonitor = ServiceMonitor.getInstance();
 const notificationManager = NotificationManager.getInstance();
+import { SystemMonitorService } from './services/SystemMonitorService'; // Lazy import to avoid circular dependency issues if any
 
 const startServer = async () => {
     try {
@@ -139,6 +142,15 @@ const startServer = async () => {
         
           // Start monitoring services
           serviceMonitor.start();
+
+          // Start System Monitoring (Snapshot every 30 minutes)
+          const systemMonitor = SystemMonitorService.getInstance();
+          // Take one snapshot immediately (delayed slightly to ensure DB ready)
+          setTimeout(() => systemMonitor.snapshot().catch(err => console.error('System Snapshot Error:', err)), 10000);
+          
+          setInterval(() => {
+              systemMonitor.snapshot().catch(err => console.error('System Snapshot Error:', err));
+          }, 30 * 60 * 1000); // 30 mins
         });
     } catch (err) {
         console.error('Failed to start server:', err);

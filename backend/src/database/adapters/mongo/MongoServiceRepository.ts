@@ -58,26 +58,33 @@ export class MongoServiceRepository implements IServiceRepository {
     await ServiceModel.deleteOne({ name });
   }
 
-  async saveCheckResult(serviceName: string, result: HealthCheck): Promise<void> {
+  async saveCheckResult(serviceName: string, result: HealthCheck, extraData?: { sslExpiry?: Date | null }): Promise<void> {
     // 1. Update latest status fields
     // 2. Push to history array (capped via slice if needed, but let's just push for now)
     
-    await ServiceModel.updateOne(
-        { name: serviceName },
-        {
-            $set: {
-                status: result.status,
-                lastCheck: result.timestamp,
-                responseTime: result.responseTime
-            },
-            $push: {
-                history: {
-                    $each: [result],
-                    $sort: { timestamp: -1 },
-                    $slice: -100 // Keep last 100 records (as per MAX_HISTORY_SIZE default)
-                }
+    // Construct update object
+    const update: any = {
+        $set: {
+            status: result.status,
+            lastCheck: result.timestamp,
+            responseTime: result.responseTime
+        },
+        $push: {
+            history: {
+                $each: [result],
+                $sort: { timestamp: -1 },
+                $slice: -100 // Keep last 100 records (as per MAX_HISTORY_SIZE default)
             }
         }
+    };
+
+    if (extraData && extraData.sslExpiry !== undefined) {
+        update.$set.sslExpiry = extraData.sslExpiry;
+    }
+
+    await ServiceModel.updateOne(
+        { name: serviceName },
+        update
     );
   }
 
@@ -127,7 +134,9 @@ export class MongoServiceRepository implements IServiceRepository {
           headers: doc.headers,
           currentStatus: doc.status || 'unknown',
           lastCheck: lastCheck,
-          history: history
+          history: history,
+          ignoreSSL: doc.ignoreSSL,
+          sslExpiry: doc.sslExpiry
       };
   }
 }

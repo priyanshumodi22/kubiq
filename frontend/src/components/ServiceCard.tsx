@@ -94,13 +94,40 @@ export default function ServiceCard({
         </div>
       </div>
 
-      {/* Last Check Time */}
-      {service.lastCheck?.timestamp && (
-        <div className="flex items-center gap-1.5 text-xs text-text-dim mb-3 pb-3 border-b border-gray-700">
-          <Clock className="w-3 h-3" />
-          <span className="truncate">{new Date(service.lastCheck.timestamp).toLocaleString()}</span>
+      {/* Last Check Time & SSL */ }
+      <div className="flex items-center justify-between text-xs text-text-dim mb-3 pb-3 border-b border-gray-700">
+        <div className="flex items-center gap-1.5">
+             <Clock className="w-3 h-3" />
+             <span className="truncate">
+                 {service.lastCheck?.timestamp ? new Date(service.lastCheck.timestamp).toLocaleString() : '-'}
+             </span>
         </div>
-      )}
+
+        {/* SSL Badge */}
+        {(service.sslExpiry || service.ignoreSSL) && (
+            <div className="flex items-center gap-2">
+                {service.ignoreSSL && (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 font-medium whitespace-nowrap">
+                        Ignored
+                    </span>
+                )}
+                {service.sslExpiry && (() => {
+                    const days = Math.ceil((new Date(service.sslExpiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                    let colorClass = 'bg-primary/10 text-primary border-primary/20'; // Default Blue/Green ish
+                    if (days < 0) colorClass = 'bg-red-500/10 text-red-500 border-red-500/20';
+                    else if (days < 7) colorClass = 'bg-red-500/10 text-red-500 border-red-500/20';
+                    else if (days < 30) colorClass = 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
+                    else colorClass = 'bg-green-500/10 text-green-500 border-green-500/20';
+
+                    return (
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] border font-medium whitespace-nowrap ${colorClass}`}>
+                            SSL: {days < 0 ? 'Exp' : `${days}d`}
+                        </span>
+                    );
+                })()}
+            </div>
+        )}
+      </div>
 
       {/* Admin Actions */}
       {isAdmin && (onEdit || onDelete) && (

@@ -188,9 +188,15 @@ export class NotificationManager {
       }
     });
 
+    const senderName = channel.config.senderName || 'Kubiq Alert';
+    const senderEmail = channel.config.senderEmail || 'no-reply@kubiq.local';
+    const from = `"${senderName}" <${senderEmail}>`;
+
     await transporter.sendMail({
-      from: channel.config.senderEmail || '"Kubiq Alert" <no-reply@kubiq.local>',
+      from,
       to: channel.config.email,
+      cc: channel.config.cc,
+      bcc: channel.config.bcc,
       subject: `[Kubiq] ${title}`,
       text: message,
       html: `<div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">

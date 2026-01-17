@@ -72,3 +72,13 @@ CREATE TABLE IF NOT EXISTS passkeys (
     INDEX idx_user_id (user_id)
 );
 
+
+CREATE TABLE IF NOT EXISTS system_metrics (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cpu_load FLOAT NOT NULL,
+    memory_used BIGINT NOT NULL,
+    memory_total BIGINT NOT NULL,
+    disk_usage JSON NOT NULL, -- Array of mount points and usage
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_timestamp (timestamp)
+);

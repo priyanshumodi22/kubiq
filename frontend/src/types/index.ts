@@ -24,6 +24,8 @@ export interface ServiceStatus {
   history: HealthCheck[];
   uptime?: number;
   averageResponseTime?: number;
+  ignoreSSL?: boolean; // New
+  sslExpiry?: string | null; // Date comes as string from JSON API
 }
 
 export interface Stats {
@@ -32,4 +34,34 @@ export interface Stats {
   unhealthyServices: number;
   unknownServices: number;
   isRunning: boolean;
+}
+
+export interface DiskInfo {
+  fs: string;
+  type: string;
+  size: number;
+  used: number;
+  available: number;
+  use: number;
+  mount: string;
+}
+
+export interface SystemMetrics {
+  cpuLoad: number;
+  memory: {
+    total: number;
+    active: number;
+    used: number;
+  };
+  uptime: number;
+  disks: DiskInfo[];
+  timestamp?: number;
+}
+
+export interface StoragePrediction {
+    mount: string;
+    daysRemaining: number;
+    trend: 'growing' | 'shrinking' | 'stable';
+    bytesPerDay: number;
+    isCritical: boolean;
 }

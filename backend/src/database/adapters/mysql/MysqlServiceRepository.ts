@@ -57,7 +57,8 @@ export class MysqlServiceRepository implements IServiceRepository {
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
-    }); // TODO: Handle connection errors
+       multipleStatements: true 
+    }); 
     
     // Test connection
     try {
@@ -65,11 +66,69 @@ export class MysqlServiceRepository implements IServiceRepository {
         connection.release();
         console.log('✅ Connected to MySQL Database');
         
+        await this.ensureSchema(); // Auto-migrate
         await this.loadInitialState();
     } catch(err) {
         console.error('❌ Failed to connect to MySQL:', err);
         throw err;
     }
+  }
+
+  private async ensureSchema(): Promise<void> {
+      const connection = await this.pool.getConnection();
+      try {
+          // Create tables if not exist
+          await connection.query(`
+            CREATE TABLE IF NOT EXISTS services (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL UNIQUE,
+                endpoint VARCHAR(512) NOT NULL,
+                type VARCHAR(50) DEFAULT 'http',
+                headers TEXT,
+                current_status VARCHAR(50),
+                ssl_expiry DATETIME,
+                ignore_ssl BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB;
+
+            CREATE TABLE IF NOT EXISTS service_history (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                service_id INT NOT NULL,
+                timestamp DATETIME NOT NULL,
+                status INT,
+                success BOOLEAN,
+                response_time INT,
+                error TEXT,
+                FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE,
+                INDEX idx_service_timestamp (service_id, timestamp)
+            ) ENGINE=InnoDB;
+            
+            CREATE TABLE IF NOT EXISTS system_config (
+                \`key\` VARCHAR(50) PRIMARY KEY,
+                \`value\` TEXT
+            ) ENGINE=InnoDB;
+          `);
+          
+          // Check for missing columns in 'services' (Migration for existing DBs)
+          const [columns] = await connection.query<RowDataPacket[]>('SHOW COLUMNS FROM services');
+          const columnNames = columns.map(c => c.Field);
+          
+          if (!columnNames.includes('ignore_ssl')) {
+              console.log('🔧 Migrating MySQL: Adding ignore_ssl column');
+              await connection.query('ALTER TABLE services ADD COLUMN ignore_ssl BOOLEAN DEFAULT FALSE');
+          }
+           if (!columnNames.includes('ssl_expiry')) {
+              console.log('🔧 Migrating MySQL: Adding ssl_expiry column');
+              await connection.query('ALTER TABLE services ADD COLUMN ssl_expiry DATETIME');
+          }
+          
+      } catch (e) {
+          console.error('❌ MySQL Schema Migration Failed:', e);
+          throw e; // Critical failure
+      } finally {
+          connection.release();
+      }
   }
 
   private async loadInitialState(): Promise<void> {
@@ -82,6 +141,8 @@ export class MysqlServiceRepository implements IServiceRepository {
         endpoint: row.endpoint,
         type: row.type as any || 'http',
         headers: typeof row.headers === 'string' ? JSON.parse(row.headers) : (row.headers || undefined),
+        ignoreSSL: Boolean(row.ignore_ssl),
+        sslExpiry: row.ssl_expiry ? new Date(row.ssl_expiry) : null,
         currentStatus: row.current_status || 'unknown',
         history: [], // History loaded lazily or separate query?
         // If we load history here it might be heavy. 
@@ -128,8 +189,8 @@ export class MysqlServiceRepository implements IServiceRepository {
         await connection.beginTransaction();
 
         const [result] = await connection.execute<ResultSetHeader>(
-            'INSERT INTO services (name, endpoint, type, headers) VALUES (?, ?, ?, ?)',
-            [config.name, config.endpoint, config.type || 'http', JSON.stringify(config.headers || {})]
+            'INSERT INTO services (name, endpoint, type, headers, ignore_ssl) VALUES (?, ?, ?, ?, ?)',
+            [config.name, config.endpoint, config.type || 'http', JSON.stringify(config.headers || {}), config.ignoreSSL || false]
         );
         
         const newService: ServiceStatus = {
@@ -137,6 +198,8 @@ export class MysqlServiceRepository implements IServiceRepository {
             endpoint: config.endpoint,
             type: config.type || 'http',
             headers: config.headers,
+            ignoreSSL: config.ignoreSSL,
+            sslExpiry: null,
             currentStatus: 'unknown',
             history: []
         };
@@ -160,11 +223,12 @@ export class MysqlServiceRepository implements IServiceRepository {
     if (config.endpoint) service.endpoint = config.endpoint;
     if (config.type) service.type = config.type;
     if (config.headers) service.headers = config.headers;
+    if (config.ignoreSSL !== undefined) service.ignoreSSL = config.ignoreSSL;
     
     // Update DB
     await this.pool.execute(
-        'UPDATE services SET endpoint = ?, type = ?, headers = ? WHERE name = ?',
-        [service.endpoint, service.type || 'http', JSON.stringify(service.headers || {}), name]
+        'UPDATE services SET endpoint = ?, type = ?, headers = ?, ignore_ssl = ? WHERE name = ?',
+        [service.endpoint, service.type || 'http', JSON.stringify(service.headers || {}), service.ignoreSSL || false, name] // Use service.ignoreSSL
     );
 
     this.services.set(name, service);
@@ -178,21 +242,14 @@ export class MysqlServiceRepository implements IServiceRepository {
     this.services.delete(name);
   }
 
-  async saveCheckResult(serviceName: string, result: HealthCheck): Promise<void> {
+  async saveCheckResult(serviceName: string, result: HealthCheck, extraData?: { sslExpiry?: Date | null }): Promise<void> {
     const service = this.services.get(serviceName);
     if (!service) return;
 
-    // Update in-memory state (ServiceMonitor does this too, duplicate effort? 
-    // Wait, ServiceMonitor manages the polling loop and state. 
-    // Repo just persists.
-    // But wait, if I restart app, I need to load history.
-    // So writing to DB is crucial here.
-    
-    // Get ID map? Optimally we should store ID in ServiceStatus.
-    // But ServiceStatus type doesn't have ID.
-    // I can query ID by name or fetch it.
-    
-    // Optimization: Cache IDs map.
+    // Update in-memory state
+    if (extraData && extraData.sslExpiry !== undefined) {
+        service.sslExpiry = extraData.sslExpiry;
+    }
     
     const [rows] = await this.pool.execute<RowDataPacket[]>('SELECT id FROM services WHERE name = ?', [serviceName]);
     if (!rows.length) return;
@@ -212,14 +269,17 @@ export class MysqlServiceRepository implements IServiceRepository {
         );
         
         // Update current status in services table
-        await this.pool.execute(
-            'UPDATE services SET current_status = ?, updated_at = NOW() WHERE id = ?',
-            [result.success ? 'healthy' : 'unhealthy', serviceId]
-        );
-        
-        // Also prune old history? 
-        // Maybe a cron job is better for pruning SQL history.
-        // For now, let it grow (users can prune manually).
+        if (extraData && extraData.sslExpiry !== undefined) {
+             await this.pool.execute(
+                'UPDATE services SET current_status = ?, updated_at = NOW(), ssl_expiry = ? WHERE id = ?',
+                [result.success ? 'healthy' : 'unhealthy', extraData.sslExpiry, serviceId]
+            );
+        } else {
+            await this.pool.execute(
+                'UPDATE services SET current_status = ?, updated_at = NOW() WHERE id = ?',
+                [result.success ? 'healthy' : 'unhealthy', serviceId]
+            );
+        }
         
     } catch(err) {
         console.error(`Failed to save check result for ${serviceName}`, err);
