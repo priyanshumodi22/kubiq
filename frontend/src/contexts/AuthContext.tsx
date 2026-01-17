@@ -185,11 +185,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setIsLoggingOut(true);
     
+    const baseUrl = import.meta.env.BASE_URL.endsWith('/') 
+        ? import.meta.env.BASE_URL 
+        : import.meta.env.BASE_URL + '/';
+    const loginUrl = `${window.location.origin}${baseUrl}login`;
+
     // Delay for animation
     setTimeout(() => {
         if (provider === 'keycloak' && keycloak) {
             keycloak.logout({
-                redirectUri: window.location.origin + '/login',
+                redirectUri: loginUrl,
             });
         } else {
             // Native Logout
@@ -200,7 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setRoles([]);
             setProvider(null);
             // Reload to reset state fully or just redirect
-            window.location.href = '/login'; 
+            window.location.href = loginUrl; 
         }
     }, 1500);
   };
