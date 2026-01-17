@@ -288,127 +288,130 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
             </div>
           )}
 
-          {/* Custom Endpoint Check */}
-          <div className="bg-bg-elevated rounded-lg p-3 sm:p-4">
-            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
-              Custom Endpoint Check
-            </h3>
-            <div className="flex flex-col gap-3 mb-4">
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="relative w-full sm:w-24 flex-shrink-0">
-                   <div className="relative">
-                    <select
-                      value={method}
-                      onChange={(e) => setMethod(e.target.value)}
-                      className="w-full pl-3 pr-8 py-2 text-sm sm:text-base font-medium bg-bg rounded-lg border border-gray-700 focus:border-primary focus:outline-none appearance-none cursor-pointer hover:bg-bg-elevated transition-colors"
-                    >
-                      {methods.map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                   </div>
-                </div>
-                <input
-                  type="text"
-                  value={customEndpoint}
-                  onChange={(e) => setCustomEndpoint(e.target.value)}
-                  placeholder="/custom-endpoint"
-                  className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base bg-bg rounded-lg border border-gray-700 focus:border-primary focus:outline-none"
-                />
-                <button
-                  onClick={handleCustomCheck}
-                  disabled={checkingCustom || !customEndpoint.trim()}
-                  className="px-4 sm:px-6 py-2 text-sm sm:text-base bg-primary hover:bg-primary/80 disabled:bg-primary/50 rounded-lg font-medium transition-colors whitespace-nowrap"
-                >
-                  {checkingCustom ? 'Checking...' : 'Check'}
-                </button>
-              </div>
 
-              <button
-                onClick={() => setShowRequestOptions(!showRequestOptions)}
-                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 self-start"
-              >
-                {showRequestOptions ? (
-                  <ChevronUp className="w-3 h-3" />
-                ) : (
-                  <ChevronDown className="w-3 h-3" />
-                )}
-                Advanced Options (Headers & Body)
-              </button>
-
-              {showRequestOptions && (
-                <div className="space-y-4 p-3 bg-bg rounded-lg border border-gray-800">
-                  {/* Headers Section */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-semibold text-text-dim">Request Headers</span>
-                      <button
-                        onClick={addHeader}
-                        className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
+          {/* Custom Endpoint Check - Only for HTTP(s) */}
+          {(!service.type || service.type === 'http' || service.type === 'https') && (
+            <div className="bg-bg-elevated rounded-lg p-3 sm:p-4">
+              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
+                Custom Endpoint Check
+              </h3>
+              <div className="flex flex-col gap-3 mb-4">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative w-full sm:w-24 flex-shrink-0">
+                    <div className="relative">
+                      <select
+                        value={method}
+                        onChange={(e) => setMethod(e.target.value)}
+                        className="w-full pl-3 pr-8 py-2 text-sm sm:text-base font-medium bg-bg rounded-lg border border-gray-700 focus:border-primary focus:outline-none appearance-none cursor-pointer hover:bg-bg-elevated transition-colors"
                       >
-                        <Plus className="w-3 h-3" /> Add Header
-                      </button>
-                    </div>
-
-                    {requestHeaders.length === 0 && (
-                      <div className="text-xs text-text-dim italic">No custom headers</div>
-                    )}
-
-                    <div className="space-y-2">
-                      {requestHeaders.map((header, idx) => (
-                        <div key={idx} className="flex gap-2">
-                          <Combobox
-                            value={header.key}
-                            onChange={(val) => updateHeader(idx, 'key', val)}
-                            options={COMMON_HEADERS}
-                            placeholder="Key"
-                            className="flex-1 min-w-0"
-                          />
-                          <Combobox
-                            value={header.value}
-                            onChange={(val) => updateHeader(idx, 'value', val)}
-                            options={COMMON_HEADER_VALUES[header.key] || []}
-                            placeholder="Value"
-                            className="flex-1 min-w-0"
-                          />
-                          <button
-                            onClick={() => removeHeader(idx)}
-                            className="p-1.5 text-error hover:bg-error/10 rounded self-start mt-0.5"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
+                        {methods.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                     </div>
                   </div>
+                  <input
+                    type="text"
+                    value={customEndpoint}
+                    onChange={(e) => setCustomEndpoint(e.target.value)}
+                    placeholder="/custom-endpoint"
+                    className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base bg-bg rounded-lg border border-gray-700 focus:border-primary focus:outline-none"
+                  />
+                  <button
+                    onClick={handleCustomCheck}
+                    disabled={checkingCustom || !customEndpoint.trim()}
+                    className="px-4 sm:px-6 py-2 text-sm sm:text-base bg-primary hover:bg-primary/80 disabled:bg-primary/50 rounded-lg font-medium transition-colors whitespace-nowrap"
+                  >
+                    {checkingCustom ? 'Checking...' : 'Check'}
+                  </button>
+                </div>
 
-                  {/* Body Section */}
-                  {method !== 'GET' && method !== 'HEAD' && (
-                    <div>
-                      <span className="text-xs font-semibold text-text-dim mb-2 block">
-                        Request Body (JSON)
-                      </span>
-                      <textarea
-                        value={requestBody}
-                        onChange={(e) => setRequestBody(e.target.value)}
-                        placeholder='{"key": "value"}'
-                        className="w-full h-32 px-3 py-2 text-xs font-mono bg-bg-surface rounded border border-gray-700 focus:border-primary focus:outline-none resize-none"
-                      />
-                    </div>
+                <button
+                  onClick={() => setShowRequestOptions(!showRequestOptions)}
+                  className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 self-start"
+                >
+                  {showRequestOptions ? (
+                    <ChevronUp className="w-3 h-3" />
+                  ) : (
+                    <ChevronDown className="w-3 h-3" />
                   )}
+                  Advanced Options (Headers & Body)
+                </button>
+
+                {showRequestOptions && (
+                  <div className="space-y-4 p-3 bg-bg rounded-lg border border-gray-800">
+                    {/* Headers Section */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-semibold text-text-dim">Request Headers</span>
+                        <button
+                          onClick={addHeader}
+                          className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
+                        >
+                          <Plus className="w-3 h-3" /> Add Header
+                        </button>
+                      </div>
+
+                      {requestHeaders.length === 0 && (
+                        <div className="text-xs text-text-dim italic">No custom headers</div>
+                      )}
+
+                      <div className="space-y-2">
+                        {requestHeaders.map((header, idx) => (
+                          <div key={idx} className="flex gap-2">
+                            <Combobox
+                              value={header.key}
+                              onChange={(val) => updateHeader(idx, 'key', val)}
+                              options={COMMON_HEADERS}
+                              placeholder="Key"
+                              className="flex-1 min-w-0"
+                            />
+                            <Combobox
+                              value={header.value}
+                              onChange={(val) => updateHeader(idx, 'value', val)}
+                              options={COMMON_HEADER_VALUES[header.key] || []}
+                              placeholder="Value"
+                              className="flex-1 min-w-0"
+                            />
+                            <button
+                              onClick={() => removeHeader(idx)}
+                              className="p-1.5 text-error hover:bg-error/10 rounded self-start mt-0.5"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Body Section */}
+                    {method !== 'GET' && method !== 'HEAD' && (
+                      <div>
+                        <span className="text-xs font-semibold text-text-dim mb-2 block">
+                          Request Body (JSON)
+                        </span>
+                        <textarea
+                          value={requestBody}
+                          onChange={(e) => setRequestBody(e.target.value)}
+                          placeholder='{"key": "value"}'
+                          className="w-full h-32 px-3 py-2 text-xs font-mono bg-bg-surface rounded border border-gray-700 focus:border-primary focus:outline-none resize-none"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {customResult && (
+                <div className="mt-4 p-4 bg-bg rounded-lg border border-gray-700 font-mono text-sm overflow-x-auto">
+                  <pre className="text-text-dim">{JSON.stringify(customResult, null, 2)}</pre>
                 </div>
               )}
             </div>
-
-            {customResult && (
-              <div className="mt-4 p-4 bg-bg rounded-lg border border-gray-700 font-mono text-sm overflow-x-auto">
-                <pre className="text-text-dim">{JSON.stringify(customResult, null, 2)}</pre>
-              </div>
-            )}
-          </div>
+          )}
 
           {/* Recent Checks */}
           {!loading && history.length > 0 && (

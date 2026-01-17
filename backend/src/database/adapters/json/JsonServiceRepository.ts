@@ -137,7 +137,11 @@ export class JsonServiceRepository implements IServiceRepository {
       const content = fs.readFileSync(this.servicesConfigPath, 'utf-8');
       const lines = content.split('\n');
       lines.forEach(line => {
-        const [name, val] = line.split('=').map(s => s.trim());
+        const namePart = line.indexOf('=');
+        if (namePart === -1) return;
+        const name = line.substring(0, namePart).trim();
+        const val = line.substring(namePart + 1).trim();
+        
         if (name && val && !name.startsWith('#')) {
              // Basic parse (simplified for brevity, assumes standard format)
              const parts = val.split('|');

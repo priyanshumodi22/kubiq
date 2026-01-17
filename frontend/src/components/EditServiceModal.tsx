@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { apiClient } from '../services/api';
 
+type MonitorType = 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp';
+
 interface EditServiceModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -9,6 +11,7 @@ interface EditServiceModalProps {
   serviceName: string;
   currentEndpoint: string;
   currentHeaders?: Record<string, string>;
+  type?: MonitorType;
 }
 
 export function EditServiceModal({
@@ -18,22 +21,42 @@ export function EditServiceModal({
   serviceName,
   currentEndpoint,
   currentHeaders,
+  type: initialType = 'http', // Default to http
 }: EditServiceModalProps) {
-  const [endpoint, setEndpoint] = useState(currentEndpoint);
+  const [type, setType] = useState<MonitorType>(initialType);
+  const [endpoint, setEndpoint] = useState('');
+  const [hostname, setHostname] = useState('');
+  const [port, setPort] = useState('');
+  
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // Reconstruct full format: endpoint|Header1:Value1|Header2:Value2
-    let fullEndpoint = currentEndpoint;
-    if (currentHeaders && Object.keys(currentHeaders).length > 0) {
-      const headerParts = Object.entries(currentHeaders)
-        .map(([key, value]) => `${key}:${value}`)
-        .join('|');
-      fullEndpoint = `${currentEndpoint}|${headerParts}`;
+    if (isOpen) {
+        setType(initialType);
+        if (initialType === 'tcp') {
+            const parts = currentEndpoint.split(':');
+            if (parts.length >= 2) {
+                setHostname(parts[0]);
+                setPort(parts[1]);
+            } else {
+                setHostname(currentEndpoint);
+                setPort('');
+            }
+        } else {
+            // For HTTP / DB, keep logic for backward compat headers
+            let fullEndpoint = currentEndpoint;
+            if (currentHeaders && Object.keys(currentHeaders).length > 0) {
+              const headerParts = Object.entries(currentHeaders)
+                .map(([key, value]) => `${key}:${value}`)
+                .join('|');
+              fullEndpoint = `${currentEndpoint}|${headerParts}`;
+            }
+            setEndpoint(fullEndpoint);
+        }
+        setError('');
     }
-    setEndpoint(fullEndpoint);
-  }, [currentEndpoint, currentHeaders, isOpen]);
+  }, [currentEndpoint, currentHeaders, isOpen, initialType]);
 
   if (!isOpen) return null;
 
@@ -43,22 +66,35 @@ export function EditServiceModal({
     setIsSubmitting(true);
 
     try {
-      // Validate input
-      if (!endpoint.trim()) {
-        setError('Endpoint is required');
-        return;
+      let finalEndpoint = '';
+
+      if (type === 'tcp') {
+          if (!hostname.trim() || !port.trim()) {
+              setError('Hostname and Port are required');
+              return;
+          }
+          finalEndpoint = `${hostname.trim()}:${port.trim()}`;
+      } else {
+          if (!endpoint.trim()) {
+              setError('Endpoint is required');
+              return;
+          }
+          finalEndpoint = endpoint.trim();
+          
+          // Basic URL validation for HTTP
+          if (type === 'http') {
+              try {
+                const baseUrl = finalEndpoint.includes('|') ? finalEndpoint.split('|')[0] : finalEndpoint;
+                new URL(baseUrl);
+              } catch {
+                setError('Invalid endpoint URL');
+                return;
+              }
+          }
       }
 
-      // Validate URL (extract base URL before |)
-      try {
-        const baseUrl = endpoint.includes('|') ? endpoint.split('|')[0] : endpoint;
-        new URL(baseUrl);
-      } catch {
-        setError('Invalid endpoint URL');
-        return;
-      }
-
-      await apiClient.updateService(serviceName, endpoint.trim());
+      // Pass the CURRENT type state to updateService
+      await apiClient.updateService(serviceName, finalEndpoint, type);
 
       onSuccess();
       onClose();
@@ -69,89 +105,119 @@ export function EditServiceModal({
     }
   };
 
-  const handleClose = () => {
-    let fullEndpoint = currentEndpoint;
-    if (currentHeaders && Object.keys(currentHeaders).length > 0) {
-      const headerParts = Object.entries(currentHeaders)
-        .map(([key, value]) => `${key}:${value}`)
-        .join('|');
-      fullEndpoint = `${currentEndpoint}|${headerParts}`;
-    }
-    setEndpoint(fullEndpoint);
-    setError('');
-    onClose();
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
-          <h2 className="text-xl font-bold text-white">Edit Service</h2>
+        <div className="flex items-center justify-between p-6 pb-4">
+          <h2 className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Edit Service</h2>
           <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            onClick={onClose}
+            className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 pt-2 space-y-6">
           {error && (
-            <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-2 rounded">
+            <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-xl text-sm">
               {error}
             </div>
           )}
 
-          <div>
-            <label htmlFor="serviceName" className="block text-sm font-medium text-gray-300 mb-1">
-              Service Name
-            </label>
-            <input
-              id="serviceName"
-              type="text"
-              value={serviceName}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-400 cursor-not-allowed"
-              disabled
-            />
-            <p className="mt-1 text-xs text-gray-400">Service name cannot be changed</p>
-          </div>
+          <div className="space-y-4">
+             {/* Monitor Type Selector */}
+             <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-gray-400 ml-1">
+                  Monitor Type
+                </label>
+                <div className="relative group">
+                   <select
+                     value={type}
+                     onChange={(e) => setType(e.target.value as MonitorType)}
+                     className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all appearance-none cursor-pointer"
+                   >
+                      <option value="http">HTTP(s)</option>
+                      <option value="tcp">TCP Port</option>
+                      <option value="mysql">MySQL / MariaDB</option>
+                      <option value="mongodb">MongoDB</option>
+                   </select>
+                </div>
+             </div>
 
-          <div>
-            <label
-              htmlFor="serviceEndpoint"
-              className="block text-sm font-medium text-gray-300 mb-1"
-            >
-              Endpoint URL  | headers (optional)
-            </label>
-            <input
-              id="serviceEndpoint"
-              type="text"
-              value={endpoint}
-              onChange={(e) => setEndpoint(e.target.value)}
-              placeholder="https://api.example.com/health|Header1:Value1|Header2:Value2"
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={isSubmitting}
-            />
-            <p className="mt-1 text-xs text-gray-400">
-               or e.g, http://service-name:port/endpoint|Header1:Value1
-            </p>
+             <div>
+                <label className="block text-sm font-medium text-gray-400 ml-1 mb-1.5">
+                  Service Name
+                </label>
+                <input
+                  type="text"
+                  value={serviceName}
+                  className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-gray-400 cursor-not-allowed"
+                  disabled
+                />
+                <p className="mt-1.5 text-xs text-gray-500 pl-1">Service name cannot be changed</p>
+             </div>
+
+             {type === 'tcp' ? (
+                <div className="flex gap-3">
+                    <div className="space-y-1.5 flex-1">
+                        <label className="block text-sm font-medium text-gray-400 ml-1">Hostname</label>
+                        <input
+                            type="text"
+                            value={hostname}
+                            onChange={(e) => setHostname(e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
+                            disabled={isSubmitting}
+                        />
+                    </div>
+                    <div className="space-y-1.5 w-1/3">
+                        <label className="block text-sm font-medium text-gray-400 ml-1">Port</label>
+                        <input
+                            type="number"
+                            value={port}
+                            onChange={(e) => setPort(e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
+                            disabled={isSubmitting}
+                        />
+                    </div>
+                </div>
+            ) : (
+                <div className="space-y-1.5">
+                    <label className="block text-sm font-medium text-gray-400 ml-1">
+                        {type === 'http' ? 'Endpoint URL | headers (optional)' : 'Connection String'}
+                    </label>
+                    <input
+                        type="text"
+                        value={endpoint}
+                        onChange={(e) => setEndpoint(e.target.value)}
+                        placeholder={type === 'http' ? "https://..." : type === 'mysql' ? "mysql://..." : "mongodb://..."}
+                        className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
+                        disabled={isSubmitting}
+                    />
+                    {type === 'http' && (
+                        <p className="mt-1.5 text-xs text-gray-500 pl-1">
+                             Use <code>|Header:Value</code> to add headers
+                        </p>
+                    )}
+                </div>
+            )}
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex gap-3 pt-2">
             <button
               type="button"
-              onClick={handleClose}
-              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+              onClick={onClose}
+              className="flex-1 px-4 py-2.5 bg-transparent border border-white/10 hover:bg-white/5 text-gray-300 rounded-xl font-medium transition-all duration-200"
               disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2.5 bg-primary hover:bg-blue-600 text-white rounded-xl font-medium shadow-lg shadow-blue-500/20 transition-all duration-200 disabled:opacity-50"
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Updating...' : 'Update Service'}

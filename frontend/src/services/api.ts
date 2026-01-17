@@ -178,9 +178,10 @@ class ApiClient {
     return response.data;
   }
 
-  async updateService(name: string, endpoint: string) {
+  async updateService(name: string, endpoint: string, type?: 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp') {
     const response = await this.client.put(`/api/services/${name}`, {
       endpoint,
+      type,
     });
     return response.data;
   }
