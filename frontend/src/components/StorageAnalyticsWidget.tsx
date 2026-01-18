@@ -14,6 +14,15 @@ export const StorageAnalyticsWidget = () => {
     const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
     const [loading, setLoading] = useState(true);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    const [animate, setAnimate] = useState(false);
+
+    useEffect(() => {
+        if (!loading && metrics) {
+             requestAnimationFrame(() => {
+                 setAnimate(true);
+             });
+        }
+    }, [loading, metrics]);
 
     useEffect(() => {
         if (toast) {
@@ -209,7 +218,7 @@ export const StorageAnalyticsWidget = () => {
                                         <div className="w-full bg-gray-800 rounded-full h-2 mb-2">
                                             <div 
                                                 className={`h-2 rounded-full ${percent > 90 ? 'bg-red-500' : percent > 75 ? 'bg-yellow-500' : 'bg-green-500'}`} 
-                                                style={{ width: `${percent}%` }}
+                                                style={{ width: `${animate ? percent : 0}%`, transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
                                             ></div>
                                         </div>
                                         <div className="flex justify-between text-xs text-gray-500">

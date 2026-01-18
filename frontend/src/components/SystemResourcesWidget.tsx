@@ -25,6 +25,18 @@ export const SystemResourcesWidget = () => {
         return () => clearInterval(interval);
     }, []);
 
+    // Animation trigger
+    const [animate, setAnimate] = useState(false);
+    useEffect(() => {
+        if (!loading && metrics) {
+             // Small delay to ensure render happens at 0 first (if we were mounted)
+             // or just to trigger the transition class change
+             requestAnimationFrame(() => {
+                 setAnimate(true);
+             });
+        }
+    }, [loading, metrics]);
+
     if (loading || !metrics) {
         return <div className="animate-pulse h-32 bg-gray-900 rounded-lg"></div>;
     }
@@ -47,7 +59,8 @@ export const SystemResourcesWidget = () => {
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             {/* CPU Widget */}
-            <div className="bg-bg-card border border-border-color rounded-lg p-5 flex items-center shadow-lg backdrop-blur-sm bg-opacity-80">
+            {/* CPU Widget */}
+            <div className="bg-bg-card border border-border-color rounded-lg p-5 flex items-center shadow-lg backdrop-blur-sm bg-opacity-80 animate-premium-fade" style={{ animationDelay: '0ms' }}>
                 <div className="mr-4">
                     <div className="relative w-16 h-16">
                         <svg className="w-full h-full transform -rotate-90">
@@ -56,9 +69,9 @@ export const SystemResourcesWidget = () => {
                                 cx="32" cy="32" r="28" 
                                 stroke="currentColor" strokeWidth="4" 
                                 fill="transparent" 
-                                className={`${metrics.cpuLoad > 80 ? 'text-red-500' : 'text-blue-500'} transition-all duration-1000 ease-in-out`}
+                                className={`${metrics.cpuLoad > 80 ? 'text-red-500' : 'text-blue-500'} transition-all duration-1000 ease-out`}
                                 strokeDasharray={175} 
-                                strokeDashoffset={175 - (metrics.cpuLoad / 100) * 175} 
+                                strokeDashoffset={animate ? 175 - (metrics.cpuLoad / 100) * 175 : 175} 
                             />
                         </svg>
                         <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
@@ -75,7 +88,8 @@ export const SystemResourcesWidget = () => {
             </div>
 
             {/* RAM Widget */}
-            <div className="bg-bg-card border border-border-color rounded-lg p-5 flex flex-col justify-center shadow-lg backdrop-blur-sm bg-opacity-80">
+            {/* RAM Widget */}
+            <div className="bg-bg-card border border-border-color rounded-lg p-5 flex flex-col justify-center shadow-lg backdrop-blur-sm bg-opacity-80 animate-premium-fade" style={{ animationDelay: '100ms' }}>
                 <div className="flex justify-between items-center mb-3">
                     <h3 className="text-gray-400 text-sm font-medium uppercase tracking-wider flex items-center">
                         <Activity className="w-4 h-4 mr-2" /> Memory
@@ -87,14 +101,15 @@ export const SystemResourcesWidget = () => {
                 <div className="w-full bg-gray-700 rounded-full h-2.5 overflow-hidden">
                     <div 
                         className={`h-2.5 rounded-full ${memPercent > 80 ? 'bg-red-500 animate-pulse' : 'bg-purple-500'}`} 
-                        style={{ width: `${memPercent}%`, transition: 'width 0.5s ease-out' }}
+                        style={{ width: `${animate ? memPercent : 0}%`, transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
                     ></div>
                 </div>
                 <p className="text-right text-xs text-gray-500 mt-2">{Math.round(memPercent)}% Used</p>
             </div>
 
             {/* Uptime Widget */}
-            <div className="bg-bg-card border border-border-color rounded-lg p-5 flex items-center justify-between shadow-lg backdrop-blur-sm bg-opacity-80">
+            {/* Uptime Widget */}
+            <div className="bg-bg-card border border-border-color rounded-lg p-5 flex items-center justify-between shadow-lg backdrop-blur-sm bg-opacity-80 animate-premium-fade" style={{ animationDelay: '200ms' }}>
                 <div>
                     <h3 className="text-gray-400 text-sm font-medium uppercase tracking-wider mb-2 flex items-center">
                         <Clock className="w-4 h-4 mr-2" /> Uptime
