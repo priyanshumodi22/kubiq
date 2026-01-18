@@ -91,7 +91,8 @@ export class MysqlSystemRepository implements ISystemRepository {
     );
 
     if (rows.length > 0) {
-        return rows[0].value; // JSON column automatically parsed by mysql2
+        const val = rows[0].value;
+        return typeof val === 'string' ? JSON.parse(val) : val;
     }
     
     return { allowedMounts: [] }; // Default empty
