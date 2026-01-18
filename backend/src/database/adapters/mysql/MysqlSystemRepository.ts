@@ -11,7 +11,7 @@ export class MysqlSystemRepository implements ISystemRepository {
     this.pool = mysql.createPool({
       host: process.env.DB_HOST || 'localhost',
       user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || 'password',
+      password: process.env.DB_PASS || 'password',
       database: process.env.DB_NAME || 'kubiq',
       waitForConnections: true,
       connectionLimit: 10,
@@ -28,7 +28,6 @@ export class MysqlSystemRepository implements ISystemRepository {
             disk_usage JSON NOT NULL,
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_timestamp (timestamp)
-        )
         )
     `);
 
