@@ -33,7 +33,7 @@ export class SystemMonitorService {
     // User asked to select checkboxes. Better default: Show typical physical disks.)
     
     // Process disks
-    const formattedDisks: DiskInfo[] = disks.map(d => ({
+    let formattedDisks: DiskInfo[] = disks.map(d => ({
         fs: d.fs,
         type: d.type,
         size: d.size,
@@ -43,12 +43,17 @@ export class SystemMonitorService {
         mount: d.mount
     }));
 
+    // Filter based on configuration if present
+    if (allowedMounts.length > 0) {
+        formattedDisks = formattedDisks.filter(d => allowedMounts.includes(d.mount));
+    }
+
     return {
       cpuLoad: cpu.currentLoad,
       memory: {
         total: mem.total,
         active: mem.active,
-        used: mem.used
+        used: mem.active // Use active memory (excluding cache/buffers) for more accurate "Application Memory"
       },
       uptime: si.time().uptime,
       disks: formattedDisks,
