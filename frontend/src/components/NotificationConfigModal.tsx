@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Trash2, Bell, Check, AlertCircle, Send, Pencil, Power } from 'lucide-react';
+import { X, Trash2, Bell, Check, AlertCircle, Send, Pencil } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { ConfirmDialog } from './ConfirmDialog';
 

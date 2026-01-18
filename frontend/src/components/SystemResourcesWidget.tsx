@@ -1,6 +1,6 @@
 
-import React, { useEffect, useState } from 'react';
-import { Activity, Cpu, HardDrive, Clock } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Cpu, Activity, Clock } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { SystemMetrics } from '../types';
 
