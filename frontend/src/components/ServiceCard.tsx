@@ -1,4 +1,4 @@
-import { Clock, Edit2, Trash2, FileText } from 'lucide-react';
+import { Clock, Edit2, Trash2 } from 'lucide-react';
 import { ServiceStatus } from '../types';
 
 interface ServiceCardProps {

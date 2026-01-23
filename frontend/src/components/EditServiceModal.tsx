@@ -13,6 +13,7 @@ interface EditServiceModalProps {
   currentEndpoint: string;
   currentHeaders?: Record<string, string>;
   currentIgnoreSSL?: boolean;
+  currentLogPath?: string;
   type?: MonitorType;
 }
 
@@ -24,6 +25,7 @@ export function EditServiceModal({
   currentEndpoint,
   currentHeaders,
   currentIgnoreSSL,
+  currentLogPath,
   type: initialType = 'http', // Default to http
 }: EditServiceModalProps): React.ReactNode {
   const [type, setType] = useState<MonitorType>(initialType);
@@ -31,6 +33,7 @@ export function EditServiceModal({
   const [hostname, setHostname] = useState('');
   const [port, setPort] = useState('');
   const [ignoreSSL, setIgnoreSSL] = useState(false);
+  const [logPath, setLogPath] = useState('');
 
   const toast = useToast();
   
@@ -63,8 +66,9 @@ export function EditServiceModal({
       }
       
       setIgnoreSSL(currentIgnoreSSL || false);
+      setLogPath(currentLogPath || '');
     }
-  }, [currentEndpoint, currentHeaders, currentIgnoreSSL, isOpen, initialType]);
+  }, [currentEndpoint, currentHeaders, currentIgnoreSSL, currentLogPath, isOpen, initialType]);
 
   if (!isOpen) return null;
 
@@ -102,7 +106,7 @@ export function EditServiceModal({
       }
 
       // Pass the CURRENT type state to updateService
-      await apiClient.updateService(serviceName, finalEndpoint, type, ignoreSSL);
+      await apiClient.updateService(serviceName, finalEndpoint, type, ignoreSSL, logPath);
 
       toast.success('Service updated successfully');
       onSuccess();
