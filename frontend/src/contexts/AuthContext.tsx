@@ -91,6 +91,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               apiClient.setToken(storedToken);
               try {
                   const currentUser = await apiClient.getCurrentUser();
+                  
+                  // If backend returned a fresh token (e.g. roles changed), update it
+                  if (currentUser.token) {
+                      localStorage.setItem('kubiq_token', currentUser.token);
+                      apiClient.setToken(currentUser.token);
+                  }
+
                   handleNativeSuccess(currentUser); // Fixed: removed token arg
                   setIsLoading(false);
                   return;

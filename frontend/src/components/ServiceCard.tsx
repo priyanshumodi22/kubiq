@@ -1,4 +1,4 @@
-import { Clock, Edit2, Trash2 } from 'lucide-react';
+import { Clock, Edit2, Trash2, FileText } from 'lucide-react';
 import { ServiceStatus } from '../types';
 
 interface ServiceCardProps {
@@ -6,6 +6,7 @@ interface ServiceCardProps {
   onClick: () => void;
   onEdit?: (service: ServiceStatus) => void;
   onDelete?: (service: ServiceStatus) => void;
+
   isAdmin?: boolean;
 }
 
@@ -14,6 +15,7 @@ export default function ServiceCard({
   onClick,
   onEdit,
   onDelete,
+
   isAdmin,
 }: ServiceCardProps) {
   const statusConfig = {
@@ -95,7 +97,7 @@ export default function ServiceCard({
       </div>
 
       {/* Last Check Time & SSL */ }
-      <div className="flex items-center justify-between text-xs text-text-dim mb-3 pb-3 border-b border-gray-700">
+      <div className="flex items-center justify-between text-xs text-text-dim mb-3 pb-3 border-b border-gray-700 min-h-[41px]">
         <div className="flex items-center gap-1.5">
              <Clock className="w-3 h-3" />
              <span className="truncate">
@@ -104,8 +106,9 @@ export default function ServiceCard({
         </div>
 
         {/* SSL Badge */}
+        <div className="flex items-center gap-2 h-6"> 
         {(service.sslExpiry || service.ignoreSSL) && (
-            <div className="flex items-center gap-2">
+            <>
                 {service.ignoreSSL && (
                     <span className="px-1.5 py-0.5 rounded text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 font-medium whitespace-nowrap">
                         Ignored
@@ -125,33 +128,39 @@ export default function ServiceCard({
                         </span>
                     );
                 })()}
-            </div>
+            </>
         )}
+        </div>
       </div>
 
-      {/* Admin Actions */}
-      {isAdmin && (onEdit || onDelete) && (
-        <div className="flex gap-2">
-          {onEdit && (
-            <button
-              onClick={handleEdit}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-800 hover:bg-blue-500 text-white rounded transition-colors"
-            >
-              <Edit2 className="w-3 h-3" />
-              Edit
-            </button>
-          )}
-          {onDelete && (
-            <button
-              onClick={handleDelete}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-500 text-white rounded transition-colors"
-            >
-              <Trash2 className="w-3 h-3" />
-              Delete
-            </button>
-          )}
-        </div>
-      )}
+      {/* Actions */}
+      <div className="flex gap-2">
+         {/* Log Viewer Button */}
+
+
+         {isAdmin && (onEdit || onDelete) && (
+            <>
+              {onEdit && (
+                <button
+                  onClick={handleEdit}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-800 hover:bg-blue-500 text-white rounded transition-colors"
+                >
+                  <Edit2 className="w-3 h-3" />
+                  Edit
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={handleDelete}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-500 text-white rounded transition-colors"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Delete
+                </button>
+              )}
+            </>
+         )}
+      </div>
     </div>
   );
 }

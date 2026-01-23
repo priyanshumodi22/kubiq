@@ -1,6 +1,7 @@
 import express from 'express';
 import { NotificationManager } from '../services/NotificationManager';
 import { NotificationChannel } from '../types';
+import { requireRole, hasRole } from '../middleware/auth';
 
 const router = express.Router();
 const notificationManager = NotificationManager.getInstance();
@@ -9,14 +10,38 @@ const notificationManager = NotificationManager.getInstance();
 router.get('/', (req, res) => {
   try {
     const channels = notificationManager.getChannels();
+    
+    // Check if user is admin
+    const isAdmin = hasRole(req.user, 'kubiq-admin');
+
+    if (!isAdmin) {
+      // Mask sensitive data for non-admins
+      const maskedChannels = channels.map(channel => ({
+        ...channel,
+        config: {
+          ...channel.config,
+          webhookUrl: channel.config.webhookUrl ? '****************' : undefined,
+          smtpPass: channel.config.smtpPass ? '********' : undefined,
+          email: channel.config.email ? maskEmail(channel.config.email) : undefined
+        }
+      }));
+      return res.json(maskedChannels);
+    }
+
     res.json(channels);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 });
 
-// POST /api/notifications - Create a channel
-router.post('/', async (req, res) => {
+function maskEmail(email: string): string {
+    const [user, domain] = email.split('@');
+    if (!domain) return '********';
+    return `${user.substring(0, 2)}***@${domain}`;
+}
+
+// POST /api/notifications - Create a channel (Admin only)
+router.post('/', requireRole('kubiq-admin'), async (req, res) => {
   try {
     const { name, type, config, enabled, events } = req.body;
     
@@ -43,12 +68,12 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT /api/notifications/:id - Update a channel
-router.put('/:id', async (req, res) => {
+// PUT /api/notifications/:id - Update a channel (Admin only)
+router.put('/:id', requireRole('kubiq-admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
-    const updatedChannel = await notificationManager.updateChannel(id, updates);
+    const updatedChannel = await notificationManager.updateChannel(id as string, updates);
     res.json(updatedChannel);
   } catch (error: any) {
     if (error.message === 'Channel not found') {
@@ -59,18 +84,18 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/notifications/:id - Delete a channel
-router.delete('/:id', async (req, res) => {
+// DELETE /api/notifications/:id - Delete a channel (Admin only)
+router.delete('/:id', requireRole('kubiq-admin'), async (req, res) => {
   try {
     const { id } = req.params;
-    await notificationManager.deleteChannel(id);
+    await notificationManager.deleteChannel(id as string);
     res.json({ message: 'Channel deleted' });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 });
 
-// POST /api/notifications/:id/test - Test a channel
+// POST /api/notifications/:id/test - Test a channel (Allowed for all authenticated users)
 router.post('/:id/test', async (req, res) => {
   try {
     const { id } = req.params;

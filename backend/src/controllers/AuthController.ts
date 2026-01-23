@@ -122,12 +122,27 @@ export class AuthController {
              return res.status(403).json({ message: 'Account is disabled' });
           }
 
+          // Generate fresh token with updated roles
+          const secret = process.env.JWT_SECRET || 'dev-secret-do-not-use-in-prod';
+          const token = jwt.sign(
+            { 
+                sub: freshUser.id, 
+                preferred_username: freshUser.username, 
+                roles: [freshUser.role],
+                type: 'native'
+            }, 
+            secret, 
+            { expiresIn: '24h' }
+          );
+
           res.json({
               id: freshUser.id,
               username: freshUser.username,
+              email: freshUser.email,
               roles: [freshUser.role], // Fresh role from DB
               type: 'native',
-              authenticated: true
+              authenticated: true,
+              token // Return new token
           });
       } else {
           // Keycloak

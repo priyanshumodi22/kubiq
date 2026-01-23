@@ -88,6 +88,7 @@ export class MysqlServiceRepository implements IServiceRepository {
                 current_status VARCHAR(50),
                 ssl_expiry DATETIME,
                 ignore_ssl BOOLEAN DEFAULT FALSE,
+                log_path VARCHAR(512),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB;
@@ -119,8 +120,12 @@ export class MysqlServiceRepository implements IServiceRepository {
               await connection.query('ALTER TABLE services ADD COLUMN ignore_ssl BOOLEAN DEFAULT FALSE');
           }
            if (!columnNames.includes('ssl_expiry')) {
-              console.log('🔧 Migrating MySQL: Adding ssl_expiry column');
-              await connection.query('ALTER TABLE services ADD COLUMN ssl_expiry DATETIME');
+               console.log('🔧 Migrating MySQL: Adding ssl_expiry column');
+               await connection.query('ALTER TABLE services ADD COLUMN ssl_expiry DATETIME');
+          }
+          if (!columnNames.includes('log_path')) {
+              console.log('🔧 Migrating MySQL: Adding log_path column');
+              await connection.query('ALTER TABLE services ADD COLUMN log_path VARCHAR(512)');
           }
           
       } catch (e) {
@@ -143,6 +148,7 @@ export class MysqlServiceRepository implements IServiceRepository {
         headers: typeof row.headers === 'string' ? JSON.parse(row.headers) : (row.headers || undefined),
         ignoreSSL: Boolean(row.ignore_ssl),
         sslExpiry: row.ssl_expiry ? new Date(row.ssl_expiry) : null,
+        logPath: row.log_path || undefined,
         currentStatus: row.current_status || 'unknown',
         history: [], // History loaded lazily or separate query?
         // If we load history here it might be heavy. 
@@ -189,8 +195,8 @@ export class MysqlServiceRepository implements IServiceRepository {
         await connection.beginTransaction();
 
         const [result] = await connection.execute<ResultSetHeader>(
-            'INSERT INTO services (name, endpoint, type, headers, ignore_ssl) VALUES (?, ?, ?, ?, ?)',
-            [config.name, config.endpoint, config.type || 'http', JSON.stringify(config.headers || {}), config.ignoreSSL || false]
+            'INSERT INTO services (name, endpoint, type, headers, ignore_ssl, log_path) VALUES (?, ?, ?, ?, ?, ?)',
+            [config.name, config.endpoint, config.type || 'http', JSON.stringify(config.headers || {}), config.ignoreSSL || false, config.logPath || null]
         );
         
         const newService: ServiceStatus = {
@@ -199,6 +205,7 @@ export class MysqlServiceRepository implements IServiceRepository {
             type: config.type || 'http',
             headers: config.headers,
             ignoreSSL: config.ignoreSSL,
+            logPath: config.logPath,
             sslExpiry: null,
             currentStatus: 'unknown',
             history: []
@@ -224,11 +231,19 @@ export class MysqlServiceRepository implements IServiceRepository {
     if (config.type) service.type = config.type;
     if (config.headers) service.headers = config.headers;
     if (config.ignoreSSL !== undefined) service.ignoreSSL = config.ignoreSSL;
+    if (config.logPath !== undefined) service.logPath = config.logPath;
     
-    // Update DB
+    // Update DB with merged service state
     await this.pool.execute(
-        'UPDATE services SET endpoint = ?, type = ?, headers = ?, ignore_ssl = ? WHERE name = ?',
-        [service.endpoint, service.type || 'http', JSON.stringify(service.headers || {}), service.ignoreSSL || false, name] // Use service.ignoreSSL
+        'UPDATE services SET endpoint = ?, type = ?, headers = ?, ignore_ssl = ?, log_path = ? WHERE name = ?',
+        [
+            service.endpoint, 
+            service.type || 'http', 
+            JSON.stringify(service.headers || {}), 
+            service.ignoreSSL || false, 
+            service.logPath || null, 
+            name
+        ]
     );
 
     this.services.set(name, service);

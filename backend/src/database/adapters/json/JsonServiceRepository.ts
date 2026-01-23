@@ -69,6 +69,7 @@ export class JsonServiceRepository implements IServiceRepository {
       type: config.type || 'http',
       headers: config.headers,
       ignoreSSL: config.ignoreSSL,
+      logPath: config.logPath,
       currentStatus: 'unknown',
       history: []
     };
@@ -86,6 +87,7 @@ export class JsonServiceRepository implements IServiceRepository {
     if (config.headers) service.headers = config.headers;
     if (config.type) service.type = config.type;
     if (config.ignoreSSL !== undefined) service.ignoreSSL = config.ignoreSSL;
+    if (config.logPath !== undefined) service.logPath = config.logPath;
     
     // Note: We deliberately do NOT reset status/history here to preserve state (as fixed previously)
     
@@ -158,6 +160,7 @@ export class JsonServiceRepository implements IServiceRepository {
                   headers: parts[1] && parts[1] !== 'undefined' ? JSON.parse(parts[1]) : undefined,
                   type: (parts[2] as any) || 'http',
                   ignoreSSL: parts[3] === 'true', // ignoreSSL
+                  logPath: parts[4] && parts[4] !== 'undefined' && parts[4] !== 'null' ? parts[4] : undefined, // logPath
                   currentStatus: 'unknown',
                   history: []
              });
@@ -188,8 +191,9 @@ export class JsonServiceRepository implements IServiceRepository {
          let headers = s.headers ? JSON.stringify(s.headers) : 'undefined';
          let type = s.type || 'http';
          let ignoreSSL = s.ignoreSSL || false;
-         // Format: name=endpoint|headers|type|ignoreSSL
-         let line = `${s.name}=${s.endpoint}|${headers}|${type}|${ignoreSSL}`;
+         let logPath = s.logPath || 'undefined';
+         // Format: name=endpoint|headers|type|ignoreSSL|logPath
+         let line = `${s.name}=${s.endpoint}|${headers}|${type}|${ignoreSSL}|${logPath}`;
          lines.push(line);
      });
      try {

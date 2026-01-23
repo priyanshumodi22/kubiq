@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { startRegistration } from '@simplewebauthn/browser';
 import { apiClient } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { 
   User, 
@@ -18,7 +19,8 @@ import {
   CheckCircle2,
   Laptop,
   ArrowLeft,
-  Edit2
+  Edit2,
+  ExternalLink
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -100,6 +102,8 @@ const Button = ({
 
 const Profile: React.FC = () => {
   const { success, error } = useToast();
+  const { provider } = useAuth();
+  const isNative = provider === 'native';
   const [activeTab, setActiveTab] = useState<'details' | 'security'>('details');
 
   // Logic State
@@ -285,9 +289,16 @@ const Profile: React.FC = () => {
                <span className="text-3xl font-bold text-white">{profile.username.substring(0, 2).toUpperCase()}</span>
             </div>
             <h2 className="text-xl font-bold">{profile.username}</h2>
-            <span className="px-3 py-1 bg-white/5 rounded-full text-xs text-text-dim mt-2 capitalize">
-               Kubiq User
-            </span>
+            <div className="flex flex-col gap-2 mt-2 items-center">
+                <span className="px-3 py-1 bg-white/5 rounded-full text-xs text-text-dim capitalize">
+                   Kubiq User
+                </span>
+                {!isNative && (
+                    <span className="flex items-center gap-1 px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-xs">
+                        <ExternalLink className="w-3 h-3" /> Managed by SSO
+                    </span>
+                )}
+            </div>
           </div>
 
           <nav className="space-y-2">
@@ -332,6 +343,7 @@ const Profile: React.FC = () => {
                           icon={User} 
                           value={profile.username}
                           onChange={e => setProfile({...profile, username: e.target.value})}
+                          disabled={!isNative}
                         />
                         <InputGroup 
                           label="Email Address" 
@@ -339,12 +351,13 @@ const Profile: React.FC = () => {
                           type="email"
                           value={profile.email}
                           onChange={e => setProfile({...profile, email: e.target.value})}
+                          disabled={!isNative}
                         />
                       </div>
                       
                       <div className="pt-4 border-t border-white/5 flex justify-end">
-                        <Button type="submit" isLoading={loading.profile}>
-                           Save Changes
+                        <Button type="submit" isLoading={loading.profile} disabled={!isNative}>
+                           {isNative ? 'Save Changes' : 'Managed externally'}
                         </Button>
                       </div>
                    </form>
@@ -367,6 +380,7 @@ const Profile: React.FC = () => {
                             type="password"
                             value={passwords.current}
                             onChange={e => setPasswords({...passwords, current: e.target.value})}
+                            disabled={!isNative}
                          />
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                            <InputGroup 
@@ -375,6 +389,7 @@ const Profile: React.FC = () => {
                               type="password"
                               value={passwords.new}
                               onChange={e => setPasswords({...passwords, new: e.target.value})}
+                              disabled={!isNative}
                            />
                            <InputGroup 
                               label="Confirm New Password" 
@@ -382,10 +397,13 @@ const Profile: React.FC = () => {
                               type="password"
                               value={passwords.confirm}
                               onChange={e => setPasswords({...passwords, confirm: e.target.value})}
+                              disabled={!isNative}
                            />
                          </div>
                          <div className="flex justify-end pt-2">
-                           <Button type="submit" isLoading={loading.password}>Update Password</Button>
+                           <Button type="submit" isLoading={loading.password} disabled={!isNative}>
+                               {isNative ? 'Update Password' : 'Managed externally'}
+                           </Button>
                          </div>
                       </form>
                    </section>
@@ -402,7 +420,7 @@ const Profile: React.FC = () => {
                              <p className="text-text-dim text-sm">Login passwordless with your devices.</p>
                            </div>
                          </div>
-                         <Button variant="outline" onClick={() => setShowPasskeyModal(true)}>
+                         <Button variant="outline" onClick={() => setShowPasskeyModal(true)} disabled={!isNative}>
                             <Plus className="w-4 h-4" /> Add Passkey
                          </Button>
                       </div>
@@ -427,18 +445,22 @@ const Profile: React.FC = () => {
                                    </div>
                                 </div>
                                 <div className="flex items-center">
-                                    <button 
-                                      onClick={() => startRenamePasskey(pk.id, pk.name)}
-                                      className="p-2 text-text-dim hover:text-white hover:bg-white/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100 mr-1"
-                                    >
-                                       <Edit2 className="w-4 h-4" />
-                                    </button>
-                                    <button 
-                                      onClick={() => confirmDeletePasskey(pk.id)}
-                                      className="p-2 text-text-dim hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                                    >
-                                       <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    {isNative && (
+                                     <>
+                                      <button 
+                                        onClick={() => startRenamePasskey(pk.id, pk.name)}
+                                        className="p-2 text-text-dim hover:text-white hover:bg-white/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100 mr-1"
+                                      >
+                                         <Edit2 className="w-4 h-4" />
+                                      </button>
+                                      <button 
+                                        onClick={() => confirmDeletePasskey(pk.id)}
+                                        className="p-2 text-text-dim hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                      >
+                                         <Trash2 className="w-4 h-4" />
+                                      </button>
+                                     </>
+                                    )}
                                  </div>
                              </div>
                            ))

@@ -1,7 +1,7 @@
 import { LogOut, User, ChevronDown, Shield, Bell, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { NotificationConfigModal } from './NotificationConfigModal';
 
 export default function Header() {
@@ -9,6 +9,7 @@ export default function Header() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -62,6 +63,47 @@ export default function Header() {
               <p className="text-xs text-text-dim hidden sm:block">Uptime Radar</p>
             </div>
           </Link>
+
+          <nav className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+               <div className="bg-bg-card border border-gray-700/50 p-1 rounded-xl flex space-x-1 shadow-lg backdrop-blur-md">
+                   <Link 
+                       to="/dashboard?tab=services" 
+                       className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                           location.pathname === '/dashboard' && (!location.search.includes('tab=system'))
+                           ? 'bg-primary text-white shadow-md'
+                           : 'text-gray-400 hover:text-white hover:bg-white/5'
+                       }`}
+                   >
+                       Services
+                   </Link>
+                   
+                   {isAuthenticated && roles.includes('kubiq-admin') && (
+                       <Link 
+                           to="/dashboard?tab=system" 
+                           className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                               location.pathname === '/dashboard' && location.search.includes('tab=system')
+                               ? 'bg-primary text-white shadow-md'
+                               : 'text-gray-400 hover:text-white hover:bg-white/5'
+                           }`}
+                       >
+                           System Health
+                       </Link>
+                   )}
+
+                   {isAuthenticated && (
+                       <Link 
+                           to="/logs" 
+                           className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                               location.pathname.startsWith('/logs')
+                               ? 'bg-primary text-white shadow-md'
+                               : 'text-gray-400 hover:text-white hover:bg-white/5'
+                           }`}
+                       >
+                           Logs
+                       </Link>
+                   )}
+               </div>
+          </nav>
 
           <div className="flex items-center gap-3">
              {isAuthenticated && (

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, Trash2, Bell, Check, AlertCircle, Send, Pencil } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { ConfirmDialog } from './ConfirmDialog';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 
 interface NotificationConfigModalProps {
   isOpen: boolean;
@@ -253,19 +255,9 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
   const [editingChannelId, setEditingChannelId] = useState<string | null>(null);
   const [deleteChannel, setDeleteChannel] = useState<{id: string, name: string} | null>(null);
 
-  // UI Feedback State
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
-
-  const showToast = (message: string, type: 'success' | 'error') => {
-    setToast({ message, type });
-  };
+  const { hasRole } = useAuth();
+  const { addToast } = useToast();
+  const isAdmin = hasRole('kubiq-admin');
 
   const fetchChannels = async () => {
     try {
@@ -286,6 +278,10 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
   }, [isOpen]);
 
   const handleCreate = async (data: any) => {
+    if (!isAdmin) {
+        addToast('Access Denied: Only admins can create channels', 'error');
+        return;
+    }
     setError('');
     setIsLoading(true);
 
@@ -293,7 +289,7 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
       await apiClient.createNotificationChannel(data);
       await fetchChannels();
       setActiveTab('list');
-      showToast('Channel created successfully! 🎉', 'success');
+      addToast('Channel created successfully! 🎉', 'success');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create channel');
     } finally {
@@ -302,13 +298,17 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
   };
 
   const handleUpdate = async (id: string, data: any) => {
+    if (!isAdmin) {
+        addToast('Access Denied: Only admins can update channels', 'error');
+        return;
+    }
     setError('');
     setIsLoading(true);
     try {
         await apiClient.updateNotificationChannel(id, data);
         await fetchChannels();
         setEditingChannelId(null);
-        showToast('Channel updated successfully! ✨', 'success');
+        addToast('Channel updated successfully! ✨', 'success');
     } catch (err: any) {
         setError(err.response?.data?.message || 'Failed to update channel');
     } finally {
@@ -317,6 +317,10 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
   };
 
   const handleToggle = async (channel: NotificationChannel) => {
+    if (!isAdmin) {
+        addToast('Access Denied: Only admins can enable/disable channels', 'error');
+        return;
+    }
     try {
         // Optimistic update
         setChannels(channels.map(c => c.id === channel.id ? {...c, enabled: !channel.enabled} : c));
@@ -325,21 +329,29 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
             ...channel, 
             enabled: !channel.enabled 
         });
-        showToast(`Channel ${!channel.enabled ? 'enabled' : 'disabled'}`, 'success');
+        addToast(`Channel ${!channel.enabled ? 'enabled' : 'disabled'}`, 'success');
     } catch (err) {
         // Revert on failure
         fetchChannels();
-        showToast('Failed to update channel status', 'error');
+        addToast('Failed to update channel status', 'error');
     }
   };
 
+  const initiateDelete = (channel: {id: string, name: string}) => {
+      if (!isAdmin) {
+          addToast('Access Denied: Only admins can delete channels', 'error');
+          return;
+      }
+      setDeleteChannel(channel);
+  }
+
   const confirmDelete = async () => {
-    if (!deleteChannel) return;
+    if (!deleteChannel || !isAdmin) return;
     try {
       await apiClient.deleteNotificationChannel(deleteChannel.id);
       setDeleteChannel(null);
       fetchChannels();
-      showToast('Channel deleted', 'success');
+      addToast('Channel deleted', 'success');
     } catch (err) {
       setError('Failed to delete channel');
     }
@@ -348,26 +360,24 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
   const handleTest = async (id: string) => {
     try {
       await apiClient.testNotificationChannel(id);
-      showToast('Test notification sent! 🚀', 'success');
+      addToast('Test notification sent! 🚀', 'success');
     } catch (err: any) {
-      showToast(`Test failed: ${err.response?.data?.message}`, 'error');
+      addToast(`Test failed: ${err.response?.data?.message}`, 'error');
     }
   };
+
+  const initiateEdit = (id: string) => {
+      if (!isAdmin) {
+          addToast('Access Denied: Only admins can edit channels', 'error');
+          return;
+      }
+      setEditingChannelId(id);
+  }
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-200 ${
-          toast.type === 'success' ? 'bg-green-500/90 text-white' : 'bg-red-500/90 text-white'
-        }`}>
-          {toast.type === 'success' ? <Check className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-          <span className="text-sm font-medium">{toast.message}</span>
-        </div>
-      )}
-
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
       <div className="bg-bg-surface rounded-xl border border-gray-800 shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-800 sticky top-0 bg-bg-surface z-10">
@@ -389,12 +399,22 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
             >
               Active Channels
             </button>
-            <button
-              onClick={() => setActiveTab('add')}
-              className={`pb-2 px-1 ${activeTab === 'add' ? 'text-blue-500 border-b-2 border-blue-500 font-medium' : 'text-gray-400 hover:text-white'}`}
-            >
-              Add New Channel
-            </button>
+            {isAdmin && (
+                <button
+                onClick={() => setActiveTab('add')}
+                className={`pb-2 px-1 ${activeTab === 'add' ? 'text-blue-500 border-b-2 border-blue-500 font-medium' : 'text-gray-400 hover:text-white'}`}
+                >
+                Add New Channel
+                </button>
+            )}
+            {!isAdmin && (
+                <button
+                    disabled
+                    className="pb-2 px-1 text-gray-600 cursor-not-allowed hidden sm:block"
+                >
+                    Add New Channel (Locked)
+                </button>
+            )}
           </div>
 
           {error && (
@@ -408,7 +428,7 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
             <div className="space-y-3">
               {channels.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
-                  No notification channels configured. Add one to get alerts!
+                  No notification channels configured. {isAdmin ? 'Add one to get alerts!' : 'Contact admin to configure.'}
                 </div>
               )}
               {channels.map(channel => (
@@ -430,8 +450,8 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
                                     onClick={() => handleToggle(channel)}
                                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-gray-900 ${
                                         channel.enabled ? 'bg-green-500' : 'bg-red-500/50'
-                                    }`}
-                                    title={channel.enabled ? 'Disable Channel' : 'Enable Channel'}
+                                    } ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    title={!isAdmin ? 'Access Denied' : (channel.enabled ? 'Disable Channel' : 'Enable Channel')}
                                 >
                                     <span
                                         className={`${
@@ -452,9 +472,9 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
                             </div>
                             <div className="flex gap-2">
                                 <button
-                                    onClick={() => setEditingChannelId(channel.id)}
-                                    className="p-2 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-blue-500 transition-colors"
-                                    title="Edit Channel"
+                                    onClick={() => initiateEdit(channel.id)}
+                                    className={`p-2 hover:bg-gray-700 rounded-lg transition-colors ${!isAdmin ? 'text-gray-600 cursor-not-allowed' : 'text-gray-400 hover:text-blue-500'}`}
+                                    title={!isAdmin ? "Access Denied" : "Edit Channel"}
                                 >
                                     <Pencil className="w-4 h-4" />
                                 </button>
@@ -466,9 +486,9 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
                                     <Send className="w-4 h-4" />
                                 </button>
                                 <button
-                                    onClick={() => setDeleteChannel({ id: channel.id, name: channel.name })}
-                                    className="p-2 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
-                                    title="Delete Channel"
+                                    onClick={() => initiateDelete({ id: channel.id, name: channel.name })}
+                                    className={`p-2 hover:bg-gray-700 rounded-lg transition-colors ${!isAdmin ? 'text-gray-600 cursor-not-allowed' : 'text-gray-400 hover:text-red-500'}`}
+                                    title={!isAdmin ? "Access Denied" : "Delete Channel"}
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>
@@ -480,7 +500,7 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
             </div>
           )}
 
-          {activeTab === 'add' && (
+          {activeTab === 'add' && isAdmin && (
              <ChannelForm onSubmit={handleCreate} isLoading={isLoading} />
           )}
         </div>

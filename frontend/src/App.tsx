@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import StatusPage from './pages/StatusPage';
 import Layout from './components/Layout';
 import AdminUsers from './pages/AdminUsers';
+import LogsPage from './pages/LogsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, authEnabled } = useAuth();
@@ -51,6 +52,16 @@ function App() {
                   <AdminUsers />
               </ProtectedRoute>
           } />
+          <Route
+            path="/logs"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <LogsPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
           <Route
              path="/profile"
              element={

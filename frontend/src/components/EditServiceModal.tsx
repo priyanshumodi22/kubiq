@@ -25,12 +25,13 @@ export function EditServiceModal({
   currentHeaders,
   currentIgnoreSSL,
   type: initialType = 'http', // Default to http
-}: EditServiceModalProps) {
+}: EditServiceModalProps): React.ReactNode {
   const [type, setType] = useState<MonitorType>(initialType);
   const [endpoint, setEndpoint] = useState('');
   const [hostname, setHostname] = useState('');
   const [port, setPort] = useState('');
   const [ignoreSSL, setIgnoreSSL] = useState(false);
+
   const toast = useToast();
   
   const [error, setError] = useState('');
@@ -38,29 +39,30 @@ export function EditServiceModal({
 
   useEffect(() => {
     if (isOpen) {
-        setType(initialType);
-            if (initialType === 'tcp') {
-            const parts = currentEndpoint.split(':');
-            if (parts.length >= 2) {
-                setHostname(parts[0]);
-                setPort(parts[1]);
-            } else {
-                setHostname(currentEndpoint);
-                setPort('');
-            }
+      setType(initialType);
+      
+      if (initialType === 'tcp') {
+        const parts = currentEndpoint.split(':');
+        if (parts.length >= 2) {
+          setHostname(parts[0]);
+          setPort(parts[1]);
         } else {
-            // For HTTP / DB, keep logic for backward compat headers
-            let fullEndpoint = currentEndpoint;
-            if (currentHeaders && Object.keys(currentHeaders).length > 0) {
-              const headerParts = Object.entries(currentHeaders)
-                .map(([key, value]) => `${key}:${value}`)
-                .join('|');
-              fullEndpoint = `${currentEndpoint}|${headerParts}`;
-            }
-            setEndpoint(fullEndpoint);
+          setHostname(currentEndpoint);
+          setPort('');
         }
-        setIgnoreSSL(currentIgnoreSSL || false);
-        setError('');
+      } else {
+        // For HTTP / DB, keep logic for backward compat headers
+        let fullEndpoint = currentEndpoint;
+        if (currentHeaders && Object.keys(currentHeaders).length > 0) {
+          const headerParts = Object.entries(currentHeaders)
+            .map(([key, value]) => `${key}:${value}`)
+            .join('|');
+          fullEndpoint = `${currentEndpoint}|${headerParts}`;
+        }
+        setEndpoint(fullEndpoint);
+      }
+      
+      setIgnoreSSL(currentIgnoreSSL || false);
     }
   }, [currentEndpoint, currentHeaders, currentIgnoreSSL, isOpen, initialType]);
 
@@ -224,6 +226,24 @@ export function EditServiceModal({
                     )}
                 </div>
             )}
+            
+            {/* Log Path Input */}
+             <div>
+                <label className="block text-sm font-medium text-gray-400 ml-1 mb-1.5">
+                  Log File Path (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={logPath}
+                  onChange={(e) => setLogPath(e.target.value)}
+                  placeholder="/var/log/app.log or /var/log/app-*.log"
+                  className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all font-mono text-sm"
+                  disabled={isSubmitting}
+                />
+                 <p className="mt-1.5 text-xs text-gray-500 pl-1">
+                     Path on the server to stream logs from. Supports glob patterns for rotation.
+                 </p>
+             </div>
           </div>
 
           {/* Actions */}

@@ -178,11 +178,12 @@ class ApiClient {
     return response.data;
   }
 
-  async updateService(name: string, endpoint: string, type?: 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp', ignoreSSL?: boolean) {
+  async updateService(name: string, endpoint: string, type?: 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp', ignoreSSL?: boolean, logPath?: string) {
     const response = await this.client.put(`/api/services/${name}`, {
       endpoint,
       type,
       ignoreSSL,
+      logPath,
     });
     return response.data;
   }

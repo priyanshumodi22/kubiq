@@ -21,6 +21,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
+    "chokidar": "^5.0.0",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -33,6 +34,7 @@
     "node-cache": "^5.1.2",
     "nodemailer": "^7.0.12",
     "simple-statistics": "^7.8.8",
+    "socket.io": "^4.8.3",
     "systeminformation": "^5.30.5"
   },
   "devDependencies": {

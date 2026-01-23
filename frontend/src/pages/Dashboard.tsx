@@ -1,6 +1,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { RefreshCw, Search, Filter, Plus, ChevronDown, Globe } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { useServices } from '../hooks/useServices';
 import { useAuth } from '../contexts/AuthContext';
 import ServiceCard from '../components/ServiceCard';
@@ -13,9 +14,15 @@ import { ServiceStatus } from '../types';
 import { SystemResourcesWidget } from '../components/SystemResourcesWidget';
 import { StorageAnalyticsWidget } from '../components/StorageAnalyticsWidget';
 
+
 export default function Dashboard() {
   const { services, stats, loading, error, refresh } = useServices();
   const { hasRole } = useAuth();
+  const [searchParams] = useSearchParams();
+  
+  // Drive active tab from URL, default to 'services'
+  const activeTab = searchParams.get('tab') === 'system' ? 'system' : 'services';
+
   const [selectedService, setSelectedService] = useState<ServiceStatus | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'healthy' | 'unhealthy' | 'unknown'>(
@@ -27,7 +34,6 @@ export default function Dashboard() {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [editService, setEditService] = useState<ServiceStatus | null>(null);
   const [deleteService, setDeleteService] = useState<ServiceStatus | null>(null);
-  const [activeTab, setActiveTab] = useState<'services' | 'system'>('services');
 
   const isAdmin = hasRole('kubiq-admin');
 
@@ -41,6 +47,13 @@ export default function Dashboard() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Debug services updates
+  useEffect(() => {
+    if (services.length > 0) {
+        console.log('Frontend Services State:', JSON.stringify(services, null, 2));
+    }
+  }, [services]);
 
   const filteredServices = services.filter((service) => {
     const matchesSearch =
@@ -109,34 +122,7 @@ export default function Dashboard() {
       </div>
 
       <div className="space-y-6 relative">
-        
-        {/* Main Tab Switcher */}
-        {isAdmin && (
-            <div className="flex justify-center mb-6">
-                <div className="bg-bg-card border border-border-color p-1 rounded-xl flex space-x-1 shadow-lg backdrop-blur-md">
-                    <button
-                        onClick={() => setActiveTab('services')}
-                        className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                            activeTab === 'services' 
-                            ? 'bg-primary text-white shadow-md' 
-                            : 'text-gray-400 hover:text-white hover:bg-white/5'
-                        }`}
-                    >
-                        Services
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('system')}
-                        className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                            activeTab === 'system' 
-                            ? 'bg-primary text-white shadow-md' 
-                            : 'text-gray-400 hover:text-white hover:bg-white/5'
-                        }`}
-                    >
-                        System Health
-                    </button>
-                </div>
-            </div>
-        )}
+
 
         {/* SYSTEM HEALTH TAB */}
         {activeTab === 'system' && isAdmin && (
@@ -267,7 +253,7 @@ export default function Dashboard() {
                 </button>
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors whitespace-nowrap h-[42px] shadow-lg shadow-indigo-900/20"
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary/80 text-white rounded-lg transition-colors whitespace-nowrap h-[42px] shadow-lg shadow-indigo-900/20"
                 >
                   <Plus className="w-5 h-5" />
                   <span className="hidden sm:inline">Add Service</span>
@@ -346,6 +332,8 @@ export default function Dashboard() {
             serviceName={deleteService.name}
           />
         )}
+        
+
         </div> {/* End Services Tab */}
 
       </div>

@@ -7,6 +7,7 @@ export interface ServiceConfig {
   headers?: Record<string, string>;
   enabled?: boolean;
   ignoreSSL?: boolean; // New
+  logPath?: string; // New: Path to log file (or pattern) for Live Log Viewer
 }
 
 export interface HealthCheck {
@@ -33,6 +34,7 @@ export interface ServiceStatus {
   averageResponseTime?: number;
   ignoreSSL?: boolean; // New
   sslExpiry?: Date | null; // New
+  logPath?: string; // New
 }
 
 export interface CustomCheckRequest {

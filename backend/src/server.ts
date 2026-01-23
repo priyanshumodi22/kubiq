@@ -24,10 +24,25 @@ import { authMiddleware } from './middleware/auth';
 import { ServiceMonitor } from './services/ServiceMonitor';
 import { NotificationManager } from './services/NotificationManager';
 
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import { LogStreamService } from './services/LogStreamService';
+
 const app: Express = express();
+const httpServer = createServer(app);
 const PORT = process.env.PORT || 3001;
 const BACKEND_CONTEXT_PATH = process.env.BACKEND_CONTEXT_PATH || '';
 const FRONTEND_CONTEXT_PATH = process.env.FRONTEND_CONTEXT_PATH || '';
+
+// Socket.IO Setup
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.FRONTEND_DNS || process.env.CORS_ORIGIN || 'http://localhost:3000',
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  path: `${BACKEND_CONTEXT_PATH}/socket.io` // Use context path if set
+});
 
 // Extract Origin (Domain) from KEYCLOAK_URL for CSP
 // We want to allow the whole domain (e.g. https://demo.cloud-tcshobs.com), not just /auth path
@@ -90,6 +105,7 @@ import { publicStatusRouter } from './routes/publicStatus';
 import { notificationsRouter } from './routes/notifications';
 import { usersRouter } from './routes/users';
 import { systemRouter } from './routes/system';
+import { logRouter } from './routes/logs';
 import { DatabaseFactory } from './database/DatabaseFactory';
 
 // Public routes
@@ -102,7 +118,8 @@ app.use(`${BACKEND_CONTEXT_PATH}/api/public`, publicStatusRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/services`, authMiddleware, servicesRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/notifications`, authMiddleware, notificationsRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/users`, authMiddleware, usersRouter);
-app.use(`${BACKEND_CONTEXT_PATH}/api/system`, authMiddleware, systemRouter); // New System Routes
+app.use(`${BACKEND_CONTEXT_PATH}/api/system`, authMiddleware, systemRouter); 
+app.use(`${BACKEND_CONTEXT_PATH}/api/logs`, authMiddleware, logRouter); // Log Management
 
 // Serve frontend static files
 const frontendPath = path.join(__dirname, '../public');
@@ -136,9 +153,15 @@ const startServer = async () => {
         await DatabaseFactory.getUserRepository();
         
         // Start server
-        app.listen(PORT, () => {
+        // app.listen Replaced by httpServer.listen for Socket.IO support
+        httpServer.listen(PORT, () => {
           console.log(`🚀 Kubiq Backend running on port ${PORT}`);
           console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+          
+          // Initialize Log Stream Service with Socket.IO
+          const logStreamService = LogStreamService.getInstance();
+          logStreamService.initialize(io);
+          console.log('📡 Socket.IO Server Initialized for Log Streaming');
         
           // Start monitoring services
           serviceMonitor.start();

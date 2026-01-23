@@ -3,6 +3,8 @@ export interface ServiceConfig {
   endpoint: string;
   type?: 'http' | 'tcp' | 'icmp' | 'mysql' | 'mongodb';
   enabled?: boolean;
+  ignoreSSL?: boolean; // New
+  logPath?: string; // New
 }
 
 export interface HealthCheck {
@@ -15,6 +17,7 @@ export interface HealthCheck {
 }
 
 export interface ServiceStatus {
+  id: string; // backend returns 'id'
   name: string;
   endpoint: string;
   type?: 'http' | 'tcp' | 'icmp' | 'mysql' | 'mongodb';
@@ -26,6 +29,7 @@ export interface ServiceStatus {
   averageResponseTime?: number;
   ignoreSSL?: boolean; // New
   sslExpiry?: string | null; // Date comes as string from JSON API
+  logPath?: string;
 }
 
 export interface Stats {

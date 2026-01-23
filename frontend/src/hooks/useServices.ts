@@ -27,7 +27,11 @@ export function useServices() {
         setServices((prevServices) => {
           return data.services.map((statusUpdate: any) => {
             const existing = prevServices.find((s) => s.name === statusUpdate.name);
-            return existing ? { ...existing, ...statusUpdate } : statusUpdate;
+            // Ensure we don't lose logPath if the lightweight status update doesn't have it (though backend should now have it)
+            // But just to be safe, we merge carefully.
+            return existing 
+                ? { ...existing, ...statusUpdate, logPath: statusUpdate.logPath || existing.logPath } 
+                : statusUpdate;
           });
         });
         setStats(data.stats || null);
@@ -80,7 +84,9 @@ export function useServices() {
         setServices((prevServices) => {
           return data.services.map((statusUpdate: any) => {
             const existing = prevServices.find((s: any) => s.name === statusUpdate.name);
-            return existing ? { ...existing, ...statusUpdate } : statusUpdate;
+            return existing 
+                ? { ...existing, ...statusUpdate, logPath: statusUpdate.logPath || existing.logPath } 
+                : statusUpdate;
           });
         });
         setStats(data.stats || null);
