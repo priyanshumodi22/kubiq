@@ -6,7 +6,7 @@ import path from 'path';
 const envFile = process.env.NODE_ENV === 'production' ? '.env' : '.env.local';
 const envPath = path.resolve(process.cwd(), envFile);
 
-dotenv.config({ path: envPath });
+dotenv.config({ path: envPath, override: true });
 
 console.log(`📋 Loading environment from: ${envFile}`);
 

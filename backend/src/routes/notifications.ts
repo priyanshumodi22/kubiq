@@ -22,7 +22,9 @@ router.get('/', (req, res) => {
           ...channel.config,
           webhookUrl: channel.config.webhookUrl ? '****************' : undefined,
           smtpPass: channel.config.smtpPass ? '********' : undefined,
-          email: channel.config.email ? maskEmail(channel.config.email) : undefined
+          email: channel.config.email ? maskEmail(channel.config.email) : undefined,
+          senderEmail: channel.config.senderEmail ? maskEmail(channel.config.senderEmail) : undefined,
+          smtpHost: channel.config.smtpHost ? '********' : undefined,
         }
       }));
       return res.json(maskedChannels);
@@ -34,10 +36,18 @@ router.get('/', (req, res) => {
   }
 });
 
-function maskEmail(email: string): string {
-    const [user, domain] = email.split('@');
-    if (!domain) return '********';
-    return `${user.substring(0, 2)}***@${domain}`;
+function maskEmail(emailStr: string): string {
+    if (!emailStr) return '';
+    const emails = emailStr.split(',');
+    
+    return emails.map(email => {
+        email = email.trim();
+        const [user, domain] = email.split('@');
+        if (!domain) return '********'; // Fallback if invalid format
+        // Show first 2 chars if length > 2, else show 1 char
+        const prefix = user.length > 2 ? user.substring(0, 2) : user.substring(0, 1);
+        return `${prefix}***@${domain}`;
+    }).join(', ');
 }
 
 // POST /api/notifications - Create a channel (Admin only)

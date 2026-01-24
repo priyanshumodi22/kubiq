@@ -4,7 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { LogViewer } from '../components/LogViewer';
 import { ConfigureLogModal } from '../components/ConfigureLogModal';
 import { DeleteLogDialog } from '../components/DeleteLogDialog';
-import { Plus, Search, Server, AlertCircle, FileText, Trash2 } from 'lucide-react';
+import { EditLogDialog } from '../components/EditLogDialog';
+import { Plus, Search, Server, AlertCircle, FileText, Trash2, Edit2 } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { ServiceStatus } from '../types';
 
@@ -16,6 +17,7 @@ export default function LogsPage() {
     const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
     const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
     const [deleteLogService, setDeleteLogService] = useState<ServiceStatus | null>(null);
+    const [editLogService, setEditLogService] = useState<ServiceStatus | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
 
     // Filter services that have a logPath configured
@@ -33,6 +35,11 @@ export default function LogsPage() {
         setDeleteLogService(service);
     };
 
+    const handleEditClick = (e: React.MouseEvent, service: ServiceStatus) => {
+        e.stopPropagation();
+        setEditLogService(service);
+    };
+
     const handleDeleteSuccess = () => {
         addToast('Log source removed successfully', 'success');
         
@@ -41,6 +48,11 @@ export default function LogsPage() {
              setSelectedServiceId(null);
         }
         
+        refresh();
+    };
+
+    const handleEditSuccess = () => {
+        addToast('Log source updated successfully', 'success');
         refresh();
     };
 
@@ -125,13 +137,22 @@ export default function LogsPage() {
                                 )}
                                 
                                 {isAdmin && (
-                                    <button
-                                        onClick={(e) => handleDeleteClick(e, service)}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-red-400 hover:bg-white/10 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Remove log configuration"
-                                    >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
+                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                            onClick={(e) => handleEditClick(e, service)}
+                                            className="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                                            title="Edit log configuration"
+                                        >
+                                            <Edit2 className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleDeleteClick(e, service)}
+                                            className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-white/10 rounded-md transition-colors"
+                                            title="Remove log configuration"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         ))
@@ -173,6 +194,15 @@ export default function LogsPage() {
                     onClose={() => setDeleteLogService(null)}
                     onSuccess={handleDeleteSuccess}
                     service={deleteLogService}
+                />
+            )}
+
+            {editLogService && (
+                <EditLogDialog
+                    isOpen={!!editLogService}
+                    onClose={() => setEditLogService(null)}
+                    onSuccess={handleEditSuccess}
+                    service={editLogService}
                 />
             )}
         </div>

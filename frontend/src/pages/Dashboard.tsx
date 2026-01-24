@@ -317,6 +317,7 @@ export default function Dashboard() {
             currentEndpoint={editService.endpoint}
             currentHeaders={editService.headers}
             currentIgnoreSSL={editService.ignoreSSL}
+            currentLogPath={editService.logPath}
             type={editService.type}
           />
         )}
