@@ -25,7 +25,6 @@ export function EditServiceModal({
   currentEndpoint,
   currentHeaders,
   currentIgnoreSSL,
-  currentLogPath,
   type: initialType = 'http', // Default to http
 }: EditServiceModalProps): React.ReactNode {
   const [type, setType] = useState<MonitorType>(initialType);
@@ -33,7 +32,6 @@ export function EditServiceModal({
   const [hostname, setHostname] = useState('');
   const [port, setPort] = useState('');
   const [ignoreSSL, setIgnoreSSL] = useState(false);
-  const [logPath, setLogPath] = useState('');
 
   const toast = useToast();
   
@@ -66,9 +64,8 @@ export function EditServiceModal({
       }
       
       setIgnoreSSL(currentIgnoreSSL || false);
-      setLogPath(currentLogPath || '');
     }
-  }, [currentEndpoint, currentHeaders, currentIgnoreSSL, currentLogPath, isOpen, initialType]);
+  }, [currentEndpoint, currentHeaders, currentIgnoreSSL, isOpen, initialType]);
 
   if (!isOpen) return null;
 
@@ -106,7 +103,8 @@ export function EditServiceModal({
       }
 
       // Pass the CURRENT type state to updateService
-      await apiClient.updateService(serviceName, finalEndpoint, type, ignoreSSL, logPath);
+      // Note: We deliberately do NOT pass logPath here, as logs are managed via the Logs tab now.
+      await apiClient.updateService(serviceName, finalEndpoint, type, ignoreSSL);
 
       toast.success('Service updated successfully');
       onSuccess();
@@ -211,9 +209,6 @@ export function EditServiceModal({
                     />
                     {type === 'http' && (
                         <>
-                            <p className="mt-1.5 text-xs text-gray-500 pl-1">
-                                 Use <code>|Header:Value</code> to add headers
-                            </p>
                             <div className="flex items-center space-x-2 pt-2">
                                 <input
                                     type="checkbox"
@@ -226,28 +221,14 @@ export function EditServiceModal({
                                     Ignore SSL/TLS Certificate Errors (Self-Signed)
                                 </label>
                             </div>
+                            <p className="mt-1.5 text-xs text-gray-500 pl-1">
+                                 Use <code>|Header:Value</code> to add headers
+                            </p>
                         </>
                     )}
                 </div>
             )}
             
-            {/* Log Path Input */}
-             <div>
-                <label className="block text-sm font-medium text-gray-400 ml-1 mb-1.5">
-                  Log File Path (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={logPath}
-                  onChange={(e) => setLogPath(e.target.value)}
-                  placeholder="/var/log/app.log or /var/log/app-*.log"
-                  className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all font-mono text-sm"
-                  disabled={isSubmitting}
-                />
-                 <p className="mt-1.5 text-xs text-gray-500 pl-1">
-                     Path on the server to stream logs from. Supports glob patterns for rotation.
-                 </p>
-             </div>
           </div>
 
           {/* Actions */}

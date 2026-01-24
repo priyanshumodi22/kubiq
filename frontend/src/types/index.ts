@@ -1,10 +1,17 @@
+export interface LogSource {
+  id: string; // UUID or generated ID
+  name: string; // Display name (e.g. "Server Log", "Access Log")
+  path: string; // File path or glob pattern
+}
+
 export interface ServiceConfig {
   name: string;
   endpoint: string;
   type?: 'http' | 'tcp' | 'icmp' | 'mysql' | 'mongodb';
   enabled?: boolean;
   ignoreSSL?: boolean; // New
-  logPath?: string; // New
+  logPath?: string; // Deprecated
+  logSources?: LogSource[]; // New
 }
 
 export interface HealthCheck {
@@ -30,6 +37,7 @@ export interface ServiceStatus {
   ignoreSSL?: boolean; // New
   sslExpiry?: string | null; // Date comes as string from JSON API
   logPath?: string;
+  logSources?: LogSource[]; // New
 }
 
 export interface Stats {

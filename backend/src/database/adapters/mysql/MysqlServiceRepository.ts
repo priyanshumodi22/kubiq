@@ -127,6 +127,10 @@ export class MysqlServiceRepository implements IServiceRepository {
               console.log('🔧 Migrating MySQL: Adding log_path column');
               await connection.query('ALTER TABLE services ADD COLUMN log_path VARCHAR(512)');
           }
+          if (!columnNames.includes('log_sources')) {
+              console.log('🔧 Migrating MySQL: Adding log_sources column');
+              await connection.query('ALTER TABLE services ADD COLUMN log_sources TEXT');
+          }
           
       } catch (e) {
           console.error('❌ MySQL Schema Migration Failed:', e);
@@ -149,6 +153,10 @@ export class MysqlServiceRepository implements IServiceRepository {
         ignoreSSL: Boolean(row.ignore_ssl),
         sslExpiry: row.ssl_expiry ? new Date(row.ssl_expiry) : null,
         logPath: row.log_path || undefined,
+        logSources: (() => {
+            try { return row.log_sources ? JSON.parse(row.log_sources) : undefined; }
+            catch { return undefined; }
+        })(),
         currentStatus: row.current_status || 'unknown',
         history: [], // History loaded lazily or separate query?
         // If we load history here it might be heavy. 
@@ -195,8 +203,8 @@ export class MysqlServiceRepository implements IServiceRepository {
         await connection.beginTransaction();
 
         const [result] = await connection.execute<ResultSetHeader>(
-            'INSERT INTO services (name, endpoint, type, headers, ignore_ssl, log_path) VALUES (?, ?, ?, ?, ?, ?)',
-            [config.name, config.endpoint, config.type || 'http', JSON.stringify(config.headers || {}), config.ignoreSSL || false, config.logPath || null]
+            'INSERT INTO services (name, endpoint, type, headers, ignore_ssl, log_path, log_sources) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [config.name, config.endpoint, config.type || 'http', JSON.stringify(config.headers || {}), config.ignoreSSL || false, config.logPath || null, JSON.stringify(config.logSources || [])]
         );
         
         const newService: ServiceStatus = {
@@ -206,6 +214,7 @@ export class MysqlServiceRepository implements IServiceRepository {
             headers: config.headers,
             ignoreSSL: config.ignoreSSL,
             logPath: config.logPath,
+            logSources: config.logSources,
             sslExpiry: null,
             currentStatus: 'unknown',
             history: []
@@ -232,16 +241,18 @@ export class MysqlServiceRepository implements IServiceRepository {
     if (config.headers) service.headers = config.headers;
     if (config.ignoreSSL !== undefined) service.ignoreSSL = config.ignoreSSL;
     if (config.logPath !== undefined) service.logPath = config.logPath;
+    if (config.logSources !== undefined) service.logSources = config.logSources;
     
     // Update DB with merged service state
     await this.pool.execute(
-        'UPDATE services SET endpoint = ?, type = ?, headers = ?, ignore_ssl = ?, log_path = ? WHERE name = ?',
+        'UPDATE services SET endpoint = ?, type = ?, headers = ?, ignore_ssl = ?, log_path = ?, log_sources = ? WHERE name = ?',
         [
             service.endpoint, 
             service.type || 'http', 
             JSON.stringify(service.headers || {}), 
             service.ignoreSSL || false, 
             service.logPath || null, 
+            JSON.stringify(service.logSources || []),
             name
         ]
     );

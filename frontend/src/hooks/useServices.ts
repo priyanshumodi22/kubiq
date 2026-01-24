@@ -27,10 +27,14 @@ export function useServices() {
         setServices((prevServices) => {
           return data.services.map((statusUpdate: any) => {
             const existing = prevServices.find((s) => s.name === statusUpdate.name);
-            // Ensure we don't lose logPath if the lightweight status update doesn't have it (though backend should now have it)
-            // But just to be safe, we merge carefully.
+            // Ensure we don't lose logPath/logSources if the lightweight status update doesn't have it
             return existing 
-                ? { ...existing, ...statusUpdate, logPath: statusUpdate.logPath || existing.logPath } 
+                ? { 
+                    ...existing, 
+                    ...statusUpdate, 
+                    logPath: statusUpdate.logPath || existing.logPath,
+                    logSources: statusUpdate.logSources || existing.logSources
+                  } 
                 : statusUpdate;
           });
         });

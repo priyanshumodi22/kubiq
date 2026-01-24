@@ -1,21 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, ChevronDown, Check } from 'lucide-react';
+import { X, ChevronDown, Check, Plus, Trash2 } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { useServices } from '../hooks/useServices';
 import { useToast } from '../contexts/ToastContext';
+import { LogSource } from '../types';
 
 interface ConfigureLogModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  preSelectedService?: string;
 }
 
-export function ConfigureLogModal({ isOpen, onClose, onSuccess }: ConfigureLogModalProps) {
+export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedService }: ConfigureLogModalProps) {
   const { services } = useServices();
   const toast = useToast();
   
   const [selectedServiceName, setSelectedServiceName] = useState('');
-  const [logPath, setLogPath] = useState('');
+  
+  // State for multiple logs
+  const [logSources, setLogSources] = useState<LogSource[]>([]);
+  
+  // New Entry State
+  const [newLabel, setNewLabel] = useState('');
+  const [newPath, setNewPath] = useState('');
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -46,28 +55,65 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess }: ConfigureLogMo
   // Reset state when opened
   useEffect(() => {
     if (isOpen) {
-      setSelectedServiceName('');
-      setLogPath('');
+      setSelectedServiceName(preSelectedService || '');
+      // Log sources will be populated by the next effect
+      setNewLabel('');
+      setNewPath('');
       setError('');
       setSearchQuery('');
       setIsDropdownOpen(false);
     }
-  }, [isOpen]);
+  }, [isOpen, preSelectedService]);
 
-  // When Service Selected, populate existing path if any
+  // When Service Selected, populate existing
+  // When Service Selected, populate existing ONE TIME
   useEffect(() => {
-    if (selectedServiceName) {
+    if (selectedServiceName && isOpen) {
       const svc = services.find(s => s.name === selectedServiceName);
       if (svc) {
-        setLogPath(svc.logPath || '');
-        // Also update search query to show selected name
-        // setSearchQuery(svc.name); // Optional: depends if we want input to show name or remain filter
+        // Handle migration from legacy logPath in UI
+        if (svc.logSources && svc.logSources.length > 0) {
+            setLogSources(svc.logSources);
+        } else if (svc.logPath) {
+            // Legacy fallback
+            setLogSources([{
+                id: Date.now().toString(),
+                name: 'Primary Log',
+                path: svc.logPath
+            }]);
+        } else {
+            setLogSources([]);
+        }
       }
+    } else {
+        // Only clear if we are closing or switching to nothing? 
+        // Actually, if we switch service, we want to clear.
+        if (!selectedServiceName) setLogSources([]);
     }
-  }, [selectedServiceName, services]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedServiceName, isOpen]); // Remove 'services' dependency to prevent overwrite during edits!
 
 
   if (!isOpen) return null;
+
+  const handleAddSource = () => {
+      if (!newLabel.trim() || !newPath.trim()) return;
+
+      setLogSources(prev => [
+          ...prev, 
+          {
+              id: Date.now().toString(),
+              name: newLabel.trim(),
+              path: newPath.trim()
+          }
+      ]);
+      setNewLabel('');
+      setNewPath('');
+  };
+
+  const handleRemoveSource = (id: string) => {
+      setLogSources(prev => prev.filter(s => s.id !== id));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,20 +129,24 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess }: ConfigureLogMo
       const service = services.find(s => s.name === selectedServiceName);
       if (!service) throw new Error("Service not found");
 
-      // We only update the logPath, keep other fields 
+      // Deprecate logPath by sending empty string, but api.ts still expects it.
+      // We send the first source as legacy path or empty.
+      const primaryPath = logSources.length > 0 ? logSources[0].path : '';
+
       await apiClient.updateService(
           service.name, 
           service.endpoint, 
           service.type, 
           service.ignoreSSL, 
-          logPath // Update this
+          primaryPath, 
+          logSources
       );
       
-      toast.success('Log path updated successfully');
+      toast.success('Log configuration updated successfully');
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update log path');
+      setError(err.response?.data?.message || 'Failed to update log configuration');
     } finally {
       setIsSubmitting(false);
     }
@@ -106,12 +156,10 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess }: ConfigureLogMo
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden" 
-           style={{ minHeight: isDropdownOpen ? '500px' : 'auto' }} /* Expand if needed, or let overlay handle it. Actually better to let content overflow naturally or use fixed height logic if constrained. Let's stick to natural flow but ensure z-index */
-      >
+      <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden text-sm">
         
-        <div className="flex items-center justify-between p-6 pb-4">
-          <h2 className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Configure Logs</h2>
+        <div className="flex items-center justify-between p-6 pb-4 bg-[#1a1a1a]">
+          <h2 className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Configure Log Sources</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg">
             <X className="w-5 h-5" />
           </button>
@@ -119,14 +167,14 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess }: ConfigureLogMo
 
         <form onSubmit={handleSubmit} className="p-6 pt-2 space-y-6">
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-xl text-sm">
+            <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-xl text-xs">
               {error}
             </div>
           )}
 
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="relative" ref={dropdownRef}>
-              <label className="block text-sm font-medium text-gray-400 ml-1 mb-1.5">Select Service</label>
+              <label className="block text-xs font-medium text-gray-400 ml-1 mb-1.5 uppercase tracking-wide">Select Service</label>
               
               {/* Custom Dropdown Trigger */}
               <div 
@@ -146,7 +194,7 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess }: ConfigureLogMo
 
               {/* Dropdown Menu */}
               {isDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-[#1d1f24] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                       <div className="p-2 border-b border-white/5">
                           <input
                                 ref={inputRef}
@@ -155,7 +203,7 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess }: ConfigureLogMo
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full bg-white/5 border border-transparent rounded-lg py-1.5 px-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:bg-white/10 transition-colors"
-                                onClick={(e) => e.stopPropagation()} // Prevent closing when clicking input
+                                onClick={(e) => e.stopPropagation()} 
                           />
                       </div>
                       <div className="max-h-60 overflow-y-auto p-1 custom-scrollbar">
@@ -168,7 +216,7 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess }: ConfigureLogMo
                                       onClick={() => {
                                           setSelectedServiceName(s.name);
                                           setIsDropdownOpen(false);
-                                          setSearchQuery(''); // Reset search on select? Or keep it? Reset is cleaner.
+                                          setSearchQuery(''); 
                                       }}
                                       className="flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer hover:bg-white/5 transition-colors group"
                                   >
@@ -185,22 +233,70 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess }: ConfigureLogMo
               )}
             </div>
 
+            {/* Log Sources List */}
             <div>
-              <label className="block text-sm font-medium text-gray-400 ml-1 mb-1.5">Log File Path</label>
-              <input
-                type="text"
-                value={logPath}
-                onChange={(e) => setLogPath(e.target.value)}
-                placeholder="/var/log/app.log"
-                className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all font-mono text-sm"
-              />
-               <p className="mt-1.5 text-xs text-gray-500 pl-1">
-                  Absolute path on the backend server.
-              </p>
+              <label className="block text-xs font-medium text-gray-400 ml-1 mb-2 uppercase tracking-wide">Configured Logs</label>
+              
+              <div className="space-y-2 mb-3">
+                  {logSources.map((source) => (
+                      <div key={source.id} className="flex items-center justify-between bg-white/5 border border-white/5 rounded-lg px-3 py-2 group hover:border-white/10 transition-colors">
+                          <div className="min-w-0 flex-1 mr-4">
+                              <div className="text-sm font-medium text-white">{source.name}</div>
+                              <div className="text-xs text-gray-500 font-mono truncate" title={source.path}>{source.path}</div>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={() => handleRemoveSource(source.id)}
+                            className="text-gray-500 hover:text-red-400 p-1.5 hover:bg-white/5 rounded-md transition-colors"
+                          >
+                              <Trash2 className="w-4 h-4" />
+                          </button>
+                      </div>
+                  ))}
+                  
+                  {logSources.length === 0 && (
+                      <div className="text-center py-4 border border-dashed border-white/10 rounded-lg text-gray-500 italic">
+                          No log sources configured yet.
+                      </div>
+                  )}
+              </div>
+
+              {/* Add New Source */}
+              <div className="bg-black/20 border border-white/10 rounded-xl p-3 flex flex-col gap-3">
+                  <div className="flex gap-3">
+                      <div className="w-1/3">
+                          <input
+                            type="text"
+                            value={newLabel}
+                            onChange={(e) => setNewLabel(e.target.value)}
+                            placeholder="Label (e.g. Server)"
+                            className="w-full bg-white/5 border border-transparent rounded-lg py-2 px-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
+                          />
+                      </div>
+                      <div className="flex-1">
+                          <input
+                            type="text"
+                            value={newPath}
+                            onChange={(e) => setNewPath(e.target.value)}
+                            placeholder="/path/to/logfile.log"
+                            className="w-full bg-white/5 border border-transparent rounded-lg py-2 px-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary/50 font-mono text-sm"
+                          />
+                      </div>
+                  </div>
+                   <button
+                      type="button"
+                      onClick={handleAddSource}
+                      disabled={!newLabel || !newPath}
+                      className="w-full flex items-center justify-center gap-2 py-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg text-gray-300 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium uppercase tracking-wider"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Log Source
+                  </button>
+              </div>
             </div>
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-4 border-t border-white/5">
             <button
               type="button"
               onClick={onClose}
@@ -213,7 +309,7 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess }: ConfigureLogMo
               className="flex-1 px-4 py-2.5 bg-primary hover:bg-blue-600 text-white rounded-xl font-medium shadow-lg shadow-blue-500/20 transition-all duration-200 disabled:opacity-50"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Saving...' : 'Save Configuration'}
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </form>

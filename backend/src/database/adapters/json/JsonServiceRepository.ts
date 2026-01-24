@@ -70,6 +70,7 @@ export class JsonServiceRepository implements IServiceRepository {
       headers: config.headers,
       ignoreSSL: config.ignoreSSL,
       logPath: config.logPath,
+      logSources: config.logSources, // New
       currentStatus: 'unknown',
       history: []
     };
@@ -88,6 +89,7 @@ export class JsonServiceRepository implements IServiceRepository {
     if (config.type) service.type = config.type;
     if (config.ignoreSSL !== undefined) service.ignoreSSL = config.ignoreSSL;
     if (config.logPath !== undefined) service.logPath = config.logPath;
+    if (config.logSources !== undefined) service.logSources = config.logSources;
     
     // Note: We deliberately do NOT reset status/history here to preserve state (as fixed previously)
     
@@ -161,6 +163,9 @@ export class JsonServiceRepository implements IServiceRepository {
                   type: (parts[2] as any) || 'http',
                   ignoreSSL: parts[3] === 'true', // ignoreSSL
                   logPath: parts[4] && parts[4] !== 'undefined' && parts[4] !== 'null' ? parts[4] : undefined, // logPath
+                  logSources: parts[5] && parts[5] !== 'undefined' 
+                        ? JSON.parse(Buffer.from(parts[5], 'base64').toString('utf-8')) 
+                        : undefined, // logSources (Base64 encoded)
                   currentStatus: 'unknown',
                   history: []
              });
@@ -192,8 +197,10 @@ export class JsonServiceRepository implements IServiceRepository {
          let type = s.type || 'http';
          let ignoreSSL = s.ignoreSSL || false;
          let logPath = s.logPath || 'undefined';
-         // Format: name=endpoint|headers|type|ignoreSSL|logPath
-         let line = `${s.name}=${s.endpoint}|${headers}|${type}|${ignoreSSL}|${logPath}`;
+         // Use Base64 for logSources to avoid delimiter collision with pipe '|'
+         let logSources = s.logSources ? Buffer.from(JSON.stringify(s.logSources)).toString('base64') : 'undefined';
+         // Format: name=endpoint|headers|type|ignoreSSL|logPath|logSources
+         let line = `${s.name}=${s.endpoint}|${headers}|${type}|${ignoreSSL}|${logPath}|${logSources}`;
          lines.push(line);
      });
      try {

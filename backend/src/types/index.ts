@@ -1,3 +1,9 @@
+export interface LogSource {
+  id: string; // UUID or generated ID
+  name: string; // Display name
+  path: string; // File path or glob
+}
+
 export interface ServiceConfig {
   name: string;
   endpoint: string;
@@ -7,7 +13,8 @@ export interface ServiceConfig {
   headers?: Record<string, string>;
   enabled?: boolean;
   ignoreSSL?: boolean; // New
-  logPath?: string; // New: Path to log file (or pattern) for Live Log Viewer
+  logPath?: string; // Legacy
+  logSources?: LogSource[]; // New Multi-Log Support
 }
 
 export interface HealthCheck {
@@ -28,13 +35,14 @@ export interface ServiceStatus {
   timeout?: number;
   headers?: Record<string, string>;
   currentStatus: 'healthy' | 'unhealthy' | 'unknown';
+  logPath?: string;
+  logSources?: LogSource[];
   lastCheck?: HealthCheck;
   history: HealthCheck[];
   uptime?: number;
   averageResponseTime?: number;
-  ignoreSSL?: boolean; // New
-  sslExpiry?: Date | null; // New
-  logPath?: string; // New
+  ignoreSSL?: boolean; 
+  sslExpiry?: Date | null; 
 }
 
 export interface CustomCheckRequest {

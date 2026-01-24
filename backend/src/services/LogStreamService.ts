@@ -3,6 +3,7 @@ import * as chokidar from 'chokidar';
 import fs from 'fs';
 import path from 'path';
 import { EventEmitter } from 'events';
+import { glob } from 'glob';
 
 interface LogWatcher {
     filePath: string;
@@ -51,12 +52,52 @@ export class LogStreamService extends EventEmitter {
     }
 
     private async startStreaming(socket: Socket, filePath: string, pattern?: string) {
-        // Validation: Ensure file exists (or find latest if pattern provided)
+        // Validation: Verify if it's a glob pattern or direct file
         let targetFile = filePath;
+        let isGlob = filePath.includes('*') || (pattern && pattern.includes('*'));
 
-        if (pattern) {
-             // Logic to find latest file matching pattern if filePath not explicit
-             // But for now, user likely sends specific file, we just Watch the directory for rotation
+        if (isGlob) {
+            try {
+                // If it is a glob, resolve to the latest file
+                const searchPattern = pattern || filePath;
+                const files = await glob(searchPattern, {
+                    stat: true,
+                    withFileTypes: true
+                });
+
+                if (files.length === 0) {
+                     socket.emit('error', { message: `No files found matching pattern: ${searchPattern}` });
+                     return;
+                }
+
+                // Sort by mtime descending (newest first)
+                // Note: glob v10+ withFileTypes returns Path objects with mtime, but simple strings need fs.stat
+                // Let's assume simple string return for safety across versions or map it
+                // Using a safe manual stat approach to be robust:
+                const filesWithStats = files.map(f => {
+                    const fullPath = typeof f === 'string' ? f : f.fullpath(); 
+                    return {
+                        path: fullPath,
+                        mtime: fs.statSync(fullPath).mtime.getTime()
+                    };
+                });
+
+                filesWithStats.sort((a, b) => b.mtime - a.mtime);
+                
+                targetFile = filesWithStats[0].path;
+                
+                // If we found a file, ensure we watch for rotation on the PATTERN
+                this.watchForRotation(socket, targetFile, searchPattern);
+
+                console.log(`🎯 Resolved glob pattern '${searchPattern}' to latest file: ${targetFile}`);
+                socket.emit('log:resolved', { resolvedPath: targetFile }); // Optional: tell client what we found
+
+            } catch (err: any) {
+                console.error('Glob resolution error:', err);
+                socket.emit('error', { message: `Failed to resolve log pattern: ${err.message}` });
+                return;
+            }
+        } else if (pattern) {
              this.watchForRotation(socket, filePath, pattern);
         }
 

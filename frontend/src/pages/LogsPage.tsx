@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { LogViewer } from '../components/LogViewer';
 import { ConfigureLogModal } from '../components/ConfigureLogModal';
 import { DeleteLogDialog } from '../components/DeleteLogDialog';
-import { EditLogDialog } from '../components/EditLogDialog';
 import { Plus, Search, Server, AlertCircle, FileText, Trash2, Edit2 } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { ServiceStatus } from '../types';
@@ -15,17 +14,23 @@ export default function LogsPage() {
     const isAdmin = hasRole('kubiq-admin');
     const { addToast } = useToast();
     const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+    
+    // Config Modal State
     const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+    const [configService, setConfigService] = useState<string | undefined>(undefined);
+
     const [deleteLogService, setDeleteLogService] = useState<ServiceStatus | null>(null);
-    const [editLogService, setEditLogService] = useState<ServiceStatus | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Filter services that have a logPath configured
-    const configuredServices = services.filter(s => s.logPath);
+    // Filter services that have logs configured (either legacy or new sources)
+    const configuredServices = services.filter(s => 
+        (s.logPath && s.logPath.trim() !== '') || 
+        (s.logSources && s.logSources.length > 0)
+    );
 
     const filteredServices = configuredServices.filter(s => 
         s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        s.logPath?.toLowerCase().includes(searchQuery.toLowerCase())
+        (s.logPath && s.logPath.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
     const selectedService = services.find(s => s.id === selectedServiceId);
@@ -37,7 +42,13 @@ export default function LogsPage() {
 
     const handleEditClick = (e: React.MouseEvent, service: ServiceStatus) => {
         e.stopPropagation();
-        setEditLogService(service);
+        setConfigService(service.name);
+        setIsConfigModalOpen(true);
+    };
+
+    const openNewConfig = () => {
+        setConfigService(undefined);
+        setIsConfigModalOpen(true);
     };
 
     const handleDeleteSuccess = () => {
@@ -48,11 +59,6 @@ export default function LogsPage() {
              setSelectedServiceId(null);
         }
         
-        refresh();
-    };
-
-    const handleEditSuccess = () => {
-        addToast('Log source updated successfully', 'success');
         refresh();
     };
 
@@ -77,7 +83,7 @@ export default function LogsPage() {
                         <h2 className="font-bold text-gray-200">Log Sources</h2>
          
                         <button 
-                            onClick={() => setIsConfigModalOpen(true)}
+                            onClick={openNewConfig}
                             className="p-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors"
                             title="Add Log Source"
                         >
@@ -164,8 +170,9 @@ export default function LogsPage() {
             <div className="flex-1 flex flex-col min-h-0 bg-bg-surface/30 border border-gray-800 rounded-xl overflow-hidden backdrop-blur-sm relative z-10">
                 {selectedService ? (
                      <LogViewer 
-                        key={selectedService.id} // CRITICAL: Force remount on service switch to avoid stale state
+                        key={`${selectedService.id}-${selectedService.logSources?.length || 0}`} // CRITICAL: Force remount on source change to update dropdown
                         logPath={selectedService.logPath!} 
+                        logSources={selectedService.logSources} // New Multi-Log Support
                         isOpen={true} 
                         onClose={() => {}} 
                         serviceName={selectedService.name}
@@ -186,6 +193,7 @@ export default function LogsPage() {
                 isOpen={isConfigModalOpen}
                 onClose={() => setIsConfigModalOpen(false)}
                 onSuccess={refresh}
+                preSelectedService={configService}
             />
 
             {deleteLogService && (
@@ -194,15 +202,6 @@ export default function LogsPage() {
                     onClose={() => setDeleteLogService(null)}
                     onSuccess={handleDeleteSuccess}
                     service={deleteLogService}
-                />
-            )}
-
-            {editLogService && (
-                <EditLogDialog
-                    isOpen={!!editLogService}
-                    onClose={() => setEditLogService(null)}
-                    onSuccess={handleEditSuccess}
-                    service={editLogService}
                 />
             )}
         </div>

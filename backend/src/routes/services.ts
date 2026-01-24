@@ -12,7 +12,8 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const services = monitor.getAllServices().map((service) => ({
       ...service,
       logPath: service.logPath,
-      history: service.history.slice(-historyLimit),
+      logSources: service.logSources, // New: Preserve multi-log sources
+      history: (service.history || []).slice(-historyLimit),
     }));
 
     res.json({
@@ -29,12 +30,13 @@ router.get('/status', async (req: Request, res: Response, next: NextFunction) =>
   try {
     const services = monitor.getAllServices().map((service) => {
       const lastHistory =
-        service.history.length > 0 ? service.history[service.history.length - 1] : null;
+        (service.history || []).length > 0 ? (service.history || [])[(service.history || []).length - 1] : null;
 
       return {
         name: service.name,
         currentStatus: service.currentStatus,
-        logPath: service.logPath, // Include logPath
+        logPath: service.logPath,
+        logSources: service.logSources, // New: Preserve multi-log sources in status update
         lastCheck: lastHistory
           ? {
               timestamp: lastHistory.timestamp,
@@ -65,12 +67,13 @@ router.get('/stream', async (req: Request, res: Response) => {
   const sendUpdate = () => {
     const services = monitor.getAllServices().map((service) => {
       const lastHistory =
-        service.history.length > 0 ? service.history[service.history.length - 1] : null;
+        (service.history || []).length > 0 ? (service.history || [])[(service.history || []).length - 1] : null;
 
       return {
         name: service.name,
         currentStatus: service.currentStatus,
-        logPath: service.logPath, // Include logPath
+        logPath: service.logPath, 
+        logSources: service.logSources, // New: Preserve multi-log sources
         lastCheck: lastHistory
           ? {
               timestamp: lastHistory.timestamp,
@@ -203,7 +206,7 @@ router.post(
   requireRole('kubiq-admin'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { name, endpoint, headers, type, ignoreSSL, logPath } = req.body;
+      const { name, endpoint, headers, type, ignoreSSL, logPath, logSources } = req.body;
 
       if (!name || !endpoint) {
         return res.status(400).json({
@@ -212,7 +215,7 @@ router.post(
         });
       }
 
-      const newService = await monitor.addService({ name, endpoint, headers, type, ignoreSSL, logPath });
+      const newService = await monitor.addService({ name, endpoint, headers, type, ignoreSSL, logPath, logSources });
       res.status(201).json({
         message: 'Service created successfully',
         service: newService,
@@ -236,7 +239,7 @@ router.put(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { name } = req.params;
-      const { endpoint, headers, type, ignoreSSL, logPath } = req.body;
+      const { endpoint, headers, type, ignoreSSL, logPath, logSources } = req.body;
 
       if (!endpoint) {
         return res.status(400).json({
@@ -245,7 +248,7 @@ router.put(
         });
       }
 
-      const updatedService = await monitor.updateService(name as string, { endpoint, headers, type, ignoreSSL, logPath });
+      const updatedService = await monitor.updateService(name as string, { endpoint, headers, type, ignoreSSL, logPath, logSources });
       res.json({
         message: 'Service updated successfully',
         service: updatedService,
