@@ -164,7 +164,7 @@ export class JsonServiceRepository implements IServiceRepository {
                   headers: parts[1] && parts[1] !== 'undefined' ? JSON.parse(parts[1]) : undefined,
                   type: (parts[2] as any) || 'http',
                   ignoreSSL: parts[3] === 'true', // ignoreSSL
-                  logPath: parts[4] && parts[4] !== 'undefined' && parts[4] !== 'null' ? parts[4] : undefined, // logPath
+                  // logPath: parts[4], // Deprecated
                   logSources: parts[5] && parts[5] !== 'undefined' 
                         ? JSON.parse(Buffer.from(parts[5], 'base64').toString('utf-8')) 
                         : undefined, // logSources (Base64 encoded)
@@ -198,7 +198,7 @@ export class JsonServiceRepository implements IServiceRepository {
          let headers = s.headers ? JSON.stringify(s.headers) : 'undefined';
          let type = s.type || 'http';
          let ignoreSSL = s.ignoreSSL || false;
-         let logPath = s.logPath || 'undefined';
+         let logPath = 'undefined'; // Deprecated, always write undefined
          // Use Base64 for logSources to avoid delimiter collision with pipe '|'
          let logSources = s.logSources ? Buffer.from(JSON.stringify(s.logSources)).toString('base64') : 'undefined';
          // Format: name=endpoint|headers|type|ignoreSSL|logPath|logSources

@@ -153,7 +153,7 @@ export class MysqlServiceRepository implements IServiceRepository {
         headers: typeof row.headers === 'string' ? JSON.parse(row.headers) : (row.headers || undefined),
         ignoreSSL: Boolean(row.ignore_ssl),
         sslExpiry: row.ssl_expiry ? new Date(row.ssl_expiry) : null,
-        logPath: row.log_path || undefined,
+        // logPath: row.log_path || undefined, // Deprecated
         logSources: (() => {
             try { return row.log_sources ? JSON.parse(row.log_sources) : undefined; }
             catch { return undefined; }
@@ -205,7 +205,7 @@ export class MysqlServiceRepository implements IServiceRepository {
 
         const [result] = await connection.execute<ResultSetHeader>(
             'INSERT INTO services (name, endpoint, type, headers, ignore_ssl, log_path, log_sources) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [config.name, config.endpoint, config.type || 'http', JSON.stringify(config.headers || {}), config.ignoreSSL || false, config.logPath || null, JSON.stringify(config.logSources || [])]
+            [config.name, config.endpoint, config.type || 'http', JSON.stringify(config.headers || {}), config.ignoreSSL || false, null, JSON.stringify(config.logSources || [])]
         );
         
         const newService: ServiceStatus = {

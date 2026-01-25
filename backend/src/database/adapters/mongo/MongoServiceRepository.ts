@@ -137,7 +137,7 @@ export class MongoServiceRepository implements IServiceRepository {
           history: history,
           ignoreSSL: doc.ignoreSSL,
           sslExpiry: doc.sslExpiry,
-          logPath: doc.logPath,
+          // logPath is deprecated
           logSources: doc.logSources // Map logSources
       };
   }

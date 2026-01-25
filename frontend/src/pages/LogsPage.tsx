@@ -23,14 +23,13 @@ export default function LogsPage() {
     const [searchQuery, setSearchQuery] = useState('');
 
     // Filter services that have logs configured (either legacy or new sources)
+    // Filter services that have logs configured (strictly new sources)
     const configuredServices = services.filter(s => 
-        (s.logPath && s.logPath.trim() !== '') || 
-        (s.logSources && s.logSources.length > 0)
+        s.logSources && s.logSources.length > 0
     );
 
     const filteredServices = configuredServices.filter(s => 
-        s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        (s.logPath && s.logPath.toLowerCase().includes(searchQuery.toLowerCase()))
+        s.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const selectedService = services.find(s => s.name === selectedServiceName);

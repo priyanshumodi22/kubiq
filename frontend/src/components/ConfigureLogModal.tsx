@@ -74,13 +74,6 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
         // Handle migration from legacy logPath in UI
         if (svc.logSources && svc.logSources.length > 0) {
             setLogSources(svc.logSources);
-        } else if (svc.logPath) {
-            // Legacy fallback
-            setLogSources([{
-                id: Date.now().toString(),
-                name: 'Primary Log',
-                path: svc.logPath
-            }]);
         } else {
             setLogSources([]);
         }
@@ -129,9 +122,8 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
       const service = services.find(s => s.name === selectedServiceName);
       if (!service) throw new Error("Service not found");
 
-      // Deprecate logPath by sending empty string, but api.ts still expects it.
-      // We send the first source as legacy path or empty.
-      const primaryPath = logSources.length > 0 ? logSources[0].path : '';
+      // Deprecate logPath by sending empty string.
+      const primaryPath = ''; // Force clear legacy path logic
 
       await apiClient.updateService(
           service.name, 
