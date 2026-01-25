@@ -204,8 +204,8 @@ export class MysqlServiceRepository implements IServiceRepository {
         await connection.beginTransaction();
 
         const [result] = await connection.execute<ResultSetHeader>(
-            'INSERT INTO services (name, endpoint, type, headers, ignore_ssl, log_path, log_sources) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [config.name, config.endpoint, config.type || 'http', JSON.stringify(config.headers || {}), config.ignoreSSL || false, null, JSON.stringify(config.logSources || [])]
+            'INSERT INTO services (name, endpoint, type, headers, ignore_ssl, log_sources) VALUES (?, ?, ?, ?, ?, ?)',
+            [config.name, config.endpoint, config.type || 'http', JSON.stringify(config.headers || {}), config.ignoreSSL || false, JSON.stringify(config.logSources || [])]
         );
         
         const newService: ServiceStatus = {
@@ -247,13 +247,12 @@ export class MysqlServiceRepository implements IServiceRepository {
     
     // Update DB with merged service state
     await this.pool.execute(
-        'UPDATE services SET endpoint = ?, type = ?, headers = ?, ignore_ssl = ?, log_path = ?, log_sources = ? WHERE name = ?',
+        'UPDATE services SET endpoint = ?, type = ?, headers = ?, ignore_ssl = ?, log_sources = ? WHERE name = ?',
         [
             service.endpoint, 
             service.type || 'http', 
             JSON.stringify(service.headers || {}), 
             service.ignoreSSL || false, 
-            service.logPath || null, 
             JSON.stringify(service.logSources || []),
             name
         ]
