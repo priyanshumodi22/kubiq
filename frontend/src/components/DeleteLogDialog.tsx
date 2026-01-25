@@ -32,7 +32,8 @@ export function DeleteLogDialog({
         service.endpoint,
         service.type,
         service.ignoreSSL,
-        '' // logPath cleared
+        '', // logPath cleared
+        [] // logSources cleared
       );
       onSuccess();
       onClose();

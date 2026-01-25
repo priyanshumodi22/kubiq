@@ -22,8 +22,7 @@ const ServiceSchema: Schema = new Schema({
     
     // SSL Monitoring
     ignoreSSL: { type: Boolean, default: false },
-    sslExpiry: { type: Date, default: null },
-    logPath: { type: String, required: false }, // Legacy
+    // logPath removed
     logSources: [{
         id: { type: String, required: true },
         name: { type: String, required: true },

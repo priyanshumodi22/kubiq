@@ -88,7 +88,7 @@ export class MysqlServiceRepository implements IServiceRepository {
                 current_status VARCHAR(50),
                 ssl_expiry DATETIME,
                 ignore_ssl BOOLEAN DEFAULT FALSE,
-                log_path VARCHAR(512),
+                ignore_ssl BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB;
@@ -123,9 +123,9 @@ export class MysqlServiceRepository implements IServiceRepository {
                console.log('🔧 Migrating MySQL: Adding ssl_expiry column');
                await connection.query('ALTER TABLE services ADD COLUMN ssl_expiry DATETIME');
           }
-          if (!columnNames.includes('log_path')) {
-              console.log('🔧 Migrating MySQL: Adding log_path column');
-              await connection.query('ALTER TABLE services ADD COLUMN log_path VARCHAR(512)');
+           if (!columnNames.includes('ssl_expiry')) {
+               console.log('🔧 Migrating MySQL: Adding ssl_expiry column');
+               await connection.query('ALTER TABLE services ADD COLUMN ssl_expiry DATETIME');
           }
           if (!columnNames.includes('log_sources')) {
               console.log('🔧 Migrating MySQL: Adding log_sources column');
