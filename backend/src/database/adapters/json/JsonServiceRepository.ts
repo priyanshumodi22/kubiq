@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { IServiceRepository } from '../../interfaces/IServiceRepository';
 import { ServiceStatus, ServiceConfig, HealthCheck, SystemConfig } from '../../../types';
 
@@ -156,6 +157,7 @@ export class JsonServiceRepository implements IServiceRepository {
              // Basic parse (simplified for brevity, assumes standard format)
              const parts = val.split('|');
              this.services.set(name, {
+                 id: crypto.createHash('md5').update(name).digest('hex'), // Generate stable ID
                  name, 
                  endpoint: parts[0],
                  // parts[1] is headers (JSON string) usually, let's assume standard format is: endpoint|headers|type

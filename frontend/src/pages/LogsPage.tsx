@@ -13,7 +13,7 @@ export default function LogsPage() {
     const { hasRole } = useAuth();
     const isAdmin = hasRole('kubiq-admin');
     const { addToast } = useToast();
-    const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+    const [selectedServiceName, setSelectedServiceName] = useState<string | null>(null);
     
     // Config Modal State
     const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
@@ -33,7 +33,7 @@ export default function LogsPage() {
         (s.logPath && s.logPath.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
-    const selectedService = services.find(s => s.id === selectedServiceId);
+    const selectedService = services.find(s => s.name === selectedServiceName);
 
     const handleDeleteClick = (e: React.MouseEvent, service: ServiceStatus) => {
         e.stopPropagation(); // Prevent selecting the service when clicking delete
@@ -55,8 +55,9 @@ export default function LogsPage() {
         addToast('Log source removed successfully', 'success');
         
         // If the deleted service was selected, deselect it
-        if (deleteLogService && deleteLogService.id === selectedServiceId) {
-             setSelectedServiceId(null);
+        // If the deleted service was selected, deselect it
+        if (deleteLogService && deleteLogService.name === selectedServiceName) {
+             setSelectedServiceName(null);
         }
         
         refresh();
@@ -119,19 +120,19 @@ export default function LogsPage() {
                     ) : (
                         filteredServices.map(service => (
                             <div
-                                key={service.id}
-                                onClick={() => setSelectedServiceId(service.id)}
+                                key={service.id || service.name} // Fallback to name if ID is missing
+                                onClick={() => setSelectedServiceName(service.name)}
                                 className={`w-full text-left px-3 py-3 rounded-lg flex items-start space-x-3 transition-colors cursor-pointer group relative ${
-                                    selectedServiceId === service.id 
+                                    selectedServiceName === service.name 
                                     ? 'bg-primary/10 border border-primary/20' 
                                     : 'hover:bg-white/5 border border-transparent'
                                 }`}
                             >
-                                <div className={`mt-0.5 p-1 rounded ${selectedServiceId === service.id ? 'text-primary' : 'text-gray-400'}`}>
+                                <div className={`mt-0.5 p-1 rounded ${selectedServiceName === service.name ? 'text-primary' : 'text-gray-400'}`}>
                                     <Server className="w-4 h-4" />
                                 </div>
                                 <div className="flex-1 min-w-0 pr-6">
-                                    <div className={`text-sm font-medium truncate ${selectedServiceId === service.id ? 'text-white' : 'text-gray-300'}`}>
+                                    <div className={`text-sm font-medium truncate ${selectedServiceName === service.name ? 'text-white' : 'text-gray-300'}`}>
                                         {service.name}
                                     </div>
                                     <div className="text-[10px] text-gray-500 truncate font-mono" title={service.logPath}>

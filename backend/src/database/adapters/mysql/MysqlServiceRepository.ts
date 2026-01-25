@@ -146,6 +146,7 @@ export class MysqlServiceRepository implements IServiceRepository {
     
     for (const row of rows) {
       const service: ServiceStatus = {
+        id: row.id.toString(), // Fix: Include ID
         name: row.name,
         endpoint: row.endpoint,
         type: row.type as any || 'http',
@@ -208,6 +209,7 @@ export class MysqlServiceRepository implements IServiceRepository {
         );
         
         const newService: ServiceStatus = {
+            id: result.insertId.toString(), // Fix: Return new ID
             name: config.name,
             endpoint: config.endpoint,
             type: config.type || 'http',
