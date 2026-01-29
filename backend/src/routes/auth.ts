@@ -9,7 +9,7 @@ const router = Router();
 router.get('/config', (req: Request, res: Response) => {
   const config = {
     enabled: process.env.KEYCLOAK_ENABLED === 'true',
-    nativeEnabled: true, // Always enable native for now, or flag?
+    nativeEnabled: process.env.NATIVE_AUTH_ENABLED !== 'false', // Default to true if not set
     realm: process.env.KEYCLOAK_REALM || 'kubiq',
     url: process.env.KEYCLOAK_URL || 'http://localhost:8080/auth',
     clientId: process.env.KEYCLOAK_CLIENT_ID || 'kubiq-dashboard',
