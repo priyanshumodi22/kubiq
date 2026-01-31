@@ -1,17 +1,50 @@
+# Stage 1: Build Frontend
+FROM node:20-alpine AS ui-build
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ ./
+# Build output: /app/frontend/dist
+RUN npm run build 
+
+# Stage 2: Build Backend
+FROM node:20-alpine AS server-build
+WORKDIR /app/backend
+# Install build tools for native modules (bcrypt, etc.)
+RUN apk add --no-cache python3 make g++
+COPY backend/package*.json ./
+RUN npm ci
+COPY backend/ ./
+# Build output: /app/backend/dist
+RUN npm run build
+
+# Stage 3: Production Runner
 FROM node:20-alpine
-WORKDIR /app/kubiq
+WORKDIR /app
 
-# Install networking tools for debugging
-RUN apk add --no-cache curl busybox-extras iputils
+# Install production dependencies only
+# We need 'bcrypt' native bindings again for runtime? 
+# Usually 'npm install' builds them. We copy package.json and install prod only.
+RUN apk add --no-cache python3 make g++
 
-# Copy all pre-built files
-COPY . .
+COPY backend/package*.json ./
+RUN npm ci --omit=dev
 
-# Ensure data and logs directories exist
-RUN mkdir -p /app/kubiq/data /app/kubiq/logs
+# Copy built backend
+COPY --from=server-build /app/backend/dist ./dist
 
-# Expose port
+# Copy built frontend to 'public' (which server.ts expects at ../public relative to dist)
+# dist/server.js -> ../public -> /app/public
+COPY --from=ui-build /app/frontend/dist ./public
+
+# Create volume directories
+RUN mkdir -p /app/data /app/logs
+VOLUME ["/app/data", "/app/logs"]
+
+# Environment
+ENV NODE_ENV=production
+ENV PORT=3001
+
 EXPOSE 3001
 
-# # Start command
-# CMD ["node", "dist/server.js"]
+CMD ["node", "dist/server.js"]
