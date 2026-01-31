@@ -20,6 +20,9 @@
     "assets": [
       "views/**/*"
     ],
+    "scripts": [
+      "node_modules/axios/dist/node/axios.cjs"
+    ],
     "targets": [
       "node18-linux-x64",
       "node18-linux-arm64"
