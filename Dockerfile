@@ -11,7 +11,7 @@ RUN npm run build
 FROM node:20-slim AS server-build
 WORKDIR /app/backend
 # Install build tools for native modules (bcrypt, etc.)
-RUN apk add --no-cache python3 make g++
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 COPY backend/package*.json ./
 RUN npm ci
 COPY backend/ ./
