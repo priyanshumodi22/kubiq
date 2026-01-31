@@ -28,7 +28,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: priyanshumodi22/kubiq
+          images: haxterpm/kubiq
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
