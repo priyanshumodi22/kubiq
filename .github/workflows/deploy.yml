@@ -69,7 +69,7 @@ jobs:
       - name: Package AMD64 Binary
         run: |
           cd backend
-          npx pkg . -t node18-linux-x64 --public-packages "bcrypt,axios" --output ../kubiq-linux-amd64
+          npx pkg . -t node18-linux-x64 --public-packages bcrypt --output ../kubiq-linux-amd64
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -81,7 +81,7 @@ jobs:
             -v ${{ github.workspace }}:/app \
             -w /app/backend \
             node:18-slim \
-            /bin/bash -c "apt-get update && apt-get install -y python3 make g++ && npm ci && npm run build && npx pkg . -t node18-linux-arm64 --public-packages \"bcrypt,axios\" --output ../kubiq-linux-arm64 && cp -r node_modules ../node_modules-arm64"
+            /bin/bash -c "apt-get update && apt-get install -y python3 make g++ && npm ci && npm run build && npx pkg . -t node18-linux-arm64 --public-packages bcrypt --output ../kubiq-linux-arm64 && cp -r node_modules ../node_modules-arm64"
 
       - name: Zip Bundle (Binaries + Frontend)
         run: |
