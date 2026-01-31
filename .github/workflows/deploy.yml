@@ -69,32 +69,37 @@ jobs:
       - name: Package AMD64 Binary
         run: |
           cd backend
-          npx pkg . -t node18-linux-x64 --output ../kubiq-linux-amd64
+          npx pkg . -t node18-linux-x64 --public-packages "bcrypt,axios" --output ../kubiq-linux-amd64
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      - name: Build ARM64 Binary (via Docker)
+      - name: Build ARM64 Binary & Node Modules (via Docker)
         run: |
-          # We use Docker to build ARM64 because we need to compile native dependencies (bcrypt) for ARM
+          # Build binary AND keep the native node_modules
           docker run --rm --platform linux/arm64 \
             -v ${{ github.workspace }}:/app \
             -w /app/backend \
             node:18-slim \
-            /bin/bash -c "apt-get update && apt-get install -y python3 make g++ && npm ci && npm run build && npx pkg . -t node18-linux-arm64 --output ../kubiq-linux-arm64"
+            /bin/bash -c "apt-get update && apt-get install -y python3 make g++ && npm ci && npm run build && npx pkg . -t node18-linux-arm64 --public-packages \"bcrypt,axios\" --output ../kubiq-linux-arm64 && cp -r node_modules ../node_modules-arm64"
 
       - name: Zip Bundle (Binaries + Frontend)
         run: |
-          # Create a nice package structure
+          # AMD64 Bundle
           mkdir release-amd64
           cp kubiq-linux-amd64 release-amd64/kubiq
           cp -r frontend/dist release-amd64/public
           cp backend/.env release-amd64/.env.example
-          
+          cp backend/package.json release-amd64/package.json
+          cp -r backend/node_modules release-amd64/node_modules # these are AMD64 from 'npm ci' step
+
+          # ARM64 Bundle
           mkdir release-arm64
           cp kubiq-linux-arm64 release-arm64/kubiq
           cp -r frontend/dist release-arm64/public
           cp backend/.env release-arm64/.env.example
+          cp backend/package.json release-arm64/package.json
+          cp -r node_modules-arm64 release-arm64/node_modules # these are ARM64 from Docker step
 
           # Zip them
           cd release-amd64 && zip -r ../kubiq-linux-amd64.zip . && cd ..

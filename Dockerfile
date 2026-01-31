@@ -28,7 +28,7 @@ RUN ARCH=$(uname -m) && \
     else \
       echo "Unknown architecture: $ARCH" && exit 1; \
     fi && \
-    npx pkg . -t $TARGET --output ./kubiq-bin
+    npx pkg . -t $TARGET --public-packages "bcrypt,axios" --output ./kubiq-bin
 
 # Stage 3: Production Runner
 FROM node:18-slim
@@ -39,6 +39,9 @@ RUN apt-get update && apt-get install -y libstdc++6 libgcc1 ca-certificates && r
 
 # Copy the binary
 COPY --from=server-build /app/backend/kubiq-bin ./kubiq
+
+# Copy node_modules (for native bindings like bcrypt)
+COPY --from=server-build /app/backend/node_modules ./node_modules
 
 # Copy built frontend (needed for UI)
 COPY --from=ui-build /app/frontend/dist ./public
