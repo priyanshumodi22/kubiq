@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-// Dynamic require hack to prevent pkg from bundling bcrypt (Native Module)
-const bcryptLib = 'bcrypt';
-const bcrypt = require(bcryptLib);
+import bcrypt from 'bcryptjs';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { User, AuthResponse } from '../types';
 
