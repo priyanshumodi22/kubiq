@@ -15,26 +15,31 @@ RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt
 COPY backend/package*.json ./
 RUN npm ci
 COPY backend/ ./
-# Build output: /app/backend/dist
 RUN npm run build
+
+# Build single executable binary
+# Detect architecture and rename the correct binary to 'kubiq-bin'
+RUN npx pkg . --out-path ./pkg-build && \
+    ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+      mv ./pkg-build/kubiq-backend-linux-x64 ./kubiq-bin; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+      mv ./pkg-build/kubiq-backend-linux-arm64 ./kubiq-bin; \
+    else \
+      echo "Unknown architecture: $ARCH" && exit 1; \
+    fi
 
 # Stage 3: Production Runner
 FROM node:20-slim
 WORKDIR /app
 
-# Install production dependencies only
-# We need 'bcrypt' native bindings again for runtime? 
-# Usually 'npm install' builds them. We copy package.json and install prod only.
-RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+# Install dependencies for the binary (libraries)
+RUN apt-get update && apt-get install -y libstdc++6 libgcc1 ca-certificates && rm -rf /var/lib/apt/lists/*
 
-COPY backend/package*.json ./
-RUN npm ci --omit=dev
+# Copy the binary
+COPY --from=server-build /app/backend/kubiq-bin ./kubiq
 
-# Copy built backend
-COPY --from=server-build /app/backend/dist ./dist
-
-# Copy built frontend to 'public' (which server.ts expects at ../public relative to dist)
-# dist/server.js -> ../public -> /app/public
+# Copy built frontend (needed for UI)
 COPY --from=ui-build /app/frontend/dist ./public
 
 # Create volume directories
@@ -47,4 +52,4 @@ ENV PORT=3001
 
 EXPOSE 3001
 
-CMD ["node", "dist/server.js"]
+CMD ["./kubiq"]

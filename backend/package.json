@@ -15,6 +15,16 @@
   "keywords": [],
   "author": "Priyanshu Modi",
   "license": "MIT",
+  "bin": "dist/server.js",
+  "pkg": {
+    "assets": [
+      "views/**/*"
+    ],
+    "targets": [
+      "node20-linux-x64",
+      "node20-linux-arm64"
+    ]
+  },
   "dependencies": {
     "@simplewebauthn/server": "^13.2.2",
     "@types/bcrypt": "^6.0.0",

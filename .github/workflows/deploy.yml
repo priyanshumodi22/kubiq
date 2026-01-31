@@ -45,3 +45,66 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  build-binaries:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build Frontend & Backend (AMD64)
+        run: |
+          npm ci --prefix frontend
+          npm run build --prefix frontend
+          npm ci --prefix backend
+          npm run build --prefix backend
+
+      - name: Package AMD64 Binary
+        run: |
+          cd backend
+          npx pkg . -t node20-linux-x64 --output ../kubiq-linux-amd64
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build ARM64 Binary (via Docker)
+        run: |
+          # We use Docker to build ARM64 because we need to compile native dependencies (bcrypt) for ARM
+          docker run --rm --platform linux/arm64 \
+            -v ${{ github.workspace }}:/app \
+            -w /app/backend \
+            node:20-slim \
+            /bin/bash -c "apt-get update && apt-get install -y python3 make g++ && npm ci && npm run build && npx pkg . -t node20-linux-arm64 --output ../kubiq-linux-arm64"
+
+      - name: Zip Bundle (Binaries + Frontend)
+        run: |
+          # Create a nice package structure
+          mkdir release-amd64
+          cp kubiq-linux-amd64 release-amd64/kubiq
+          cp -r frontend/dist release-amd64/public
+          cp backend/.env release-amd64/.env.example
+          
+          mkdir release-arm64
+          cp kubiq-linux-arm64 release-arm64/kubiq
+          cp -r frontend/dist release-arm64/public
+          cp backend/.env release-arm64/.env.example
+
+          # Zip them
+          cd release-amd64 && zip -r ../kubiq-linux-amd64.zip . && cd ..
+          cd release-arm64 && zip -r ../kubiq-linux-arm64.zip . && cd ..
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        if: github.event_name == 'release'
+        with:
+          files: |
+            kubiq-linux-amd64.zip
+            kubiq-linux-arm64.zip
+

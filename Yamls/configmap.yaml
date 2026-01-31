@@ -12,14 +12,26 @@ data:
   BACKEND_CONTEXT_PATH: '/kubiq-api'
   FRONTEND_CONTEXT_PATH: '/kubiq'
 
+  # DB_TYPE: json | mysql | mongo
+  DB_TYPE: mysql
+  # MySQL Config
+  DB_HOST: dbhost
+  DB_PORT: '3306'
+  DB_USER: dbuser
+  DB_PASS: dbpass
+  DB_NAME: kubiq_db
+  
+  # MongoDB Config (DB_TYPE=mongo)
+  DB_URI: mongodb://localhost:27017/kubiq_db
+
   # Service Configuration
   POLL_INTERVAL: '30000'
   REQUEST_TIMEOUT: '5000'
 
   # Data Persistence
   ENABLE_PERSISTENCE: 'true'
-  DATA_DIR: '/app/kubiq/data'
-  SERVICES_CONFIG_PATH: '/app/kubiq/data/services.ini'
+  DATA_DIR: '/app/data'
+  SERVICES_CONFIG_PATH: '/app/data/services.ini'
   SNAPSHOT_INTERVAL: '300000'
 
   # Health Check Configuration
@@ -30,3 +42,24 @@ data:
   KEYCLOAK_ENABLED: 'true'
   KEYCLOAK_REALM: 'realm-name'
   KEYCLOAK_CLIENT_ID: 'kubiq'
+
+  # Native Authentication
+  NATIVE_AUTH_ENABLED: 'true'
+  JWT_SECRET: 'change-this-secret-in-production-please-random-string-12345'
+
+  # WebAuthn Configuration
+  # RP_ID = Your domain (e.g., kubiq.com or dashboard.kubiq.com)
+  RP_ID: <your-domain>
+
+  # ORIGIN = Full URL (e.g., https://dashboard.kubiq.com)
+  ORIGIN: https://<your-domain>
+
+  # Backend DNS - Update with your actual backend URL
+  BACKEND_DNS: 'https://<your-domain>'
+
+  # CORS Configuration - Update with your actual frontend URL
+  FRONTEND_DNS: 'https://<your-domain>'
+  CORS_ORIGIN: 'https://<your-domain>'
+
+  # Keycloak URL - Update with your actual Keycloak URL
+  KEYCLOAK_URL: 'https://<your-domain>/<keycloak-endpoint>'
