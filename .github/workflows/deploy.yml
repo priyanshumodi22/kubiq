@@ -57,7 +57,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18'
 
       - name: Build Frontend & Backend (AMD64)
         run: |
@@ -69,7 +69,7 @@ jobs:
       - name: Package AMD64 Binary
         run: |
           cd backend
-          npx pkg . -t node20-linux-x64 --output ../kubiq-linux-amd64
+          npx pkg . -t node18-linux-x64 --output ../kubiq-linux-amd64
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -80,8 +80,8 @@ jobs:
           docker run --rm --platform linux/arm64 \
             -v ${{ github.workspace }}:/app \
             -w /app/backend \
-            node:20-slim \
-            /bin/bash -c "apt-get update && apt-get install -y python3 make g++ && npm ci && npm run build && npx pkg . -t node20-linux-arm64 --output ../kubiq-linux-arm64"
+            node:18-slim \
+            /bin/bash -c "apt-get update && apt-get install -y python3 make g++ && npm ci && npm run build && npx pkg . -t node18-linux-arm64 --output ../kubiq-linux-arm64"
 
       - name: Zip Bundle (Binaries + Frontend)
         run: |

@@ -21,8 +21,8 @@
       "views/**/*"
     ],
     "targets": [
-      "node20-linux-x64",
-      "node20-linux-arm64"
+      "node18-linux-x64",
+      "node18-linux-arm64"
     ]
   },
   "dependencies": {
