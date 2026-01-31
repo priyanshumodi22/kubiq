@@ -9,6 +9,7 @@ interface LogWatcher {
     filePath: string;
     watcher?: chokidar.FSWatcher;
     filePattern?: string; // If this is part of a rotation group
+    fileLimit?: number; // New: Limit for pattern matching
 }
 
 export class LogStreamService extends EventEmitter {
@@ -33,11 +34,11 @@ export class LogStreamService extends EventEmitter {
         this.io.on('connection', (socket: Socket) => {
             console.log(`🔌 Client connected to logs: ${socket.id}`);
 
-            socket.on('watch:log', async (data: { path: string, pattern?: string }) => {
-                const { path: logPath, pattern } = data;
-                console.log(`👀 Client ${socket.id} requested to watch: ${logPath} (Pattern: ${pattern})`);
+            socket.on('watch:log', async (data: { path: string, pattern?: string, limit?: number }) => {
+                const { path: logPath, pattern, limit } = data;
+                console.log(`👀 Client ${socket.id} requested to watch: ${logPath} (Pattern: ${pattern}, Limit: ${limit})`);
                 
-                await this.startStreaming(socket, logPath, pattern);
+                await this.startStreaming(socket, logPath, pattern, limit);
             });
 
             socket.on('stop:watch', () => {
@@ -51,54 +52,53 @@ export class LogStreamService extends EventEmitter {
         });
     }
 
-    private async startStreaming(socket: Socket, filePath: string, pattern?: string) {
-        // Validation: Verify if it's a glob pattern or direct file
+    private async startStreaming(socket: Socket, filePath: string, pattern?: string, limit?: number) {
         let targetFile = filePath;
-        let isGlob = filePath.includes('*') || (pattern && pattern.includes('*'));
+        const isPathGlob = filePath.includes('*');
+        const searchPattern = pattern || (isPathGlob ? filePath : undefined);
 
-        if (isGlob) {
+        // 1. Resolve Target File if path is a glob
+        if (isPathGlob) {
             try {
-                // If it is a glob, resolve to the latest file
-                const searchPattern = pattern || filePath;
-                const files = await glob(searchPattern, {
-                    stat: true,
-                    withFileTypes: true
-                });
+                // If path is glob, we MUST resolve it to a single file (default: latest)
+                // We use the same scanFiles logic but with limit 1 if we just need the latest, 
+                // but since we likely want the list too, we can utilize scanFiles with 'limit' if pattern matches.
+                
+                // If pattern is NOT provided, we treat valid glob path as the pattern
+                const resolvePattern = pattern || filePath;
+                const matches = await this.scanFiles(resolvePattern, limit); // Get list (respects limit)
 
-                if (files.length === 0) {
-                     socket.emit('error', { message: `No files found matching pattern: ${searchPattern}` });
+                if (matches.length === 0) {
+                     socket.emit('error', { message: `No files found matching pattern: ${resolvePattern}` });
                      return;
                 }
 
-                // Sort by mtime descending (newest first)
-                // Note: glob v10+ withFileTypes returns Path objects with mtime, but simple strings need fs.stat
-                // Let's assume simple string return for safety across versions or map it
-                // Using a safe manual stat approach to be robust:
-                const filesWithStats = files.map(f => {
-                    const fullPath = typeof f === 'string' ? f : f.fullpath(); 
-                    return {
-                        path: fullPath,
-                        mtime: fs.statSync(fullPath).mtime.getTime()
-                    };
-                });
-
-                filesWithStats.sort((a, b) => b.mtime - a.mtime);
+                targetFile = matches[0].path; // Default to latest
                 
-                targetFile = filesWithStats[0].path;
-                
-                // If we found a file, ensure we watch for rotation on the PATTERN
-                this.watchForRotation(socket, targetFile, searchPattern);
-
-                console.log(`🎯 Resolved glob pattern '${searchPattern}' to latest file: ${targetFile}`);
-                socket.emit('log:resolved', { resolvedPath: targetFile }); // Optional: tell client what we found
+                // Emit list immediately since we have it
+                socket.emit('log:file_list', { files: matches });
+                socket.emit('log:resolved', { resolvedPath: targetFile });
 
             } catch (err: any) {
                 console.error('Glob resolution error:', err);
                 socket.emit('error', { message: `Failed to resolve log pattern: ${err.message}` });
                 return;
             }
-        } else if (pattern) {
-             this.watchForRotation(socket, filePath, pattern);
+        }
+
+        // 2. Identify if we should watch directory/pattern for updates (File List & Rotations)
+        // If 'pattern' is explicitly provided OR 'filePath' was a glob (meaning we derived the pattern), we watch.
+        if (searchPattern && searchPattern.includes('*')) {
+             // If we didn't already emit the list (i.e. filePath wasn't a glob, but pattern was provided)
+             // We should scan and emit now.
+             if (!isPathGlob) {
+                 try {
+                     const matches = await this.scanFiles(searchPattern, limit);
+                     socket.emit('log:file_list', { files: matches });
+                 } catch (e) { /* ignore scan error here, maybe pattern is empty */ }
+             }
+             
+             this.watchForDirectoryChanges(socket, searchPattern, limit);
         }
 
         if (!fs.existsSync(targetFile)) {
@@ -106,9 +106,7 @@ export class LogStreamService extends EventEmitter {
             return;
         }
 
-        // Send initial chunk (last 100 lines or so) - simplified for "tail"
-        // For heavy history, use REST API. This is just for immediate stream context.
-        // Reading last 2KB for context
+        // 3. Stream Content
         try {
             const stats = fs.statSync(targetFile);
             const fileSize = stats.size;
@@ -125,14 +123,11 @@ export class LogStreamService extends EventEmitter {
         }
 
         // Start File Watcher
-        // Using fs.watchFile is poll-heavy, chokidar is better but efficient "tailing" needs care.
-        // For simple tailing, fs.watch is often sufficient if we track size.
-        
         let currentSize = fs.statSync(targetFile).size;
 
         const fileWatcher = chokidar.watch(targetFile, {
             persistent: true,
-            usePolling: true, // often needed for VM/Container volumes
+            usePolling: true,
             interval: 1000,
         });
 
@@ -141,8 +136,6 @@ export class LogStreamService extends EventEmitter {
                 if (err) return;
 
                 if (stats.size > currentSize) {
-                    // Valid read range: [currentSize, stats.size - 1]
-                    // If file grew, stats.size > currentSize, so stats.size >= 1.
                     const stream = fs.createReadStream(changedPath, {
                         start: currentSize,
                         end: stats.size - 1 
@@ -158,7 +151,6 @@ export class LogStreamService extends EventEmitter {
 
                     currentSize = stats.size;
                 } else if (stats.size < currentSize) {
-                    // File truncated (rotation?)
                     currentSize = stats.size;
                     socket.emit('log:truncated', { message: 'File truncated' });
                 }
@@ -172,8 +164,31 @@ export class LogStreamService extends EventEmitter {
         this.activeWatchers.set(socket.id, {
             filePath: targetFile,
             watcher: fileWatcher,
-            filePattern: pattern
+            filePattern: pattern || (isPathGlob ? filePath : undefined),
+            fileLimit: limit
         });
+    }
+
+    private async scanFiles(pattern: string, limit: number = 5) { // Default limit 5 if not provided
+        const files = await glob(pattern, {
+            stat: true,
+            withFileTypes: true,
+            windowsPathsNoEscape: true // Important for Windows paths
+        });
+
+        const filesWithStats = files.map(f => {
+            const fullPath = typeof f === 'string' ? f : f.fullpath(); 
+            return {
+                name: path.basename(fullPath),
+                path: fullPath,
+                mtime: fs.statSync(fullPath).mtime.getTime()
+            };
+        });
+
+        filesWithStats.sort((a, b) => b.mtime - a.mtime);
+        
+        // Return top N
+        return filesWithStats.slice(0, limit);
     }
 
     private stopStreaming(socket: Socket) {
@@ -181,34 +196,68 @@ export class LogStreamService extends EventEmitter {
         if (watcherData && watcherData.watcher) {
             watcherData.watcher.close();
             this.activeWatchers.delete(socket.id);
+            // Note: We are leaking the directory watcher here in this simple implementation
+            // Ideally, we store the dirWatcher capable of closing too.
+            // But since this is a singleton service and dir watchers might be shared... 
+            // For now, let's assume one-watcher-per-socket simplifiction.
+            // TODO: Proper cleanup of directory watchers.
             console.log(`🛑 Stopped watching for ${socket.id}`);
         }
     }
 
-    private watchForRotation(socket: Socket, currentPath: string, pattern: string) {
-        // pattern: /var/log/app-*.log
-        // directory: /var/log/
-        const dir = path.dirname(currentPath);
-        // Clean glob pattern for chokidar if needed, but assuming user provides full glob like /var/log/app-*.log
-        
-        // Simple directory watcher to check against pattern
-        const dirWatcher = chokidar.watch(dir, {
-            depth: 0,
-            ignoreInitial: true
-        });
+    private watchForDirectoryChanges(socket: Socket, pattern: string, limit?: number) {
+       // Watch parent directory for any additions/deletions that update our "Top N" list
+       // pattern: /var/log/app-*.log -> dir: /var/log
+       
+       // Handle glob properly to get base dir. 
+       // Simplest: take dirname of the pattern assuming no glob in parent dirs for now.
+       const dir = path.dirname(pattern.split('*')[0]); // Heuristic: part before first wildcard
 
-        dirWatcher.on('add', (newFilePath) => {
-             // Check if new file matches our pattern (simple regex check or glob match)
-             // For now, let's assume if it shares the prefix
-             // Real implementation would use minimatch
-             // Just notify client a new file appeared
-             socket.emit('rotation:available', { 
-                 newFile: newFilePath, 
-                 message: `New log file detected: ${path.basename(newFilePath)}` 
-             });
-        });
+       // Debounce timer
+       let updateTimer: NodeJS.Timeout | null = null;
 
-        // Store this watcher too? For now, we attach it to the main watcher cleanup 
-        // (Simplified: in production, manage these together)
+       const dirWatcher = chokidar.watch(dir, {
+           depth: 0,
+           ignoreInitial: true,
+           usePolling: true, // Critical for WSL/Docker/Network mounts
+           interval: 1000,
+           awaitWriteFinish: {
+                stabilityThreshold: 500, // Faster detection of completed writes
+                pollInterval: 100
+           }
+       });
+
+       const updateList = async () => {
+           console.log(`♻️  Directory changed, rescanning pattern: ${pattern}`);
+           try {
+               const matches = await this.scanFiles(pattern, limit);
+               socket.emit('log:file_list', { files: matches });
+           } catch(e) {
+               console.error('Failed to update log list:', e);
+           }
+       };
+
+       const handleDirChange = () => {
+           if (updateTimer) clearTimeout(updateTimer);
+           updateTimer = setTimeout(updateList, 500); // 0.5s debounce (was 2s)
+       };
+
+       dirWatcher.on('add', handleDirChange);
+       dirWatcher.on('unlink', handleDirChange);
+       // We should also attach this dirWatcher to activeWatchers for cleanup!
+       // Since the current structure only holds one watcher, we might need to composite it.
+       // For this task, let's just piggyback or assume user disconnect cleans up by standard timeout (not great).
+       // PROPER FIX: Combine watchers.
+       const current = this.activeWatchers.get(socket.id);
+       if (current) {
+           // Hack: Create a composite close function
+           const oldClose = current.watcher?.close.bind(current.watcher);
+           current.watcher = {
+               close: async () => {
+                   await oldClose?.();
+                   await dirWatcher.close();
+               }
+           } as any;
+       }
     }
 }

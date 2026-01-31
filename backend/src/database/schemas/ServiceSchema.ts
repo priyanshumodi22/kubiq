@@ -26,7 +26,8 @@ const ServiceSchema: Schema = new Schema({
     logSources: [{
         id: { type: String, required: true },
         name: { type: String, required: true },
-        path: { type: String, required: true }
+        path: { type: String, required: true },
+        fileLimit: { type: Number }
     }],
     
     // History (embedded array for simplicity, capped could be better but array is fine for now)

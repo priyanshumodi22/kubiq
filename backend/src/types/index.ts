@@ -2,6 +2,7 @@ export interface LogSource {
   id: string; // UUID or generated ID
   name: string; // Display name
   path: string; // File path or glob
+  fileLimit?: number; // Limit for glob patterns
 }
 
 export interface ServiceConfig {

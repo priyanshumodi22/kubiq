@@ -34,6 +34,8 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
     const [atBottom, setAtBottom] = useState(true);
     const [newLogsCount, setNewLogsCount] = useState(0);
     
+    const [availableFiles, setAvailableFiles] = useState<any[]>([]);
+    
     // activeFile tracks the ACTUAL file being streamed (which might differ from pattern if rotation occurred)
     const [activeFile, setActiveFile] = useState<string>(selectedSource.path);
     const [rotationAlert, setRotationAlert] = useState<{ newFile: string; message: string } | null>(null);
@@ -63,11 +65,19 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
              setLogs([]);
              setNewLogsCount(0);
              setRotationAlert(null);
+             setAvailableFiles([]); // Reset files list
              // When source ID changes, reset active file to that source's configured path
              const source = effectiveSources.find(s => s.id === selectedSourceId) || effectiveSources[0];
              setActiveFile(source.path);
         }
     }, [isOpen, selectedSourceId, serviceName]); // Re-init on service switch too
+
+    // Safe-guard: if selectedSourceId is no longer valid (e.g. data reloaded), reset to first
+    useEffect(() => {
+        if (effectiveSources.length > 0 && !effectiveSources.find(s => s.id === selectedSourceId)) {
+            setSelectedSourceId(effectiveSources[0].id);
+        }
+    }, [effectiveSources, selectedSourceId]);
 
     // Connect to Socket.IO
     useEffect(() => {
@@ -89,12 +99,11 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
             console.log('🔌 Connected to Log Stream');
             
             // Start watching
-            // If the configured path contains *, send it as pattern. 
-            // The backend handles resolving it to actual file.
             const sourcePath = selectedSource.path;
             const usePattern = sourcePath.includes('*') ? sourcePath : undefined;
+            const limit = selectedSource.fileLimit;
             
-            socket.emit('watch:log', { path: activeFile, pattern: usePattern });
+            socket.emit('watch:log', { path: activeFile, pattern: usePattern, limit });
         });
 
         socket.on('disconnect', () => {
@@ -124,6 +133,10 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
              // Backend resolved the pattern to this specific file.
              // We update activeFile so UI shows the real filename
              setActiveFile(data.resolvedPath);
+        });
+        
+        socket.on('log:file_list', (data: { files: any[] }) => {
+            setAvailableFiles(data.files);
         });
 
         socket.on('rotation:available', (data: { newFile: string, message: string }) => {
@@ -160,67 +173,99 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 bg-[#161920]">
                     <div className="flex items-center space-x-3">
-                        <FileText className="w-5 h-5 text-gray-400" />
-                        <div>
-                             <h2 className="text-sm font-bold text-gray-200">{serviceName} Logs</h2>
+                        <FileText className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                             <div className="flex items-center gap-2">
+                                <h2 className="text-sm font-bold text-gray-200 whitespace-nowrap">{serviceName} Logs</h2>
+                                {isConnected ? (
+                                    <span className="flex items-center text-[10px] text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+                                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5 animate-pulse"></span>
+                                        LIVE
+                                    </span>
+                                ) : (
+                                     <span className="flex items-center text-[10px] text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">
+                                        offline
+                                    </span>
+                                )}
+                             </div>
                              
-                             {/* Source Selector (or simple path display if only 1 source) */}
-                             {effectiveSources.length > 1 ? (
-                                 <div className="relative mt-0.5" ref={dropdownRef}>
-                                     <button 
-                                        onClick={() => setIsSourceDropdownOpen(!isSourceDropdownOpen)}
-                                        className="flex items-center space-x-1 text-xs text-blue-400 hover:text-blue-300 transition-colors font-mono bg-blue-500/10 px-2 py-0.5 rounded cursor-pointer border border-blue-500/20"
-                                     >
-                                         <span className="truncate max-w-[200px]">{selectedSource.name}</span>
-                                         <ChevronDown className="w-3 h-3" />
-                                     </button>
-                                     <div className="text-[10px] text-gray-500 font-mono mt-0.5 pl-0.5 truncate max-w-[300px]" title={activeFile}>
-                                         Generated: {activeFile}
+                             <div className="flex items-center mt-1">
+                                 {/* Source Selector */}
+                                 {effectiveSources.length > 1 && (
+                                     <div className="relative mr-3" ref={dropdownRef}>
+                                         <button 
+                                            onClick={() => setIsSourceDropdownOpen(!isSourceDropdownOpen)}
+                                            className="flex items-center space-x-1 text-xs text-blue-400 hover:text-blue-300 transition-colors font-mono bg-blue-500/10 px-2 py-0.5 rounded cursor-pointer border border-blue-500/20"
+                                         >
+                                             <span className="truncate max-w-[150px]">{selectedSource.name}</span>
+                                             <ChevronDown className="w-3 h-3" />
+                                         </button>
+ 
+                                         {/* Dropdown */}
+                                         {isSourceDropdownOpen && (
+                                             <div className="absolute top-full left-0 mt-2 w-64 bg-[#1d1f24] border border-white/10 rounded-lg shadow-xl z-50 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                                                 {effectiveSources.map(source => (
+                                                     <button
+                                                         key={source.id}
+                                                         onClick={() => {
+                                                             setSelectedSourceId(source.id);
+                                                             setIsSourceDropdownOpen(false);
+                                                         }}
+                                                         className="w-full text-left px-3 py-2 text-xs hover:bg-white/5 flex items-center justify-between group"
+                                                     >
+                                                         <div className="min-w-0">
+                                                             <div className={`font-medium ${selectedSourceId === source.id ? 'text-blue-400' : 'text-gray-300'}`}>
+                                                                 {source.name}
+                                                             </div>
+                                                             <div className="text-[10px] text-gray-500 font-mono truncate">
+                                                                 {source.path}
+                                                             </div>
+                                                         </div>
+                                                         {selectedSourceId === source.id && <Check className="w-3 h-3 text-blue-500" />}
+                                                     </button>
+                                                 ))}
+                                             </div>
+                                         )}
                                      </div>
+                                 )}
 
-                                     {/* Dropdown */}
-                                     {isSourceDropdownOpen && (
-                                         <div className="absolute top-full left-0 mt-2 w-64 bg-[#1d1f24] border border-white/10 rounded-lg shadow-xl z-50 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-                                             {effectiveSources.map(source => (
-                                                 <button
-                                                     key={source.id}
-                                                     onClick={() => {
-                                                         setSelectedSourceId(source.id);
-                                                         setIsSourceDropdownOpen(false);
-                                                     }}
-                                                     className="w-full text-left px-3 py-2 text-xs hover:bg-white/5 flex items-center justify-between group"
-                                                 >
-                                                     <div className="min-w-0">
-                                                         <div className={`font-medium ${selectedSourceId === source.id ? 'text-blue-400' : 'text-gray-300'}`}>
-                                                             {source.name}
-                                                         </div>
-                                                         <div className="text-[10px] text-gray-500 font-mono truncate">
-                                                             {source.path}
-                                                         </div>
-                                                     </div>
-                                                     {selectedSourceId === source.id && <Check className="w-3 h-3 text-blue-500" />}
-                                                 </button>
-                                             ))}
-                                         </div>
-                                     )}
-                                 </div>
-                             ) : (
-                                 <p className="text-xs text-gray-500 font-mono" title={activeFile}>{activeFile}</p>
-                             )}
+                                {/* Patterned File Tabs */}
+                                 {availableFiles.length > 0 ? (
+                                    <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar mask-gradient-right">
+                                        {availableFiles.map((file, idx) => {
+                                            const isActive = activeFile === file.path;
+                                            return (
+                                                <button
+                                                    key={file.path}
+                                                    onClick={() => {
+                                                        setActiveFile(file.path);
+                                                        setLogs([]); // Clear logs when switching file
+                                                    }}
+                                                    className={`
+                                                        px-2 py-0.5 text-[10px] rounded-full border transition-all whitespace-nowrap font-mono
+                                                        ${isActive 
+                                                            ? 'bg-blue-500/20 border-blue-500/50 text-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.2)]' 
+                                                            : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-gray-200'
+                                                        }
+                                                    `}
+                                                    title={file.path}
+                                                >
+                                                    {idx === 0 && <span className="mr-1 text-green-400">●</span>}
+                                                    {file.name}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                 ) : (
+                                     <span className="text-[10px] text-gray-500 font-mono truncate max-w-[300px]" title={activeFile}>
+                                         {activeFile.split(/[/\\]/).pop()}
+                                     </span>
+                                 )}
+                             </div>
                         </div>
-                        {isConnected ? (
-                            <span className="flex items-center text-[10px] text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20 ml-2">
-                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5 animate-pulse"></span>
-                                LIVE
-                            </span>
-                        ) : (
-                             <span className="flex items-center text-[10px] text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20 ml-2">
-                                offline
-                            </span>
-                        )}
                     </div>
                     
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 ml-4 flex-shrink-0">
                         <button 
                             onClick={() => setLogs([])}
                             className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-white/5 rounded-lg transition-colors"

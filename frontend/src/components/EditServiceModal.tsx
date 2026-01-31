@@ -209,6 +209,11 @@ export function EditServiceModal({
                     />
                     {type === 'http' && (
                         <>
+                             {/* Helper text moved up */}
+                            <p className="mt-1.5 text-xs text-gray-500 pl-1">
+                                Format: <code className="bg-white/5 px-1 py-0.5 rounded">url</code> or <code className="bg-white/5 px-1 py-0.5 rounded">url|Header:Value</code>
+                            </p>
+                            
                             <div className="flex items-center space-x-2 pt-2">
                                 <input
                                     type="checkbox"
@@ -221,9 +226,6 @@ export function EditServiceModal({
                                     Ignore SSL/TLS Certificate Errors (Self-Signed)
                                 </label>
                             </div>
-                            <p className="mt-1.5 text-xs text-gray-500 pl-1">
-                                 Use <code>|Header:Value</code> to add headers
-                            </p>
                         </>
                     )}
                 </div>

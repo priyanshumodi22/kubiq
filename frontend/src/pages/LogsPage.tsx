@@ -121,13 +121,13 @@ export default function LogsPage() {
                             <div
                                 key={service.id || service.name} // Fallback to name if ID is missing
                                 onClick={() => setSelectedServiceName(service.name)}
-                                className={`w-full text-left px-3 py-3 rounded-lg flex items-start space-x-3 transition-colors cursor-pointer group relative ${
+                                className={`w-full text-left px-3 py-3 rounded-lg flex items-center space-x-3 transition-colors cursor-pointer group relative ${
                                     selectedServiceName === service.name 
                                     ? 'bg-primary/10 border border-primary/20' 
                                     : 'hover:bg-white/5 border border-transparent'
                                 }`}
                             >
-                                <div className={`mt-0.5 p-1 rounded ${selectedServiceName === service.name ? 'text-primary' : 'text-gray-400'}`}>
+                                <div className={`p-1 rounded ${selectedServiceName === service.name ? 'text-primary' : 'text-gray-400'}`}>
                                     <Server className="w-4 h-4" />
                                 </div>
                                 <div className="flex-1 min-w-0 pr-6">

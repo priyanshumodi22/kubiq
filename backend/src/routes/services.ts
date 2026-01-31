@@ -1,20 +1,41 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { ServiceMonitor } from '../services/ServiceMonitor';
-import { requireRole } from '../middleware/auth';
+import { requireRole, hasRole } from '../middleware/auth';
 
 const router = Router();
 const monitor = ServiceMonitor.getInstance();
+
+// Helper to mask sensitive connection strings for viewers
+const maskServiceEndpoint = (service: any, user: any) => {
+  // If no user (shouldn't happen in protected routes) or admin, show everything
+  if (!user || hasRole(user, 'kubiq-admin')) {
+    return service;
+  }
+
+  // If viewer (and not admin), mask DB connection strings
+  if (hasRole(user, 'kubiq-viewer')) {
+    const type = service.type?.toLowerCase();
+    if (type === 'mongodb' || type === 'mysql' || type === 'mariadb') {
+      return { ...service, endpoint: '*****' };
+    }
+  }
+
+  return service;
+};
 
 // GET /api/services - Get all services (with history limit)
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const historyLimit = parseInt(req.query.historyLimit as string) || 20;
-    const services = monitor.getAllServices().map((service) => ({
-      ...service,
-      logPath: service.logPath,
-      logSources: service.logSources, // New: Preserve multi-log sources
-      history: (service.history || []).slice(-historyLimit),
-    }));
+    const services = monitor.getAllServices().map((service) => {
+      const maskedService = maskServiceEndpoint(service, req.user);
+      return {
+        ...maskedService,
+        logPath: service.logPath,
+        logSources: service.logSources, // New: Preserve multi-log sources
+        history: (service.history || []).slice(-historyLimit),
+      };
+    });
 
     res.json({
       services,
@@ -29,12 +50,15 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 router.get('/status', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const services = monitor.getAllServices().map((service) => {
+      const maskedService = maskServiceEndpoint(service, req.user);
       const lastHistory =
         (service.history || []).length > 0 ? (service.history || [])[(service.history || []).length - 1] : null;
 
       return {
-        name: service.name,
-        currentStatus: service.currentStatus,
+        name: maskedService.name,
+        currentStatus: maskedService.currentStatus,
+        endpoint: maskedService.endpoint, // Ensure masked endpoint is returned if needed by UI
+        type: maskedService.type,
         logPath: service.logPath,
         logSources: service.logSources, // New: Preserve multi-log sources in status update
         lastCheck: lastHistory
@@ -63,15 +87,21 @@ router.get('/stream', async (req: Request, res: Response) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
 
+  // Capture user from request closure
+  const currentUser = req.user;
+
   // Send initial data
   const sendUpdate = () => {
     const services = monitor.getAllServices().map((service) => {
+      const maskedService = maskServiceEndpoint(service, currentUser);
       const lastHistory =
         (service.history || []).length > 0 ? (service.history || [])[(service.history || []).length - 1] : null;
 
       return {
-        name: service.name,
-        currentStatus: service.currentStatus,
+        name: maskedService.name,
+        currentStatus: maskedService.currentStatus,
+        endpoint: maskedService.endpoint, // Ensure masked endpoint
+        type: maskedService.type,
         logPath: service.logPath, 
         logSources: service.logSources, // New: Preserve multi-log sources
         lastCheck: lastHistory
@@ -112,7 +142,7 @@ router.get('/:name', async (req: Request, res: Response, next: NextFunction) => 
       });
     }
 
-    res.json(service);
+    res.json(maskServiceEndpoint(service, req.user));
   } catch (error) {
     next(error);
   }

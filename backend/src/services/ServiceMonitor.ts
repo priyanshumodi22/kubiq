@@ -455,6 +455,14 @@ export class ServiceMonitor {
 
     try {
       const mergedHeaders = { ...(service.headers || {}), ...headers };
+      
+      // Handle SSL ignore for custom checks
+      const isHttps = fullUrl.startsWith('https:');
+      const httpsAgent = isHttps && service.ignoreSSL ? new https.Agent({ 
+          rejectUnauthorized: false, // Explicitly ignore SSL if configured
+          keepAlive: false
+      }) : undefined;
+
       const response = await axios({
         url: fullUrl,
         method,
@@ -463,6 +471,7 @@ export class ServiceMonitor {
         timeout: this.requestTimeout,
         maxRedirects: 0,
         validateStatus: () => true,
+        httpsAgent: httpsAgent, // Inject agent
       });
 
       return {

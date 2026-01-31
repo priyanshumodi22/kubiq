@@ -215,8 +215,20 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
             <StatCard
               icon={Activity}
               label="Status"
-              value={service.currentStatus}
-              color={service.currentStatus === 'healthy' ? 'success' : 'error'}
+              value={
+                service.currentStatus === 'healthy'
+                  ? 'Healthy'
+                  : service.currentStatus === 'unhealthy'
+                  ? 'Unhealthy'
+                  : 'Unknown'
+              }
+              color={
+                service.currentStatus === 'healthy'
+                  ? 'success'
+                  : service.currentStatus === 'unhealthy'
+                  ? 'error'
+                  : 'warning'
+              }
             />
             <StatCard
               icon={Clock}

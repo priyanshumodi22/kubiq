@@ -24,6 +24,7 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
   // New Entry State
   const [newLabel, setNewLabel] = useState('');
   const [newPath, setNewPath] = useState('');
+  const [newLimit, setNewLimit] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -59,6 +60,7 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
       // Log sources will be populated by the next effect
       setNewLabel('');
       setNewPath('');
+      setNewLimit('');
       setError('');
       setSearchQuery('');
       setIsDropdownOpen(false);
@@ -97,11 +99,13 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
           {
               id: Date.now().toString(),
               name: newLabel.trim(),
-              path: newPath.trim()
+              path: newPath.trim(),
+              fileLimit: newLimit ? parseInt(newLimit) : undefined
           }
       ]);
       setNewLabel('');
       setNewPath('');
+      setNewLimit('');
   };
 
   const handleRemoveSource = (id: string) => {
@@ -231,15 +235,18 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
               
               <div className="space-y-2 mb-3">
                   {logSources.map((source) => (
-                      <div key={source.id} className="flex items-center justify-between bg-white/5 border border-white/5 rounded-lg px-3 py-2 group hover:border-white/10 transition-colors">
+                      <div key={source.id} className="flex items-start justify-between bg-white/5 border border-white/5 rounded-lg px-3 py-2 group hover:border-white/10 transition-colors">
                           <div className="min-w-0 flex-1 mr-4">
-                              <div className="text-sm font-medium text-white">{source.name}</div>
+                              <div className="text-sm font-medium text-white">
+                                  {source.name}
+                                  {source.fileLimit && <span className="ml-2 text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded">Limit: {source.fileLimit}</span>}
+                              </div>
                               <div className="text-xs text-gray-500 font-mono truncate" title={source.path}>{source.path}</div>
                           </div>
                           <button 
                             type="button"
                             onClick={() => handleRemoveSource(source.id)}
-                            className="text-gray-500 hover:text-red-400 p-1.5 hover:bg-white/5 rounded-md transition-colors"
+                            className="text-gray-500 hover:text-red-400 p-1.5 hover:bg-white/5 rounded-md transition-colors mt-0.5"
                           >
                               <Trash2 className="w-4 h-4" />
                           </button>
@@ -270,8 +277,20 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
                             type="text"
                             value={newPath}
                             onChange={(e) => setNewPath(e.target.value)}
-                            placeholder="/path/to/logfile.log"
+                            placeholder="/path/to/logfile.log (or *.log)"
                             className="w-full bg-white/5 border border-transparent rounded-lg py-2 px-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary/50 font-mono text-sm"
+                          />
+                      </div>
+                      <div className="w-20">
+                           <input
+                            type="number"
+                            min="1"
+                            max="50"
+                            value={newLimit}
+                            onChange={(e) => setNewLimit(e.target.value)}
+                            placeholder="N"
+                            title="Limit number of files for glob patterns"
+                            className="w-full bg-white/5 border border-transparent rounded-lg py-2 px-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary/50 text-center text-sm"
                           />
                       </div>
                   </div>
