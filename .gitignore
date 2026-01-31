@@ -22,7 +22,7 @@ data/kubiq-history.json
 
 # Logs
 logs/
-*.log
+*log*
 
 # IDE
 .vscode/
