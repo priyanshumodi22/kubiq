@@ -1,5 +1,5 @@
 # Stage 1: Build Frontend
-FROM node:20-alpine AS ui-build
+FROM node:20-slim AS ui-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
@@ -8,7 +8,7 @@ COPY frontend/ ./
 RUN npm run build 
 
 # Stage 2: Build Backend
-FROM node:20-alpine AS server-build
+FROM node:20-slim AS server-build
 WORKDIR /app/backend
 # Install build tools for native modules (bcrypt, etc.)
 RUN apk add --no-cache python3 make g++
@@ -19,13 +19,13 @@ COPY backend/ ./
 RUN npm run build
 
 # Stage 3: Production Runner
-FROM node:20-alpine
+FROM node:20-slim
 WORKDIR /app
 
 # Install production dependencies only
 # We need 'bcrypt' native bindings again for runtime? 
 # Usually 'npm install' builds them. We copy package.json and install prod only.
-RUN apk add --no-cache python3 make g++
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 COPY backend/package*.json ./
 RUN npm ci --omit=dev
