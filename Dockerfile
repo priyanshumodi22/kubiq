@@ -1,5 +1,4 @@
 # Stage 1: Build Frontend
-# Stage 1: Build Frontend
 FROM node:18-slim AS ui-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
@@ -19,16 +18,17 @@ COPY backend/ ./
 RUN npm run build
 
 # Build single executable binary
-# Detect architecture and rename the correct binary to 'kubiq-bin'
-RUN npx pkg . --out-path ./pkg-build && \
-    ARCH=$(uname -m) && \
+# Build single executable binary
+# Detect architecture and build ONLY the necessary binary to ./kubiq-bin
+RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then \
-      mv ./pkg-build/kubiq-backend-linux-x64 ./kubiq-bin; \
+      TARGET="node18-linux-x64"; \
     elif [ "$ARCH" = "aarch64" ]; then \
-      mv ./pkg-build/kubiq-backend-linux-arm64 ./kubiq-bin; \
+      TARGET="node18-linux-arm64"; \
     else \
       echo "Unknown architecture: $ARCH" && exit 1; \
-    fi
+    fi && \
+    npx pkg . -t $TARGET --output ./kubiq-bin
 
 # Stage 3: Production Runner
 FROM node:18-slim
