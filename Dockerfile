@@ -28,7 +28,7 @@ RUN ARCH=$(uname -m) && \
     else \
       echo "Unknown architecture: $ARCH" && exit 1; \
     fi && \
-    npx pkg . -t $TARGET --public-packages bcrypt --output ./kubiq-bin
+    npx pkg . -t $TARGET --output ./kubiq-bin
 
 # Stage 3: Production Runner
 FROM node:18-slim
