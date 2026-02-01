@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, ChevronDown, Check, Plus, Trash2 } from 'lucide-react';
+import { X, ChevronDown, Check, Plus, Trash2, ShieldAlert } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { useServices } from '../hooks/useServices';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 import { LogSource } from '../types';
 
 interface ConfigureLogModalProps {
@@ -14,7 +15,10 @@ interface ConfigureLogModalProps {
 
 export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedService }: ConfigureLogModalProps) {
   const { services } = useServices();
+  const { hasRole } = useAuth();
   const toast = useToast();
+  
+  const canEdit = hasRole('kubiq-admin');
   
   const [selectedServiceName, setSelectedServiceName] = useState('');
   
@@ -68,7 +72,6 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
   }, [isOpen, preSelectedService]);
 
   // When Service Selected, populate existing
-  // When Service Selected, populate existing ONE TIME
   useEffect(() => {
     if (selectedServiceName && isOpen) {
       const svc = services.find(s => s.name === selectedServiceName);
@@ -81,12 +84,10 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
         }
       }
     } else {
-        // Only clear if we are closing or switching to nothing? 
-        // Actually, if we switch service, we want to clear.
         if (!selectedServiceName) setLogSources([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedServiceName, isOpen]); // Remove 'services' dependency to prevent overwrite during edits!
+  }, [selectedServiceName, isOpen]); 
 
 
   if (!isOpen) return null;
@@ -155,7 +156,15 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
       <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden text-sm">
         
         <div className="flex items-center justify-between p-6 pb-4 bg-[#1a1a1a]">
-          <h2 className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Configure Log Sources</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Configure Log Sources</h2>
+            {!canEdit && (
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-[10px] text-red-400 font-medium uppercase tracking-wide">
+                    <ShieldAlert className="w-3 h-3" />
+                    Read Only
+                </span>
+            )}
+          </div>
           <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg">
             <X className="w-5 h-5" />
           </button>
@@ -243,13 +252,15 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
                               </div>
                               <div className="text-xs text-gray-500 font-mono truncate" title={source.path}>{source.path}</div>
                           </div>
-                          <button 
-                            type="button"
-                            onClick={() => handleRemoveSource(source.id)}
-                            className="text-gray-500 hover:text-red-400 p-1.5 hover:bg-white/5 rounded-md transition-colors mt-0.5"
-                          >
-                              <Trash2 className="w-4 h-4" />
-                          </button>
+                          {canEdit && (
+                            <button 
+                                type="button"
+                                onClick={() => handleRemoveSource(source.id)}
+                                className="text-gray-500 hover:text-red-400 p-1.5 hover:bg-white/5 rounded-md transition-colors mt-0.5"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                       </div>
                   ))}
                   
@@ -260,50 +271,52 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
                   )}
               </div>
 
-              {/* Add New Source */}
-              <div className="bg-black/20 border border-white/10 rounded-xl p-3 flex flex-col gap-3">
-                  <div className="flex gap-3">
-                      <div className="w-1/3">
-                          <input
-                            type="text"
-                            value={newLabel}
-                            onChange={(e) => setNewLabel(e.target.value)}
-                            placeholder="Label (e.g. Server)"
-                            className="w-full bg-white/5 border border-transparent rounded-lg py-2 px-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
-                          />
-                      </div>
-                      <div className="flex-1">
-                          <input
-                            type="text"
-                            value={newPath}
-                            onChange={(e) => setNewPath(e.target.value)}
-                            placeholder="/path/to/logfile.log (or *.log)"
-                            className="w-full bg-white/5 border border-transparent rounded-lg py-2 px-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary/50 font-mono text-sm"
-                          />
-                      </div>
-                      <div className="w-20">
-                           <input
-                            type="number"
-                            min="1"
-                            max="50"
-                            value={newLimit}
-                            onChange={(e) => setNewLimit(e.target.value)}
-                            placeholder="N"
-                            title="Limit number of files for glob patterns"
-                            className="w-full bg-white/5 border border-transparent rounded-lg py-2 px-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary/50 text-center text-sm"
-                          />
-                      </div>
-                  </div>
-                   <button
-                      type="button"
-                      onClick={handleAddSource}
-                      disabled={!newLabel || !newPath}
-                      className="w-full flex items-center justify-center gap-2 py-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg text-gray-300 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium uppercase tracking-wider"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      Add Log Source
-                  </button>
-              </div>
+              {/* Add New Source - Only visible if canEdit */}
+              {canEdit && (
+                <div className="bg-black/20 border border-white/10 rounded-xl p-3 flex flex-col gap-3">
+                    <div className="flex gap-3">
+                        <div className="w-1/3">
+                            <input
+                                type="text"
+                                value={newLabel}
+                                onChange={(e) => setNewLabel(e.target.value)}
+                                placeholder="Label (e.g. Server)"
+                                className="w-full bg-white/5 border border-transparent rounded-lg py-2 px-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <input
+                                type="text"
+                                value={newPath}
+                                onChange={(e) => setNewPath(e.target.value)}
+                                placeholder="/path/to/logfile.log (or *.log)"
+                                className="w-full bg-white/5 border border-transparent rounded-lg py-2 px-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary/50 font-mono text-sm"
+                            />
+                        </div>
+                        <div className="w-20">
+                            <input
+                                type="number"
+                                min="1"
+                                max="50"
+                                value={newLimit}
+                                onChange={(e) => setNewLimit(e.target.value)}
+                                placeholder="N"
+                                title="Limit number of files for glob patterns"
+                                className="w-full bg-white/5 border border-transparent rounded-lg py-2 px-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary/50 text-center text-sm"
+                            />
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={handleAddSource}
+                        disabled={!newLabel || !newPath}
+                        className="w-full flex items-center justify-center gap-2 py-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg text-gray-300 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium uppercase tracking-wider"
+                        >
+                        <Plus className="w-3.5 h-3.5" />
+                        Add Log Source
+                    </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -313,15 +326,17 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
               onClick={onClose}
               className="flex-1 px-4 py-2.5 bg-transparent border border-white/10 hover:bg-white/5 text-gray-300 rounded-xl font-medium transition-all duration-200"
             >
-              Cancel
+              {canEdit ? 'Cancel' : 'Close'}
             </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2.5 bg-primary hover:bg-blue-600 text-white rounded-xl font-medium shadow-lg shadow-blue-500/20 transition-all duration-200 disabled:opacity-50"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Saving...' : 'Save Changes'}
-            </button>
+            {canEdit && (
+                <button
+                type="submit"
+                className="flex-1 px-4 py-2.5 bg-primary hover:bg-blue-600 text-white rounded-xl font-medium shadow-lg shadow-blue-500/20 transition-all duration-200 disabled:opacity-50"
+                disabled={isSubmitting}
+                >
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
+                </button>
+            )}
           </div>
         </form>
       </div>

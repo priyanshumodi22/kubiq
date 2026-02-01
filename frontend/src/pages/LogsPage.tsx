@@ -82,13 +82,15 @@ export default function LogsPage() {
                     <div className="flex items-center justify-between">
                         <h2 className="font-bold text-gray-200">Log Sources</h2>
          
-                        <button 
-                            onClick={openNewConfig}
-                            className="p-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors"
-                            title="Add Log Source"
-                        >
-                            <Plus className="w-4 h-4" />
-                        </button>
+                        {isAdmin && (
+                            <button 
+                                onClick={openNewConfig}
+                                className="p-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors"
+                                title="Add Log Source"
+                            >
+                                <Plus className="w-4 h-4" />
+                            </button>
+                        )}
                     </div>
 
                     <div className="relative">
@@ -107,7 +109,7 @@ export default function LogsPage() {
                     {filteredServices.length === 0 ? (
                          <div className="text-center py-8 text-gray-500 text-xs">
                             {searchQuery ? 'No matches found' : 'No logs configured'}
-                            {!searchQuery && (
+                            {!searchQuery && isAdmin && (
                                 <button 
                                     onClick={() => setIsConfigModalOpen(true)}
                                     className="block mx-auto mt-2 text-primary hover:underline hover:text-primary/80"

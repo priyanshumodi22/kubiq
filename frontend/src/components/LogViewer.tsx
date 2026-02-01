@@ -96,7 +96,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
 
         socket.on('connect', () => {
             setIsConnected(true);
-            console.log('🔌 Connected to Log Stream');
+            // console.log('🔌 Connected to Log Stream');
             
             // Start watching
             const sourcePath = selectedSource.path;
@@ -108,7 +108,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
 
         socket.on('disconnect', () => {
             setIsConnected(false);
-            console.log('❌ Disconnected to Log Stream');
+            // console.log('❌ Disconnected to Log Stream');
         });
 
         socket.on('log:init', (data: { content: string }) => {
@@ -140,7 +140,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
         });
 
         socket.on('rotation:available', (data: { newFile: string, message: string }) => {
-            console.log('Rotation:', data);
+            // console.log('Rotation:', data);
             setRotationAlert(data);
         });
 

@@ -37,7 +37,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import Profile from './pages/Profile';
 
 function App() {
-  console.log('🚀 [App] BASE_URL:', import.meta.env.BASE_URL);
+  // console.log('🚀 [App] BASE_URL:', import.meta.env.BASE_URL);
 
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>

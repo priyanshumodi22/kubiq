@@ -48,12 +48,7 @@ export default function Dashboard() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Debug services updates
-  useEffect(() => {
-    if (services.length > 0) {
-        console.log('Frontend Services State:', JSON.stringify(services, null, 2));
-    }
-  }, [services]);
+
 
   const filteredServices = services.filter((service) => {
     const matchesSearch =
