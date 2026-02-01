@@ -97,7 +97,9 @@ app.use(
   })
 );
 app.use(compression()); // Enable gzip compression
-app.use(morgan('combined'));
+app.use(morgan('combined', {
+  skip: (req) => req.url === '/auth/health/ready' || req.originalUrl === '/auth/health/ready'
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -122,7 +124,7 @@ app.use(`${BACKEND_CONTEXT_PATH}/api/system`, authMiddleware, systemRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/logs`, authMiddleware, logRouter); // Log Management
 
 // Serve frontend static files
-const frontendPath = path.join(__dirname, '../public');
+const frontendPath = path.join(process.cwd(), 'public');
 app.use(`${FRONTEND_CONTEXT_PATH}`, express.static(frontendPath));
 
 // Fallback to index.html for client-side routing (Express 5 regex syntax)
