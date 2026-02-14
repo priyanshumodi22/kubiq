@@ -16,6 +16,36 @@ export class MysqlUserRepository implements IUserRepository {
       connectionLimit: 10,
       queueLimit: 0,
     });
+
+    await this.ensureSchema();
+  }
+
+  private async ensureSchema(): Promise<void> {
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(255) NOT NULL UNIQUE,
+            email VARCHAR(255) UNIQUE,
+            password_hash VARCHAR(255) NOT NULL,
+            role VARCHAR(50) DEFAULT 'kubiq-viewer',
+            enabled BOOLEAN DEFAULT TRUE,
+            last_login TIMESTAMP NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB;
+      `);
+
+      // Migration: Check for columns if needed (simplified for now)
+      // We can add specific migrations here if schema evolves
+
+    } catch (e) {
+      console.error('❌ MySQL User Schema Migration Failed:', e);
+      throw e;
+    } finally {
+      connection.release();
+    }
   }
 
   async findByUsername(username: string): Promise<User | null> {
@@ -33,25 +63,25 @@ export class MysqlUserRepository implements IUserRepository {
   async createUser(user: Omit<User, 'id' | 'createdAt' | 'lastLogin'>): Promise<User> {
     const connection = await this.pool.getConnection();
     try {
-        const [result] = await connection.execute<ResultSetHeader>(
-            'INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)',
-            [user.username, user.email || null, user.passwordHash || '', user.role]
-        );
-        
-        const newId = result.insertId.toString();
-        const newUser: User = {
-            id: newId,
-            username: user.username,
-            email: user.email,
-            passwordHash: user.passwordHash,
-            role: user.role,
-            createdAt: Date.now(),
-            lastLogin: undefined,
-            enabled: true
-        };
-        return newUser;
+      const [result] = await connection.execute<ResultSetHeader>(
+        'INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)',
+        [user.username, user.email || null, user.passwordHash || '', user.role]
+      );
+
+      const newId = result.insertId.toString();
+      const newUser: User = {
+        id: newId,
+        username: user.username,
+        email: user.email,
+        passwordHash: user.passwordHash,
+        role: user.role,
+        createdAt: Date.now(),
+        lastLogin: undefined,
+        enabled: true
+      };
+      return newUser;
     } finally {
-        connection.release();
+      connection.release();
     }
   }
 
@@ -63,10 +93,10 @@ export class MysqlUserRepository implements IUserRepository {
   }
 
   async updateUserStatus(id: string, enabled: boolean): Promise<User> {
-      await this.pool.execute('UPDATE users SET enabled = ? WHERE id = ?', [enabled, id]);
-      const updated = await this.findById(id);
-      if (!updated) throw new Error('User not found after update');
-      return updated;
+    await this.pool.execute('UPDATE users SET enabled = ? WHERE id = ?', [enabled, id]);
+    const updated = await this.findById(id);
+    if (!updated) throw new Error('User not found after update');
+    return updated;
   }
 
   async deleteUser(id: string): Promise<void> {
@@ -79,45 +109,45 @@ export class MysqlUserRepository implements IUserRepository {
   }
 
   async updateLastLogin(id: string): Promise<void> {
-      await this.pool.execute('UPDATE users SET last_login = NOW() WHERE id = ?', [id]);
+    await this.pool.execute('UPDATE users SET last_login = NOW() WHERE id = ?', [id]);
   }
 
   private mapRowToUser(row: any): User {
-      return {
-          id: row.id.toString(),
-          username: row.username,
-          email: row.email,
-          passwordHash: row.password_hash,
-          role: row.role as UserRole,
-          createdAt: row.created_at ? new Date(row.created_at).getTime() : undefined,
-          lastLogin: row.last_login ? new Date(row.last_login).getTime() : undefined,
-          enabled: row.enabled !== 0 // MySQL stores boolean as tinyint
-      };
+    return {
+      id: row.id.toString(),
+      username: row.username,
+      email: row.email,
+      passwordHash: row.password_hash,
+      role: row.role as UserRole,
+      createdAt: row.created_at ? new Date(row.created_at).getTime() : undefined,
+      lastLogin: row.last_login ? new Date(row.last_login).getTime() : undefined,
+      enabled: row.enabled !== 0 // MySQL stores boolean as tinyint
+    };
   }
   async updateUser(id: string, user: Partial<User>): Promise<User> {
-      const updates: string[] = [];
-      const values: any[] = [];
-      
-      if (user.username) {
-          updates.push('username = ?');
-          values.push(user.username);
-      }
-      if (user.email !== undefined) {
-          updates.push('email = ?');
-          values.push(user.email);
-      }
-      
-      if (updates.length > 0) {
-          values.push(id);
-          await this.pool.execute(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
-      }
-      
-      const updated = await this.findById(id);
-      if (!updated) throw new Error('User not found after update');
-      return updated;
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (user.username) {
+      updates.push('username = ?');
+      values.push(user.username);
+    }
+    if (user.email !== undefined) {
+      updates.push('email = ?');
+      values.push(user.email);
+    }
+
+    if (updates.length > 0) {
+      values.push(id);
+      await this.pool.execute(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
+    }
+
+    const updated = await this.findById(id);
+    if (!updated) throw new Error('User not found after update');
+    return updated;
   }
 
   async updatePassword(id: string, passwordHash: string): Promise<void> {
-      await this.pool.execute('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, id]);
+    await this.pool.execute('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, id]);
   }
 }

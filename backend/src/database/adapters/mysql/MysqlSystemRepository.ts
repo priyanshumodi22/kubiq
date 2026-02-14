@@ -34,19 +34,26 @@ export class MysqlSystemRepository implements ISystemRepository {
     await this.pool.execute(`
         CREATE TABLE IF NOT EXISTS system_config (
             \`key\` VARCHAR(255) PRIMARY KEY,
-            \`value\` JSON NOT NULL
+            \`value\` JSON NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )
     `);
+
+    // Seed Initial System Config
+    await this.pool.execute(
+      "INSERT IGNORE INTO system_config (`key`, `value`) VALUES ('status_page', '{\"title\": \"Kubiq Status\", \"refreshInterval\": 60000, \"slug\": null}')"
+    );
   }
 
   async saveMetrics(metrics: SystemMetrics): Promise<void> {
     if (!this.pool) await this.initialize();
-    
+
     // Check connection first
     try {
-        await this.pool!.query('SELECT 1');
+      await this.pool!.query('SELECT 1');
     } catch {
-        await this.initialize();
+      await this.initialize();
     }
 
     await this.pool!.execute(
@@ -84,17 +91,17 @@ export class MysqlSystemRepository implements ISystemRepository {
 
   async getStorageConfig(): Promise<{ allowedMounts: string[] }> {
     if (!this.pool) await this.initialize();
-    
+
     const [rows]: any = await this.pool!.query(
-        'SELECT value FROM system_config WHERE `key` = ?',
-        [this.configKey]
+      'SELECT value FROM system_config WHERE `key` = ?',
+      [this.configKey]
     );
 
     if (rows.length > 0) {
-        const val = rows[0].value;
-        return typeof val === 'string' ? JSON.parse(val) : val;
+      const val = rows[0].value;
+      return typeof val === 'string' ? JSON.parse(val) : val;
     }
-    
+
     return { allowedMounts: [] }; // Default empty
   }
 
@@ -102,8 +109,8 @@ export class MysqlSystemRepository implements ISystemRepository {
     if (!this.pool) await this.initialize();
 
     await this.pool!.execute(
-        'INSERT INTO system_config (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?',
-        [this.configKey, JSON.stringify(config), JSON.stringify(config)]
+      'INSERT INTO system_config (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?',
+      [this.configKey, JSON.stringify(config), JSON.stringify(config)]
     );
   }
 }

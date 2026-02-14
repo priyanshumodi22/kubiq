@@ -79,10 +79,10 @@ app.use(
     origin: (requestOrigin, callback) => {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!requestOrigin) return callback(null, true);
-      
+
       // In development, allow any localhost or local IP
       if (process.env.NODE_ENV !== 'production') {
-         return callback(null, true);
+        return callback(null, true);
       }
 
       // Production: Strict check against CORS_ORIGIN
@@ -120,7 +120,7 @@ app.use(`${BACKEND_CONTEXT_PATH}/api/public`, publicStatusRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/services`, authMiddleware, servicesRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/notifications`, authMiddleware, notificationsRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/users`, authMiddleware, usersRouter);
-app.use(`${BACKEND_CONTEXT_PATH}/api/system`, authMiddleware, systemRouter); 
+app.use(`${BACKEND_CONTEXT_PATH}/api/system`, authMiddleware, systemRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/logs`, authMiddleware, logRouter); // Log Management
 
 // Serve frontend static files
@@ -148,39 +148,43 @@ const notificationManager = NotificationManager.getInstance();
 import { SystemMonitorService } from './services/SystemMonitorService'; // Lazy import to avoid circular dependency issues if any
 
 const startServer = async () => {
-    try {
-        await serviceMonitor.initialize();
-        await notificationManager.initialize();
-        // Initialize User Repository (triggers DB connection)
-        await DatabaseFactory.getUserRepository();
-        
-        // Start server
-        // app.listen Replaced by httpServer.listen for Socket.IO support
-        httpServer.listen(PORT, () => {
-          console.log(`🚀 Kubiq Backend running on port ${PORT}`);
-          console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-          
-          // Initialize Log Stream Service with Socket.IO
-          const logStreamService = LogStreamService.getInstance();
-          logStreamService.initialize(io);
-          console.log('📡 Socket.IO Server Initialized for Log Streaming');
-        
-          // Start monitoring services
-          serviceMonitor.start();
+  try {
+    await serviceMonitor.initialize();
+    await notificationManager.initialize();
+    // Initialize User Repository (triggers DB connection)
+    await DatabaseFactory.getUserRepository();
 
-          // Start System Monitoring (Snapshot every 30 minutes)
-          const systemMonitor = SystemMonitorService.getInstance();
-          // Take one snapshot immediately (delayed slightly to ensure DB ready)
-          setTimeout(() => systemMonitor.snapshot().catch(err => console.error('System Snapshot Error:', err)), 10000);
-          
-          setInterval(() => {
-              systemMonitor.snapshot().catch(err => console.error('System Snapshot Error:', err));
-          }, 30 * 60 * 1000); // 30 mins
-        });
-    } catch (err) {
-        console.error('Failed to start server:', err);
-        process.exit(1);
-    }
+    // Ensure ALL tables are created on startup
+    await DatabaseFactory.getPasskeyRepository();
+    await DatabaseFactory.getSystemRepository();
+
+    // Start server
+    // app.listen Replaced by httpServer.listen for Socket.IO support
+    httpServer.listen(PORT, () => {
+      console.log(`🚀 Kubiq Backend running on port ${PORT}`);
+      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+
+      // Initialize Log Stream Service with Socket.IO
+      const logStreamService = LogStreamService.getInstance();
+      logStreamService.initialize(io);
+      console.log('📡 Socket.IO Server Initialized for Log Streaming');
+
+      // Start monitoring services
+      serviceMonitor.start();
+
+      // Start System Monitoring (Snapshot every 30 minutes)
+      const systemMonitor = SystemMonitorService.getInstance();
+      // Take one snapshot immediately (delayed slightly to ensure DB ready)
+      setTimeout(() => systemMonitor.snapshot().catch(err => console.error('System Snapshot Error:', err)), 10000);
+
+      setInterval(() => {
+        systemMonitor.snapshot().catch(err => console.error('System Snapshot Error:', err));
+      }, 30 * 60 * 1000); // 30 mins
+    });
+  } catch (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  }
 }
 
 startServer();

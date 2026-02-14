@@ -16,29 +16,59 @@ export class MysqlPasskeyRepository implements IPasskeyRepository {
       connectionLimit: 10,
       queueLimit: 0,
     });
+
+    await this.ensureSchema();
+  }
+
+  private async ensureSchema(): Promise<void> {
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS passkeys (
+            id VARCHAR(255) PRIMARY KEY,
+            public_key TEXT,
+            user_id INT NOT NULL,
+            webauthn_user_id VARCHAR(255) NOT NULL,
+            name VARCHAR(255),
+            counter INT DEFAULT 0,
+            device_type VARCHAR(255),
+            backed_up BOOLEAN,
+            transports JSON,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB;
+      `);
+    } catch (e) {
+      console.error('❌ MySQL Passkey Schema Migration Failed:', e);
+      // Don't throw for now if users table missing, just log error?
+      // No, this is critical for passkeys. Throw.
+      throw e;
+    } finally {
+      connection.release();
+    }
   }
 
   async create(passkey: Passkey): Promise<Passkey> {
     const connection = await this.pool.getConnection();
     try {
-        await connection.execute(
-            'INSERT INTO passkeys (id, public_key, user_id, webauthn_user_id, name, counter, device_type, backed_up, transports, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, FROM_UNIXTIME(?/1000))',
-            [
-                passkey.id,
-                passkey.publicKey,
-                passkey.userId,
-                passkey.webAuthnUserID,
-                passkey.name,
-                passkey.counter,
-                passkey.deviceType,
-                passkey.backedUp ? 1 : 0,
-                JSON.stringify(passkey.transports),
-                passkey.createdAt
-            ]
-        );
-        return passkey;
+      await connection.execute(
+        'INSERT INTO passkeys (id, public_key, user_id, webauthn_user_id, name, counter, device_type, backed_up, transports, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, FROM_UNIXTIME(?/1000))',
+        [
+          passkey.id,
+          passkey.publicKey,
+          passkey.userId,
+          passkey.webAuthnUserID,
+          passkey.name,
+          passkey.counter,
+          passkey.deviceType,
+          passkey.backedUp ? 1 : 0,
+          JSON.stringify(passkey.transports),
+          passkey.createdAt
+        ]
+      );
+      return passkey;
     } finally {
-        connection.release();
+      connection.release();
     }
   }
 
@@ -67,17 +97,17 @@ export class MysqlPasskeyRepository implements IPasskeyRepository {
   }
 
   private mapRowToPasskey(row: any): Passkey {
-      return {
-          id: row.id,
-          publicKey: row.public_key,
-          userId: row.user_id,
-          webAuthnUserID: row.webauthn_user_id,
-          name: row.name || 'My Passkey',
-          counter: row.counter,
-          deviceType: row.device_type,
-          backedUp: row.backed_up === 1,
-          transports: typeof row.transports === 'string' ? JSON.parse(row.transports) : row.transports || [],
-          createdAt: new Date(row.created_at).getTime(),
-      };
+    return {
+      id: row.id,
+      publicKey: row.public_key,
+      userId: row.user_id,
+      webAuthnUserID: row.webauthn_user_id,
+      name: row.name || 'My Passkey',
+      counter: row.counter,
+      deviceType: row.device_type,
+      backedUp: row.backed_up === 1,
+      transports: typeof row.transports === 'string' ? JSON.parse(row.transports) : row.transports || [],
+      createdAt: new Date(row.created_at).getTime(),
+    };
   }
 }
