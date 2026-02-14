@@ -19,42 +19,45 @@
   ![Socket.io](https://img.shields.io/badge/Socket.io-black?style=flat&logo=socket.io&badgeColor=010101)
   ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)
 
-  <p align="center">
-    kubiq is a modern, lightweight, and beautiful monitoring solution designed for <b>VMs and Kubernetes Pods</b>.<br>
-    It tracks your infrastructure's health, logs, and resources in real-time without the bloat.
-  </p>
 </div>
 
+<p align="center">
+  <b>kubiq</b> is a modern, lightweight, and self-hosted monitoring solution designed for <b>VMs, Bare Metal, and Kubernetes Pods</b>.<br>
+  It provides real-time visibility into your infrastructure with zero latency, utilizing Socket.IO for live streaming of logs and system stats.<br>
+  Built with performance and aesthetics in mind, kubiq helps you keep track of your servers, databases, and services without the bloat of enterprise monitoring tools.
+</p>
+
 ---
+👉 <b>Official Website & Docs:</b> [https://kubiq.priyanshumodi.in](https://kubiq.priyanshumodi.in).
 
-## ✨ Features
 
-- **⚡ Real-Time Streaming**
-  - Instant status updates via Socket.IO.
-  - Live log streaming with zero latency.
-  - **Glob Pattern Support:** Monitor dynamic files (e.g., `/var/log/*.log`).
-  - **Auto-Rotation:** Automatically follows files across rotations.
+## ✨ Key Features
 
-- **📈 System Analytics**
-  - Beautiful, animated gauges for **CPU & RAM**.
-  - **Storage Analytics Widget:** Track disk usage trends over time.
+*   **⚡ Real-Time Streaming & Monitoring**
+    *   **Live Updates:** Sub-second latency for CPU, RAM, and Disk changes.
+    *   **Service Monitoring:** Native checks for **HTTP/HTTPS** (with SSL monitoring), **TCP Ports**, **MySQL**, and **MongoDB**.
+    *   **Log Streaming:** Watch logs tail live with support for glob patterns (e.g., `/var/log/*.error`) and auto-rotation.
 
-- **💾 Multi-Database Support**
-  - **JSON (Default):** Zero-config, file-based persistence for simple setups.
-  - **MySQL / MongoDB:** Enterprise-grade storage drivers for scale.
-  - Switch backends easily via environment variables.
+*   **📈 Advanced Analytics**
+    *   **Interactive Dashboard:** Beautiful, animated gauges and charts.
+    *   **AI Storage Prediction:** Intelligent forecasting tells you exactly how many days until your disk is full.
 
-- **🛡️ Enterprise Security**
-  - **Native Authentication:** Secure Login/Register with JWT.
-  - **RBAC:** Distinct **Admin** (Read/Write) and **Viewer** (Read-Only) roles.
-  - **Data Masking:** Sensitive credentials (DB strings, Webhooks) are hidden for non-admins.
+*   **💾 Multi-Database Support**
+    *   **JSON (Default):** Zero-config, file-based persistence. Perfect for single nodes.
+    *   **MySQL / MongoDB:** Switch to enterprise-grade databases for high-availability setups.
 
-- **🔔 Smart Notifications**
-  - **Channels:** SMTP (Email) and Webhooks (**Discord, Slack, Teams**).
-  - **Customizable:** Configure From Name, CC, BCC, and routing rules.
+*   **🔐 Triple-Layer Security**
+    *   **Authentication:** Secure JWT-based login.
+    *   **Passkeys (WebAuthn):** Passwordless biometric login (FaceID, TouchID, YubiKey).
+    *   **SSO:** OpenID Connect (OIDC) support for **Keycloak** integration.
+    *   **RBAC:** Granular control with **Admin** (Read/Write) and **Viewer** (Read-Only) roles.
 
-- **🖥️ Cross-Platform**
-  - Native support for **AMD64** and **ARM64** (Raspberry Pi, Oracle Cloud).
+*   **🔔 Smart Notifications**
+    *   Get alerts via **Email (SMTP)** or Webhooks (**Discord, Slack, Teams**).
+
+
+*  **🖥️ Cross-Platform**
+   * Native support for **AMD64** and **ARM64** (Raspberry Pi, Oracle Cloud).
 
 ---
 
@@ -68,8 +71,42 @@ docker run -d \
   --name kubiq \
   -p 3000:3000 \
   -v kubiq-data:/app/data \
+  --restart unless-stopped \
   priyanshumodi22/kubiq:latest
 ```
+
+### 🐙 Docker Compose
+Create a `docker-compose.yml` file:
+
+```yaml
+version: '3.8'
+services:
+  kubiq:
+    image: priyanshumodi22/kubiq:latest
+    container_name: kubiq
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - kubiq-data:/app/data
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      # - DB_TYPE=mysql
+      # - DB_HOST=localhost
+      # - DB_USER=root
+      # - DB_PASS=password
+
+volumes:
+  kubiq-data:
+```
+
+Run it:
+```bash
+docker-compose up -d
+```
+
+---
 
 ### Standalone Binary
 Don't want Docker? Download the single binary for your architecture from the [Releases Page](https://github.com/priyanshumodi22/kubiq/releases).
@@ -78,18 +115,19 @@ Don't want Docker? Download the single binary for your architecture from the [Re
 
 ## 🛠️ Configuration
 
-kubiq uses environment variables or a `.env` file for configuration.
+kubiq is configured via Environment Variables.
 
 | Variable | Description | Default |
 | :--- | :--- | :--- |
 | `PORT` | Port to run the server on | `3000` |
-| `DB_TYPE` | Storage backend: `json`, `mysql`, or `mongo` | `json` |
-| `JWT_SECRET` | Secret key for session signing | `auto-generated` |
+| `DB_TYPE` | Storage backend: `json`, `mysql`, `mongo` | `json` |
+| `ENABLE_PERSISTENCE` | Enable/Disable data saving | `true` |
+| `POLL_INTERVAL` | Service check interval (ms) | `30000` |
+| `JWT_SECRET` | Secret for sessions (Change this!) | `auto-generated` |
+| `KEYCLOAK_ENABLED` | Enable OIDC SSO | `false` |
+| `NATIVE_AUTH_ENABLED` | Enable Username/Pass login | `true` |
 
-### Volume Mounts
-| Path | Purpose |
-| :--- | :--- |
-| `/app/data` | Persists the JSON database and config files. |
+*For a full list of configuration options, check the [Official Documentation](https://kubiq.priyanshumodi.in/).*
 
 ---
 
