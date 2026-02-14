@@ -11,10 +11,15 @@ dotenv.config({ path: envPath, override: true });
 console.log(`📋 Loading environment from: ${envFile}`);
 
 // Polyfill for WebCrypto API (required for @simplewebauthn/server in pkg binaries)
-if (!globalThis.crypto || !globalThis.crypto.subtle) {
+// Force polyfill in production as pkg binaries may have incomplete crypto.subtle implementation
+if (process.env.NODE_ENV === 'production') {
   const { Crypto } = require('@peculiar/webcrypto');
   globalThis.crypto = new Crypto();
-  console.log('✅ WebCrypto polyfill loaded');
+  console.log('✅ WebCrypto polyfill loaded (production mode)');
+} else if (!globalThis.crypto || !globalThis.crypto.subtle) {
+  const { Crypto } = require('@peculiar/webcrypto');
+  globalThis.crypto = new Crypto();
+  console.log('✅ WebCrypto polyfill loaded (fallback)');
 }
 
 import express, { Express, Request, Response } from 'express';
