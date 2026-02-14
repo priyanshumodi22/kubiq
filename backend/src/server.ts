@@ -1,4 +1,7 @@
-// Load environment variables FIRST before any imports
+// CRITICAL: Load WebCrypto polyfill FIRST before any other imports
+import './polyfills/webcrypto';
+
+// Load environment variables SECOND
 import dotenv from 'dotenv';
 import path from 'path';
 
@@ -9,18 +12,6 @@ const envPath = path.resolve(process.cwd(), envFile);
 dotenv.config({ path: envPath, override: true });
 
 console.log(`📋 Loading environment from: ${envFile}`);
-
-// Polyfill for WebCrypto API (required for @simplewebauthn/server in pkg binaries)
-// Force polyfill in production as pkg binaries may have incomplete crypto.subtle implementation
-if (process.env.NODE_ENV === 'production') {
-  const { Crypto } = require('@peculiar/webcrypto');
-  globalThis.crypto = new Crypto();
-  console.log('✅ WebCrypto polyfill loaded (production mode)');
-} else if (!globalThis.crypto || !globalThis.crypto.subtle) {
-  const { Crypto } = require('@peculiar/webcrypto');
-  globalThis.crypto = new Crypto();
-  console.log('✅ WebCrypto polyfill loaded (fallback)');
-}
 
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
