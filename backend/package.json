@@ -21,7 +21,8 @@
       "views/**/*"
     ],
     "scripts": [
-      "node_modules/axios/dist/node/axios.cjs"
+      "node_modules/axios/dist/node/axios.cjs",
+      "node_modules/@peculiar/webcrypto/**/*.js"
     ],
     "targets": [
       "node18-linux-x64",
