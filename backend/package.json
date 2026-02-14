@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "nodemon --watch src --exec ts-node src/server.ts",
     "build": "tsc",
+    "prebuild": "node scripts/patch-webauthn.js",
+    "postinstall": "node scripts/patch-webauthn.js || true",
     "start": "node dist/server.js",
     "test": "jest",
     "test:watch": "jest --watch",
