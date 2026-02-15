@@ -1,5 +1,4 @@
-// CRITICAL: Load WebCrypto polyfill FIRST before any other imports
-require('./polyfills/webcrypto.js');
+
 
 // Load environment variables SECOND
 import dotenv from 'dotenv';

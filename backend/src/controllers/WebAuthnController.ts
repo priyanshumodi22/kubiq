@@ -21,6 +21,13 @@ export class WebAuthnController {
 
   static async generateRegistrationOptions(req: Request, res: Response) {
     try {
+      // Check if running in pkg binary (WebAuthn not supported due to crypto limitations)
+      if ((process as any).pkg) {
+        return res.status(501).json({
+          error: 'WebAuthn is not supported in the standalone binary version. Please use the Docker version for full feature support.'
+        });
+      }
+
       // User is already logged in via JWT (middleware ensures this)
       const userId = (req as any).user.sub;
       const username = (req as any).user.preferred_username;
@@ -105,6 +112,13 @@ export class WebAuthnController {
 
   static async generateAuthenticationOptions(req: Request, res: Response) {
     try {
+      // Check if running in pkg binary
+      if ((process as any).pkg) {
+        return res.status(501).json({
+          error: 'WebAuthn is not supported in the standalone binary version. Please use the Docker version for full feature support.'
+        });
+      }
+
       const { username } = req.body;
       if (!username) {
         return res.status(400).json({ error: 'Username required' });
@@ -198,14 +212,14 @@ export class WebAuthnController {
         // Issue JWT (Login Successful)
         const secret = process.env.JWT_SECRET || 'dev-secret-do-not-use-in-prod';
         const token = jwt.sign(
-            { 
-                sub: user.id, 
-                preferred_username: user.username, 
-                roles: [user.role],
-                type: 'native'
-            }, 
-            secret, 
-            { expiresIn: '24h' }
+          {
+            sub: user.id,
+            preferred_username: user.username,
+            roles: [user.role],
+            type: 'native'
+          },
+          secret,
+          { expiresIn: '24h' }
         );
 
         res.json({ verified: true, token, user: { username: user.username, role: user.role, id: user.id } });
@@ -223,7 +237,7 @@ export class WebAuthnController {
       const userId = (req as any).user.sub;
       const passkeyRepo = await DatabaseFactory.getPasskeyRepository();
       const passkeys = await passkeyRepo.findByUserId(userId);
-      
+
       const safePasskeys = passkeys.map(pk => ({
         id: pk.id,
         name: pk.name,
@@ -231,7 +245,7 @@ export class WebAuthnController {
         createdAt: pk.createdAt,
         backedUp: pk.backedUp
       }));
-      
+
       res.json(safePasskeys);
     } catch (error) {
       console.error(error);
@@ -243,18 +257,18 @@ export class WebAuthnController {
     try {
       const userId = (req as any).user.sub;
       const id = req.params.id as string;
-      
+
       const passkeyRepo = await DatabaseFactory.getPasskeyRepository();
       const passkey = await passkeyRepo.findById(id);
-      
+
       if (!passkey) {
         return res.status(404).json({ error: 'Passkey not found' });
       }
-      
+
       if (passkey.userId !== userId) {
         return res.status(403).json({ error: 'Unauthorized' });
       }
-      
+
       await passkeyRepo.delete(id);
       res.json({ success: true });
     } catch (error) {
