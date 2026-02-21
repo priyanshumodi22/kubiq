@@ -110,6 +110,7 @@ import { notificationsRouter } from './routes/notifications';
 import { usersRouter } from './routes/users';
 import { systemRouter } from './routes/system';
 import { logRouter } from './routes/logs';
+import { apmIngestRouter, apmAnalyticsRouter } from './routes/apm';
 import { DatabaseFactory } from './database/DatabaseFactory';
 
 // Public routes
@@ -117,6 +118,8 @@ app.use(`${BACKEND_CONTEXT_PATH}/api/health`, healthRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/auth`, authRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/auth/webauthn`, authWebAuthnRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/public`, publicStatusRouter);
+app.use(`${BACKEND_CONTEXT_PATH}/api/apm`, apmIngestRouter); // Unauthenticated OTLP ingestion
+app.use(`${BACKEND_CONTEXT_PATH}/api/apm`, apmAnalyticsRouter); // APM Analytics (Made public temporarily for testing)
 
 // Protected routes (with optional Keycloak auth)
 app.use(`${BACKEND_CONTEXT_PATH}/api/services`, authMiddleware, servicesRouter);
@@ -132,12 +135,19 @@ app.use(`${FRONTEND_CONTEXT_PATH}`, express.static(frontendPath));
 // Fallback to index.html for client-side routing (Express 5 regex syntax)
 app.get(
   new RegExp(`^${FRONTEND_CONTEXT_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/.*`),
-  (req: Request, res: Response) => {
-    // Don't override API routes
-    if (req.path.startsWith(`${BACKEND_CONTEXT_PATH}/api`)) {
-      return res.status(404).json({ error: 'Not Found' });
+  (req: Request, res: Response, next: express.NextFunction) => {
+    // Don't override API routes or static files like favicon
+    if (req.path.startsWith(`${BACKEND_CONTEXT_PATH}/api`) ||
+      req.path.includes('.')) {
+      return next(); // Let the final 404 handler catch it
     }
-    res.sendFile(path.join(frontendPath, 'index.html'));
+
+    const indexFile = path.join(frontendPath, 'index.html');
+    res.sendFile(indexFile, (err) => {
+      if (err) {
+        next(); // If index.html is missing (like during dev), push to next error handler
+      }
+    });
   }
 );
 

@@ -3,13 +3,15 @@ import { INotificationRepository } from './interfaces/INotificationRepository';
 import { IUserRepository } from './interfaces/IUserRepository';
 import { IPasskeyRepository } from './interfaces/IPasskeyRepository';
 import { ISystemRepository } from './interfaces/ISystemRepository';
+import { ITraceRepository } from './interfaces/ITraceRepository';
 
 export class DatabaseFactory {
   private static serviceRepository: IServiceRepository;
   private static notificationRepository: INotificationRepository;
-  private static userRepository: IUserRepository; 
-  private static passkeyRepository: IPasskeyRepository; 
+  private static userRepository: IUserRepository;
+  private static passkeyRepository: IPasskeyRepository;
   private static systemRepository: ISystemRepository;
+  private static traceRepository: ITraceRepository;
 
   public static async getServiceRepository(): Promise<IServiceRepository> {
     if (this.serviceRepository) {
@@ -126,7 +128,7 @@ export class DatabaseFactory {
         this.passkeyRepository = new JsonPasskeyRepository();
         break;
     }
-    
+
     await this.passkeyRepository.initialize();
     return this.passkeyRepository;
 
@@ -157,8 +159,40 @@ export class DatabaseFactory {
         this.systemRepository = new JsonSystemRepository();
         break;
     }
-    
+
     await this.systemRepository.initialize();
     return this.systemRepository;
+  }
+
+  public static async getTraceRepository(): Promise<ITraceRepository> {
+    if (this.traceRepository) {
+      return this.traceRepository;
+    }
+
+    const startArgs = process.env.DB_TYPE || 'json';
+    console.log(`🔌 Initializing Trace (APM) Repository: ${startArgs}`);
+
+    switch (startArgs.toLowerCase()) {
+      case 'mysql':
+      case 'mariadb':
+        const { MysqlTraceRepository } = await import('./adapters/mysql/MysqlTraceRepository');
+        this.traceRepository = new MysqlTraceRepository();
+        break;
+      case 'mongo':
+      case 'mongodb':
+        const { MongoTraceRepository } = await import('./adapters/mongo/MongoTraceRepository');
+        this.traceRepository = new MongoTraceRepository();
+        break;
+      case 'json':
+      default:
+        // Fallback to MySQL or Mongo if json not specifically handled for APM
+        console.warn('⚠️ APM telemetry requires a robust database. Falling back to MongoDB for APM.');
+        const { MongoTraceRepository: FallbackMongoTraceRepository } = await import('./adapters/mongo/MongoTraceRepository');
+        this.traceRepository = new FallbackMongoTraceRepository();
+        break;
+    }
+
+    await this.traceRepository.initialize();
+    return this.traceRepository;
   }
 }
