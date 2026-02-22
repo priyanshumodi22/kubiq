@@ -1,8 +1,9 @@
 name: Publish kubiq-apm to NPM
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*-apm'
   workflow_dispatch:
     inputs:
       version_bump:
