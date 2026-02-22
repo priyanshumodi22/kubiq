@@ -132,6 +132,30 @@ apmAnalyticsRouter.get('/services', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/apm/services/:serviceName/recent-trace
+ * Retrieve the most recent trace ID for a specific service.
+ */
+apmAnalyticsRouter.get('/services/:serviceName/recent-trace', async (req: Request, res: Response) => {
+    try {
+        const param = req.params.serviceName;
+        const serviceName = Array.isArray(param) ? param[0] : param;
+
+        const traceRepository = await DatabaseFactory.getTraceRepository();
+        const traceId = await traceRepository.getRecentTraceIdForService(serviceName);
+
+        if (!traceId) {
+            res.status(404).json({ error: 'No recent traces found for this service' });
+            return;
+        }
+
+        res.json({ traceId });
+    } catch (error) {
+        console.error(`Failed to get recent trace for ${req.params.serviceName}:`, error);
+        res.status(500).json({ error: 'Failed to retrieve recent trace.' });
+    }
+});
+
+/**
  * GET /api/apm/traces/:traceId
  * Retrieve the full waterfall of spans for a specific request.
  */

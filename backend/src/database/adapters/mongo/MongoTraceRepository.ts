@@ -98,4 +98,12 @@ export class MongoTraceRepository implements ITraceRepository {
         const spans = await ApmSpanModel.find({ traceId }).sort({ startTimeUnixNano: 1 }).lean();
         return spans as unknown as ISpan[];
     }
+
+    async getRecentTraceIdForService(serviceName: string): Promise<string | null> {
+        const span = await ApmSpanModel.findOne({ serviceName })
+            .sort({ timestamp: -1 }) // Get the most recent span recorded
+            .select('traceId')
+            .lean();
+        return span ? (span as any).traceId : null;
+    }
 }

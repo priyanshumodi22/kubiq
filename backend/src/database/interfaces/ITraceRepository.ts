@@ -40,4 +40,9 @@ export interface ITraceRepository {
    * Retrieves all spans for a given trace ID to build a waterfall view
    */
   getTraceDetails(traceId: string): Promise<ISpan[]>;
+
+  /**
+   * Retrieves the most recent trace ID for a given service to enable 1-click drilldowns
+   */
+  getRecentTraceIdForService(serviceName: string): Promise<string | null>;
 }

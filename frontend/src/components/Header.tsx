@@ -49,11 +49,10 @@ export default function Header() {
           <Link to="/dashboard" className="flex items-center gap-2 sm:gap-3 min-w-0 hover:opacity-90 transition-opacity">
             <div className="inline-flex items-center justify-center w-12 h-12 sm:w-12 sm:h-12 bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl shadow-lg shadow-primary/10">
               <img
-                src={`${
-                  import.meta.env.BASE_URL.endsWith('/')
+                src={`${import.meta.env.BASE_URL.endsWith('/')
                     ? import.meta.env.BASE_URL
                     : import.meta.env.BASE_URL + '/'
-                }logo/kubiq_logo.png`}
+                  }logo/kubiq_logo.png`}
                 alt="Kubiq Logo"
                 className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
               />
@@ -65,174 +64,182 @@ export default function Header() {
           </Link>
 
           <nav className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-               <div className="bg-bg-card border border-gray-700/50 p-1 rounded-xl flex space-x-1 shadow-lg backdrop-blur-md">
-                   <Link 
-                       to="/dashboard?tab=services" 
-                       className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                           location.pathname === '/dashboard' && (!location.search.includes('tab=system'))
-                           ? 'bg-primary text-white shadow-md'
-                           : 'text-gray-400 hover:text-white hover:bg-white/5'
-                       }`}
-                   >
-                       Services
-                   </Link>
-                   
-                   {isAuthenticated && roles.includes('kubiq-admin') && (
-                       <Link 
-                           to="/dashboard?tab=system" 
-                           className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                               location.pathname === '/dashboard' && location.search.includes('tab=system')
-                               ? 'bg-primary text-white shadow-md'
-                               : 'text-gray-400 hover:text-white hover:bg-white/5'
-                           }`}
-                       >
-                           System Health
-                       </Link>
-                   )}
+            <div className="bg-bg-card border border-gray-700/50 p-1 rounded-xl flex space-x-1 shadow-lg backdrop-blur-md">
+              <Link
+                to="/dashboard?tab=services"
+                className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${location.pathname === '/dashboard' && (!location.search.includes('tab=system'))
+                    ? 'bg-primary text-white shadow-md'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
+              >
+                Services
+              </Link>
 
-                   {isAuthenticated && (
-                       <Link 
-                           to="/logs" 
-                           className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                               location.pathname.startsWith('/logs')
-                               ? 'bg-primary text-white shadow-md'
-                               : 'text-gray-400 hover:text-white hover:bg-white/5'
-                           }`}
-                       >
-                           Logs
-                       </Link>
-                   )}
-               </div>
+              {isAuthenticated && roles.includes('kubiq-admin') && (
+                <Link
+                  to="/dashboard?tab=system"
+                  className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${location.pathname === '/dashboard' && location.search.includes('tab=system')
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    }`}
+                >
+                  System Health
+                </Link>
+              )}
+
+              {isAuthenticated && (
+                <Link
+                  to="/logs"
+                  className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${location.pathname.startsWith('/logs')
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    }`}
+                >
+                  Logs
+                </Link>
+              )}
+
+              {isAuthenticated && (
+                <Link
+                  to="/apm"
+                  className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${location.pathname.startsWith('/apm')
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    }`}
+                >
+                  APM & Traces
+                </Link>
+              )}
+            </div>
           </nav>
 
           <div className="flex items-center gap-3">
-             {isAuthenticated && (
-               <button
-                 onClick={() => setIsNotificationModalOpen(true)}
-                 className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                 title="Notification settings"
-               >
-                 <Bell className="w-5 h-5" />
-               </button>
-             )}
+            {isAuthenticated && (
+              <button
+                onClick={() => setIsNotificationModalOpen(true)}
+                className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                title="Notification settings"
+              >
+                <Bell className="w-5 h-5" />
+              </button>
+            )}
 
-             {isAuthenticated && (
-               <div className="relative flex-shrink-0" ref={dropdownRef}>
-                 {/* User Profile Button */}
-                 <button
-                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                   className="flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-2 bg-bg-surface hover:bg-gray-800 rounded-lg transition-colors group"
-                 >
-                   <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
-                     <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
-                   </div>
-                   <div className="text-left hidden md:block">
-                     <div className="text-sm font-medium text-text truncate max-w-[120px] lg:max-w-none">
-                       {userDisplayName}
-                     </div>
-                     <div className="text-xs text-text-dim truncate max-w-[120px] lg:max-w-none">
-                       {userRole}
-                     </div>
-                   </div>
-                   <ChevronDown
-                     className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-text-dim transition-transform ${
-                       dropdownOpen ? 'rotate-180' : ''
-                     }`}
-                   />
-                 </button>
+            {isAuthenticated && (
+              <div className="relative flex-shrink-0" ref={dropdownRef}>
+                {/* User Profile Button */}
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-2 bg-bg-surface hover:bg-gray-800 rounded-lg transition-colors group"
+                >
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
+                    <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+                  </div>
+                  <div className="text-left hidden md:block">
+                    <div className="text-sm font-medium text-text truncate max-w-[120px] lg:max-w-none">
+                      {userDisplayName}
+                    </div>
+                    <div className="text-xs text-text-dim truncate max-w-[120px] lg:max-w-none">
+                      {userRole}
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-text-dim transition-transform ${dropdownOpen ? 'rotate-180' : ''
+                      }`}
+                  />
+                </button>
 
-                 {/* Dropdown Menu */}
-                 {dropdownOpen && (
-                   <div className="absolute right-0 mt-2 w-72 sm:w-64 bg-bg-surface border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
-                     {/* User Info Section */}
-                     <div className="p-3 border-b border-gray-700 bg-bg-surface">
-                       <div className="flex items-center gap-2.5">
-                         <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
-                           <User className="w-5 h-5 text-primary" />
-                         </div>
-                         <div className="flex-1 min-w-0">
-                           <div className="text-sm font-medium text-text truncate">
-                             {user?.email || user?.username}
-                           </div>
-                         </div>
-                       </div>
-                     </div>
+                {/* Dropdown Menu */}
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-72 sm:w-64 bg-bg-surface border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                    {/* User Info Section */}
+                    <div className="p-3 border-b border-gray-700 bg-bg-surface">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
+                          <User className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-text truncate">
+                            {user?.email || user?.username}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
-                     {/* Role Section */}
-                     <div className="p-3 border-b border-gray-700">
-                       <div className="flex items-start gap-2">
-                         <Shield className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                         <div className="flex-1 min-w-0">
-                           <div className="text-xs font-medium text-text-dim mb-1.5">Role(s)</div>
-                           <div className="flex flex-wrap gap-1">
-                             {kubiqRoles.length > 0 ? (
-                               kubiqRoles.map((role) => (
-                                 <span
-                                   key={role}
-                                   className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-primary/20 text-primary rounded"
-                                 >
-                                   {role}
-                                 </span>
-                               ))
-                             ) : (
-                               <span className="text-xs text-text-dim">No roles assigned</span>
-                             )}
-                           </div>
-                         </div>
-                       </div>
-                     </div>
+                    {/* Role Section */}
+                    <div className="p-3 border-b border-gray-700">
+                      <div className="flex items-start gap-2">
+                        <Shield className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium text-text-dim mb-1.5">Role(s)</div>
+                          <div className="flex flex-wrap gap-1">
+                            {kubiqRoles.length > 0 ? (
+                              kubiqRoles.map((role) => (
+                                <span
+                                  key={role}
+                                  className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-primary/20 text-primary rounded"
+                                >
+                                  {role}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-text-dim">No roles assigned</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
 
-                     {/* Profile Link */}
-                     <div className="p-1 px-1.5 border-b border-gray-700">
-                      <Link 
-                          to="/profile" 
-                          className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-text hover:bg-gray-700/50 rounded-lg transition-colors"
-                          onClick={() => setDropdownOpen(false)}
+                    {/* Profile Link */}
+                    <div className="p-1 px-1.5 border-b border-gray-700">
+                      <Link
+                        to="/profile"
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-text hover:bg-gray-700/50 rounded-lg transition-colors"
+                        onClick={() => setDropdownOpen(false)}
                       >
-                          <User className="w-4 h-4 text-primary" />
-                          My Profile
+                        <User className="w-4 h-4 text-primary" />
+                        My Profile
                       </Link>
-                     </div>
+                    </div>
 
                     {/* Admin Links */}
                     {roles.includes('kubiq-admin') && (
-                        <div className="p-1 px-1.5 border-b border-gray-700">
-                            <Link 
-                                to="/admin/users" 
-                                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-text hover:bg-gray-700/50 rounded-lg transition-colors"
-                                onClick={() => setDropdownOpen(false)}
-                            >
-                                <Users className="w-4 h-4 text-primary" />
-                                Manage Users
-                            </Link>
-                        </div>
+                      <div className="p-1 px-1.5 border-b border-gray-700">
+                        <Link
+                          to="/admin/users"
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-text hover:bg-gray-700/50 rounded-lg transition-colors"
+                          onClick={() => setDropdownOpen(false)}
+                        >
+                          <Users className="w-4 h-4 text-primary" />
+                          Manage Users
+                        </Link>
+                      </div>
                     )}
 
-                     {/* Logout Button */}
-                     <div className="p-1.5">
-                       <button
-                         onClick={() => {
-                           setDropdownOpen(false);
-                           logout();
-                         }}
-                         className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                       >
-                         <LogOut className="w-4 h-4" />
-                         Logout
-                       </button>
-                     </div>
-                   </div>
-                 )}
-               </div>
-             )}
+                    {/* Logout Button */}
+                    <div className="p-1.5">
+                      <button
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          logout();
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
-      
-      <NotificationConfigModal 
-        isOpen={isNotificationModalOpen} 
-        onClose={() => setIsNotificationModalOpen(false)} 
+
+      <NotificationConfigModal
+        isOpen={isNotificationModalOpen}
+        onClose={() => setIsNotificationModalOpen(false)}
       />
     </header>
   );

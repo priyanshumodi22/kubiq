@@ -7,6 +7,7 @@ import StatusPage from './pages/StatusPage';
 import Layout from './components/Layout';
 import AdminUsers from './pages/AdminUsers';
 import LogsPage from './pages/LogsPage';
+import ApmDashboard from './pages/ApmDashboard';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, authEnabled } = useAuth();
@@ -43,48 +44,58 @@ function App() {
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <ToastProvider>
         <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/status/:slug" element={<StatusPage />} />
-          <Route path="/admin/users" element={
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/status/:slug" element={<StatusPage />} />
+            <Route path="/admin/users" element={
               <ProtectedRoute>
-                  <AdminUsers />
+                <AdminUsers />
               </ProtectedRoute>
-          } />
-          <Route
-            path="/logs"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <LogsPage />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-             path="/profile"
-             element={
-               <ProtectedRoute>
-                 <Layout>
-                   <Profile />
-                 </Layout>
-               </ProtectedRoute>
-             }
-           />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </AuthProvider>
+            } />
+            <Route
+              path="/logs"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <LogsPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Profile />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Dashboard />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/apm"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <ApmDashboard />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </AuthProvider>
       </ToastProvider>
     </BrowserRouter>
   );

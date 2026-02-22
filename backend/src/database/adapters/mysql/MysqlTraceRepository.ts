@@ -144,4 +144,16 @@ export class MysqlTraceRepository implements ITraceRepository {
             attributes: typeof row.attributes === 'string' ? JSON.parse(row.attributes) : row.attributes
         }));
     }
+
+    async getRecentTraceIdForService(serviceName: string): Promise<string | null> {
+        const query = `
+      SELECT trace_id FROM apm_spans 
+      WHERE service_name = ? 
+      ORDER BY timestamp DESC 
+      LIMIT 1
+    `;
+
+        const [rows] = await this.pool.query<RowDataPacket[]>(query, [serviceName]);
+        return rows.length > 0 ? rows[0].trace_id : null;
+    }
 }
