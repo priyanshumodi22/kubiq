@@ -1,0 +1,59 @@
+name: Publish kubiq-apm to NPM
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Publish manually (if not triggered by a GitHub Release)'
+        required: true
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+        default: 'patch'
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    
+    # CRITICAL: These permissions are absolutely required for NPM Provenance (OIDC) to work!
+    # It gives the GitHub Action permission to request the cryptographically signed JWT token from GitHub.
+    permissions:
+      contents: write
+      id-token: write 
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+
+      # Go into the kubiq-apm sub-directory where the package lives
+      - name: Install dependencies
+        working-directory: ./kubiq-apm
+        run: npm ci
+
+      # If this was triggered manually via workflow_dispatch, bump the version
+      - name: Bump Version (Manual Trigger Only)
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: ./kubiq-apm
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+          npm version ${{ github.event.inputs.version_bump }} -m "chore: bump version to %s [skip ci]"
+          git push
+
+      # Finally, publish the package with the `--provenance` flag to get the green checkmark
+      - name: Publish to NPM with Provenance
+        working-directory: ./kubiq-apm
+        run: npm publish --provenance --access public
+        env:
+          # You MUST set this environment variable for the action to securely auth with NPM
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
