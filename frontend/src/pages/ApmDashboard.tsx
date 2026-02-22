@@ -1,15 +1,61 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Activity, Clock, AlertTriangle, Search, Server, X } from 'lucide-react';
 import { useApm } from '../hooks/useApm';
 import { useTrace } from '../hooks/useTrace';
+import { useServiceMap } from '../hooks/useServiceMap';
 import TraceWaterfall from '../components/TraceWaterfall';
+import ServiceMap from '../components/ServiceMap';
 
 export default function ApmDashboard() {
     const { metrics, loading: apmLoading, error: apmError, refresh } = useApm();
     const { spans, loading: traceLoading, error: traceError, fetchTrace, clearTrace } = useTrace();
+    const { dependencies, loading: mapLoading, error: mapError, fetchServiceMap } = useServiceMap();
 
     const [timeRange, setTimeRange] = useState(60 * 60 * 1000); // Default 1H
     const [traceIdInput, setTraceIdInput] = useState('');
+    const [serviceFilter, setServiceFilter] = useState('');
+    const [activeView, setActiveView] = useState<'metrics' | 'map'>('metrics');
+    const [selectedMapService, setSelectedMapService] = useState<string | null>(null);
+    const sidebarRef = useRef<HTMLDivElement>(null);
+
+    const filteredMetrics = metrics.filter(m =>
+        m.serviceName.toLowerCase().includes(serviceFilter.toLowerCase().trim())
+    );
+
+    // Close the sidebar if the user clicks anywhere outside of it
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            // Check if the click occurred outside the sidebar component
+            if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+                setSelectedMapService(null);
+            }
+        }
+
+        // Only attach listener if sidebar is actively open
+        if (selectedMapService) {
+            document.addEventListener('mousedown', handleClickOutside);
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [selectedMapService]);
+
+    // Fetch map data when switching to map view
+    useEffect(() => {
+        if (activeView === 'map') {
+            fetchServiceMap(timeRange);
+        }
+    }, [activeView, timeRange, fetchServiceMap]);
+
+    const handleRefresh = () => {
+        refresh(timeRange);
+        if (activeView === 'map') {
+            fetchServiceMap(timeRange);
+        }
+    };
 
     const handleServiceClick = async (serviceName: string) => {
         try {
@@ -26,6 +72,28 @@ export default function ApmDashboard() {
             }
         } catch (e) {
             console.error('Failed to quick-fetch trace:', e);
+        }
+    };
+
+    const handleEdgeClick = async (source: string, target: string) => {
+        try {
+            const baseUrl = import.meta.env.VITE_API_URL || '';
+            const ctxPath = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
+            // Fetch the trace ID that specifically spans this edge
+            const res = await fetch(`${baseUrl}${ctxPath}/api/apm/edges/${source}/${target}/recent-trace`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.traceId) {
+                    setTraceIdInput(data.traceId);
+                    fetchTrace(data.traceId);
+                    // Scroll to the Trace Waterfall view
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            } else {
+                console.warn('No recent traces found traversing this specific edge.');
+            }
+        } catch (e) {
+            console.error('Failed to quick-fetch trace for edge:', e);
         }
     };
 
@@ -55,6 +123,9 @@ export default function ApmDashboard() {
                             const newRange = parseInt(e.target.value);
                             setTimeRange(newRange);
                             refresh(newRange);
+                            if (activeView === 'map') {
+                                fetchServiceMap(newRange);
+                            }
                         }}
                         className="bg-bg-elevated border border-gray-700 text-text text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
                     >
@@ -63,8 +134,8 @@ export default function ApmDashboard() {
                         <option value={24 * 60 * 60 * 1000}>Last 24 Hours</option>
                     </select>
                     <button
-                        onClick={() => refresh(timeRange)}
-                        disabled={apmLoading}
+                        onClick={handleRefresh}
+                        disabled={apmLoading || mapLoading}
                         className="px-4 py-2 bg-bg-elevated border border-gray-700 hover:border-blue-500 text-text rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
                     >
                         <Activity className={`w-4 h-4 ${apmLoading ? 'animate-spin' : ''}`} />
@@ -73,37 +144,62 @@ export default function ApmDashboard() {
                 </div>
             </div>
 
-            {/* Trace Search Bar */}
-            <div className="bg-bg-surface border border-gray-800 rounded-xl p-4 mb-8 flex gap-3 shadow-sm">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            {/* Trace & Service Search Bar */}
+            <div className="bg-bg-surface border border-gray-800 rounded-xl p-2 mb-8 flex flex-col md:flex-row items-center gap-2 shadow-sm">
+                <div className="relative flex-1 w-full">
+                    <Server className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                         type="text"
-                        value={traceIdInput}
-                        onChange={(e) => setTraceIdInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && fetchTrace(traceIdInput)}
-                        placeholder="Paste Trace ID (e.g. 1a2b3c...)"
-                        className="w-full bg-bg-elevated border border-gray-700 text-white rounded-lg pl-10 pr-4 py-2 focus:ring-primary focus:border-primary"
+                        value={serviceFilter}
+                        onChange={(e) => setServiceFilter(e.target.value)}
+                        placeholder="Search Service (e.g. auth-api)"
+                        className="w-full bg-transparent border-none text-white focus:ring-0 pl-10 pr-4 py-2 placeholder-gray-500"
                     />
-                    {traceIdInput && (
+                    {serviceFilter && (
                         <button
-                            onClick={() => {
-                                setTraceIdInput('');
-                                clearTrace();
-                            }}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                            onClick={() => setServiceFilter('')}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-white"
                         >
                             <X className="w-4 h-4" />
                         </button>
                     )}
                 </div>
-                <button
-                    onClick={() => fetchTrace(traceIdInput)}
-                    disabled={traceLoading || !traceIdInput.trim()}
-                    className="px-6 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                    {traceLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Search Trace'}
-                </button>
+
+                <div className="hidden md:block w-px h-8 bg-gray-700 mx-2" />
+                <div className="md:hidden h-px w-full bg-gray-700 my-1" />
+
+                <div className="relative flex-1 w-full flex gap-2">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                            type="text"
+                            value={traceIdInput}
+                            onChange={(e) => setTraceIdInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && traceIdInput.trim() && fetchTrace(traceIdInput.trim())}
+                            placeholder="Paste Trace ID (e.g. 1a2b3c...)"
+                            className="w-full bg-transparent border-none text-white focus:ring-0 pl-10 pr-4 py-2 placeholder-gray-500"
+                        />
+                        {traceIdInput && (
+                            <button
+                                onClick={() => {
+                                    setTraceIdInput('');
+                                    clearTrace();
+                                }}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+
+                    <button
+                        onClick={() => traceIdInput.trim() && fetchTrace(traceIdInput.trim())}
+                        disabled={traceLoading || !traceIdInput.trim()}
+                        className="px-6 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap shadow-sm"
+                    >
+                        {traceLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Search Trace'}
+                    </button>
+                </div>
             </div>
 
             {traceError && (
@@ -111,7 +207,10 @@ export default function ApmDashboard() {
                     <div>
                         <span className="font-bold">Trace Error:</span> {traceError}
                     </div>
-                    <button onClick={clearTrace} className="text-red-400 hover:text-red-300">
+                    <button onClick={() => {
+                        setTraceIdInput('');
+                        clearTrace();
+                    }} className="text-red-400 hover:text-red-300">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -124,7 +223,10 @@ export default function ApmDashboard() {
                             <Search className="w-5 h-5 text-primary" />
                             Trace Inspection
                         </h2>
-                        <button onClick={clearTrace} className="text-sm text-gray-400 hover:text-white transition-colors">
+                        <button onClick={() => {
+                            setTraceIdInput('');
+                            clearTrace();
+                        }} className="text-sm text-gray-400 hover:text-white transition-colors">
                             Close Trace
                         </button>
                     </div>
@@ -132,12 +234,112 @@ export default function ApmDashboard() {
                 </div>
             )}
 
-            <div className="mb-4">
-                <h2 className="text-xl font-bold text-white">Service Metrics</h2>
+            <div className="mb-4 text-center">
+                <h2 className="text-xl font-bold text-white">Monitoring Overviews</h2>
                 <p className="text-sm text-gray-400">Aggregated performance across all instrumented nodes.</p>
             </div>
 
-            {apmError ? (
+            {/* View Toggle Switch */}
+            <div className="flex bg-bg-surface/50 p-1 rounded-lg w-full max-w-sm mb-6 mx-auto border border-gray-800 shadow-inner">
+                <button
+                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${activeView === 'metrics' ? 'bg-primary text-white shadow-md border border-primary/50' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                    onClick={() => setActiveView('metrics')}
+                >
+                    Metrics Grid
+                </button>
+                <button
+                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${activeView === 'map' ? 'bg-primary text-white shadow-md border border-primary/50' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                    onClick={() => setActiveView('map')}
+                >
+                    Topology Map
+                </button>
+            </div>
+
+            {activeView === 'map' ? (
+                <div className="mb-8 animate-fade-in-up delay-100 relative">
+                    {mapError ? (
+                        <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 text-red-400 mb-8">
+                            {mapError}
+                        </div>
+                    ) : (
+                        <ServiceMap
+                            dependencies={dependencies}
+                            onNodeClick={(service) => setSelectedMapService(service)}
+                            onEdgeClick={handleEdgeClick}
+                            onPaneClick={() => setSelectedMapService(null)}
+                        />
+                    )}
+
+                    {/* Sidebar Panel for Map Node Selection - Positioned absolute inside canvas */}
+                    {selectedMapService && (() => {
+                        const serviceData = metrics.find(m => m.serviceName === selectedMapService);
+                        return (
+                            <div
+                                ref={sidebarRef}
+                                className="absolute right-6 top-1/2 -translate-y-1/2 w-full md:w-80 h-auto max-h-[550px] bg-black/40 backdrop-blur-2xl border border-gray-600/30 shadow-2xl rounded-2xl z-50 transform transition-all duration-300 flex flex-col overflow-hidden"
+                            >
+                                <div className="px-5 py-4 border-b border-gray-700/50 flex justify-between items-center bg-white/[0.03]">
+                                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                        <Server className="w-4 h-4 text-blue-400" />
+                                        {selectedMapService}
+                                    </h3>
+                                    <button
+                                        onClick={() => setSelectedMapService(null)}
+                                        className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                <div className="p-5 overflow-y-auto">
+                                    {serviceData ? (
+                                        <div className="space-y-5">
+                                            <div className="bg-black/30 border border-gray-700/50 rounded-xl p-4 shadow-inner">
+                                                <h4 className="text-xs font-semibold tracking-wider uppercase text-gray-400 mb-3 flex items-center gap-1.5">
+                                                    <Activity className="w-3.5 h-3.5 text-blue-400" /> Key Metrics
+                                                </h4>
+                                                <div className="grid grid-cols-2 gap-y-4 gap-x-2">
+                                                    <div>
+                                                        <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-0.5">Throughput</p>
+                                                        <p className="text-base font-mono text-white">{serviceData.rpm.toFixed(1)} <span className="text-[10px] text-gray-500 font-sans">RPM</span></p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-0.5">P95 Latency</p>
+                                                        <p className="text-base font-mono text-white">{serviceData.p95DurationMs.toFixed(0)} <span className="text-[10px] text-gray-500 font-sans">ms</span></p>
+                                                    </div>
+                                                    <div className="col-span-2 pt-3 border-t border-gray-700/50 mt-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <p className="text-[10px] uppercase tracking-wider text-gray-500">Error Rate</p>
+                                                            <p className={`text-sm font-mono font-medium ${serviceData.errorRate > 5 ? 'text-red-400' : 'text-green-400'}`}>
+                                                                {serviceData.errorRate.toFixed(2)}%
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedMapService(null);
+                                                    handleServiceClick(selectedMapService);
+                                                }}
+                                                className="w-full py-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-sm font-medium rounded-lg border border-blue-500/20 transition-colors flex items-center justify-center gap-2 group shadow-sm backdrop-blur-sm"
+                                            >
+                                                <Search className="w-4 h-4 group-hover:scale-110 transition-transform" /> Analyze Recent Trace
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-10">
+                                            <Activity className="w-10 h-10 text-gray-600 mx-auto mb-4 animate-pulse" />
+                                            <p className="text-gray-400">Loading metrics...</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })()}
+                </div>
+            ) : apmError ? (
                 <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 text-red-400 mb-8">
                     {apmError}
                 </div>
@@ -154,9 +356,23 @@ export default function ApmDashboard() {
                         We couldn't find any APM telemetry data for the selected time range. Ensure your services are sending OTLP traces to Kubiq.
                     </p>
                 </div>
+            ) : filteredMetrics.length === 0 ? (
+                <div className="bg-bg-card border border-gray-800 rounded-xl p-8 text-center mt-8 shadow-lg">
+                    <Search className="w-12 h-12 text-gray-500 mx-auto mb-4 opacity-50" />
+                    <h3 className="text-xl font-medium text-white mb-2">No Matching Services</h3>
+                    <p className="text-gray-400 max-w-md mx-auto">
+                        No services match your current filter "{serviceFilter}".
+                    </p>
+                    <button
+                        onClick={() => setServiceFilter('')}
+                        className="mt-4 text-primary hover:text-primary-hover font-medium underline"
+                    >
+                        Clear Filter
+                    </button>
+                </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                    {metrics.map((service) => (
+                    {filteredMetrics.map((service) => (
                         <div
                             key={service.serviceName}
                             onClick={() => handleServiceClick(service.serviceName)}
@@ -199,6 +415,8 @@ export default function ApmDashboard() {
                     ))}
                 </div>
             )}
+
+
         </div>
     );
 }

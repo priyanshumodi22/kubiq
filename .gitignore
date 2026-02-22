@@ -40,3 +40,21 @@ coverage/
 .cache/
 temp/
 tmp/
+
+
+backend/test-mongo-fix.js
+
+# Dummy Billing Service
+dummy-billing-service/
+
+# Dummy API Gateway
+dummy-api-gateway/
+
+# Dummy Auth Service
+auth-service/
+
+# Dummy stripe payment gateway
+stripe-payment-gateway/
+
+
+APM_INSTRUMENTATION_GUIDE.md

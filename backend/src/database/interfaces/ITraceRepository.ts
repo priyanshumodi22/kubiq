@@ -20,6 +20,13 @@ export interface IServiceMetrics {
   p95DurationMs: number;
 }
 
+export interface IServiceDependency {
+  source: string;
+  target: string;
+  callCount: number;
+  errorCount: number;
+}
+
 export interface ITraceRepository {
   /**
    * Initializes the repository (e.g., connects to database, creates tables)
@@ -42,7 +49,17 @@ export interface ITraceRepository {
   getTraceDetails(traceId: string): Promise<ISpan[]>;
 
   /**
+   * Identifies dependent service calls and their frequencies to build a topology map
+   */
+  getServiceDependencies(timeRangeMs: number): Promise<IServiceDependency[]>;
+
+  /**
    * Retrieves the most recent trace ID for a given service to enable 1-click drilldowns
    */
   getRecentTraceIdForService(serviceName: string): Promise<string | null>;
+
+  /**
+   * Retrieves the most recent trace ID for a given edge (source to target service dependency)
+   */
+  getRecentTraceIdForEdge(source: string, target: string): Promise<string | null>;
 }

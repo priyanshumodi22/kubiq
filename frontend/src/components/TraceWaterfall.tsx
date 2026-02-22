@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ISpan } from '../hooks/useTrace';
 import { Clock, Server } from 'lucide-react';
+import { SpanDetailsSidebar } from './SpanDetailsSidebar';
 
 interface TraceWaterfallProps {
     spans: ISpan[];
@@ -12,6 +13,8 @@ interface SpanNode extends ISpan {
 }
 
 export default function TraceWaterfall({ spans }: TraceWaterfallProps) {
+    const [selectedSpan, setSelectedSpan] = useState<ISpan | null>(null);
+
     // 1. Build the Tree
     const { rootSpans, minStartTime, totalDurationMs } = useMemo(() => {
         if (!spans || spans.length === 0) {
@@ -79,7 +82,10 @@ export default function TraceWaterfall({ spans }: TraceWaterfallProps) {
 
         return (
             <div key={node.spanId} className="flex flex-col mb-1 group">
-                <div className="flex items-center text-sm py-1 hover:bg-white/5 rounded px-2 transition-colors relative">
+                <div
+                    onClick={() => setSelectedSpan(node)}
+                    className={`flex items-center text-sm py-1 rounded px-2 transition-colors relative cursor-pointer ${selectedSpan?.spanId === node.spanId ? 'bg-primary/20 border border-primary/30' : 'hover:bg-white/5 border border-transparent'}`}
+                >
 
                     {/* Left Column: Span Metadata (Name & Service) */}
                     <div className="w-1/3 flex-shrink-0 flex items-center pr-4 overflow-hidden" style={{ paddingLeft: `${node.depth * 16}px` }}>
@@ -153,6 +159,11 @@ export default function TraceWaterfall({ spans }: TraceWaterfallProps) {
                     </div>
                 </div>
             </div>
+
+            <SpanDetailsSidebar
+                span={selectedSpan}
+                onClose={() => setSelectedSpan(null)}
+            />
         </div>
     );
 }

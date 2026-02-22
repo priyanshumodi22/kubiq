@@ -99,11 +99,99 @@ export class MongoTraceRepository implements ITraceRepository {
         return spans as unknown as ISpan[];
     }
 
+    async getServiceDependencies(timeRangeMs: number): Promise<import('../../interfaces/ITraceRepository').IServiceDependency[]> {
+        const since = new Date(Date.now() - timeRangeMs);
+
+        const pipeline = [
+            // 1. Filter to recent traffic
+            { $match: { timestamp: { $gte: since } } },
+
+            // 2. Perform a self-join to find the parent span for each child span
+            {
+                $lookup: {
+                    from: 'apmspans',
+                    localField: 'parentSpanId',
+                    foreignField: 'spanId',
+                    as: 'parentSpan'
+                }
+            },
+
+            // 3. Unwind the joined array so each child has exactly one parent object
+            { $unwind: '$parentSpan' },
+
+            // 4. Filter out self-calls (internal functions) so we only get network hops between different services
+            {
+                $match: {
+                    $expr: { $ne: ['$serviceName', '$parentSpan.serviceName'] }
+                }
+            },
+
+            // 5. Group by Caller (Parent) -> Callee (Child) and count the frequency and errors
+            {
+                $group: {
+                    _id: {
+                        source: '$parentSpan.serviceName',
+                        target: '$serviceName'
+                    },
+                    callCount: { $sum: 1 },
+                    // OpenTelemetry statusCode === 2 means Error
+                    errorCount: {
+                        $sum: { $cond: [{ $eq: ['$statusCode', 2] }, 1, 0] }
+                    }
+                }
+            },
+
+            // 6. Project into the IServiceDependency structure
+            {
+                $project: {
+                    _id: 0,
+                    source: '$_id.source',
+                    target: '$_id.target',
+                    callCount: 1,
+                    errorCount: 1
+                }
+            }
+        ];
+
+        const results = await ApmSpanModel.aggregate(pipeline);
+        return results;
+    }
+
     async getRecentTraceIdForService(serviceName: string): Promise<string | null> {
-        const span = await ApmSpanModel.findOne({ serviceName })
-            .sort({ timestamp: -1 }) // Get the most recent span recorded
+        const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+
+        const recentSpan = await ApmSpanModel.findOne({
+            serviceName: serviceName,
+            timestamp: { $gte: twelveHoursAgo }
+        })
+            .sort({ timestamp: -1 })
             .select('traceId')
-            .lean();
-        return span ? (span as any).traceId : null;
+            .lean()
+            .exec();
+
+        return recentSpan ? recentSpan.traceId : null;
+    }
+
+    async getRecentTraceIdForEdge(source: string, target: string): Promise<string | null> {
+        const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+
+        const result = await ApmSpanModel.aggregate([
+            { $match: { serviceName: target, timestamp: { $gte: twelveHoursAgo } } },
+            {
+                $lookup: {
+                    from: 'apmspans',
+                    localField: 'parentSpanId',
+                    foreignField: 'spanId',
+                    as: 'parentSpan'
+                }
+            },
+            { $unwind: '$parentSpan' },
+            { $match: { 'parentSpan.serviceName': source } },
+            { $sort: { timestamp: -1 } },
+            { $limit: 1 },
+            { $project: { traceId: 1 } }
+        ]);
+
+        return result.length > 0 ? result[0].traceId : null;
     }
 }

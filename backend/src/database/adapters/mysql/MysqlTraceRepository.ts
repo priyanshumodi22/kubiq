@@ -145,15 +145,66 @@ export class MysqlTraceRepository implements ITraceRepository {
         }));
     }
 
-    async getRecentTraceIdForService(serviceName: string): Promise<string | null> {
+    async getServiceDependencies(timeRangeMs: number): Promise<import('../../interfaces/ITraceRepository').IServiceDependency[]> {
+        const since = new Date(Date.now() - timeRangeMs);
         const query = `
-      SELECT trace_id FROM apm_spans 
-      WHERE service_name = ? 
-      ORDER BY timestamp DESC 
-      LIMIT 1
-    `;
+            SELECT 
+                p.service_name AS source, 
+                c.service_name AS target, 
+                COUNT(*) AS callCount,
+                SUM(CASE WHEN c.status_code = 2 THEN 1 ELSE 0 END) AS errorCount
+            FROM apm_spans c
+            JOIN apm_spans p ON c.parent_span_id = p.span_id
+            WHERE c.service_name != p.service_name
+            AND c.timestamp >= ?
+            GROUP BY p.service_name, c.service_name
+        `;
 
-        const [rows] = await this.pool.query<RowDataPacket[]>(query, [serviceName]);
+        const [rows] = await this.pool.query<RowDataPacket[]>(query, [since]);
+
+        return Array.isArray(rows)
+            ? rows.map((row: any) => ({
+                source: row.source,
+                target: row.target,
+                callCount: Number(row.callCount),
+                errorCount: Number(row.errorCount)
+            }))
+            : [];
+    }
+
+    async getRecentTraceIdForService(serviceName: string): Promise<string | null> {
+        const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+
+        const query = `
+            SELECT trace_id 
+            FROM apm_spans 
+            WHERE service_name = ? 
+            AND timestamp >= ?
+            ORDER BY timestamp DESC
+            LIMIT 1
+        `;
+
+        const [rows] = await this.pool.query<RowDataPacket[]>(query, [serviceName, twelveHoursAgo]);
+
+        return rows.length > 0 ? rows[0].trace_id : null;
+    }
+
+    async getRecentTraceIdForEdge(source: string, target: string): Promise<string | null> {
+        const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+
+        const query = `
+            SELECT c.trace_id 
+            FROM apm_spans c
+            JOIN apm_spans p ON c.parent_span_id = p.span_id
+            WHERE c.service_name = ? 
+            AND p.service_name = ?
+            AND c.timestamp >= ?
+            ORDER BY c.timestamp DESC
+            LIMIT 1
+        `;
+
+        const [rows] = await this.pool.query<RowDataPacket[]>(query, [target, source, twelveHoursAgo]);
+
         return rows.length > 0 ? rows[0].trace_id : null;
     }
 }

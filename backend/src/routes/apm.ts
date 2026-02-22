@@ -156,6 +156,29 @@ apmAnalyticsRouter.get('/services/:serviceName/recent-trace', async (req: Reques
 });
 
 /**
+ * GET /api/apm/edges/:source/:target/recent-trace
+ * Retrieve the most recent trace ID that traverses a specific service-to-service edge.
+ */
+apmAnalyticsRouter.get('/edges/:source/:target/recent-trace', async (req: Request, res: Response) => {
+    try {
+        const source = req.params.source as string;
+        const target = req.params.target as string;
+        const traceRepository = await DatabaseFactory.getTraceRepository();
+        const traceId = await traceRepository.getRecentTraceIdForEdge(source, target);
+
+        if (!traceId) {
+            res.status(404).json({ error: 'No recent traces found for this edge' });
+            return;
+        }
+
+        res.json({ traceId });
+    } catch (error) {
+        console.error(`Failed to get recent trace for edge ${req.params.source}->${req.params.target}:`, error);
+        res.status(500).json({ error: 'Failed to retrieve recent trace for edge.' });
+    }
+});
+
+/**
  * GET /api/apm/traces/:traceId
  * Retrieve the full waterfall of spans for a specific request.
  */
@@ -178,5 +201,23 @@ apmAnalyticsRouter.get('/traces/:traceId', async (req: Request, res: Response) =
     } catch (error) {
         console.error(`Failed to get trace ${req.params.traceId}:`, error);
         res.status(500).json({ error: 'Failed to retrieve trace data.' });
+    }
+});
+
+/**
+ * GET /api/apm/service-map
+ * Retrieves aggregated service dependencies based on parent-child span relationships.
+ * Query Params: ?timeRange=3600000 (default 1 hour)
+ */
+apmAnalyticsRouter.get('/service-map', async (req: Request, res: Response) => {
+    try {
+        const timeRangeMs = parseInt(req.query.timeRange as string) || 60 * 60 * 1000;
+        const traceRepository = await DatabaseFactory.getTraceRepository();
+
+        const dependencies = await traceRepository.getServiceDependencies(timeRangeMs);
+        res.json(dependencies);
+    } catch (error) {
+        console.error('Failed to get service dependencies:', error);
+        res.status(500).json({ error: 'Failed to retrieve service map data.' });
     }
 });
