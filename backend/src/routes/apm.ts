@@ -106,6 +106,61 @@ apmIngestRouter.post('/v1/traces', async (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/apm/v1/zipkin
+ * Dedicated Zipkin v2 JSON endpoint for Java Agents that cannot send OTLP/HTTP JSON
+ */
+apmIngestRouter.post('/v1/zipkin', async (req: Request, res: Response) => {
+    try {
+        const rawPayload = req.body;
+        console.log('--- Incoming Zipkin v2 Payload ---');
+
+        if (!Array.isArray(rawPayload)) {
+            res.status(400).json({ error: 'Zipkin payload must be a JSON array' });
+            return;
+        }
+
+        const spans: ISpan[] = rawPayload.map((zSpan: any) => {
+            const startNano = Number(zSpan.timestamp || 0) * 1000;
+            const durationMs = Number(zSpan.duration || 0) / 1000;
+            const endNano = startNano + (Number(zSpan.duration || 0) * 1000);
+
+            // Create flat attribute map from Zipkin tags
+            const attributes: Record<string, any> = { ...zSpan.tags };
+
+            return {
+                traceId: zSpan.traceId,
+                spanId: zSpan.id,
+                parentSpanId: zSpan.parentId || null,
+                serviceName: zSpan.localEndpoint?.serviceName || 'unknown-java-service',
+                name: zSpan.name,
+                kind: zSpan.kind || 'SPAN_KIND_INTERNAL',
+                startTimeUnixNano: startNano,
+                endTimeUnixNano: endNano,
+                durationMs,
+                // Zipkin conventions often use error tag to signify exceptions
+                statusCode: zSpan.tags?.error ? 2 : 0,
+                attributes
+            };
+        });
+
+        console.log(`Parsed ${spans.length} Zipkin spans from payload`);
+
+        if (spans.length === 0) {
+            res.status(202).json({ message: 'No spans found' });
+            return;
+        }
+
+        const traceRepository = await DatabaseFactory.getTraceRepository();
+        await traceRepository.insertSpans(spans);
+
+        res.status(202).end();
+    } catch (error) {
+        console.error('Failed to ingest Zipkin traces:', error);
+        res.status(500).json({ error: 'Internal Server Error processing zipkin traces' });
+    }
+});
+
+/**
  * GET /api/apm/services
  * Retrieve aggregated metrics (RPS, Latency, Errors) for all monitored services.
  */
