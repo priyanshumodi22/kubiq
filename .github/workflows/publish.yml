@@ -55,6 +55,6 @@ jobs:
       - name: Publish to NPM with Provenance
         working-directory: ./kubiq-apm
         run: npm publish --provenance --access public
-        env:
-          # You MUST set this environment variable for the action to securely auth with NPM
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # env:
+        #   # You MUST set this environment variable for the action to securely auth with NPM
+        #   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
