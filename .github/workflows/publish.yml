@@ -34,7 +34,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          registry-url: 'https://registry.npmjs.org'
 
       # Go into the kubiq-apm sub-directory where the package lives
       - name: Install dependencies
@@ -55,7 +54,3 @@ jobs:
       - name: Publish to NPM with Provenance
         working-directory: ./kubiq-apm
         run: npm publish --provenance --access public
-        env:
-          # You MUST set this environment variable for the action to securely auth with NPM
-          # NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
