@@ -5,7 +5,11 @@ const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http')
 // This script is meant to be run via `--require kubiq-apm/auto`
 console.log('[kubiq-apm] Initializing Auto-Instrumentation...');
 
-const exporterUrl = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:3001/api/apm/v1/traces';
+// Apply conservative batch limits to prevent reverse proxy buffer truncations (Z_BUF_ERROR)
+process.env.OTEL_BSP_MAX_EXPORT_BATCH_SIZE = process.env.OTEL_BSP_MAX_EXPORT_BATCH_SIZE || '50';
+process.env.OTEL_BSP_SCHEDULE_DELAY = process.env.OTEL_BSP_SCHEDULE_DELAY || '2000';
+
+const exporterUrl = process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || 'http://localhost:3001/api/apm/v1/traces';
 const serviceName = process.env.OTEL_SERVICE_NAME || 'unknown-node-service';
 
 const traceExporter = new OTLPTraceExporter({
