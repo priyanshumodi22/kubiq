@@ -114,15 +114,19 @@ export default function TraceWaterfall({ spans }: TraceWaterfallProps) {
                         />
 
                         {/* 
-                          * Duration Text placed OUTSIDE the colored bar for always-on visibility.
-                          * Position it immediately to the right of the bar, unless it exceeds 80% width, 
-                          * then safely tuck it inside or to the left.
+                          * Duration Text Placement
+                          * If the bar is long enough (15% or more), we safely place the text INSIDE the bar with a subtle background so it's perfectly readable.
+                          * If the bar is short, we place it to the right of the bar. If it's short AND near the right edge, we place it to the left.
                           */}
                         <span
-                            className={`absolute text-gray-300 font-mono text-xs z-10 px-1.5`}
+                            className={`absolute font-mono text-xs z-10 px-1 py-0.5 rounded ${widthPercent >= 15 ? 'text-white bg-black/20' : 'text-gray-300'}`}
                             style={{
-                                left: leftPercent + widthPercent > 85 ? 'auto' : `calc(${leftPercent + widthPercent}% + 4px)`,
-                                right: leftPercent + widthPercent > 85 ? `calc(${100 - leftPercent}% + 4px)` : 'auto',
+                                left: widthPercent >= 15
+                                    ? `calc(${leftPercent}% + 8px)`
+                                    : (leftPercent + widthPercent > 85 ? 'auto' : `calc(${leftPercent + widthPercent}% + 6px)`),
+                                right: widthPercent >= 15
+                                    ? 'auto'
+                                    : (leftPercent + widthPercent > 85 ? `calc(${100 - leftPercent}% + 6px)` : 'auto'),
                             }}
                         >
                             {node.durationMs.toFixed(2)}ms

@@ -102,8 +102,8 @@ app.use(compression()); // Enable gzip compression
 app.use(morgan('combined', {
   skip: (req) => req.url === '/auth/health/ready' || req.originalUrl === '/auth/health/ready'
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 import { publicStatusRouter } from './routes/publicStatus';
 import { notificationsRouter } from './routes/notifications';

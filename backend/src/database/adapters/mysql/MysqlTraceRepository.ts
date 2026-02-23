@@ -174,22 +174,33 @@ export class MysqlTraceRepository implements ITraceRepository {
 
     async getRecentTraceIdForService(serviceName: string): Promise<string | null> {
         const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
-
-        const query = `
-            SELECT trace_id 
-            FROM apm_spans 
-            WHERE service_name = ? 
-            AND timestamp >= ?
-            ORDER BY timestamp DESC
-            LIMIT 1
-        `;
-
-        const [rows] = await this.pool.query<RowDataPacket[]>(query, [serviceName, twelveHoursAgo]);
-
+        const [rows] = await this.pool.query<RowDataPacket[]>(
+            `SELECT trace_id FROM apm_spans 
+             WHERE service_name = ? 
+             ORDER BY start_time_unix_nano DESC LIMIT 1`,
+            [serviceName]
+        );
         return rows.length > 0 ? rows[0].trace_id : null;
     }
 
-    async getRecentTraceIdForEdge(source: string, target: string): Promise<string | null> {
+    async getRecentTraces(serviceName: string, limit: number = 50): Promise<any[]> {
+        // Group by trace_id so we get traces involving this service even if not the root.
+        const [rows] = await this.pool.query<RowDataPacket[]>(
+            `SELECT trace_id as traceId, 
+                    MAX(span_name) as name, 
+                    MAX(start_time_unix_nano) as startTimeUnixNano, 
+                    MAX(duration_ms) as durationMs, 
+                    MAX(status_code) as statusCode
+             FROM apm_spans 
+             WHERE service_name = ?
+             GROUP BY trace_id
+             ORDER BY startTimeUnixNano DESC LIMIT ?`,
+            [serviceName, limit]
+        );
+        return rows;
+    }
+
+    async getRecentTraceIdForEdge(sourceName: string, targetName: string): Promise<string | null> {
         const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
 
         const query = `
@@ -203,7 +214,7 @@ export class MysqlTraceRepository implements ITraceRepository {
             LIMIT 1
         `;
 
-        const [rows] = await this.pool.query<RowDataPacket[]>(query, [target, source, twelveHoursAgo]);
+        const [rows] = await this.pool.query<RowDataPacket[]>(query, [targetName, sourceName, twelveHoursAgo]);
 
         return rows.length > 0 ? rows[0].trace_id : null;
     }

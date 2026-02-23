@@ -55,6 +55,3 @@ auth-service/
 
 # Dummy stripe payment gateway
 stripe-payment-gateway/
-
-
-APM_INSTRUMENTATION_GUIDE.md

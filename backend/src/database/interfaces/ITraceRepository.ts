@@ -20,6 +20,14 @@ export interface IServiceMetrics {
   p95DurationMs: number;
 }
 
+export interface ITraceSummary {
+  traceId: string;
+  name: string;
+  startTimeUnixNano: number;
+  durationMs: number;
+  statusCode: number;
+}
+
 export interface IServiceDependency {
   source: string;
   target: string;
@@ -59,7 +67,12 @@ export interface ITraceRepository {
   getRecentTraceIdForService(serviceName: string): Promise<string | null>;
 
   /**
-   * Retrieves the most recent trace ID for a given edge (source to target service dependency)
+   * Retrieves a list of the most recent traces for a given service to populate UI dropdowns
    */
-  getRecentTraceIdForEdge(source: string, target: string): Promise<string | null>;
+  getRecentTraces(serviceName: string, limit?: number): Promise<ITraceSummary[]>;
+
+  /**
+   * Retrieves the most recent trace ID that traverses a specific edge (source -> target)
+   */
+  getRecentTraceIdForEdge(sourceName: string, targetName: string): Promise<string | null>;
 }

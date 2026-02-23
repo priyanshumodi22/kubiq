@@ -211,6 +211,27 @@ apmAnalyticsRouter.get('/services/:serviceName/recent-trace', async (req: Reques
 });
 
 /**
+ * GET /api/apm/services/:serviceName/traces
+ * Retrieve a list of recent traces for a specific service to populate the UI dropdown.
+ */
+apmAnalyticsRouter.get('/services/:serviceName/traces', async (req: Request, res: Response) => {
+    try {
+        const param = req.params.serviceName;
+        const serviceName = Array.isArray(param) ? param[0] : param;
+        const limitParam = req.query.limit;
+        const limit = limitParam ? parseInt(limitParam as string, 10) : 50;
+
+        const traceRepository = await DatabaseFactory.getTraceRepository();
+        const traces = await traceRepository.getRecentTraces(serviceName, limit);
+
+        res.json(traces);
+    } catch (error) {
+        console.error(`Failed to get recent traces for ${req.params.serviceName}:`, error);
+        res.status(500).json({ error: 'Failed to retrieve recent traces list.' });
+    }
+});
+
+/**
  * GET /api/apm/edges/:source/:target/recent-trace
  * Retrieve the most recent trace ID that traverses a specific service-to-service edge.
  */

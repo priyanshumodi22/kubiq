@@ -158,18 +158,35 @@ export class MongoTraceRepository implements ITraceRepository {
     }
 
     async getRecentTraceIdForService(serviceName: string): Promise<string | null> {
-        const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
-
-        const recentSpan = await ApmSpanModel.findOne({
-            serviceName: serviceName,
-            timestamp: { $gte: twelveHoursAgo }
-        })
-            .sort({ timestamp: -1 })
+        const span = await ApmSpanModel.findOne({ serviceName })
+            .sort({ startTimeUnixNano: -1 })
             .select('traceId')
-            .lean()
-            .exec();
+            .lean();
 
-        return recentSpan ? recentSpan.traceId : null;
+        return span ? (span as any).traceId : null;
+    }
+
+    async getRecentTraces(serviceName: string, limit: number = 50): Promise<any[]> {
+        // Group by traceId so we can show traces that involve this service, 
+        // even if this service wasn't the root span of the entire distributed trace.
+        const traces = await ApmSpanModel.aggregate([
+            { $match: { serviceName } },
+            { $sort: { startTimeUnixNano: -1 } },
+            {
+                $group: {
+                    _id: "$traceId",
+                    traceId: { $first: "$traceId" },
+                    name: { $first: "$name" },
+                    startTimeUnixNano: { $first: "$startTimeUnixNano" },
+                    durationMs: { $first: "$durationMs" },
+                    statusCode: { $first: "$statusCode" }
+                }
+            },
+            { $sort: { startTimeUnixNano: -1 } },
+            { $limit: limit }
+        ]);
+
+        return traces as any[];
     }
 
     async getRecentTraceIdForEdge(source: string, target: string): Promise<string | null> {
