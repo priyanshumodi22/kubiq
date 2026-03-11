@@ -40,7 +40,7 @@
 
 *   **📈 Advanced Analytics**
     *   **Interactive Dashboard:** Beautiful, animated gauges and charts.
-    *   **AI Storage Prediction:** Intelligent forecasting tells you exactly how many days until your disk is full.
+    *   **Predictive Storage Analytics:** Intelligent forecasting tells you exactly how many days until your disk is full.
 
 *   **💾 Multi-Database Support**
     *   **JSON (Default):** Zero-config, file-based persistence. Perfect for single nodes.
