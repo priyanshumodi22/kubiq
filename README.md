@@ -42,6 +42,11 @@
     *   **Interactive Dashboard:** Beautiful, animated gauges and charts.
     *   **Predictive Storage Analytics:** Intelligent forecasting tells you exactly how many days until your disk is full.
 
+*   **🔗 Distributed APM & Tracing**
+    *   **Auto-Instrumentation:** Zero-config NPM package (`kubiq-apm`) for Node.js apps.
+    *   **Topology Map:** Auto-generated visual map of service dependencies and network architectures.
+    *   **Trace Inspector:** Granular tracing showing Throughput (RPM), P95 Latency, Error Rates, and bottlenecks.
+
 *   **💾 Multi-Database Support**
     *   **JSON (Default):** Zero-config, file-based persistence. Perfect for single nodes.
     *   **MySQL / MongoDB:** Switch to enterprise-grade databases for high-availability setups.
