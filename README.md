@@ -68,19 +68,34 @@
 
 ## 🚀 Quick Start
 
-### Docker (Recommended)
-Get up and running in seconds:
+### ⚙️ 1. Setup Environment (.env)
+Before running kubiq, you must provide its configuration. Create a `.env` file in your current directory:
+
+```env
+PORT=3000
+NODE_ENV=production
+# Add your domain if using HTTPS, otherwise leave as is
+FRONTEND_DNS=http://localhost:3000
+CORS_ORIGIN=http://localhost:3000
+BACKEND_DNS=http://localhost:3000
+DB_TYPE=json
+```
+*(You can view/download the full advanced `.env.example` template at [kubiq.priyanshumodi.in](https://kubiq.priyanshumodi.in/view/env))*
+
+### 🐳 2. Docker Run
+Run the container using the `.env` file:
 
 ```bash
 docker run -d \
   --name kubiq \
   -p 3000:3000 \
   -v kubiq-data:/app/data \
+  --env-file .env \
   --restart unless-stopped \
   priyanshumodi22/kubiq:latest
 ```
 
-### 🐙 Docker Compose
+### 🐙 3. Docker Compose
 Create a `docker-compose.yml` file:
 
 ```yaml
@@ -94,16 +109,12 @@ services:
       - "3000:3000"
     volumes:
       - kubiq-data:/app/data
-    environment:
-      - PORT=3000
-      - NODE_ENV=production
-      # - DB_TYPE=mysql
-      # - DB_HOST=localhost
-      # - DB_USER=root
-      # - DB_PASS=password
+    env_file:
+      - .env
 
 volumes:
   kubiq-data:
+```
 ```
 
 Run it:
