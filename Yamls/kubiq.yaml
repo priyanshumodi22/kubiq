@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: kubiq
-          image: haxterpm/kubiq:latest
+          image: priyanshumodi22/kubiq:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3001
