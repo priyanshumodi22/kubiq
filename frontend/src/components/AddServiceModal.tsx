@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Server, Link as LinkIcon, AlertCircle, Database, Activity } from 'lucide-react';
+import { X, Server, Link as LinkIcon, AlertCircle, Database, Activity, ChevronDown } from 'lucide-react';
 import { apiClient } from '../services/api';
 
 interface AddServiceModalProps {
@@ -15,13 +15,28 @@ type MonitorType = 'http' | 'tcp' | 'mysql' | 'mongodb';
 export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalProps) {
   const [name, setName] = useState('');
   const [type, setType] = useState<MonitorType>('http');
-  const [endpoint, setEndpoint] = useState(''); // Holds URL for HTTP/DB
-  // TCP Specific
+  const [endpoint, setEndpoint] = useState('');
   const [hostname, setHostname] = useState('');
   const [port, setPort] = useState('');
-  
+  const [interval, setInterval] = useState<number>(30000);
+  const [isIntervalOpen, setIsIntervalOpen] = useState(false);
+  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownPanelRef = useRef<HTMLDivElement>(null);
+
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      const inTrigger = triggerRef.current?.contains(target);
+      const inPanel  = dropdownPanelRef.current?.contains(target);
+      if (!inTrigger && !inPanel) setIsIntervalOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -65,7 +80,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
           }
       }
 
-      await apiClient.createService(name.trim(), finalEndpoint, type);
+      await apiClient.createService(name.trim(), finalEndpoint, type, interval);
 
       // Reset form and close
       resetForm();
@@ -84,6 +99,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
     setHostname('');
     setPort('');
     setType('http');
+    setInterval(30000);
     setError('');
   };
 
@@ -223,6 +239,66 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
                 </div>
             )}
           </div>
+
+          {/* Check Interval — Custom Dropdown (portal-rendered to escape overflow-hidden) */}
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-400 ml-1">Check Interval</label>
+            <div className="relative">
+              <button
+                ref={triggerRef}
+                type="button"
+                onClick={() => {
+                  if (!isIntervalOpen && triggerRef.current) {
+                    const r = triggerRef.current.getBoundingClientRect();
+                    setDropdownRect({ top: r.bottom + 4, left: r.left, width: r.width });
+                  }
+                  setIsIntervalOpen(o => !o);
+                }}
+                disabled={isSubmitting}
+                className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white flex items-center justify-between hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all disabled:opacity-50"
+              >
+                <span className="text-sm">
+                  {[
+                    { value: 10000,  label: 'Every 10 seconds' },
+                    { value: 30000,  label: 'Every 30 seconds (default)' },
+                    { value: 60000,  label: 'Every 1 minute' },
+                    { value: 300000, label: 'Every 5 minutes' },
+                    { value: 600000, label: 'Every 10 minutes' },
+                  ].find(o => o.value === interval)?.label ?? 'Every 30 seconds (default)'}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isIntervalOpen ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+          </div>
+
+          {/* Interval dropdown panel — rendered via portal so it escapes modal overflow */}
+          {isIntervalOpen && dropdownRect && createPortal(
+            <div
+              ref={dropdownPanelRef}
+              style={{ position: 'fixed', top: dropdownRect.top, left: dropdownRect.left, width: dropdownRect.width, zIndex: 9999 }}
+              className="bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl overflow-hidden"
+            >
+              {[
+                { value: 10000,  label: 'Every 10 seconds' },
+                { value: 30000,  label: 'Every 30 seconds (default)' },
+                { value: 60000,  label: 'Every 1 minute' },
+                { value: 300000, label: 'Every 5 minutes' },
+                { value: 600000, label: 'Every 10 minutes' },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => { setInterval(opt.value); setIsIntervalOpen(false); }}
+                  className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-primary/20 ${
+                    interval === opt.value ? 'text-primary font-medium' : 'text-gray-300'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>,
+            document.body
+          )}
 
           {/* Actions */}
           <div className="flex gap-3 pt-2">

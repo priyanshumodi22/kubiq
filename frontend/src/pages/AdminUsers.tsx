@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { apiClient } from '../services/api';
 import Header from '../components/Header';
@@ -30,6 +31,10 @@ export default function AdminUsers() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Role dropdown state
+  const [openDropdownUserId, setOpenDropdownUserId] = useState<string | null>(null);
+  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
 
   useEffect(() => {
     loadUsers();
@@ -177,20 +182,27 @@ export default function AdminUsers() {
                                     <td className="p-4">
                                         <div className="flex items-center justify-center gap-2">
                                             <Shield className={`w-4 h-4 ${user.role === 'kubiq-admin' ? 'text-yellow-500' : 'text-blue-500'}`} />
-                                            <div className="relative">
-                                                <select 
-                                                    value={user.role}
-                                                    onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                                                    disabled={String(user.id) === String(currentUser?.id)}
-                                                    className={`bg-black/20 border border-gray-700 rounded pl-3 pr-8 py-1.5 text-sm text-text outline-none appearance-none transition-colors ${
-                                                        String(user.id) === String(currentUser?.id) ? 'opacity-50 cursor-not-allowed' : 'focus:border-primary cursor-pointer hover:bg-gray-800'
-                                                    }`}
-                                                >
-                                                    <option value="kubiq-viewer">Viewer</option>
-                                                    <option value="kubiq-admin">Admin</option>
-                                                </select>
-                                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-                                            </div>
+                                            <button
+                                                onClick={(e) => {
+                                                    if (String(user.id) === String(currentUser?.id)) return;
+                                                    if (openDropdownUserId === user.id) {
+                                                        setOpenDropdownUserId(null);
+                                                    } else {
+                                                        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                                        setDropdownRect({ top: r.bottom + 4, left: r.left, width: r.width });
+                                                        setOpenDropdownUserId(user.id);
+                                                    }
+                                                }}
+                                                disabled={String(user.id) === String(currentUser?.id)}
+                                                className={`flex items-center gap-2 px-3 py-1.5 bg-black/20 border border-gray-700 rounded-lg text-sm text-text transition-colors ${
+                                                    String(user.id) === String(currentUser?.id)
+                                                        ? 'opacity-50 cursor-not-allowed'
+                                                        : 'hover:border-primary/50 cursor-pointer'
+                                                }`}
+                                            >
+                                                <span>{user.role === 'kubiq-admin' ? 'Admin' : 'Viewer'}</span>
+                                                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${openDropdownUserId === user.id ? 'rotate-180' : ''}`} />
+                                            </button>
                                         </div>
                                     </td>
                                     <td className="p-4 text-sm text-text-dim text-center">
@@ -235,6 +247,40 @@ export default function AdminUsers() {
                 </table>
             </div>
         </div>
+
+        {/* Role dropdown portal */}
+        {openDropdownUserId && dropdownRect && createPortal(
+          <>
+            {/* Transparent overlay — click anywhere outside to close */}
+            <div className="fixed inset-0 z-[9998]" onClick={() => setOpenDropdownUserId(null)} />
+            {/* Dropdown panel */}
+            <div
+              style={{ position: 'fixed', top: dropdownRect.top, left: dropdownRect.left, width: dropdownRect.width, zIndex: 9999 }}
+              className="bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl overflow-hidden"
+            >
+              {[
+                { value: 'kubiq-viewer', label: 'Viewer' },
+                { value: 'kubiq-admin',  label: 'Admin'  },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    handleRoleChange(openDropdownUserId, opt.value);
+                    setOpenDropdownUserId(null);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-primary/20 ${
+                    users.find(u => u.id === openDropdownUserId)?.role === opt.value
+                      ? 'text-primary font-medium' : 'text-gray-300'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </>,
+          document.body
+        )}
 
         <ConfirmDialog
             isOpen={confirmOpen}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Activity, Clock, AlertTriangle, Search, Server, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Activity, Clock, AlertTriangle, Search, Server, X, ChevronDown } from 'lucide-react';
 import { useApm } from '../hooks/useApm';
 import { useTrace } from '../hooks/useTrace';
 import { useServiceMap } from '../hooks/useServiceMap';
@@ -23,31 +24,41 @@ export default function ApmDashboard() {
     const [isFetchingTraces, setIsFetchingTraces] = useState(false);
 
     const sidebarRef = useRef<HTMLDivElement>(null);
+    const timeRangeTriggerRef = useRef<HTMLButtonElement>(null);
+    const timeRangePanelRef  = useRef<HTMLDivElement>(null);
+    const [isTimeRangeOpen, setIsTimeRangeOpen] = useState(false);
+    const [timeRangeRect, setTimeRangeRect] = useState<{ top: number; left: number; width: number } | null>(null);
 
     const filteredMetrics = metrics.filter(m =>
         m.serviceName.toLowerCase().includes(serviceFilter.toLowerCase().trim())
     );
 
-    // Close the sidebar if the user clicks anywhere outside of it
+    // Close sidebar on outside click
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
-            // Check if the click occurred outside the sidebar component
             if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
                 setSelectedMapService(null);
             }
         }
-
-        // Only attach listener if sidebar is actively open
         if (selectedMapService) {
             document.addEventListener('mousedown', handleClickOutside);
         } else {
             document.removeEventListener('mousedown', handleClickOutside);
         }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
+        return () => { document.removeEventListener('mousedown', handleClickOutside); };
     }, [selectedMapService]);
+
+    // Close time range dropdown on outside click
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            const t = e.target as Node;
+            if (!timeRangeTriggerRef.current?.contains(t) && !timeRangePanelRef.current?.contains(t)) {
+                setIsTimeRangeOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
 
     // Fetch map data when switching to map view
     useEffect(() => {
@@ -140,22 +151,62 @@ export default function ApmDashboard() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <select
-                        value={timeRange}
-                        onChange={(e) => {
-                            const newRange = parseInt(e.target.value);
-                            setTimeRange(newRange);
-                            refresh(newRange);
-                            if (activeView === 'map') {
-                                fetchServiceMap(newRange);
-                            }
-                        }}
-                        className="bg-bg-elevated border border-gray-700 text-text text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
-                    >
-                        <option value={15 * 60 * 1000}>Last 15 Minutes</option>
-                        <option value={60 * 60 * 1000}>Last 1 Hour</option>
-                        <option value={24 * 60 * 60 * 1000}>Last 24 Hours</option>
-                    </select>
+                    {/* Time Range — Custom Portal Dropdown */}
+                    <div className="relative">
+                        <button
+                            ref={timeRangeTriggerRef}
+                            type="button"
+                            onClick={() => {
+                                if (!isTimeRangeOpen && timeRangeTriggerRef.current) {
+                                    const r = timeRangeTriggerRef.current.getBoundingClientRect();
+                                    setTimeRangeRect({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 180) });
+                                }
+                                setIsTimeRangeOpen(o => !o);
+                            }}
+                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text text-sm rounded-lg flex items-center gap-2 px-3 py-2.5 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        >
+                            <span>
+                                {[
+                                    { value: 15 * 60 * 1000,       label: 'Last 15 Minutes' },
+                                    { value: 60 * 60 * 1000,       label: 'Last 1 Hour' },
+                                    { value: 24 * 60 * 60 * 1000,  label: 'Last 24 Hours' },
+                                ].find(o => o.value === timeRange)?.label ?? 'Last 1 Hour'}
+                            </span>
+                            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isTimeRangeOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                    </div>
+
+                    {isTimeRangeOpen && timeRangeRect && createPortal(
+                        <div
+                            ref={timeRangePanelRef}
+                            style={{ position: 'fixed', top: timeRangeRect.top, left: timeRangeRect.left, width: timeRangeRect.width, zIndex: 9999 }}
+                            className="bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl overflow-hidden"
+                        >
+                            {[
+                                { value: 15 * 60 * 1000,       label: 'Last 15 Minutes' },
+                                { value: 60 * 60 * 1000,       label: 'Last 1 Hour' },
+                                { value: 24 * 60 * 60 * 1000,  label: 'Last 24 Hours' },
+                            ].map(opt => (
+                                <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => {
+                                        setTimeRange(opt.value);
+                                        refresh(opt.value);
+                                        if (activeView === 'map') fetchServiceMap(opt.value);
+                                        setIsTimeRangeOpen(false);
+                                    }}
+                                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-primary/20 ${
+                                        timeRange === opt.value ? 'text-primary font-medium' : 'text-gray-300'
+                                    }`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>,
+                        document.body
+                    )}
+
                     <button
                         onClick={handleRefresh}
                         disabled={apmLoading || mapLoading}
@@ -459,7 +510,7 @@ export default function ApmDashboard() {
                             <Server className="w-12 h-12 text-primary mx-auto mb-4 opacity-50" />
                             <h3 className="text-xl font-medium text-white mb-2">No Service Data Found</h3>
                             <p className="text-gray-400 max-w-md mx-auto">
-                                We couldn't find any APM telemetry data for the selected time range. Ensure your services are sending OTLP traces to Kubiq.
+                                We couldn't find any APM telemetry data for the selected time range. Ensure your services are sending OTLP traces to kubiq.
                             </p>
                         </div>
                     ) : filteredMetrics.length === 0 ? (

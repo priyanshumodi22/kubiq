@@ -169,22 +169,24 @@ class ApiClient {
   }
 
   // Service CRUD operations (admin only)
-  async createService(name: string, endpoint: string, type: 'http' | 'tcp' | 'mysql' | 'mongodb' = 'http') {
+  async createService(name: string, endpoint: string, type: 'http' | 'tcp' | 'mysql' | 'mongodb' = 'http', interval?: number) {
     const response = await this.client.post('/api/services', {
       name,
       endpoint,
       type,
+      ...(interval !== undefined && { interval }),
     });
     return response.data;
   }
 
-  async updateService(name: string, endpoint: string, type?: 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp', ignoreSSL?: boolean, logPath?: string, logSources?: any[]) {
+  async updateService(name: string, endpoint: string, type?: 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp', ignoreSSL?: boolean, logPath?: string, logSources?: any[], interval?: number) {
     const response = await this.client.put(`/api/services/${name}`, {
       endpoint,
       type,
       ignoreSSL,
       logPath,
       logSources,
+      ...(interval !== undefined && { interval }),
     });
     return response.data;
   }

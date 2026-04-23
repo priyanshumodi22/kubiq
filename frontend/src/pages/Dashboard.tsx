@@ -302,7 +302,7 @@ export default function Dashboard() {
 
         {/* Edit Service Modal (Admin Only) */}
         {isAdmin && editService && (
-          <EditServiceModal
+        <EditServiceModal
             isOpen={!!editService}
             onClose={() => setEditService(null)}
             onSuccess={() => {
@@ -313,6 +313,7 @@ export default function Dashboard() {
             currentHeaders={editService.headers}
             currentIgnoreSSL={editService.ignoreSSL}
             currentLogPath={editService.logPath}
+            currentInterval={editService.interval}
             type={editService.type}
           />
         )}
