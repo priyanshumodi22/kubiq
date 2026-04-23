@@ -10,7 +10,8 @@ export interface ServiceConfig {
   endpoint: string;
   type?: 'http' | 'tcp' | 'icmp' | 'mysql' | 'mongodb';
   enabled?: boolean;
-  ignoreSSL?: boolean; // New
+  interval?: number;  // Per-service poll interval in ms
+  ignoreSSL?: boolean;
   logPath?: string; // Deprecated
   logSources?: LogSource[]; // New
 }
@@ -35,7 +36,8 @@ export interface ServiceStatus {
   history: HealthCheck[];
   uptime?: number;
   averageResponseTime?: number;
-  ignoreSSL?: boolean; // New
+  interval?: number;  // Per-service poll interval in ms
+  ignoreSSL?: boolean;
   sslExpiry?: string | null; // Date comes as string from JSON API
   logPath?: string;
   logSources?: LogSource[]; // New
