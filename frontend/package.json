@@ -1,6 +1,6 @@
 {
   "name": "kubiq-frontend",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Kubiq Dashboard Frontend",
   "type": "module",
   "private": true,
