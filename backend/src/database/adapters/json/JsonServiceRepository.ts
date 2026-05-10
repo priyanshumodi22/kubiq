@@ -71,7 +71,9 @@ export class JsonServiceRepository implements IServiceRepository {
       headers: config.headers,
       ignoreSSL: config.ignoreSSL,
       logPath: config.logPath,
-      logSources: config.logSources, // New
+      logSources: config.logSources,
+      interval: config.interval,
+      retries: config.retries,
       currentStatus: 'unknown',
       history: []
     };
@@ -91,6 +93,8 @@ export class JsonServiceRepository implements IServiceRepository {
     if (config.ignoreSSL !== undefined) service.ignoreSSL = config.ignoreSSL;
     if (config.logPath !== undefined) service.logPath = config.logPath;
     if (config.logSources !== undefined) service.logSources = config.logSources;
+    if (config.interval !== undefined) service.interval = config.interval;
+    if (config.retries !== undefined) service.retries = config.retries;
     
     // Note: We deliberately do NOT reset status/history here to preserve state (as fixed previously)
     
@@ -167,7 +171,9 @@ export class JsonServiceRepository implements IServiceRepository {
                   // logPath: parts[4], // Deprecated
                   logSources: parts[5] && parts[5] !== 'undefined' 
                         ? JSON.parse(Buffer.from(parts[5], 'base64').toString('utf-8')) 
-                        : undefined, // logSources (Base64 encoded)
+                        : undefined,
+                  interval: parts[6] && parts[6] !== 'undefined' ? parseInt(parts[6]) : undefined,
+                  retries: parts[7] && parts[7] !== 'undefined' ? parseInt(parts[7]) : undefined,
                   currentStatus: 'unknown',
                   history: []
              });
@@ -201,8 +207,10 @@ export class JsonServiceRepository implements IServiceRepository {
          let logPath = 'undefined'; // Deprecated, always write undefined
          // Use Base64 for logSources to avoid delimiter collision with pipe '|'
          let logSources = s.logSources ? Buffer.from(JSON.stringify(s.logSources)).toString('base64') : 'undefined';
-         // Format: name=endpoint|headers|type|ignoreSSL|logPath|logSources
-         let line = `${s.name}=${s.endpoint}|${headers}|${type}|${ignoreSSL}|${logPath}|${logSources}`;
+         let interval = s.interval !== undefined ? s.interval : 'undefined';
+         let retries = s.retries !== undefined ? s.retries : 'undefined';
+         // Format: name=endpoint|headers|type|ignoreSSL|logPath|logSources|interval|retries
+         let line = `${s.name}=${s.endpoint}|${headers}|${type}|${ignoreSSL}|${logPath}|${logSources}|${interval}|${retries}`;
          lines.push(line);
      });
      try {

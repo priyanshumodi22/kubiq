@@ -16,6 +16,7 @@ interface EditServiceModalProps {
   currentIgnoreSSL?: boolean;
   currentLogPath?: string;
   currentInterval?: number;
+  currentRetries?: number;
   type?: MonitorType;
 }
 
@@ -28,6 +29,7 @@ export function EditServiceModal({
   currentHeaders,
   currentIgnoreSSL,
   currentInterval,
+  currentRetries,
   type: initialType = 'http',
 }: EditServiceModalProps): React.ReactNode {
   const [type, setType] = useState<MonitorType>(initialType);
@@ -36,6 +38,7 @@ export function EditServiceModal({
   const [port, setPort] = useState('');
   const [ignoreSSL, setIgnoreSSL] = useState(false);
   const [interval, setInterval] = useState<number>(currentInterval ?? 30000);
+  const [retries, setRetries] = useState<number>(currentRetries ?? 3);
   const [isIntervalOpen, setIsIntervalOpen] = useState(false);
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -73,9 +76,10 @@ export function EditServiceModal({
       
       setIgnoreSSL(currentIgnoreSSL || false);
       setInterval(currentInterval ?? 30000);
+      setRetries(currentRetries ?? 3);
       setIsIntervalOpen(false);
     }
-  }, [currentEndpoint, currentHeaders, currentIgnoreSSL, currentInterval, isOpen, initialType]);
+  }, [currentEndpoint, currentHeaders, currentIgnoreSSL, currentInterval, currentRetries, isOpen, initialType]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -125,7 +129,7 @@ export function EditServiceModal({
 
       // Pass the CURRENT type state to updateService
       // Note: We deliberately do NOT pass logPath here, as logs are managed via the Logs tab now.
-      await apiClient.updateService(serviceName, finalEndpoint, type, ignoreSSL, undefined, undefined, interval);
+      await apiClient.updateService(serviceName, finalEndpoint, type, ignoreSSL, undefined, undefined, interval, retries);
 
       toast.success('Service updated successfully');
       onSuccess();
@@ -283,6 +287,19 @@ export function EditServiceModal({
                 <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isIntervalOpen ? 'rotate-180' : ''}`} />
               </button>
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+             <label className="block text-sm font-medium text-gray-400 ml-1">Retries before alerting</label>
+             <input
+                 type="number"
+                 min="1"
+                 max="10"
+                 value={retries}
+                 onChange={(e) => setRetries(parseInt(e.target.value) || 3)}
+                 className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                 disabled={isSubmitting}
+             />
           </div>
 
           {/* Interval dropdown panel — portal to escape modal overflow */}

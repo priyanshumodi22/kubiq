@@ -19,6 +19,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
   const [hostname, setHostname] = useState('');
   const [port, setPort] = useState('');
   const [interval, setInterval] = useState<number>(30000);
+  const [retries, setRetries] = useState<number>(3);
   const [isIntervalOpen, setIsIntervalOpen] = useState(false);
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -80,7 +81,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
           }
       }
 
-      await apiClient.createService(name.trim(), finalEndpoint, type, interval);
+      await apiClient.createService(name.trim(), finalEndpoint, type, interval, retries);
 
       // Reset form and close
       resetForm();
@@ -100,6 +101,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
     setPort('');
     setType('http');
     setInterval(30000);
+    setRetries(3);
     setError('');
   };
 
@@ -269,6 +271,19 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
                 <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isIntervalOpen ? 'rotate-180' : ''}`} />
               </button>
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+             <label className="block text-sm font-medium text-gray-400 ml-1">Retries before alerting</label>
+             <input
+                 type="number"
+                 min="1"
+                 max="10"
+                 value={retries}
+                 onChange={(e) => setRetries(parseInt(e.target.value) || 3)}
+                 className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                 disabled={isSubmitting}
+             />
           </div>
 
           {/* Interval dropdown panel — rendered via portal so it escapes modal overflow */}

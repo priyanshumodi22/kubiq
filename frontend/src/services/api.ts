@@ -169,17 +169,18 @@ class ApiClient {
   }
 
   // Service CRUD operations (admin only)
-  async createService(name: string, endpoint: string, type: 'http' | 'tcp' | 'mysql' | 'mongodb' = 'http', interval?: number) {
+  async createService(name: string, endpoint: string, type: 'http' | 'tcp' | 'mysql' | 'mongodb' = 'http', interval?: number, retries?: number) {
     const response = await this.client.post('/api/services', {
       name,
       endpoint,
       type,
       ...(interval !== undefined && { interval }),
+      ...(retries !== undefined && { retries }),
     });
     return response.data;
   }
 
-  async updateService(name: string, endpoint: string, type?: 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp', ignoreSSL?: boolean, logPath?: string, logSources?: any[], interval?: number) {
+  async updateService(name: string, endpoint: string, type?: 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp', ignoreSSL?: boolean, logPath?: string, logSources?: any[], interval?: number, retries?: number) {
     const response = await this.client.put(`/api/services/${name}`, {
       endpoint,
       type,
@@ -187,6 +188,7 @@ class ApiClient {
       logPath,
       logSources,
       ...(interval !== undefined && { interval }),
+      ...(retries !== undefined && { retries }),
     });
     return response.data;
   }

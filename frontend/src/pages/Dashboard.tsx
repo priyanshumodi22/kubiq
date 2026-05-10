@@ -314,6 +314,7 @@ export default function Dashboard() {
             currentIgnoreSSL={editService.ignoreSSL}
             currentLogPath={editService.logPath}
             currentInterval={editService.interval}
+            currentRetries={editService.retries}
             type={editService.type}
           />
         )}

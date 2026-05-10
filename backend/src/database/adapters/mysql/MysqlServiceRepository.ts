@@ -91,6 +91,8 @@ export class MysqlServiceRepository implements IServiceRepository {
                 ssl_expiry DATETIME,
                 ignore_ssl BOOLEAN DEFAULT FALSE,
                 log_sources JSON,
+                \`interval\` INT DEFAULT 30000,
+                retries INT DEFAULT 3,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB;
@@ -134,6 +136,12 @@ export class MysqlServiceRepository implements IServiceRepository {
             if (!columnNames.includes('average_response_time')) {
                 await connection.query('ALTER TABLE services ADD COLUMN average_response_time FLOAT DEFAULT 0.0');
             }
+            if (!columnNames.includes('interval')) {
+                await connection.query('ALTER TABLE services ADD COLUMN `interval` INT DEFAULT 30000');
+            }
+            if (!columnNames.includes('retries')) {
+                await connection.query('ALTER TABLE services ADD COLUMN retries INT DEFAULT 3');
+            }
 
         } catch (e) {
             console.error('❌ MySQL Schema Migration Failed:', e);
@@ -156,6 +164,8 @@ export class MysqlServiceRepository implements IServiceRepository {
                 headers: typeof row.headers === 'string' ? JSON.parse(row.headers) : (row.headers || undefined),
                 ignoreSSL: Boolean(row.ignore_ssl),
                 sslExpiry: row.ssl_expiry ? new Date(row.ssl_expiry) : null,
+                interval: row.interval,
+                retries: row.retries,
                 // logPath: row.log_path || undefined, // Deprecated
                 logSources: (() => {
                     try { return row.log_sources ? JSON.parse(row.log_sources) : undefined; }
@@ -207,8 +217,8 @@ export class MysqlServiceRepository implements IServiceRepository {
             await connection.beginTransaction();
 
             const [result] = await connection.execute<ResultSetHeader>(
-                'INSERT INTO services (name, endpoint, type, headers, ignore_ssl, log_sources) VALUES (?, ?, ?, ?, ?, ?)',
-                [config.name, config.endpoint, config.type || 'http', JSON.stringify(config.headers || {}), config.ignoreSSL || false, JSON.stringify(config.logSources || [])]
+                'INSERT INTO services (name, endpoint, type, headers, ignore_ssl, log_sources, `interval`, retries) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [config.name, config.endpoint, config.type || 'http', JSON.stringify(config.headers || {}), config.ignoreSSL || false, JSON.stringify(config.logSources || []), config.interval ?? 30000, config.retries ?? 3]
             );
 
             const newService: ServiceStatus = {
@@ -220,6 +230,8 @@ export class MysqlServiceRepository implements IServiceRepository {
                 ignoreSSL: config.ignoreSSL,
                 logPath: config.logPath,
                 logSources: config.logSources,
+                interval: config.interval ?? 30000,
+                retries: config.retries ?? 3,
                 sslExpiry: null,
                 currentStatus: 'unknown',
                 history: []
@@ -247,16 +259,20 @@ export class MysqlServiceRepository implements IServiceRepository {
         if (config.ignoreSSL !== undefined) service.ignoreSSL = config.ignoreSSL;
         if (config.logPath !== undefined) service.logPath = config.logPath;
         if (config.logSources !== undefined) service.logSources = config.logSources;
+        if (config.interval !== undefined) service.interval = config.interval;
+        if (config.retries !== undefined) service.retries = config.retries;
 
         // Update DB with merged service state
         await this.pool.execute(
-            'UPDATE services SET endpoint = ?, type = ?, headers = ?, ignore_ssl = ?, log_sources = ? WHERE name = ?',
+            'UPDATE services SET endpoint = ?, type = ?, headers = ?, ignore_ssl = ?, log_sources = ?, `interval` = ?, retries = ? WHERE name = ?',
             [
                 service.endpoint,
                 service.type || 'http',
                 JSON.stringify(service.headers || {}),
                 service.ignoreSSL || false,
                 JSON.stringify(service.logSources || []),
+                service.interval ?? 30000,
+                service.retries ?? 3,
                 name
             ]
         );

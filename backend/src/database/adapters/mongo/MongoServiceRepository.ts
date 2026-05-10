@@ -130,6 +130,7 @@ export class MongoServiceRepository implements IServiceRepository {
           endpoint: doc.endpoint,
           type: doc.type,
           interval: doc.interval,
+          retries: doc.retries,
           timeout: doc.timeout,
           headers: doc.headers,
           currentStatus: doc.status || 'unknown',

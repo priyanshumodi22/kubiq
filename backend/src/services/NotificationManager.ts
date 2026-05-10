@@ -10,6 +10,7 @@ export class NotificationManager {
   private repository!: INotificationRepository;
   private persistenceEnabled: boolean;
   public throttleMap = new Map<string, number>();
+  private transporters = new Map<string, nodemailer.Transporter>();
 
   private constructor() {
     this.persistenceEnabled = process.env.ENABLE_PERSISTENCE === 'true';
@@ -117,14 +118,33 @@ export class NotificationManager {
 
   private async sendAlert(channel: NotificationChannel, title: string, message: string): Promise<void> {
     try {
-      if (channel.type === 'webhook') {
-        await this.sendWebhook(channel, title, message);
-      } else if (channel.type === 'email') {
-        await this.sendEmail(channel, title, message);
-      }
+      await this.withRetry(async () => {
+        if (channel.type === 'webhook') {
+          await this.sendWebhook(channel, title, message);
+        } else if (channel.type === 'email') {
+          await this.sendEmail(channel, title, message);
+        }
+      }, 3); // 3 retries max
     } catch (error: any) {
-      console.error(`❌ Failed to send notification to ${channel.name}:`, error.message);
+      console.error(`❌ Failed to send notification to ${channel.name} after retries:`, error.message);
     }
+  }
+
+  private async withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+    let lastError;
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error;
+        if (i < maxRetries - 1) {
+          const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s
+          console.log(`⚠️ Notification attempt ${i + 1} failed, retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    throw lastError;
   }
 
   private async sendWebhook(channel: NotificationChannel, title: string, message: string): Promise<void> {
@@ -165,28 +185,32 @@ export class NotificationManager {
     await axios.post(channel.config.webhookUrl, payload, {
         headers: {
             'Content-Type': 'application/json'
-        }
+        },
+        timeout: 5000 // 5 second timeout to prevent hanging connections
     });
   }
 
   private async sendEmail(channel: NotificationChannel, title: string, message: string): Promise<void> {
     if (!channel.config.email) throw new Error('Missing recipient email');
 
-    // Comma separated email logic inside config used by frontend, but Nodemailer takes string "a, b" fine.
-    // Assuming config.email is the comma separated string.
-
-    const transporter = nodemailer.createTransport({
-      host: channel.config.smtpHost,
-      port: channel.config.smtpPort || 587,
-      secure: channel.config.smtpSecure || false,
-      auth: {
-        user: channel.config.smtpUser,
-        pass: channel.config.smtpPass,
-      },
-      tls: {
-        rejectUnauthorized: false
-      }
-    });
+    // Reuse existing transporter to avoid slow connection overhead
+    let transporter = this.transporters.get(channel.id);
+    
+    if (!transporter) {
+        transporter = nodemailer.createTransport({
+          host: channel.config.smtpHost,
+          port: channel.config.smtpPort || 587,
+          secure: channel.config.smtpSecure || false,
+          auth: {
+            user: channel.config.smtpUser,
+            pass: channel.config.smtpPass,
+          },
+          tls: {
+            rejectUnauthorized: false
+          }
+        });
+        this.transporters.set(channel.id, transporter);
+    }
 
     const senderName = channel.config.senderName || 'Kubiq Alert';
     const senderEmail = channel.config.senderEmail || 'no-reply@kubiq.local';

@@ -11,6 +11,7 @@ export interface ServiceConfig {
   type?: 'http' | 'tcp' | 'icmp' | 'mysql' | 'mongodb';
   enabled?: boolean;
   interval?: number;  // Per-service poll interval in ms
+  retries?: number;   // Number of consecutive failures before alerting
   ignoreSSL?: boolean;
   logPath?: string; // Deprecated
   logSources?: LogSource[]; // New
@@ -37,6 +38,7 @@ export interface ServiceStatus {
   uptime?: number;
   averageResponseTime?: number;
   interval?: number;  // Per-service poll interval in ms
+  retries?: number;   // Number of consecutive failures before alerting
   ignoreSSL?: boolean;
   sslExpiry?: string | null; // Date comes as string from JSON API
   logPath?: string;

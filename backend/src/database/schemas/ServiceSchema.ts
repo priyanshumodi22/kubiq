@@ -11,6 +11,7 @@ const ServiceSchema: Schema = new Schema({
     endpoint: { type: String, required: true },
     type: { type: String, enum: ['http', 'tcp', 'icmp', 'mysql', 'mongodb'], default: 'http', required: true },
     interval: { type: Number, default: 30000 }, // ms
+    retries: { type: Number, default: 3 },
     timeout: { type: Number, default: 5000 },
     headers: { type: Map, of: String },
     enabled: { type: Boolean, default: true },

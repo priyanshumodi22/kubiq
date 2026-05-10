@@ -13,6 +13,7 @@ import { IServiceRepository } from '../database/interfaces/IServiceRepository';
 export class ServiceMonitor {
   private static instance: ServiceMonitor;
   private services: Map<string, ServiceStatus> = new Map();
+  private failureCounters: Map<string, number> = new Map();
   private repository!: IServiceRepository;
   private cache: NodeCache;
   private pollIntervals: Map<string, NodeJS.Timeout> = new Map();
@@ -203,11 +204,30 @@ export class ServiceMonitor {
 
   private async updateServiceState(service: ServiceStatus, check: HealthCheck): Promise<void> {
     const oldStatus = service.currentStatus;
-    const newStatus = check.success ? 'healthy' : 'unhealthy';
     const serviceName = service.name;
+    const requiredFailures = service.retries ?? 3; // Default to 3 retries if not specified
+
+    // Track consecutive failures
+    let consecutiveFailures = this.failureCounters.get(serviceName) || 0;
+    
+    if (check.success) {
+      consecutiveFailures = 0;
+    } else {
+      consecutiveFailures += 1;
+    }
+    this.failureCounters.set(serviceName, consecutiveFailures);
+
+    // Determine new status based on thresholds
+    let newStatus = oldStatus;
+    
+    if (check.success) {
+       newStatus = 'healthy';
+    } else if (consecutiveFailures >= requiredFailures) {
+       newStatus = 'unhealthy';
+    }
 
     service.lastCheck = check;
-    service.currentStatus = newStatus;
+    service.currentStatus = newStatus as 'healthy' | 'unhealthy' | 'unknown';
     service.history.push(check);
     if (service.history.length > this.maxHistorySize) service.history.shift();
     this.updateStats(service);

@@ -10,6 +10,7 @@ export interface ServiceConfig {
   endpoint: string;
   type?: 'http' | 'tcp' | 'icmp' | 'mysql' | 'mongodb';
   interval?: number;
+  retries?: number;
   timeout?: number;
   headers?: Record<string, string>;
   enabled?: boolean;
@@ -33,6 +34,7 @@ export interface ServiceStatus {
   endpoint: string;
   type?: 'http' | 'tcp' | 'icmp' | 'mysql' | 'mongodb';
   interval?: number;
+  retries?: number;
   timeout?: number;
   headers?: Record<string, string>;
   currentStatus: 'healthy' | 'unhealthy' | 'unknown';
