@@ -1,19 +1,25 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Activity, Clock, AlertTriangle, Search, Server, X, ChevronDown } from 'lucide-react';
+import { Activity, Clock, AlertTriangle, Search, Server, X, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { useApm } from '../hooks/useApm';
 import { useTrace } from '../hooks/useTrace';
 import { useServiceMap } from '../hooks/useServiceMap';
 import TraceWaterfall from '../components/TraceWaterfall';
 import ServiceMap from '../components/ServiceMap';
+import { ApmConfigModal } from '../components/ApmConfigModal';
+import { useAuth } from '../contexts/AuthContext';
+import { Settings } from 'lucide-react';
 
 export default function ApmDashboard() {
+    const { hasRole } = useAuth();
+    const isAdmin = hasRole('kubiq-admin');
     const { metrics, loading: apmLoading, error: apmError, refresh } = useApm();
     const { spans, loading: traceLoading, error: traceError, fetchTrace, clearTrace } = useTrace();
     const { dependencies, loading: mapLoading, error: mapError, fetchServiceMap } = useServiceMap();
 
     const [timeRange, setTimeRange] = useState(60 * 60 * 1000); // Default 1H
     const [traceIdInput, setTraceIdInput] = useState('');
+    const [isTraceDropdownOpen, setIsTraceDropdownOpen] = useState(false);
     const [serviceFilter, setServiceFilter] = useState('');
     const [activeView, setActiveView] = useState<'metrics' | 'map'>('metrics');
     const [selectedMapService, setSelectedMapService] = useState<string | null>(null);
@@ -22,12 +28,26 @@ export default function ApmDashboard() {
     const [selectedInspectorService, setSelectedInspectorService] = useState<string | null>(null);
     const [tracesList, setTracesList] = useState<any[]>([]);
     const [isFetchingTraces, setIsFetchingTraces] = useState(false);
+    
+    // Trace Filters
+    const [minDurationFilter, setMinDurationFilter] = useState<number>(0);
+    const [errorOnlyFilter, setErrorOnlyFilter] = useState<boolean>(false);
+    const [routeSearch, setRouteSearch] = useState<string>('');
+    
+    // Config Modal
+    const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
     const sidebarRef = useRef<HTMLDivElement>(null);
     const timeRangeTriggerRef = useRef<HTMLButtonElement>(null);
     const timeRangePanelRef  = useRef<HTMLDivElement>(null);
     const [isTimeRangeOpen, setIsTimeRangeOpen] = useState(false);
     const [timeRangeRect, setTimeRangeRect] = useState<{ top: number; left: number; width: number } | null>(null);
+
+    // Latency Dropdown State
+    const latencyTriggerRef = useRef<HTMLButtonElement>(null);
+    const latencyPanelRef = useRef<HTMLDivElement>(null);
+    const [isLatencyOpen, setIsLatencyOpen] = useState(false);
+    const [latencyRect, setLatencyRect] = useState<{ top: number; left: number; width: number } | null>(null);
 
     const filteredMetrics = metrics.filter(m =>
         m.serviceName.toLowerCase().includes(serviceFilter.toLowerCase().trim())
@@ -48,12 +68,15 @@ export default function ApmDashboard() {
         return () => { document.removeEventListener('mousedown', handleClickOutside); };
     }, [selectedMapService]);
 
-    // Close time range dropdown on outside click
+    // Close dropdowns on outside click
     useEffect(() => {
         const handler = (e: MouseEvent) => {
             const t = e.target as Node;
             if (!timeRangeTriggerRef.current?.contains(t) && !timeRangePanelRef.current?.contains(t)) {
                 setIsTimeRangeOpen(false);
+            }
+            if (!latencyTriggerRef.current?.contains(t) && !latencyPanelRef.current?.contains(t)) {
+                setIsLatencyOpen(false);
             }
         };
         document.addEventListener('mousedown', handler);
@@ -77,29 +100,51 @@ export default function ApmDashboard() {
     const handleServiceClick = async (serviceName: string) => {
         setSelectedInspectorService(serviceName);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        await fetchTracesWithFilters(serviceName, minDurationFilter, errorOnlyFilter, routeSearch, true);
+    };
 
+    const fetchTracesWithFilters = async (
+        serviceName: string, 
+        minDuration: number, 
+        errorOnly: boolean, 
+        search: string,
+        autoSelectFirst = false
+    ) => {
         try {
             setIsFetchingTraces(true);
             const baseUrl = import.meta.env.VITE_API_URL || '';
             const ctxPath = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
-            // Fetch the 50 most recent traces list
-            const res = await fetch(`${baseUrl}${ctxPath}/api/apm/services/${serviceName}/traces?limit=50`);
+            
+            const params = new URLSearchParams({ limit: '50' });
+            if (minDuration > 0) params.append('minDuration', minDuration.toString());
+            if (errorOnly) params.append('errorOnly', 'true');
+            if (search.trim()) params.append('search', search.trim());
+
+            const res = await fetch(`${baseUrl}${ctxPath}/api/apm/services/${serviceName}/traces?${params.toString()}`);
             if (res.ok) {
                 const data = await res.json();
                 setTracesList(data);
-                if (data.length > 0) {
-                    // pre-select the most recent trace
+                if (data.length > 0 && autoSelectFirst) {
                     const recentTraceId = data[0].traceId;
                     setTraceIdInput(recentTraceId);
                     fetchTrace(recentTraceId);
-                } else {
-                    setTraceIdInput('');
+                } else if (data.length === 0 && autoSelectFirst) {
                     clearTrace();
+                    setTraceIdInput('');
+                } else if (!autoSelectFirst) {
+                    // Check if the currently viewed trace still matches the new filters
+                    const stillExists = data.some((t: any) => t.traceId === traceIdInput);
+                    if (!stillExists) {
+                        clearTrace();
+                        setTraceIdInput('');
+                    }
                 }
             } else {
                 setTracesList([]);
-                setTraceIdInput('');
-                clearTrace();
+                if (autoSelectFirst) {
+                    setTraceIdInput('');
+                    clearTrace();
+                }
             }
         } catch (e) {
             console.error('Failed to fetch traces list:', e);
@@ -108,6 +153,13 @@ export default function ApmDashboard() {
             setIsFetchingTraces(false);
         }
     };
+
+    // Re-fetch traces when filters change
+    useEffect(() => {
+        if (selectedInspectorService) {
+            fetchTracesWithFilters(selectedInspectorService, minDurationFilter, errorOnlyFilter, routeSearch, false);
+        }
+    }, [minDurationFilter, errorOnlyFilter, routeSearch]);
 
     const handleEdgeClick = async (source: string, target: string) => {
         try {
@@ -130,6 +182,8 @@ export default function ApmDashboard() {
             console.error('Failed to quick-fetch trace for edge:', e);
         }
     };
+
+    const selectedTraceObj = tracesList.find(t => t.traceId === traceIdInput);
 
     return (
         <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full animate-fade-in relative z-10">
@@ -159,11 +213,11 @@ export default function ApmDashboard() {
                             onClick={() => {
                                 if (!isTimeRangeOpen && timeRangeTriggerRef.current) {
                                     const r = timeRangeTriggerRef.current.getBoundingClientRect();
-                                    setTimeRangeRect({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 180) });
+                                    setTimeRangeRect({ top: r.bottom + 4, left: r.left, width: r.width });
                                 }
                                 setIsTimeRangeOpen(o => !o);
                             }}
-                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text text-sm rounded-lg flex items-center gap-2 px-3 py-2.5 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2.5 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-[150px]"
                         >
                             <span>
                                 {[
@@ -215,6 +269,16 @@ export default function ApmDashboard() {
                         <Activity className={`w-4 h-4 ${apmLoading ? 'animate-spin' : ''}`} />
                         Refresh
                     </button>
+
+                    {isAdmin && (
+                        <button
+                            onClick={() => setIsConfigModalOpen(true)}
+                            className="px-3 py-2 bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text rounded-lg flex items-center gap-2 transition-colors"
+                            title="APM Configuration"
+                        >
+                            <Settings className="w-4 h-4" />
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -311,9 +375,88 @@ export default function ApmDashboard() {
                     {/* Right Panel: Trace Dropdown & Waterfall */}
                     <div className="flex-1 flex flex-col gap-4">
                         <div className="bg-bg-surface border border-gray-800 rounded-xl p-4 shadow-sm flex flex-col gap-4">
-                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-2">
                                 <Search className="w-5 h-5 text-primary" /> Trace Inspector ({selectedInspectorService})
                             </h2>
+                            
+                            {/* Filter Bar */}
+                            <div className="flex flex-wrap gap-2 mb-2 bg-black/20 p-2 rounded-lg border border-gray-800/50">
+                                {/* Custom Latency Dropdown */}
+                                <div className="relative">
+                                    <button
+                                        ref={latencyTriggerRef}
+                                        type="button"
+                                        onClick={() => {
+                                            if (!isLatencyOpen && latencyTriggerRef.current) {
+                                                const r = latencyTriggerRef.current.getBoundingClientRect();
+                                                setLatencyRect({ top: r.bottom + 4, left: r.left, width: r.width });
+                                            }
+                                            setIsLatencyOpen(o => !o);
+                                        }}
+                                        className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-[130px]"
+                                    >
+                                        <span>
+                                            {[
+                                                { value: 0,    label: 'Any Latency' },
+                                                { value: 100,  label: '> 100ms' },
+                                                { value: 500,  label: '> 500ms' },
+                                                { value: 2000, label: '> 2s' },
+                                            ].find(o => o.value === minDurationFilter)?.label ?? 'Any Latency'}
+                                        </span>
+                                        <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isLatencyOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    {isLatencyOpen && latencyRect && createPortal(
+                                        <div
+                                            ref={latencyPanelRef}
+                                            style={{ position: 'fixed', top: latencyRect.top, left: latencyRect.left, width: latencyRect.width, zIndex: 9999 }}
+                                            className="bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl overflow-hidden"
+                                        >
+                                            {[
+                                                { value: 0,    label: 'Any Latency' },
+                                                { value: 100,  label: '> 100ms' },
+                                                { value: 500,  label: '> 500ms' },
+                                                { value: 2000, label: '> 2s' },
+                                            ].map(opt => (
+                                                <button
+                                                    key={opt.value}
+                                                    data-latency-value={opt.value}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setMinDurationFilter(opt.value);
+                                                        setIsLatencyOpen(false);
+                                                    }}
+                                                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-primary/20 ${
+                                                        minDurationFilter === opt.value ? 'text-primary font-medium' : 'text-gray-300'
+                                                    }`}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            ))}
+                                        </div>,
+                                        document.body
+                                    )}
+                                </div>
+
+                                <button
+                                    onClick={() => setErrorOnlyFilter(!errorOnlyFilter)}
+                                    className={`px-3 py-2 text-sm rounded-lg border transition-colors flex items-center gap-2 ${errorOnlyFilter ? 'bg-red-500/20 border-red-500/50 text-red-400 font-medium' : 'bg-bg-elevated border-gray-700 text-gray-400 hover:text-gray-300 hover:border-gray-600'}`}
+                                >
+                                    {errorOnlyFilter ? <AlertTriangle className="w-4 h-4" /> : null}
+                                    Errors Only
+                                </button>
+
+                                <div className="flex-1 min-w-[200px] relative">
+                                    <input
+                                        type="text"
+                                        value={routeSearch}
+                                        onChange={(e) => setRouteSearch(e.target.value)}
+                                        placeholder="Filter by attribute (e.g. /checkout)..."
+                                        className="w-full bg-bg-elevated border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:border-primary outline-none placeholder:text-gray-500 transition-colors"
+                                    />
+                                </div>
+                            </div>
+
                             <div className="relative">
                                 {isFetchingTraces ? (
                                     <div className="w-full bg-bg-elevated border border-gray-700 text-gray-400 text-sm rounded-lg p-3 flex items-center gap-3">
@@ -321,22 +464,70 @@ export default function ApmDashboard() {
                                         Fetching recent traces...
                                     </div>
                                 ) : (
-                                    <select
-                                        value={traceIdInput}
-                                        onChange={(e) => {
-                                            const newId = e.target.value;
-                                            setTraceIdInput(newId);
-                                            if (newId) fetchTrace(newId);
-                                        }}
-                                        className="w-full bg-bg-elevated border border-gray-700 text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-3 appearance-none cursor-pointer"
-                                    >
-                                        <option value="">-- Select a Trace to Inspect --</option>
-                                        {tracesList.map(t => (
-                                            <option key={t.traceId} value={t.traceId}>
-                                                {new Date(t.startTimeUnixNano / 1000000).toLocaleTimeString()} | {t.name} | {t.durationMs.toFixed(2)}ms {t.statusCode === 2 ? '❌ Error' : '✅'}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <div className="relative w-full">
+                                        <div 
+                                            onClick={() => setIsTraceDropdownOpen(!isTraceDropdownOpen)}
+                                            className="bg-[#1f2937] p-3 rounded-lg border border-gray-700 flex justify-between items-center group overflow-hidden gap-2 cursor-pointer hover:border-gray-500 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3 overflow-x-auto custom-scrollbar pb-1 sm:pb-0 hide-scrollbar-sm w-full">
+                                                {selectedTraceObj ? (
+                                                    <>
+                                                        <Activity className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${selectedTraceObj.statusCode === 2 ? 'text-red-500' : 'text-green-500'}`} />
+                                                        <span className="text-xs sm:text-sm text-gray-300 font-mono whitespace-nowrap">
+                                                            {new Date(selectedTraceObj.startTimeUnixNano / 1000000).toLocaleTimeString()} | {selectedTraceObj.name} | {selectedTraceObj.durationMs.toFixed(2)}ms 
+                                                            {selectedTraceObj.statusCode === 2 ? (
+                                                                <span className="text-red-500 inline-flex items-center ml-1 align-text-bottom gap-1"><X className="w-3.5 h-3.5" /> Error</span>
+                                                            ) : (
+                                                                <CheckCircle2 className="w-3.5 h-3.5 text-green-500 inline ml-1 align-text-bottom" />
+                                                            )}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-gray-400 text-sm">-- Select a Trace to Inspect --</span>
+                                                )}
+                                            </div>
+                                            <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${isTraceDropdownOpen ? 'rotate-180' : ''}`} />
+                                        </div>
+
+                                        {isTraceDropdownOpen && (
+                                            <div className="absolute top-full left-0 right-0 mt-2 bg-[#111827] border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto custom-scrollbar">
+                                                {tracesList.length > 0 ? (
+                                                    <div className="p-1">
+                                                        {tracesList.map(t => (
+                                                            <div
+                                                                key={t.traceId}
+                                                                data-trace-id={t.traceId}
+                                                                onClick={() => {
+                                                                    setTraceIdInput(t.traceId);
+                                                                    fetchTrace(t.traceId);
+                                                                    setIsTraceDropdownOpen(false);
+                                                                }}
+                                                                className={`trace-option flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${
+                                                                    selectedTraceObj?.traceId === t.traceId 
+                                                                        ? 'bg-[#3b82f6]/20 border border-[#3b82f6]/50 text-white' 
+                                                                        : 'hover:bg-[#1f2937] text-gray-300 hover:text-white border border-transparent'
+                                                                }`}
+                                                            >
+                                                                <Activity className={`w-3.5 h-3.5 shrink-0 ${t.statusCode === 2 ? 'text-red-500' : 'text-green-500'}`} />
+                                                                <span className="text-xs font-mono whitespace-nowrap">
+                                                                    {new Date(t.startTimeUnixNano / 1000000).toLocaleTimeString()} | {t.name} | {t.durationMs.toFixed(2)}ms 
+                                                                    {t.statusCode === 2 ? (
+                                                                        <span className="text-red-500 inline-flex items-center ml-1 align-text-bottom gap-1"><X className="w-3.5 h-3.5" /> Error</span>
+                                                                    ) : (
+                                                                        <CheckCircle2 className="w-3.5 h-3.5 text-green-500 inline ml-1 align-text-bottom" />
+                                                                    )}
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="p-4 text-center text-gray-500 text-sm">
+                                                        No traces found matching filters.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -575,6 +766,10 @@ export default function ApmDashboard() {
                 </>
             )}
 
+            <ApmConfigModal 
+                isOpen={isConfigModalOpen} 
+                onClose={() => setIsConfigModalOpen(false)} 
+            />
         </div>
     );
 }

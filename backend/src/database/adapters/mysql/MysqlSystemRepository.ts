@@ -6,6 +6,7 @@ import { SystemMetrics } from '../../../types';
 export class MysqlSystemRepository implements ISystemRepository {
   private pool: mysql.Pool | null = null;
   private readonly configKey = 'storage_prefs';
+  private readonly apmConfigKey = 'apm_prefs';
 
   async initialize(): Promise<void> {
     this.pool = mysql.createPool({
@@ -111,6 +112,31 @@ export class MysqlSystemRepository implements ISystemRepository {
     await this.pool!.execute(
       'INSERT INTO system_config (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?',
       [this.configKey, JSON.stringify(config), JSON.stringify(config)]
+    );
+  }
+
+  async getApmConfig(): Promise<{ ignoredRoutes: string[] }> {
+    if (!this.pool) await this.initialize();
+
+    const [rows]: any = await this.pool!.query(
+      'SELECT value FROM system_config WHERE `key` = ?',
+      [this.apmConfigKey]
+    );
+
+    if (rows.length > 0) {
+      const val = rows[0].value;
+      return typeof val === 'string' ? JSON.parse(val) : val;
+    }
+
+    return { ignoredRoutes: ['/health', '/metrics', '/favicon.ico'] }; // Default
+  }
+
+  async updateApmConfig(config: { ignoredRoutes: string[] }): Promise<void> {
+    if (!this.pool) await this.initialize();
+
+    await this.pool!.execute(
+      'INSERT INTO system_config (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?',
+      [this.apmConfigKey, JSON.stringify(config), JSON.stringify(config)]
     );
   }
 }

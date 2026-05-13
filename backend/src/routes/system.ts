@@ -1,6 +1,7 @@
 
 import express from 'express';
 import { SystemMonitorService } from '../services/SystemMonitorService';
+import { DatabaseFactory } from '../database/DatabaseFactory';
 
 const router = express.Router();
 const systemMonitor = SystemMonitorService.getInstance();
@@ -55,6 +56,33 @@ router.get('/prediction', async (req, res) => {
   try {
     const prediction = await systemMonitor.getStoragePrediction();
     res.json(prediction);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// GET /api/system/apm-config
+router.get('/apm-config', async (req, res) => {
+  try {
+    const systemRepo = await DatabaseFactory.getSystemRepository();
+    const config = await systemRepo.getApmConfig();
+    res.json(config);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// PUT /api/system/apm-config
+router.put('/apm-config', async (req, res) => {
+  try {
+    const { ignoredRoutes } = req.body;
+    if (!Array.isArray(ignoredRoutes)) {
+      res.status(400).json({ message: 'ignoredRoutes must be an array of strings' });
+      return;
+    }
+    const systemRepo = await DatabaseFactory.getSystemRepository();
+    await systemRepo.updateApmConfig({ ignoredRoutes });
+    res.json({ success: true, ignoredRoutes });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

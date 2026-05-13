@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X, Database, Globe, Info, Clock, Terminal, Settings, MessageSquare, Cpu, Cloud, Zap, AlertTriangle } from 'lucide-react';
 import { ISpan } from '../hooks/useTrace';
 
@@ -40,7 +41,7 @@ export const SpanDetailsSidebar: React.FC<SpanDetailsSidebarProps> = ({ span, on
     const isError = span.statusCode === 2;
     const durationMs = (span.endTimeUnixNano - span.startTimeUnixNano) / 1000000;
 
-    return (
+    return createPortal(
         <>
             {/* Backdrop for mobile closing */}
             <div
@@ -141,6 +142,7 @@ export const SpanDetailsSidebar: React.FC<SpanDetailsSidebarProps> = ({ span, on
                     </div>
                 </div>
             </div>
-        </>
+        </>,
+        document.body
     );
 };

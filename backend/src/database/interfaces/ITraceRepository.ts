@@ -69,7 +69,7 @@ export interface ITraceRepository {
   /**
    * Retrieves a list of the most recent traces for a given service to populate UI dropdowns
    */
-  getRecentTraces(serviceName: string, limit?: number): Promise<ITraceSummary[]>;
+  getRecentTraces(serviceName: string, limit?: number, minDurationMs?: number, errorOnly?: boolean, attributeSearch?: string): Promise<ITraceSummary[]>;
 
   /**
    * Retrieves the most recent trace ID that traverses a specific edge (source -> target)

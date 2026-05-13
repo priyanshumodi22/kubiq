@@ -183,20 +183,34 @@ export class MysqlTraceRepository implements ITraceRepository {
         return rows.length > 0 ? rows[0].trace_id : null;
     }
 
-    async getRecentTraces(serviceName: string, limit: number = 50): Promise<any[]> {
-        // Group by trace_id so we get traces involving this service even if not the root.
-        const [rows] = await this.pool.query<RowDataPacket[]>(
-            `SELECT trace_id as traceId, 
+    async getRecentTraces(serviceName: string, limit: number = 50, minDurationMs?: number, errorOnly?: boolean, attributeSearch?: string): Promise<any[]> {
+        let query = `
+            SELECT trace_id as traceId, 
                     MAX(span_name) as name, 
                     MAX(start_time_unix_nano) as startTimeUnixNano, 
                     MAX(duration_ms) as durationMs, 
                     MAX(status_code) as statusCode
              FROM apm_spans 
              WHERE service_name = ?
-             GROUP BY trace_id
-             ORDER BY startTimeUnixNano DESC LIMIT ?`,
-            [serviceName, limit]
-        );
+        `;
+        const params: any[] = [serviceName];
+
+        if (minDurationMs) {
+            query += ` AND duration_ms >= ?`;
+            params.push(minDurationMs);
+        }
+        if (errorOnly) {
+            query += ` AND status_code = 2`;
+        }
+        if (attributeSearch) {
+            query += ` AND span_name LIKE ?`;
+            params.push(`%${attributeSearch}%`);
+        }
+
+        query += ` GROUP BY trace_id ORDER BY startTimeUnixNano DESC LIMIT ?`;
+        params.push(limit);
+
+        const [rows] = await this.pool.query<RowDataPacket[]>(query, params);
         return rows;
     }
 

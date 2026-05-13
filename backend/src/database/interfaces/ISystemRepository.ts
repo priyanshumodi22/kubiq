@@ -7,4 +7,6 @@ export interface ISystemRepository {
   getMetricsHistory(limit?: number): Promise<SystemMetrics[]>;
   getStorageConfig(): Promise<{ allowedMounts: string[] }>;
   updateStorageConfig(config: { allowedMounts: string[] }): Promise<void>;
+  getApmConfig(): Promise<{ ignoredRoutes: string[] }>;
+  updateApmConfig(config: { ignoredRoutes: string[] }): Promise<void>;
 }

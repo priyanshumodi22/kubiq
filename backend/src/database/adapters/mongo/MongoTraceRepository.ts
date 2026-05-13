@@ -166,11 +166,18 @@ export class MongoTraceRepository implements ITraceRepository {
         return span ? (span as any).traceId : null;
     }
 
-    async getRecentTraces(serviceName: string, limit: number = 50): Promise<any[]> {
+    async getRecentTraces(serviceName: string, limit: number = 50, minDurationMs?: number, errorOnly?: boolean, attributeSearch?: string): Promise<any[]> {
+        const matchQuery: any = { serviceName };
+        if (minDurationMs) matchQuery.durationMs = { $gte: minDurationMs };
+        if (errorOnly) matchQuery.statusCode = 2;
+        if (attributeSearch) {
+            matchQuery.name = { $regex: attributeSearch, $options: 'i' };
+        }
+
         // Group by traceId so we can show traces that involve this service, 
         // even if this service wasn't the root span of the entire distributed trace.
         const traces = await ApmSpanModel.aggregate([
-            { $match: { serviceName } },
+            { $match: matchQuery },
             { $sort: { startTimeUnixNano: -1 } },
             {
                 $group: {

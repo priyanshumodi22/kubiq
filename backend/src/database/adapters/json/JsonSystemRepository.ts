@@ -8,11 +8,13 @@ export class JsonSystemRepository implements ISystemRepository {
   private dataDir: string;
   private metricsPath: string;
   private configPath: string;
+  private apmConfigPath: string;
 
   constructor() {
     this.dataDir = process.env.DATA_DIR || './data';
     this.metricsPath = path.join(this.dataDir, 'system-metrics.json');
     this.configPath = path.join(this.dataDir, 'system-config.json');
+    this.apmConfigPath = path.join(this.dataDir, 'apm-config.json');
   }
 
   async initialize(): Promise<void> {
@@ -55,5 +57,19 @@ export class JsonSystemRepository implements ISystemRepository {
   async updateStorageConfig(config: { allowedMounts: string[] }): Promise<void> {
     if (!fs.existsSync(this.dataDir)) await this.initialize();
     fs.writeFileSync(this.configPath, JSON.stringify(config, null, 2));
+  }
+
+  async getApmConfig(): Promise<{ ignoredRoutes: string[] }> {
+    if (!fs.existsSync(this.apmConfigPath)) return { ignoredRoutes: ['/health', '/metrics', '/favicon.ico'] };
+    try {
+        return JSON.parse(fs.readFileSync(this.apmConfigPath, 'utf-8'));
+    } catch (e) {
+        return { ignoredRoutes: ['/health', '/metrics', '/favicon.ico'] };
+    }
+  }
+
+  async updateApmConfig(config: { ignoredRoutes: string[] }): Promise<void> {
+    if (!fs.existsSync(this.dataDir)) await this.initialize();
+    fs.writeFileSync(this.apmConfigPath, JSON.stringify(config, null, 2));
   }
 }

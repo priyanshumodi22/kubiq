@@ -5,6 +5,19 @@ import { ISpan } from '../database/interfaces/ITraceRepository';
 export const apmIngestRouter = Router();
 export const apmAnalyticsRouter = Router();
 
+let cachedApmConfig: { ignoredRoutes: string[] } | null = null;
+let lastApmConfigFetch = 0;
+
+async function getApmConfigCached(): Promise<{ ignoredRoutes: string[] }> {
+    const now = Date.now();
+    if (!cachedApmConfig || now - lastApmConfigFetch > 60000) { // 1 min cache
+        const systemRepo = await DatabaseFactory.getSystemRepository();
+        cachedApmConfig = await systemRepo.getApmConfig();
+        lastApmConfigFetch = now;
+    }
+    return cachedApmConfig!;
+}
+
 /**
  * Parses the nested OpenTelemetry JSON format into a flat array of ISpan objects.
  */
@@ -91,9 +104,26 @@ apmIngestRouter.post('/v1/traces', async (req: Request, res: Response) => {
             return;
         }
 
-        // 2. Insert into database using the Factory
+        // 2. Filter out ignored routes to save DB space
+        const config = await getApmConfigCached();
+        const ignoredPaths = config.ignoredRoutes;
+        
+        const traceIdsToDrop = new Set(
+            spans
+              .filter(span => ignoredPaths.some(p => span.name.includes(p) || span.attributes?.['http.target']?.includes(p)))
+              .map(span => span.traceId)
+        );
+        
+        const cleanSpans = spans.filter(span => !traceIdsToDrop.has(span.traceId));
+
+        if (cleanSpans.length === 0) {
+            res.status(202).json({ message: 'All spans ignored' });
+            return;
+        }
+
+        // 3. Insert into database using the Factory
         const traceRepository = await DatabaseFactory.getTraceRepository();
-        await traceRepository.insertSpans(spans);
+        await traceRepository.insertSpans(cleanSpans);
 
         // 3. Return 202 Accepted (standard for OTLP receivers)
         res.status(202).end();
@@ -150,8 +180,24 @@ apmIngestRouter.post('/v1/zipkin', async (req: Request, res: Response) => {
             return;
         }
 
+        const config = await getApmConfigCached();
+        const ignoredPaths = config.ignoredRoutes;
+        
+        const traceIdsToDrop = new Set(
+            spans
+              .filter(span => span.parentSpanId === null && ignoredPaths.some(p => span.name.includes(p) || span.attributes?.['http.target']?.includes(p)))
+              .map(span => span.traceId)
+        );
+        
+        const cleanSpans = spans.filter(span => !traceIdsToDrop.has(span.traceId));
+
+        if (cleanSpans.length === 0) {
+            res.status(202).json({ message: 'All spans ignored' });
+            return;
+        }
+
         const traceRepository = await DatabaseFactory.getTraceRepository();
-        await traceRepository.insertSpans(spans);
+        await traceRepository.insertSpans(cleanSpans);
 
         res.status(202).end();
     } catch (error) {
@@ -221,8 +267,12 @@ apmAnalyticsRouter.get('/services/:serviceName/traces', async (req: Request, res
         const limitParam = req.query.limit;
         const limit = limitParam ? parseInt(limitParam as string, 10) : 50;
 
+        const minDurationMs = req.query.minDuration ? parseInt(req.query.minDuration as string, 10) : undefined;
+        const errorOnly = req.query.errorOnly === 'true';
+        const attributeSearch = req.query.search ? (req.query.search as string) : undefined;
+
         const traceRepository = await DatabaseFactory.getTraceRepository();
-        const traces = await traceRepository.getRecentTraces(serviceName, limit);
+        const traces = await traceRepository.getRecentTraces(serviceName, limit, minDurationMs, errorOnly, attributeSearch);
 
         res.json(traces);
     } catch (error) {

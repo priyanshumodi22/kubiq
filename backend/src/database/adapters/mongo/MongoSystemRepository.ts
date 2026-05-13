@@ -6,6 +6,7 @@ import { SystemPreferencesModel } from '../../schemas/SystemPreferencesSchema';
 
 export class MongoSystemRepository implements ISystemRepository {
     private readonly configKey = 'storage_prefs';
+    private readonly apmConfigKey = 'apm_prefs';
 
     async initialize(): Promise<void> {
         if (mongoose.connection.readyState === 0) {
@@ -59,6 +60,24 @@ export class MongoSystemRepository implements ISystemRepository {
         await SystemPreferencesModel.findOneAndUpdate(
             { key: this.configKey },
             { key: this.configKey, value: config },
+            { upsert: true, new: true }
+        );
+    }
+
+    async getApmConfig(): Promise<{ ignoredRoutes: string[] }> {
+        await this.initialize();
+        const doc = await SystemPreferencesModel.findOne({ key: this.apmConfigKey }).lean();
+        if (doc && doc.value) {
+            return doc.value;
+        }
+        return { ignoredRoutes: ['/health', '/metrics', '/favicon.ico'] };
+    }
+
+    async updateApmConfig(config: { ignoredRoutes: string[] }): Promise<void> {
+        await this.initialize();
+        await SystemPreferencesModel.findOneAndUpdate(
+            { key: this.apmConfigKey },
+            { key: this.apmConfigKey, value: config },
             { upsert: true, new: true }
         );
     }
