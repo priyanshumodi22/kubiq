@@ -297,6 +297,37 @@ class ApiClient {
     const response = await this.client.get('/api/system/prediction');
     return response.data;
   }
+
+  // Kubernetes Monitoring
+  async getKubernetesStatus() {
+    const response = await this.client.get('/api/kubernetes/status');
+    return response.data;
+  }
+
+  async getKubernetesNamespaces() {
+    const response = await this.client.get('/api/kubernetes/namespaces');
+    return response.data;
+  }
+
+  async getKubernetesPods(namespace: string) {
+    const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/pods`);
+    return response.data;
+  }
+
+  async getKubernetesMetrics(namespace: string) {
+    const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/metrics`);
+    return response.data;
+  }
+
+  async getKubernetesEvents(namespace: string) {
+    const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/events`);
+    return response.data;
+  }
+
+  async getKubernetesDeployments(namespace: string) {
+    const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/deployments`);
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();

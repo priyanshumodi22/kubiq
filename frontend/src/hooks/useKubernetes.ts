@@ -1,4 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
+import { apiClient } from '../services/api';
+
+export interface KubeContainer {
+    name: string;
+    image: string;
+    ready: boolean;
+    restartCount: number;
+    state: 'running' | 'waiting' | 'terminated' | 'unknown';
+    stateReason?: string;
+}
+
+export interface KubeCondition {
+    type: string;
+    status: string;
+    reason: string;
+    message: string;
+}
 
 export interface KubePod {
     name: string;
@@ -10,6 +27,9 @@ export interface KubePod {
     nodeName: string;
     startTime: string | null;
     lastTerminationReason?: string;
+    labels: Record<string, string>;
+    containers: KubeContainer[];
+    conditions: KubeCondition[];
 }
 
 export interface KubeMetric {
@@ -24,6 +44,7 @@ export interface KubeEvent {
     reason: string;
     message: string;
     involvedObject: string;
+    involvedKind: string;
     count: number;
     lastTimestamp: string | null;
 }
@@ -34,13 +55,12 @@ export interface KubeDeployment {
     replicas: number;
     readyReplicas: number;
     availableReplicas: number;
+    strategy: string;
+    labels: Record<string, string>;
+    conditions: KubeCondition[];
 }
 
 export function useKubernetes() {
-    const baseUrl = import.meta.env.VITE_API_URL || '';
-    const ctxPath = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
-    const api = `${baseUrl}${ctxPath}/api/kubernetes`;
-
     const [available, setAvailable] = useState<boolean | null>(null);
     const [context, setContext] = useState<string>('');
     const [namespaces, setNamespaces] = useState<string[]>([]);
@@ -52,10 +72,8 @@ export function useKubernetes() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Check availability on mount
     useEffect(() => {
-        fetch(`${api}/status`, { credentials: 'include' })
-            .then(r => r.json())
+        apiClient.getKubernetesStatus()
             .then(data => {
                 setAvailable(data.available);
                 setContext(data.context || '');
@@ -66,13 +84,10 @@ export function useKubernetes() {
 
     const fetchNamespaces = async () => {
         try {
-            const res = await fetch(`${api}/namespaces`, { credentials: 'include' });
-            const data: string[] = await res.json();
+            const data: string[] = await apiClient.getKubernetesNamespaces();
             setNamespaces(data);
             if (data.length > 0) setSelectedNamespace(data[0]);
-        } catch (e: any) {
-            setError(e.message);
-        }
+        } catch (e: any) { setError(e.message); }
     };
 
     const fetchNamespaceData = useCallback(async (ns: string) => {
@@ -80,39 +95,24 @@ export function useKubernetes() {
         setLoading(true);
         setError(null);
         try {
-            const [podsRes, metricsRes, eventsRes, depRes] = await Promise.all([
-                fetch(`${api}/namespaces/${ns}/pods`, { credentials: 'include' }),
-                fetch(`${api}/namespaces/${ns}/metrics`, { credentials: 'include' }),
-                fetch(`${api}/namespaces/${ns}/events`, { credentials: 'include' }),
-                fetch(`${api}/namespaces/${ns}/deployments`, { credentials: 'include' }),
+            const [p, m, ev, d] = await Promise.all([
+                apiClient.getKubernetesPods(ns),
+                apiClient.getKubernetesMetrics(ns),
+                apiClient.getKubernetesEvents(ns),
+                apiClient.getKubernetesDeployments(ns),
             ]);
-            setPods(await podsRes.json());
-            setMetrics(await metricsRes.json());
-            setEvents(await eventsRes.json());
-            setDeployments(await depRes.json());
-        } catch (e: any) {
-            setError(e.message);
-        } finally {
-            setLoading(false);
-        }
-    }, [api]);
+            setPods(p); setMetrics(m); setEvents(ev); setDeployments(d);
+        } catch (e: any) { setError(e.message); }
+        finally { setLoading(false); }
+    }, []);
 
     useEffect(() => {
         if (selectedNamespace) fetchNamespaceData(selectedNamespace);
     }, [selectedNamespace, fetchNamespaceData]);
 
     return {
-        available,
-        context,
-        namespaces,
-        selectedNamespace,
-        setSelectedNamespace,
-        pods,
-        metrics,
-        events,
-        deployments,
-        loading,
-        error,
+        available, context, namespaces, selectedNamespace, setSelectedNamespace,
+        pods, metrics, events, deployments, loading, error,
         refresh: () => fetchNamespaceData(selectedNamespace),
     };
 }

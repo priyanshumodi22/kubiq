@@ -3,6 +3,22 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 
+export interface KubeContainer {
+    name: string;
+    image: string;
+    ready: boolean;
+    restartCount: number;
+    state: 'running' | 'waiting' | 'terminated' | 'unknown';
+    stateReason?: string;
+}
+
+export interface KubeCondition {
+    type: string;
+    status: string;
+    reason: string;
+    message: string;
+}
+
 export interface KubePod {
     name: string;
     namespace: string;
@@ -13,6 +29,9 @@ export interface KubePod {
     nodeName: string;
     startTime: string | null;
     lastTerminationReason?: string;
+    labels: Record<string, string>;
+    containers: KubeContainer[];
+    conditions: KubeCondition[];
 }
 
 export interface KubeMetric {
@@ -27,6 +46,7 @@ export interface KubeEvent {
     reason: string;
     message: string;
     involvedObject: string;
+    involvedKind: string;
     count: number;
     lastTimestamp: string | null;
 }
@@ -37,6 +57,9 @@ export interface KubeDeployment {
     replicas: number;
     readyReplicas: number;
     availableReplicas: number;
+    strategy: string;
+    labels: Record<string, string>;
+    conditions: KubeCondition[];
 }
 
 export class KubernetesService {
@@ -62,27 +85,20 @@ export class KubernetesService {
 
     public async initialize(): Promise<void> {
         try {
-            // ── Step 1: Pre-check kubeconfig file existence ──────────────────
-            // This avoids any network calls (and hanging) when there is simply
-            // no kubeconfig on this machine. KUBECONFIG env var is checked first,
-            // then the default ~/.kube/config path.
             const kubeConfigPath = process.env.KUBECONFIG ||
                 path.join(os.homedir(), '.kube', 'config');
 
             if (!fs.existsSync(kubeConfigPath)) {
                 console.log('☸️  No kubeconfig found — K8s monitoring disabled');
-                return; // fast exit, no network attempt
+                return;
             }
 
-            // ── Step 2: Load config & build API clients ───────────────────────
             this.kc.loadFromDefault();
             this.coreApi = this.kc.makeApiClient(k8s.CoreV1Api);
             this.appsApi = this.kc.makeApiClient(k8s.AppsV1Api);
             this.customApi = this.kc.makeApiClient(k8s.CustomObjectsApi);
             this.currentContext = this.kc.getCurrentContext() || 'default';
 
-            // ── Step 3: Connectivity test with hard 5-second timeout ──────────
-            // Prevents hanging when kubeconfig exists but the cluster is unreachable.
             const timeout = new Promise<never>((_, reject) =>
                 setTimeout(() => reject(new Error('K8s connection timeout (5s)')), 5000)
             );
@@ -109,17 +125,41 @@ export class KubernetesService {
         if (!this.available) return [];
         const res = await this.coreApi.listNamespacedPod({ namespace });
         return (res.items ?? []).map(pod => {
-            const cs = pod.status?.containerStatuses?.[0];
+            const containerStatuses = pod.status?.containerStatuses ?? [];
+            const specContainers = pod.spec?.containers ?? [];
+            const totalRestarts = containerStatuses.reduce((s, cs) => s + (cs.restartCount ?? 0), 0);
+
             return {
                 name: pod.metadata?.name ?? '—',
                 namespace: pod.metadata?.namespace ?? namespace,
                 status: pod.status?.phase ?? 'Unknown',
-                restarts: cs?.restartCount ?? 0,
-                ready: cs?.ready ?? false,
+                restarts: totalRestarts,
+                ready: containerStatuses.length > 0 && containerStatuses.every(cs => cs.ready),
                 podIP: pod.status?.podIP ?? '—',
                 nodeName: pod.spec?.nodeName ?? '—',
                 startTime: pod.status?.startTime?.toISOString() ?? null,
-                lastTerminationReason: cs?.lastState?.terminated?.reason,
+                lastTerminationReason: containerStatuses[0]?.lastState?.terminated?.reason,
+                labels: pod.metadata?.labels ?? {},
+                containers: specContainers.map(c => {
+                    const cs = containerStatuses.find(s => s.name === c.name);
+                    return {
+                        name: c.name,
+                        image: c.image ?? '—',
+                        ready: cs?.ready ?? false,
+                        restartCount: cs?.restartCount ?? 0,
+                        state: cs?.state?.running ? 'running'
+                            : cs?.state?.waiting ? 'waiting'
+                            : cs?.state?.terminated ? 'terminated'
+                            : 'unknown',
+                        stateReason: cs?.state?.waiting?.reason ?? cs?.state?.terminated?.reason,
+                    };
+                }),
+                conditions: (pod.status?.conditions ?? []).map(c => ({
+                    type: c.type,
+                    status: c.status,
+                    reason: c.reason ?? '—',
+                    message: c.message ?? '—',
+                })),
             };
         });
     }
@@ -144,7 +184,6 @@ export class KubernetesService {
                 })),
             }));
         } catch {
-            // Metrics Server may not be installed — return empty gracefully
             return [];
         }
     }
@@ -154,11 +193,7 @@ export class KubernetesService {
         const res = await this.coreApi.listNamespacedEvent({ namespace });
         return (res.items ?? [])
             .filter(e => e.type === 'Warning')
-            .sort((a, b) => {
-                const ta = a.lastTimestamp?.getTime() ?? 0;
-                const tb = b.lastTimestamp?.getTime() ?? 0;
-                return tb - ta;
-            })
+            .sort((a, b) => (b.lastTimestamp?.getTime() ?? 0) - (a.lastTimestamp?.getTime() ?? 0))
             .slice(0, 50)
             .map(e => ({
                 name: e.metadata?.name ?? '—',
@@ -166,6 +201,7 @@ export class KubernetesService {
                 reason: e.reason ?? '—',
                 message: e.message ?? '—',
                 involvedObject: e.involvedObject?.name ?? '—',
+                involvedKind: e.involvedObject?.kind ?? '—',
                 count: e.count ?? 1,
                 lastTimestamp: e.lastTimestamp?.toISOString() ?? null,
             }));
@@ -180,6 +216,15 @@ export class KubernetesService {
             replicas: d.spec?.replicas ?? 0,
             readyReplicas: d.status?.readyReplicas ?? 0,
             availableReplicas: d.status?.availableReplicas ?? 0,
+            strategy: d.spec?.strategy?.type ?? 'RollingUpdate',
+            labels: d.metadata?.labels ?? {},
+            conditions: (d.status?.conditions ?? []).map(c => ({
+                type: c.type,
+                status: c.status,
+                reason: c.reason ?? '—',
+                message: c.message ?? '—',
+            })),
         }));
     }
 }
+
