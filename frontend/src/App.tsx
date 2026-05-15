@@ -8,6 +8,7 @@ import Layout from './components/Layout';
 import AdminUsers from './pages/AdminUsers';
 import LogsPage from './pages/LogsPage';
 import ApmDashboard from './pages/ApmDashboard';
+import KubernetesDashboard from './pages/KubernetesDashboard';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, authEnabled } = useAuth();
@@ -89,6 +90,16 @@ function App() {
                 <ProtectedRoute>
                   <Layout>
                     <ApmDashboard />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/kubernetes"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <KubernetesDashboard />
                   </Layout>
                 </ProtectedRoute>
               }

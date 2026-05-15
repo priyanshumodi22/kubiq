@@ -110,6 +110,18 @@ export default function Header() {
                   APM & Traces
                 </Link>
               )}
+
+              {isAuthenticated && roles.includes('kubiq-admin') && (
+                <Link
+                  to="/kubernetes"
+                  className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${location.pathname.startsWith('/kubernetes')
+                    ? 'bg-primary text-white shadow-md'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    }`}
+                >
+                  Kubernetes
+                </Link>
+              )}
             </div>
           </nav>
 

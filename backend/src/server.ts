@@ -111,6 +111,8 @@ import { usersRouter } from './routes/users';
 import { systemRouter } from './routes/system';
 import { logRouter } from './routes/logs';
 import { apmIngestRouter, apmAnalyticsRouter } from './routes/apm';
+import { kubernetesRouter } from './routes/kubernetes';
+import { KubernetesService } from './services/KubernetesService';
 import { DatabaseFactory } from './database/DatabaseFactory';
 
 // Public routes
@@ -127,6 +129,7 @@ app.use(`${BACKEND_CONTEXT_PATH}/api/notifications`, authMiddleware, notificatio
 app.use(`${BACKEND_CONTEXT_PATH}/api/users`, authMiddleware, usersRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/system`, authMiddleware, systemRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/logs`, authMiddleware, logRouter); // Log Management
+app.use(`${BACKEND_CONTEXT_PATH}/api/kubernetes`, authMiddleware, kubernetesRouter); // Kubernetes Monitoring
 
 // Serve frontend static files
 const frontendPath = path.join(process.cwd(), 'public');
@@ -163,6 +166,11 @@ const startServer = async () => {
   try {
     await serviceMonitor.initialize();
     await notificationManager.initialize();
+
+    // Initialize Kubernetes Service in the background — never blocks startup.
+    // Routes already guard with k8sService.available before doing anything.
+    KubernetesService.getInstance().initialize().catch(() => {});
+
     // Initialize User Repository (triggers DB connection)
     await DatabaseFactory.getUserRepository();
 
