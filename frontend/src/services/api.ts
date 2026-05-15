@@ -328,6 +328,59 @@ class ApiClient {
     const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/deployments`);
     return response.data;
   }
+
+  // --- New K8s Methods ---
+  async getKubernetesNodes() {
+    const response = await this.client.get('/api/kubernetes/nodes');
+    return response.data;
+  }
+
+  async getKubernetesServices(namespace: string) {
+    const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/services`);
+    return response.data;
+  }
+
+  async getKubernetesEndpoints(namespace: string) {
+    const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/endpoints`);
+    return response.data;
+  }
+
+  async getKubernetesIngresses(namespace: string) {
+    const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/ingresses`);
+    return response.data;
+  }
+
+  async getKubernetesPersistentVolumes() {
+    const response = await this.client.get('/api/kubernetes/persistentvolumes');
+    return response.data;
+  }
+
+  async getKubernetesPersistentVolumeClaims(namespace: string) {
+    const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/persistentvolumeclaims`);
+    return response.data;
+  }
+
+  async getKubernetesStorageClasses() {
+    const response = await this.client.get('/api/kubernetes/storageclasses');
+    return response.data;
+  }
+
+  async getKubernetesConfigMaps(namespace: string) {
+    const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/configmaps`);
+    return response.data;
+  }
+
+  async getKubernetesSecrets(namespace: string) {
+    const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/secrets`);
+    return response.data;
+  }
+
+  async getKubernetesResourceYaml(namespace: string, type: string, name: string) {
+    // some resources are cluster scoped (nodes, pv, storageclasses), so namespace might be 'cluster' or '-'
+    const nsPath = namespace && namespace !== '-' ? `/namespaces/${namespace}` : '';
+    const response = await this.client.get(`/api/kubernetes${nsPath}/yaml/${type}/${name}`);
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();

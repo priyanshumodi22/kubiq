@@ -68,6 +68,8 @@ export class KubernetesService {
     private coreApi!: k8s.CoreV1Api;
     private appsApi!: k8s.AppsV1Api;
     private customApi!: k8s.CustomObjectsApi;
+    private netApi!: k8s.NetworkingV1Api;
+    private storageApi!: k8s.StorageV1Api;
 
     public available: boolean = false;
     public currentContext: string = '';
@@ -97,6 +99,8 @@ export class KubernetesService {
             this.coreApi = this.kc.makeApiClient(k8s.CoreV1Api);
             this.appsApi = this.kc.makeApiClient(k8s.AppsV1Api);
             this.customApi = this.kc.makeApiClient(k8s.CustomObjectsApi);
+            this.netApi = this.kc.makeApiClient(k8s.NetworkingV1Api);
+            this.storageApi = this.kc.makeApiClient(k8s.StorageV1Api);
             this.currentContext = this.kc.getCurrentContext() || 'default';
 
             const timeout = new Promise<never>((_, reject) =>
@@ -225,6 +229,114 @@ export class KubernetesService {
                 message: c.message ?? '—',
             })),
         }));
+    }
+
+    // --- New Network & Storage Resources ---
+
+    public async getNodes(): Promise<any[]> {
+        if (!this.available) return [];
+        const res = await this.coreApi.listNode();
+        return res.items ?? [];
+    }
+
+    public async getServices(namespace: string): Promise<any[]> {
+        if (!this.available) return [];
+        const res = await this.coreApi.listNamespacedService({ namespace });
+        return res.items ?? [];
+    }
+
+    public async getEndpoints(namespace: string): Promise<any[]> {
+        if (!this.available) return [];
+        const res = await this.coreApi.listNamespacedEndpoints({ namespace });
+        return res.items ?? [];
+    }
+
+    public async getIngresses(namespace: string): Promise<any[]> {
+        if (!this.available) return [];
+        const res = await this.netApi.listNamespacedIngress({ namespace });
+        return res.items ?? [];
+    }
+
+    public async getPersistentVolumes(): Promise<any[]> {
+        if (!this.available) return [];
+        const res = await this.coreApi.listPersistentVolume();
+        return res.items ?? [];
+    }
+
+    public async getPersistentVolumeClaims(namespace: string): Promise<any[]> {
+        if (!this.available) return [];
+        const res = await this.coreApi.listNamespacedPersistentVolumeClaim({ namespace });
+        return res.items ?? [];
+    }
+
+    public async getStorageClasses(): Promise<any[]> {
+        if (!this.available) return [];
+        const res = await this.storageApi.listStorageClass();
+        return res.items ?? [];
+    }
+
+    public async getConfigMaps(namespace: string): Promise<any[]> {
+        if (!this.available) return [];
+        const res = await this.coreApi.listNamespacedConfigMap({ namespace });
+        return res.items ?? [];
+    }
+
+    public async getSecrets(namespace: string): Promise<any[]> {
+        if (!this.available) return [];
+        const res = await this.coreApi.listNamespacedSecret({ namespace });
+        // Redact secret data for safety before sending to frontend
+        return (res.items ?? []).map(secret => {
+            const redactedData: any = {};
+            const data = (secret as any).data;
+            if (data) {
+                for (const key of Object.keys(data)) {
+                    redactedData[key] = '***REDACTED***';
+                }
+            }
+            return {
+                ...secret,
+                data: redactedData
+            };
+        });
+    }
+
+    public async getResourceRaw(namespace: string, resourceType: string, name: string): Promise<any> {
+        if (!this.available) return null;
+        try {
+            let res: any;
+            switch (resourceType) {
+                case 'pods': res = await this.coreApi.readNamespacedPod({ name, namespace }); break;
+                case 'deployments': res = await this.appsApi.readNamespacedDeployment({ name, namespace }); break;
+                case 'services': res = await this.coreApi.readNamespacedService({ name, namespace }); break;
+                case 'endpoints': res = await this.coreApi.readNamespacedEndpoints({ name, namespace }); break;
+                case 'ingresses': res = await this.netApi.readNamespacedIngress({ name, namespace }); break;
+                case 'configmaps': res = await this.coreApi.readNamespacedConfigMap({ name, namespace }); break;
+                case 'secrets': {
+                    res = await this.coreApi.readNamespacedSecret({ name, namespace });
+                    if (res && res.data) {
+                        const secretData = res.data as any;
+                        for (const key of Object.keys(secretData)) {
+                            secretData[key] = '***REDACTED***';
+                        }
+                    }
+                    break;
+                }
+                case 'nodes': res = await this.coreApi.readNode({ name }); break;
+                case 'persistentvolumes': res = await this.coreApi.readPersistentVolume({ name }); break;
+                case 'persistentvolumeclaims': res = await this.coreApi.readNamespacedPersistentVolumeClaim({ name, namespace }); break;
+                case 'storageclasses': res = await this.storageApi.readStorageClass({ name }); break;
+                case 'events': res = await this.coreApi.readNamespacedEvent({ name, namespace }); break;
+                default: return { error: `Unsupported resource type: ${resourceType}` };
+            }
+            
+            if (res && res.metadata?.managedFields) {
+                delete res.metadata.managedFields;
+            }
+            return res;
+        } catch (e) {
+            console.error(`Error fetching raw K8s resource ${resourceType}/${name}:`, e);
+            return null;
+        }
     }
 }
 
