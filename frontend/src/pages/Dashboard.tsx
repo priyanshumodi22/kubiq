@@ -155,74 +155,76 @@ export default function Dashboard() {
             </div>
 
             {/* Filter */}
-            <div className="flex items-center gap-2 relative" ref={filterDropdownRef}>
+            <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-text-dim flex-shrink-0" />
-              <button
-                onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
-                className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base bg-bg-elevated rounded-lg border border-gray-700 hover:border-primary focus:border-primary focus:outline-none transition-colors cursor-pointer"
-              >
-                <span className="whitespace-nowrap">
-                  {statusFilter === 'all' && 'All Status'}
-                  {statusFilter === 'healthy' && 'Healthy'}
-                  {statusFilter === 'unhealthy' && 'Unhealthy'}
-                  {statusFilter === 'unknown' && 'Unknown'}
-                </span>
-                <ChevronDown
-                  className={`w-4 h-4 text-text-dim transition-transform ${
-                    filterDropdownOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
+              <div className="relative" ref={filterDropdownRef}>
+                <button
+                  onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base bg-bg-elevated rounded-lg border border-gray-700 hover:border-primary focus:border-primary focus:outline-none transition-colors cursor-pointer"
+                >
+                  <span className="whitespace-nowrap">
+                    {statusFilter === 'all' && 'All Status'}
+                    {statusFilter === 'healthy' && 'Healthy'}
+                    {statusFilter === 'unhealthy' && 'Unhealthy'}
+                    {statusFilter === 'unknown' && 'Unknown'}
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-text-dim transition-transform ${
+                      filterDropdownOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
 
-              {/* Dropdown Menu */}
-              {filterDropdownOpen && (
-                <div className="absolute top-full mt-2 right-0 w-40 bg-bg-surface border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
-                  <button
-                    onClick={() => {
-                      setStatusFilter('all');
-                      setFilterDropdownOpen(false);
-                    }}
-                    className={`w-full px-4 py-2 text-sm text-left hover:bg-bg-elevated transition-colors ${
-                      statusFilter === 'all' ? 'bg-primary/10 text-primary' : 'text-text'
-                    }`}
-                  >
-                    All Status
-                  </button>
-                  <button
-                    onClick={() => {
-                      setStatusFilter('healthy');
-                      setFilterDropdownOpen(false);
-                    }}
-                    className={`w-full px-4 py-2 text-sm text-left hover:bg-bg-elevated transition-colors ${
-                      statusFilter === 'healthy' ? 'bg-primary/10 text-primary' : 'text-text'
-                    }`}
-                  >
-                    Healthy
-                  </button>
-                  <button
-                    onClick={() => {
-                      setStatusFilter('unhealthy');
-                      setFilterDropdownOpen(false);
-                    }}
-                    className={`w-full px-4 py-2 text-sm text-left hover:bg-bg-elevated transition-colors ${
-                      statusFilter === 'unhealthy' ? 'bg-primary/10 text-primary' : 'text-text'
-                    }`}
-                  >
-                    Unhealthy
-                  </button>
-                  <button
-                    onClick={() => {
-                      setStatusFilter('unknown');
-                      setFilterDropdownOpen(false);
-                    }}
-                    className={`w-full px-4 py-2 text-sm text-left hover:bg-bg-elevated transition-colors ${
-                      statusFilter === 'unknown' ? 'bg-primary/10 text-primary' : 'text-text'
-                    }`}
-                  >
-                    Unknown
-                  </button>
-                </div>
-              )}
+                {/* Dropdown Menu */}
+                {filterDropdownOpen && (
+                  <div className="absolute top-full mt-2 right-0 w-full bg-bg-surface border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                    <button
+                      onClick={() => {
+                        setStatusFilter('all');
+                        setFilterDropdownOpen(false);
+                      }}
+                      className={`w-full px-4 py-2 text-sm text-left hover:bg-bg-elevated transition-colors ${
+                        statusFilter === 'all' ? 'bg-primary/10 text-primary' : 'text-text'
+                      }`}
+                    >
+                      All Status
+                    </button>
+                    <button
+                      onClick={() => {
+                        setStatusFilter('healthy');
+                        setFilterDropdownOpen(false);
+                      }}
+                      className={`w-full px-4 py-2 text-sm text-left hover:bg-bg-elevated transition-colors ${
+                        statusFilter === 'healthy' ? 'bg-primary/10 text-primary' : 'text-text'
+                      }`}
+                    >
+                      Healthy
+                    </button>
+                    <button
+                      onClick={() => {
+                        setStatusFilter('unhealthy');
+                        setFilterDropdownOpen(false);
+                      }}
+                      className={`w-full px-4 py-2 text-sm text-left hover:bg-bg-elevated transition-colors ${
+                        statusFilter === 'unhealthy' ? 'bg-primary/10 text-primary' : 'text-text'
+                      }`}
+                    >
+                      Unhealthy
+                    </button>
+                    <button
+                      onClick={() => {
+                        setStatusFilter('unknown');
+                        setFilterDropdownOpen(false);
+                      }}
+                      className={`w-full px-4 py-2 text-sm text-left hover:bg-bg-elevated transition-colors ${
+                        statusFilter === 'unknown' ? 'bg-primary/10 text-primary' : 'text-text'
+                      }`}
+                    >
+                      Unknown
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Refresh */}

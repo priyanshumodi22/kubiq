@@ -14,14 +14,17 @@
     "lint:fix": "eslint . --ext ts,tsx --fix"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "@simplewebauthn/browser": "^13.2.2",
     "@types/dagre": "^0.7.53",
     "@xyflow/react": "^12.10.1",
     "axios": "^1.13.2",
     "clsx": "^2.1.1",
     "dagre": "^0.8.5",
+    "js-yaml": "^4.1.1",
     "keycloak-js": "^26.2.2",
     "lucide-react": "^0.562.0",
+    "monaco-editor": "^0.55.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-router-dom": "^7.11.0",
@@ -31,6 +34,7 @@
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.10.5",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",

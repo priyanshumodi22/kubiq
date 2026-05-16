@@ -4,10 +4,17 @@ import {
     RefreshCw, ChevronDown, AlertTriangle,
     Box, Layers, Activity, Network,
     Search, X, Server, Database, Globe, FileJson, Settings,
-    Trash2, Sliders, Plus, Minus
+    Trash2, Sliders, Plus, Minus, Copy, Save, Terminal
 } from 'lucide-react';
+import { Editor, loader } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
+import yamlParser from 'js-yaml';
+
+// Configure monaco to load from local node_modules instead of CDN
+loader.config({ monaco });
 import { useKubernetes, KubeMetric } from '../hooks/useKubernetes';
 import { apiClient } from '../services/api';
+import { useToast } from '../contexts/ToastContext';
 import { K8sLogViewer } from '../components/K8sLogViewer';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -55,12 +62,21 @@ function timeAgo(iso: string | null): string {
     return `${Math.floor(diff / 86400)}d`;
 }
 
-function PodStatusBadge({ status }: { status: string }) {
-    let color = 'bg-gray-500/10 text-gray-400 border-gray-500/20';
-    let label = status;
+export function copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text).then(() => {
+        console.log('Copied to clipboard');
+    });
+}
 
-    const s = (status || '').toLowerCase();
-    if (s.includes('running') || s.includes('completed')) {
+function PodStatusBadge({ status, isTerminating }: { status: string, isTerminating?: boolean }) {
+    let color = 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+    let label = isTerminating ? 'Terminating' : status;
+
+    const s = String(status || '').toLowerCase();
+    
+    if (isTerminating) {
+        color = 'bg-orange-500/10 text-orange-400 border-orange-500/20';
+    } else if (s.includes('running') || s.includes('completed')) {
         color = 'bg-green-500/10 text-green-400 border-green-500/20';
     } else if (s.includes('pending') || s.includes('containercreating') || s.includes('podinitializing')) {
         color = 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
@@ -68,9 +84,11 @@ function PodStatusBadge({ status }: { status: string }) {
         color = 'bg-red-500/10 text-red-400 border-red-500/20';
     }
 
+    const isRunning = s.includes('running') && !isTerminating;
+
     return (
         <div className={`px-2 py-0.5 rounded-full border text-[10px] font-medium inline-flex items-center gap-1.5 ${color}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${s.includes('running') ? 'animate-pulse bg-green-400' : 'bg-current'}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${isRunning ? 'animate-pulse bg-green-400' : isTerminating ? 'animate-pulse bg-orange-400' : 'bg-current'}`} />
             {label}
         </div>
     );
@@ -136,6 +154,10 @@ const QuickActions = ({
     onRestart: (name: string) => Promise<void>,
     onDelete: (type: string, name: string) => Promise<void>
 }) => {
+    // Hide management for non-manageable resources
+    const nonManageable = ['nodes', 'events', 'storageclasses', 'namespaces'];
+    if (nonManageable.includes(item.type?.toLowerCase())) return null;
+
     const [isScaling, setIsScaling] = useState(false);
     const [replicas, setReplicas] = useState(item.data.totalContainers || item.data.replicas || 0);
     const [actionLoading, setActionLoading] = useState(false);
@@ -252,26 +274,31 @@ const QuickActions = ({
     );
 };
 
-// ── Slide-over Detail & YAML Panel ────────────────────────────────────────────
-
 function DetailPanel({ 
     item, 
     onClose, 
     namespace,
     onScale,
     onRestart,
-    onDelete
+    onDelete,
+    onApplyManifest
 }: { 
     item: any, 
     onClose: () => void, 
     namespace: string,
     onScale: (name: string, replicas: number) => Promise<void>,
     onRestart: (name: string) => Promise<void>,
-    onDelete: (type: string, name: string) => Promise<void>
+    onDelete: (type: string, name: string) => Promise<void>,
+    onApplyManifest: (manifest: string) => Promise<void>
 }) {
+
     const [yaml, setYaml] = useState<string>('');
     const [loadingYaml, setLoadingYaml] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedYaml, setEditedYaml] = useState<string>('');
+    const [applyingYaml, setApplyingYaml] = useState(false);
     const [activeTab, setActiveTab] = useState<'details' | 'yaml' | 'logs'>('details');
+    const { addToast } = useToast() as any;
     const canShowLogs = item?.type === 'pods' || item?.type === 'deployments';
 
     useEffect(() => {
@@ -289,7 +316,9 @@ function DetailPanel({
 
             apiClient.getKubernetesResourceYaml(resourceNs, item.type, resourceName)
                 .then(data => {
-                    setYaml(JSON.stringify(data, null, 2));
+                    const y = yamlParser.dump(data, { indent: 2, noRefs: true });
+                    setYaml(y);
+                    setEditedYaml(y);
                 })
                 .catch(err => {
                     setYaml(`Error loading YAML: ${err.message}`);
@@ -297,6 +326,21 @@ function DetailPanel({
                 .finally(() => setLoadingYaml(false));
         }
     }, [item, namespace]);
+
+    const handleApply = async () => {
+        setApplyingYaml(true);
+        try {
+            await onApplyManifest(editedYaml);
+            setYaml(editedYaml);
+            setIsEditing(false);
+            addToast('Manifest applied successfully', 'success');
+        } catch (err: any) {
+            addToast(`Apply failed: ${err.message}`, 'error');
+        } finally {
+            setApplyingYaml(false);
+        }
+    };
+
 
 
     // Keyboard shortcut to close
@@ -307,6 +351,8 @@ function DetailPanel({
     }, [onClose]);
 
     if (!item) return null;
+
+    const isReadOnly = ['nodes', 'events', 'storageclasses', 'namespaces'].includes(item.type?.toLowerCase());
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
@@ -363,15 +409,91 @@ function DetailPanel({
                             }
                         />
                     ) : activeTab === 'yaml' ? (
-                        <div className="p-4 h-full flex flex-col">
+                        <div className="p-4 h-full flex flex-col min-h-0 overflow-hidden">
+                            <div className="flex items-center justify-between mb-4 bg-black/20 p-2 rounded-lg border border-gray-800">
+                                <div className="flex items-center gap-3">
+                                    <Terminal className="w-4 h-4 text-primary" />
+                                    <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">Resource Manifest</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    {!isReadOnly && (
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[10px] font-bold uppercase transition-colors ${isEditing ? 'text-primary' : 'text-gray-500'}`}>Edit Mode</span>
+                                            <button 
+                                                onClick={() => setIsEditing(!isEditing)}
+                                                className={`relative w-10 h-5 rounded-full transition-all duration-300 ${isEditing ? 'bg-primary' : 'bg-gray-700'}`}
+                                            >
+                                                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all duration-300 ${isEditing ? 'left-6' : 'left-1'}`} />
+                                            </button>
+                                        </div>
+                                    )}
+                                    <button 
+                                        onClick={() => copyToClipboard(isEditing ? editedYaml : yaml)} 
+                                        className="p-1.5 hover:bg-white/10 text-gray-400 hover:text-white rounded transition-colors"
+                                        title="Copy to clipboard"
+                                    >
+                                        <Copy className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+
                             {loadingYaml ? (
                                 <div className="flex-1 flex justify-center items-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
                             ) : (
-                                <div className="relative flex-1 group">
-                                    <button onClick={() => copyToClipboard(yaml)} className="absolute top-2 right-2 bg-white/10 hover:bg-white/20 text-gray-300 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">Copy</button>
-                                    <pre className="text-xs font-mono text-gray-300 bg-[#1a1a1a] p-4 rounded-lg overflow-auto border border-gray-800 h-full">
-                                        {yaml}
-                                    </pre>
+                                <div className="flex-1 flex flex-col min-h-0 rounded-xl overflow-hidden border border-gray-800 shadow-2xl">
+                                    {isEditing ? (
+                                        <div className="flex-1 flex flex-col min-h-0">
+                                            <div className="flex-1 min-h-0 bg-[#1e1e1e]">
+                                                <Editor
+                                                    height="100%"
+                                                    defaultLanguage="yaml"
+                                                    theme="vs-dark"
+                                                    value={editedYaml}
+                                                    onChange={(val) => setEditedYaml(val || '')}
+                                                    options={{
+                                                        minimap: { enabled: false },
+                                                        fontSize: 12,
+                                                        fontFamily: 'JetBrains Mono, monospace',
+                                                        scrollBeyondLastLine: false,
+                                                        lineNumbers: 'on',
+                                                        automaticLayout: true,
+                                                        padding: { top: 16, bottom: 16 }
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="p-4 bg-[#141414] border-t border-white/10 flex justify-end items-center gap-4">
+                                                {editedYaml !== yaml && !applyingYaml && (
+                                                    <span className="text-[10px] text-primary font-bold uppercase tracking-widest opacity-80">
+                                                        Unsaved changes
+                                                    </span>
+                                                )}
+                                                <button 
+                                                    onClick={handleApply}
+                                                    disabled={applyingYaml || editedYaml === yaml}
+                                                    className={`
+                                                        flex items-center gap-2 px-6 py-2 
+                                                        rounded-lg text-[11px] font-bold uppercase tracking-wider
+                                                        transition-all duration-200
+                                                        ${applyingYaml || editedYaml === yaml 
+                                                            ? 'bg-gray-800 text-gray-500 cursor-not-allowed' 
+                                                            : 'bg-primary text-black hover:bg-primary/90 active:scale-95 shadow-lg shadow-black/40'
+                                                        }
+                                                    `}
+                                                >
+                                                    {applyingYaml ? (
+                                                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                                    ) : (
+                                                        <Save className="w-3.5 h-3.5" />
+                                                    )}
+                                                    {applyingYaml ? 'Deploying...' : 'Deploy Changes'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <pre className="flex-1 text-[11px] font-mono text-gray-300 bg-[#1a1a1a] p-6 overflow-auto scrollbar-thin scrollbar-thumb-gray-800 leading-relaxed">
+                                            {yaml}
+                                        </pre>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -469,16 +591,29 @@ function DetailPanel({
                                     <div className="bg-[#1a1a1a] border border-gray-800 rounded-lg overflow-hidden">
                                         <table className="w-full text-left text-xs">
                                             <thead className="bg-black/20 text-gray-400">
-                                                <tr><th className="px-3 py-2 font-medium">Type</th><th className="px-3 py-2 font-medium">Status</th><th className="px-3 py-2 font-medium">Reason</th></tr>
+                                                <tr>
+                                                    <th className="px-3 py-2 font-medium w-1/4">Type</th>
+                                                    <th className="px-3 py-2 font-medium w-1/6">Status</th>
+                                                    <th className="px-3 py-2 font-medium">Reason & Message</th>
+                                                </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-800/50">
                                                 {item.data.conditions.map((c: any, i: number) => (
-                                                    <tr key={i}>
-                                                        <td className="px-3 py-2 text-gray-200">{c.type}</td>
-                                                        <td className="px-3 py-2">
-                                                            <span className={c.status === 'True' ? 'text-green-400' : 'text-gray-500'}>{c.status}</span>
+                                                    <tr key={i} className="align-top">
+                                                        <td className="px-3 py-3 text-gray-200 font-medium">{c.type}</td>
+                                                        <td className="px-3 py-3">
+                                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${c.status === 'True' ? 'bg-green-500/10 text-green-400' : 'bg-gray-500/10 text-gray-500'}`}>
+                                                                {c.status}
+                                                            </span>
                                                         </td>
-                                                        <td className="px-3 py-2 text-gray-400 truncate max-w-[200px]" title={c.message}>{c.reason !== '—' ? c.reason : c.message}</td>
+                                                        <td className="px-3 py-3">
+                                                            <div className="text-gray-300 font-semibold text-[11px] mb-1">{c.reason !== '—' ? c.reason : 'Status Info'}</div>
+                                                            {c.message && (
+                                                                <div className="text-[11px] leading-relaxed text-gray-500 break-words max-w-md bg-black/10 p-2 rounded border border-white/[0.02]">
+                                                                    {c.message}
+                                                                </div>
+                                                            )}
+                                                        </td>
                                                     </tr>
                                                 ))}
                                             </tbody>
@@ -939,7 +1074,7 @@ export default function KubernetesDashboard() {
                                                                 <td className="px-4 py-2.5 font-mono text-[11px] text-gray-400">
                                                                     {item.readyCount}/{item.totalContainers}
                                                                 </td>
-                                                                <td className="px-4 py-2.5"><PodStatusBadge status={item.status} /></td>
+                                                                <td className="px-4 py-2.5"><PodStatusBadge status={item.status} isTerminating={item.isTerminating} /></td>
                                                                 <td className="px-4 py-2.5 text-center font-mono text-xs text-yellow-400/80">{parseCpu(getMetricForPod(metrics, name).cpu)}</td>
                                                                 <td className="px-4 py-2.5 text-center font-mono text-xs text-blue-400/80">{parseMemory(getMetricForPod(metrics, name).memory)}</td>
                                                                 <td className="px-4 py-2.5 text-center text-xs font-medium text-gray-400">{item.restarts}</td>
@@ -993,6 +1128,7 @@ export default function KubernetesDashboard() {
                     onScale={scaleDeployment}
                     onRestart={restartDeployment}
                     onDelete={deleteResource}
+                    onApplyManifest={apiClient.applyKubernetesManifest.bind(apiClient)}
                 />
             )}
         </div>

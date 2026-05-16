@@ -1,4 +1,5 @@
 import express from 'express';
+import yaml from 'js-yaml';
 import { KubernetesService } from '../services/KubernetesService';
 
 const router = express.Router();
@@ -158,6 +159,28 @@ router.delete('/namespaces/:ns/:type/:name', async (req, res) => {
         await k8sService.deleteResource(req.params.ns, req.params.type, req.params.name);
         res.json({ message: 'Deletion initiated' });
     } catch (e: any) { res.status(500).json({ message: e.message }); }
+});
+
+// POST /api/kubernetes/apply - Apply raw YAML/JSON manifest
+router.post('/apply', async (req, res) => {
+    try {
+        let { manifest } = req.body;
+        if (!manifest) return res.status(400).json({ message: 'Manifest is required' });
+
+        // If manifest is a string (YAML), parse it
+        if (typeof manifest === 'string') {
+            try {
+                manifest = yaml.load(manifest);
+            } catch (yamlError: any) {
+                return res.status(400).json({ message: `YAML Parsing Error: ${yamlError.message}` });
+            }
+        }
+
+        const result = await k8sService.applyResource(manifest);
+        res.json(result);
+    } catch (e: any) {
+        res.status(500).json({ message: e.message });
+    }
 });
 
 router.get('/namespaces/:ns/yaml/:type/:name', async (req, res) => {

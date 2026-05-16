@@ -65,7 +65,7 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'sha256-Ufh4gFF+3wijVQyJo86U1jiXhiwxTNfKBjPqBWLdvEY='"], // Allow inline scripts for Keycloak silent-check-sso.html
+        scriptSrc: ["'self'", "'unsafe-inline'", "'sha256-Ufh4gFF+3wijVQyJo86U1jiXhiwxTNfKBjPqBWLdvEY='"], // Allow inline scripts for Keycloak
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'https:'],
         connectSrc: ["'self'", ...(KEYCLOAK_ORIGIN ? [KEYCLOAK_ORIGIN] : [])],

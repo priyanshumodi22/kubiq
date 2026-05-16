@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Trash2, Bell, Check, AlertCircle, Send, Pencil } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { X, Trash2, Bell, Check, AlertCircle, Send, Pencil, ChevronDown, Info, RefreshCw } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { ConfirmDialog } from './ConfirmDialog';
 import { useAuth } from '../contexts/AuthContext';
@@ -51,186 +52,232 @@ function ChannelForm({
     const [config, setConfig] = useState<any>(initialValues?.config || {});
     const [events, setEvents] = useState(initialValues?.events || { up: true, down: true });
 
+    // Custom Dropdown State
+    const [isTypeOpen, setIsTypeOpen] = useState(false);
+    const typeTriggerRef = React.useRef<HTMLButtonElement>(null);
+    const typePanelRef = React.useRef<HTMLDivElement>(null);
+    const [typeRect, setTypeRect] = useState<{ top: number, left: number, width: number } | null>(null);
+
+    const channelTypes = [
+        { value: 'webhook', label: 'Webhook (Slack/Teams/Discord)', icon: <Send className="w-4 h-4" /> },
+        { value: 'email', label: 'Email (SMTP)', icon: <Bell className="w-4 h-4" /> },
+    ];
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (typeTriggerRef.current?.contains(e.target as Node)) return;
+            if (typePanelRef.current?.contains(e.target as Node)) return;
+            setIsTypeOpen(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onSubmit({ name, type, config, events, enabled: true });
     };
 
+    const inputClasses = "w-full h-[46px] px-4 bg-black/20 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all duration-200 text-sm";
+    const labelClasses = "block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1";
+
     return (
-        <form onSubmit={handleSubmit} className="space-y-4 bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-            <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Friendly Name</label>
-                <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    placeholder="e.g. DevOps Slack"
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                />
-            </div>
-
-            <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Type</label>
-                <select
-                    value={type}
-                    onChange={e => setType(e.target.value as any)}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                >
-                    <option value="webhook">Webhook (Slack/Teams/Discord)</option>
-                    <option value="email">Email (SMTP)</option>
-                </select>
-            </div>
-
-            {type === 'webhook' && (
+        <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                 <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Webhook URL</label>
+                    <label className={labelClasses}>Friendly Name</label>
                     <input
-                        type="url"
+                        type="text"
                         required
-                        value={config.webhookUrl || ''}
-                        onChange={e => setConfig({ ...config, webhookUrl: e.target.value })}
-                        placeholder="https://hooks.slack.com/services/..."
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                        placeholder="e.g. DevOps Slack"
+                        className={inputClasses}
                     />
-                    <p className="mt-1 text-xs text-text-dim">Works with Slack, Discord, MS Teams, Google Chat</p>
                 </div>
-            )}
 
-            {type === 'email' && (
-                <div className="space-y-3 p-3 border border-gray-800 rounded-lg bg-gray-900/50">
-                    <div className="grid grid-cols-2 gap-3 border-b border-gray-800 pb-3">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">From Name (Optional)</label>
-                            <input
-                                type="text"
-                                value={config.senderName || ''}
-                                onChange={e => setConfig({ ...config, senderName: e.target.value })}
-                                placeholder="Kubiq Alerts"
-                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">From Email (Optional)</label>
-                            <input
-                                type="text"
-                                value={config.senderEmail || ''}
-                                onChange={e => setConfig({ ...config, senderEmail: e.target.value })}
-                                placeholder="no-reply@kubiq.local"
-                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
-                            />
-                        </div>
+                <div>
+                    <label className={labelClasses}>Channel Type</label>
+                    <div className="relative">
+                        <button
+                            ref={typeTriggerRef}
+                            type="button"
+                            onClick={() => {
+                                if (typeTriggerRef.current) {
+                                    const r = typeTriggerRef.current.getBoundingClientRect();
+                                    setTypeRect({ top: r.bottom + 4, left: r.left, width: r.width });
+                                }
+                                setIsTypeOpen(!isTypeOpen);
+                            }}
+                            className={`${inputClasses} flex items-center justify-between hover:border-primary/50 transition-all`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className="text-primary">
+                                    {channelTypes.find(t => t.value === type)?.icon}
+                                </span>
+                                <span>{channelTypes.find(t => t.value === type)?.label}</span>
+                            </div>
+                            <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isTypeOpen ? 'rotate-180' : ''}`} />
+                        </button>
                     </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1">To: Recipient Email(s)</label>
-                        <input
-                            type="text"
-                            value={config.email || ''}
-                            onChange={e => setConfig({ ...config, email: e.target.value })}
-                            placeholder="email1@example.com, email2@example.com"
-                            className="w-full bg-bg-surface border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary placeholder-gray-600"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Separate multiple addresses with commas</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">CC (Optional)</label>
-                            <input
-                                type="text"
-                                value={config.cc || ''}
-                                onChange={e => setConfig({ ...config, cc: e.target.value })}
-                                placeholder="cc@example.com"
-                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">BCC (Optional)</label>
-                            <input
-                                type="text"
-                                value={config.bcc || ''}
-                                onChange={e => setConfig({ ...config, bcc: e.target.value })}
-                                placeholder="bcc@example.com"
-                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
-                            />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">SMTP Host</label>
-                            <input
-                                type="text"
-                                required
-                                value={config.smtpHost || ''}
-                                onChange={e => setConfig({ ...config, smtpHost: e.target.value })}
-                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">SMTP Port</label>
-                            <input
-                                type="number"
-                                required
-                                value={config.smtpPort || 587}
-                                onChange={e => setConfig({ ...config, smtpPort: parseInt(e.target.value) })}
-                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
-                            />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">Username (Optional)</label>
-                            <input
-                                type="text"
-                                value={config.smtpUser || ''}
-                                onChange={e => setConfig({ ...config, smtpUser: e.target.value })}
-                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">Password (Optional)</label>
-                            <input
-                                type="password"
-                                value={config.smtpPass || ''}
-                                onChange={e => setConfig({ ...config, smtpPass: e.target.value })}
-                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <div className="flex gap-4 pt-2">
-                <div className="flex items-center gap-2">
-                    <input 
-                        type="checkbox" 
-                        id="eventUp"
-                        checked={events.up}
-                        onChange={e => setEvents({...events, up: e.target.checked})}
-                        className="rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-blue-500"
-                    />
-                    <label htmlFor="eventUp" className="text-sm text-gray-300">Notify when UP ✅</label>
-                </div>
-                <div className="flex items-center gap-2">
-                    <input 
-                        type="checkbox" 
-                        id="eventDown"
-                        checked={events.down}
-                        onChange={e => setEvents({...events, down: e.target.checked})}
-                        className="rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-blue-500"
-                    />
-                    <label htmlFor="eventDown" className="text-sm text-gray-300">Notify when DOWN 🔴</label>
                 </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4">
+            {/* Custom Dropdown Portal */}
+            {isTypeOpen && typeRect && createPortal(
+                <div
+                    ref={typePanelRef}
+                    style={{ position: 'fixed', top: typeRect.top, left: typeRect.left, width: typeRect.width, zIndex: 10000 }}
+                    className="bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200"
+                >
+                    {channelTypes.map(opt => (
+                        <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => { setType(opt.value as any); setIsTypeOpen(false); }}
+                            className={`w-full text-left px-4 py-3 text-sm transition-colors hover:bg-white/5 flex items-center gap-3 ${
+                                type === opt.value ? 'bg-primary/10 text-primary' : 'text-gray-300'
+                            }`}
+                        >
+                            <span className={type === opt.value ? 'text-primary' : 'text-gray-500'}>
+                                {opt.icon}
+                            </span>
+                            {opt.label}
+                        </button>
+                    ))}
+                </div>,
+                document.body
+            )}
+
+            <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 space-y-5">
+                {type === 'webhook' && (
+                    <div className="space-y-1 animate-in fade-in slide-in-from-left-2 duration-300">
+                        <label className={labelClasses}>Webhook URL</label>
+                        <div className="relative">
+                            <input
+                                type="url"
+                                required
+                                value={config.webhookUrl || ''}
+                                onChange={e => setConfig({ ...config, webhookUrl: e.target.value })}
+                                placeholder="https://hooks.slack.com/services/..."
+                                className={`${inputClasses} pl-10`}
+                            />
+                            <Send className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/50" />
+                        </div>
+                        <p className="mt-2 text-[10px] text-gray-500 flex items-center gap-1.5 ml-1">
+                            <Info className="w-3 h-3" />
+                            Works with Slack, Discord, MS Teams, and Google Chat
+                        </p>
+                    </div>
+                )}
+
+                {type === 'email' && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label className={labelClasses}>Sender Name</label>
+                                <input
+                                    type="text"
+                                    value={config.senderName || ''}
+                                    onChange={e => setConfig({ ...config, senderName: e.target.value })}
+                                    placeholder="Kubiq Alerts"
+                                    className={inputClasses}
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className={labelClasses}>Sender Email</label>
+                                <input
+                                    type="text"
+                                    value={config.senderEmail || ''}
+                                    onChange={e => setConfig({ ...config, senderEmail: e.target.value })}
+                                    placeholder="no-reply@kubiq.local"
+                                    className={inputClasses}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className={labelClasses}>Recipient Email(s)</label>
+                            <input
+                                type="text"
+                                value={config.email || ''}
+                                onChange={e => setConfig({ ...config, email: e.target.value })}
+                                placeholder="email1@example.com, email2@example.com"
+                                className={inputClasses}
+                            />
+                            <p className="text-[10px] text-gray-500 mt-1.5 ml-1">Separate multiple addresses with commas</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label className={labelClasses}>SMTP Host</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={config.smtpHost || ''}
+                                    onChange={e => setConfig({ ...config, smtpHost: e.target.value })}
+                                    placeholder="smtp.gmail.com"
+                                    className={inputClasses}
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className={labelClasses}>SMTP Port</label>
+                                <input
+                                    type="number"
+                                    required
+                                    value={config.smtpPort || 587}
+                                    onChange={e => setConfig({ ...config, smtpPort: parseInt(e.target.value) })}
+                                    className={inputClasses}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label className={labelClasses}>Username</label>
+                                <input
+                                    type="text"
+                                    value={config.smtpUser || ''}
+                                    onChange={e => setConfig({ ...config, smtpUser: e.target.value })}
+                                    className={inputClasses}
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className={labelClasses}>Password</label>
+                                <input
+                                    type="password"
+                                    value={config.smtpPass || ''}
+                                    onChange={e => setConfig({ ...config, smtpPass: e.target.value })}
+                                    className={inputClasses}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-6 px-1">
+                <div className="flex items-center gap-3 group cursor-pointer" onClick={() => setEvents({...events, up: !events.up})}>
+                    <div className={`w-5 h-5 rounded border transition-all duration-200 flex items-center justify-center ${events.up ? 'bg-primary border-primary shadow-lg shadow-primary/20' : 'bg-black/40 border-white/10 group-hover:border-white/20'}`}>
+                        {events.up && <Check className="w-3.5 h-3.5 text-black font-bold" />}
+                    </div>
+                    <span className="text-sm text-gray-300">Notify when <span className="text-success font-medium">UP ✅</span></span>
+                </div>
+                <div className="flex items-center gap-3 group cursor-pointer" onClick={() => setEvents({...events, down: !events.down})}>
+                    <div className={`w-5 h-5 rounded border transition-all duration-200 flex items-center justify-center ${events.down ? 'bg-primary border-primary shadow-lg shadow-primary/20' : 'bg-black/40 border-white/10 group-hover:border-white/20'}`}>
+                        {events.down && <Check className="w-3.5 h-3.5 text-black font-bold" />}
+                    </div>
+                    <span className="text-sm text-gray-300">Notify when <span className="text-error font-medium">DOWN 🔴</span></span>
+                </div>
+            </div>
+
+            <div className="flex justify-end items-center gap-4 pt-4 border-t border-white/5">
                 {onCancel && (
                     <button
                         type="button"
                         onClick={onCancel}
                         disabled={isLoading}
-                        className="px-4 py-2 bg-transparent hover:bg-white/5 text-gray-300 rounded-lg transition-colors"
+                        className="px-6 py-2.5 text-sm font-medium text-gray-400 hover:text-white transition-colors"
                     >
                         Cancel
                     </button>
@@ -238,9 +285,14 @@ function ChannelForm({
                 <button
                     type="submit"
                     disabled={isLoading}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors flex items-center gap-2"
+                    className="flex items-center gap-2 px-8 py-2.5 bg-primary text-black rounded-xl text-sm font-bold hover:bg-primary-hover active:scale-95 transition-all shadow-lg shadow-primary/10 disabled:opacity-50"
                 >
-                    {isLoading ? 'Saving...' : <><Check className="w-4 h-4" /> Save Channel</>}
+                    {isLoading ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                        <Check className="w-4 h-4" />
+                    )}
+                    {isLoading ? 'Saving...' : 'Save Channel'}
                 </button>
             </div>
         </form>

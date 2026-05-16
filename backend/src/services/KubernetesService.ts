@@ -70,6 +70,7 @@ export class KubernetesService {
     private customApi!: k8s.CustomObjectsApi;
     private netApi!: k8s.NetworkingV1Api;
     private storageApi!: k8s.StorageV1Api;
+    private objectApi!: k8s.KubernetesObjectApi;
 
     public available: boolean = false;
     public currentContext: string = '';
@@ -105,6 +106,7 @@ export class KubernetesService {
             this.customApi = this.kc.makeApiClient(k8s.CustomObjectsApi);
             this.netApi = this.kc.makeApiClient(k8s.NetworkingV1Api);
             this.storageApi = this.kc.makeApiClient(k8s.StorageV1Api);
+            this.objectApi = k8s.KubernetesObjectApi.makeApiClient(this.kc);
             this.currentContext = this.kc.getCurrentContext() || 'default';
 
             const timeout = new Promise<never>((_, reject) =>
@@ -156,6 +158,7 @@ export class KubernetesService {
                 name: pod.metadata?.name ?? '—',
                 namespace: pod.metadata?.namespace ?? namespace,
                 status: detailedStatus,
+                isTerminating: !!pod.metadata?.deletionTimestamp,
                 restarts: totalRestarts,
                 ready: containerStatuses.length > 0 && containerStatuses.every(cs => cs.ready),
                 readyCount: readyContainers,
@@ -334,10 +337,17 @@ export class KubernetesService {
                 case 'configmaps': res = await this.coreApi.readNamespacedConfigMap({ name, namespace }); break;
                 case 'secrets': {
                     res = await this.coreApi.readNamespacedSecret({ name, namespace });
-                    if (res && res.data) {
-                        const secretData = res.data as any;
-                        for (const key of Object.keys(secretData)) {
-                            secretData[key] = '***REDACTED***';
+                    if (res) {
+                        // Redact data
+                        if (res.data) {
+                            const secretData = res.data as any;
+                            for (const key of Object.keys(secretData)) {
+                                secretData[key] = '***REDACTED***';
+                            }
+                        }
+                        // Scrub last-applied-configuration annotation to prevent leaks
+                        if (res.metadata?.annotations?.['kubectl.kubernetes.io/last-applied-configuration']) {
+                            delete res.metadata.annotations['kubectl.kubernetes.io/last-applied-configuration'];
                         }
                     }
                     break;
@@ -428,5 +438,24 @@ export class KubernetesService {
             throw e;
         }
     }
+
+    async applyResource(manifest: any) {
+        if (!manifest.kind || !manifest.metadata?.name) {
+            throw new Error('Invalid manifest: missing kind or metadata.name');
+        }
+
+        const name = manifest.metadata.name;
+
+        try {
+            // Simplified patch call: let the library handle the default strategy (strategic merge)
+            // This is the most compatible way to handle native resources like Deployments
+            const response = await this.objectApi.patch(manifest);
+            return response.body;
+        } catch (error: any) {
+            console.error(`Error applying resource ${manifest.kind}/${name}:`, error.body || error);
+            throw error;
+        }
+    }
 }
+
 

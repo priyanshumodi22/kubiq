@@ -169,7 +169,7 @@ class ApiClient {
   }
 
   // Service CRUD operations (admin only)
-  async createService(name: string, endpoint: string, type: 'http' | 'tcp' | 'mysql' | 'mongodb' = 'http', interval?: number, retries?: number) {
+  async createService(name: string, endpoint: string, type: 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp' = 'http', interval?: number, retries?: number) {
     const response = await this.client.post('/api/services', {
       name,
       endpoint,
@@ -406,6 +406,11 @@ class ApiClient {
 
   async updateApmConfig(config: { ignoredRoutes: string[] }) {
     const response = await this.client.put('/api/system/apm-config', config);
+    return response.data;
+  }
+
+  async applyKubernetesManifest(manifest: string | object) {
+    const response = await this.client.post('/api/kubernetes/apply', { manifest });
     return response.data;
   }
 

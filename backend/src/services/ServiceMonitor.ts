@@ -9,6 +9,10 @@ import tls from 'tls';
 import { URL } from 'url';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { IServiceRepository } from '../database/interfaces/IServiceRepository';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 export class ServiceMonitor {
   private static instance: ServiceMonitor;
@@ -147,6 +151,15 @@ export class ServiceMonitor {
           timestamp: Date.now(),
           success,
           error: success ? undefined : 'Connection Failed',
+        };
+      } else if (service.type === 'icmp') {
+        const success = await this.checkIcmp(service.endpoint);
+        check = {
+          status: success ? 200 : 0,
+          responseTime: Date.now() - startTime,
+          timestamp: Date.now(),
+          success,
+          error: success ? undefined : 'Ping Failed',
         };
       } else {
         // HTTP/HTTPS Default
@@ -411,6 +424,40 @@ export class ServiceMonitor {
     } catch {
       this.mongoConnections.delete(connectionString); // force reconnect next cycle
       return false;
+    }
+  }
+
+  private async checkIcmp(endpoint: string): Promise<boolean> {
+    try {
+      const host = this.endpointToHost(endpoint);
+      const isWindows = process.platform === 'win32';
+      // -n 1 for Windows, -c 1 for others (Linux/Mac)
+      // -w 2000 for 2 second timeout
+      const timeoutFlag = isWindows ? '-w 2000' : '-W 2';
+      const countFlag = isWindows ? '-n 1' : '-c 1';
+      const command = `ping ${countFlag} ${timeoutFlag} ${host}`;
+      
+      await execAsync(command);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  private endpointToHost(endpoint: string): string {
+    try {
+      // If it's a full URL, extract hostname
+      if (endpoint.includes('://')) {
+        const url = new URL(endpoint);
+        return url.hostname;
+      }
+      // If it's host:port, extract host
+      if (endpoint.includes(':') && !endpoint.includes('[')) {
+        return endpoint.split(':')[0];
+      }
+      return endpoint;
+    } catch {
+      return endpoint;
     }
   }
 

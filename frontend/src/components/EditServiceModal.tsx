@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronDown } from 'lucide-react';
+import { X, ChevronDown, Activity, Link as LinkIcon, Database, Terminal } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 
@@ -44,6 +44,11 @@ export function EditServiceModal({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownPanelRef = useRef<HTMLDivElement>(null);
 
+  const [isTypeOpen, setIsTypeOpen] = useState(false);
+  const [typeDropdownRect, setTypeDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const typeTriggerRef = useRef<HTMLButtonElement>(null);
+  const typeDropdownPanelRef = useRef<HTMLDivElement>(null);
+
   const toast = useToast();
   
   const [error, setError] = useState('');
@@ -78,15 +83,23 @@ export function EditServiceModal({
       setInterval(currentInterval ?? 30000);
       setRetries(currentRetries ?? 3);
       setIsIntervalOpen(false);
+      setIsTypeOpen(false);
     }
   }, [currentEndpoint, currentHeaders, currentIgnoreSSL, currentInterval, currentRetries, isOpen, initialType]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
-      const inTrigger = triggerRef.current?.contains(target);
-      const inPanel  = dropdownPanelRef.current?.contains(target);
-      if (!inTrigger && !inPanel) setIsIntervalOpen(false);
+      
+      // Handle Interval Dropdown
+      const inIntervalTrigger = triggerRef.current?.contains(target);
+      const inIntervalPanel  = dropdownPanelRef.current?.contains(target);
+      if (!inIntervalTrigger && !inIntervalPanel) setIsIntervalOpen(false);
+
+      // Handle Type Dropdown
+      const inTypeTrigger = typeTriggerRef.current?.contains(target);
+      const inTypePanel = typeDropdownPanelRef.current?.contains(target);
+      if (!inTypeTrigger && !inTypePanel) setIsTypeOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -141,7 +154,15 @@ export function EditServiceModal({
     }
   };
 
-  return (
+  const monitorTypes: { value: MonitorType; label: string; icon: React.ReactNode }[] = [
+    { value: 'http', label: 'HTTP(s)', icon: <Activity className="w-4 h-4" /> },
+    { value: 'tcp', label: 'TCP Port', icon: <LinkIcon className="w-4 h-4" /> },
+    { value: 'mysql', label: 'MySQL / MariaDB', icon: <Database className="w-4 h-4" /> },
+    { value: 'mongodb', label: 'MongoDB', icon: <Database className="w-4 h-4" /> },
+    { value: 'icmp', label: 'ICMP (Ping)', icon: <Terminal className="w-4 h-4" /> },
+  ];
+
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden">
         {/* Header */}
@@ -169,19 +190,54 @@ export function EditServiceModal({
                 <label className="block text-sm font-medium text-gray-400 ml-1">
                   Monitor Type
                 </label>
-                <div className="relative group">
-                   <select
-                     value={type}
-                     onChange={(e) => setType(e.target.value as MonitorType)}
-                     className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all appearance-none cursor-pointer"
+                <div className="relative">
+                   <button
+                     ref={typeTriggerRef}
+                     type="button"
+                     onClick={() => {
+                       if (!isTypeOpen && typeTriggerRef.current) {
+                         const r = typeTriggerRef.current.getBoundingClientRect();
+                         setTypeDropdownRect({ top: r.bottom + 4, left: r.left, width: r.width });
+                       }
+                       setIsTypeOpen(o => !o);
+                     }}
+                     disabled={isSubmitting}
+                     className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white flex items-center justify-between hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all disabled:opacity-50"
                    >
-                      <option value="http">HTTP(s)</option>
-                      <option value="tcp">TCP Port</option>
-                      <option value="mysql">MySQL / MariaDB</option>
-                      <option value="mongodb">MongoDB</option>
-                   </select>
+                     <div className="flex items-center gap-3 text-sm">
+                        <span className="text-primary">
+                          {monitorTypes.find(t => t.value === type)?.icon}
+                        </span>
+                        <span>{monitorTypes.find(t => t.value === type)?.label}</span>
+                     </div>
+                     <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isTypeOpen ? 'rotate-180' : ''}`} />
+                   </button>
                 </div>
              </div>
+
+             {/* Type dropdown panel */}
+             {isTypeOpen && typeDropdownRect && createPortal(
+                <div
+                  ref={typeDropdownPanelRef}
+                  style={{ position: 'fixed', top: typeDropdownRect.top, left: typeDropdownRect.left, width: typeDropdownRect.width, zIndex: 9999 }}
+                  className="bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+                >
+                  {monitorTypes.map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => { setType(opt.value); setIsTypeOpen(false); }}
+                      className={`w-full text-left px-4 py-3 text-sm transition-colors hover:bg-primary/20 flex items-center gap-3 ${
+                        type === opt.value ? 'text-primary font-medium bg-primary/5' : 'text-gray-300'
+                      }`}
+                    >
+                      <span className={type === opt.value ? 'text-primary' : 'text-gray-500'}>{opt.icon}</span>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>,
+                document.body
+             )}
 
              <div>
                 <label className="block text-sm font-medium text-gray-400 ml-1 mb-1.5">
@@ -351,6 +407,7 @@ export function EditServiceModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
