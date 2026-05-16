@@ -29,6 +29,7 @@ import { NotificationManager } from './services/NotificationManager';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { LogStreamService } from './services/LogStreamService';
+import { KubeLogStreamService } from './services/KubeLogStreamService';
 
 const app: Express = express();
 const httpServer = createServer(app);
@@ -188,6 +189,12 @@ const startServer = async () => {
       const logStreamService = LogStreamService.getInstance();
       logStreamService.initialize(io);
       console.log('📡 Socket.IO Server Initialized for Log Streaming');
+
+      // Initialize Kubernetes Log Stream Service with Socket.IO
+      const k8sService = KubernetesService.getInstance();
+      const kubeLogStreamService = KubeLogStreamService.getInstance();
+      kubeLogStreamService.initialize(io, k8sService.getKubeConfig());
+      console.log('☸️  Socket.IO Server Initialized for K8s Pod Log Streaming');
 
       // Start monitoring services
       serviceMonitor.start();

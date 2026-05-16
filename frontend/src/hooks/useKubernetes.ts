@@ -23,6 +23,8 @@ export interface KubePod {
     status: string;
     restarts: number;
     ready: boolean;
+    readyCount: number;
+    totalContainers: number;
     podIP: string;
     nodeName: string;
     startTime: string | null;

@@ -85,6 +85,10 @@ export class KubernetesService {
         return KubernetesService.instance;
     }
 
+    public getKubeConfig(): k8s.KubeConfig {
+        return this.kc;
+    }
+
     public async initialize(): Promise<void> {
         try {
             const kubeConfigPath = process.env.KUBECONFIG ||
@@ -132,13 +136,30 @@ export class KubernetesService {
             const containerStatuses = pod.status?.containerStatuses ?? [];
             const specContainers = pod.spec?.containers ?? [];
             const totalRestarts = containerStatuses.reduce((s, cs) => s + (cs.restartCount ?? 0), 0);
+            const totalContainers = specContainers.length;
+            const readyContainers = containerStatuses.filter(cs => cs.ready).length;
+            
+            // Determine detailed status like terminal kubectl (CrashLoopBackOff, etc.)
+            let detailedStatus = pod.status?.phase ?? 'Unknown';
+            
+            // Check container statuses for waiting reasons (more specific than Phase)
+            const waitingState = containerStatuses.find(cs => cs.state?.waiting);
+            if (waitingState?.state?.waiting?.reason) {
+                detailedStatus = waitingState.state.waiting.reason;
+            }
+            const termState = containerStatuses.find(cs => cs.state?.terminated);
+            if (termState?.state?.terminated?.reason) {
+                detailedStatus = termState.state.terminated.reason;
+            }
 
             return {
                 name: pod.metadata?.name ?? '—',
                 namespace: pod.metadata?.namespace ?? namespace,
-                status: pod.status?.phase ?? 'Unknown',
+                status: detailedStatus,
                 restarts: totalRestarts,
                 ready: containerStatuses.length > 0 && containerStatuses.every(cs => cs.ready),
+                readyCount: readyContainers,
+                totalContainers: totalContainers,
                 podIP: pod.status?.podIP ?? '—',
                 nodeName: pod.spec?.nodeName ?? '—',
                 startTime: pod.status?.startTime?.toISOString() ?? null,

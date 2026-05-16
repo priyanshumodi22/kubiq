@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useKubernetes, KubeMetric } from '../hooks/useKubernetes';
 import { apiClient } from '../services/api';
+import { K8sLogViewer } from '../components/K8sLogViewer';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -53,19 +54,24 @@ function timeAgo(iso: string | null): string {
     return `${Math.floor(diff / 86400)}d`;
 }
 
-function PodStatusBadge({ status, lastTerminationReason }: { status: string; lastTerminationReason?: string }) {
-    const isOOM = lastTerminationReason === 'OOMKilled';
-    const s = status?.toLowerCase();
-    const cfg =
-        isOOM ? { cls: 'bg-orange-500/20 text-orange-400 border-orange-500/30', label: 'OOMKilled' } :
-        s === 'running' ? { cls: 'bg-green-500/20 text-green-400 border-green-500/30', label: 'Running' } :
-        s === 'pending' ? { cls: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', label: 'Pending' } :
-        s === 'succeeded' ? { cls: 'bg-blue-500/20 text-blue-400 border-blue-500/30', label: 'Succeeded' } :
-        { cls: 'bg-red-500/20 text-red-400 border-red-500/30', label: status || 'Unknown' };
+function PodStatusBadge({ status }: { status: string }) {
+    let color = 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+    let label = status;
+
+    const s = (status || '').toLowerCase();
+    if (s.includes('running') || s.includes('completed')) {
+        color = 'bg-green-500/10 text-green-400 border-green-500/20';
+    } else if (s.includes('pending') || s.includes('containercreating') || s.includes('podinitializing')) {
+        color = 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
+    } else if (s.includes('error') || s.includes('fail') || s.includes('crash') || s.includes('backoff') || s.includes('imagepull') || s.includes('evicted')) {
+        color = 'bg-red-500/10 text-red-400 border-red-500/20';
+    }
+
     return (
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${cfg.cls}`}>
-            {cfg.label}
-        </span>
+        <div className={`px-2 py-0.5 rounded-full border text-[10px] font-medium inline-flex items-center gap-1.5 ${color}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${s.includes('running') ? 'animate-pulse bg-green-400' : 'bg-current'}`} />
+            {label}
+        </div>
     );
 }
 
@@ -74,7 +80,8 @@ function PodStatusBadge({ status, lastTerminationReason }: { status: string; las
 function DetailPanel({ item, onClose, namespace }: { item: any, onClose: () => void, namespace: string }) {
     const [yaml, setYaml] = useState<string>('');
     const [loadingYaml, setLoadingYaml] = useState(false);
-    const [activeTab, setActiveTab] = useState<'details' | 'yaml'>('details');
+    const [activeTab, setActiveTab] = useState<'details' | 'yaml' | 'logs'>('details');
+    const canShowLogs = item?.type === 'pods' || item?.type === 'deployments';
 
     useEffect(() => {
         if (item && item.type) {
@@ -140,10 +147,27 @@ function DetailPanel({ item, onClose, namespace }: { item: any, onClose: () => v
                 <div className="flex border-b border-gray-800 bg-[#1a1a1a] px-4 pt-2">
                     <button onClick={() => setActiveTab('details')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'details' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>Overview</button>
                     <button onClick={() => setActiveTab('yaml')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'yaml' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>JSON / YAML</button>
+                    {canShowLogs && (
+                        <button onClick={() => setActiveTab('logs')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'logs' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
+                            Logs
+                        </button>
+                    )}
                 </div>
 
-                <div className="flex-1 overflow-y-auto bg-[#111111]">
-                    {activeTab === 'yaml' ? (
+                <div className="flex-1 overflow-y-auto bg-[#111111] min-h-0">
+                    {activeTab === 'logs' && canShowLogs ? (
+                        <K8sLogViewer
+                            namespace={item.data.namespace || item.data.metadata?.namespace || namespace}
+                            podName={item.type === 'pods' ? (item.data.name || item.data.metadata?.name) : undefined}
+                            deploymentName={item.type === 'deployments' ? (item.data.name || item.data.metadata?.name) : undefined}
+                            containers={
+                                item.data.containers || 
+                                item.data.spec?.containers || 
+                                item.data.spec?.template?.spec?.containers || 
+                                [{ name: 'main', image: '' }]
+                            }
+                        />
+                    ) : activeTab === 'yaml' ? (
                         <div className="p-4 h-full flex flex-col">
                             {loadingYaml ? (
                                 <div className="flex-1 flex justify-center items-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
@@ -661,6 +685,7 @@ export default function KubernetesDashboard() {
                                                 {/* Dynamic columns based on type */}
                                                 {activeResource === 'pods' && (
                                                     <>
+                                                        <th className="text-left px-4 py-3 font-medium">Ready</th>
                                                         <th className="text-left px-4 py-3 font-medium">Status</th>
                                                         <th className="text-center px-4 py-3 font-medium">CPU</th>
                                                         <th className="text-center px-4 py-3 font-medium">RAM</th>
@@ -704,7 +729,10 @@ export default function KubernetesDashboard() {
                                                         {/* Pods Specific */}
                                                         {activeResource === 'pods' && (
                                                             <>
-                                                                <td className="px-4 py-2.5"><PodStatusBadge status={item.status} lastTerminationReason={item.lastTerminationReason} /></td>
+                                                                <td className="px-4 py-2.5 font-mono text-[11px] text-gray-400">
+                                                                    {item.readyCount}/{item.totalContainers}
+                                                                </td>
+                                                                <td className="px-4 py-2.5"><PodStatusBadge status={item.status} /></td>
                                                                 <td className="px-4 py-2.5 text-center font-mono text-xs text-yellow-400/80">{parseCpu(getMetricForPod(metrics, name).cpu)}</td>
                                                                 <td className="px-4 py-2.5 text-center font-mono text-xs text-blue-400/80">{parseMemory(getMetricForPod(metrics, name).memory)}</td>
                                                                 <td className="px-4 py-2.5 text-center text-xs font-medium text-gray-400">{item.restarts}</td>
