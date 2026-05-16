@@ -359,5 +359,74 @@ export class KubernetesService {
             return null;
         }
     }
+    public async scaleDeployment(namespace: string, name: string, replicas: number): Promise<void> {
+        if (!this.available) return;
+        try {
+            const objectApi = this.kc.makeApiClient(k8s.KubernetesObjectApi);
+            const patch = {
+                apiVersion: 'apps/v1',
+                kind: 'Deployment',
+                metadata: { name, namespace },
+                spec: { replicas }
+            };
+            // Use strategic merge patch (standard for deployments)
+            await objectApi.patch(patch, {
+                headers: { 'Content-Type': 'application/strategic-merge-patch+json' }
+            } as any);
+            console.log(`☸️  [K8s] Scaled deployment ${namespace}/${name} to ${replicas} replicas`);
+        } catch (e: any) {
+            console.error(`Error scaling deployment:`, e.message);
+            throw e;
+        }
+    }
+
+    public async restartDeployment(namespace: string, name: string): Promise<void> {
+        if (!this.available) return;
+        try {
+            const objectApi = this.kc.makeApiClient(k8s.KubernetesObjectApi);
+            // For restart, we need to patch the template, not just metadata
+            const fullPatch = {
+                apiVersion: 'apps/v1',
+                kind: 'Deployment',
+                metadata: { name, namespace },
+                spec: {
+                    template: {
+                        metadata: {
+                            annotations: {
+                                'kubectl.kubernetes.io/restartedAt': new Date().toISOString()
+                            }
+                        }
+                    }
+                }
+            };
+            await objectApi.patch(fullPatch, {
+                headers: { 'Content-Type': 'application/strategic-merge-patch+json' }
+            } as any);
+            console.log(`☸️  [K8s] Restarted deployment ${namespace}/${name}`);
+        } catch (e: any) {
+            console.error(`Error restarting deployment:`, e.message);
+            throw e;
+        }
+    }
+
+    public async deleteResource(namespace: string, resourceType: string, name: string): Promise<void> {
+        if (!this.available) return;
+        try {
+            switch (resourceType) {
+                case 'pods': await this.coreApi.deleteNamespacedPod({ name, namespace }); break;
+                case 'deployments': await this.appsApi.deleteNamespacedDeployment({ name, namespace }); break;
+                case 'services': await this.coreApi.deleteNamespacedService({ name, namespace }); break;
+                case 'ingresses': await this.netApi.deleteNamespacedIngress({ name, namespace }); break;
+                case 'configmaps': await this.coreApi.deleteNamespacedConfigMap({ name, namespace }); break;
+                case 'secrets': await this.coreApi.deleteNamespacedSecret({ name, namespace }); break;
+                case 'persistentvolumeclaims': await this.coreApi.deleteNamespacedPersistentVolumeClaim({ name, namespace }); break;
+                default: throw new Error(`Deletion not supported for resource type: ${resourceType}`);
+            }
+            console.log(`☸️  [K8s] Deleted ${resourceType} ${namespace}/${name}`);
+        } catch (e: any) {
+            console.error(`Error deleting resource:`, e.message);
+            throw e;
+        }
+    }
 }
 

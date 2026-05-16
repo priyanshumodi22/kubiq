@@ -108,13 +108,43 @@ export function useKubernetes() {
         finally { setLoading(false); }
     }, []);
 
-    useEffect(() => {
+    const refresh = useCallback(() => {
         if (selectedNamespace) fetchNamespaceData(selectedNamespace);
     }, [selectedNamespace, fetchNamespaceData]);
+
+    // Note: Auto-refresh is managed by the consuming component (e.g. KubernetesDashboard)
+    // to avoid duplicate API calls when multiple components use this hook.
+
+
+    const scaleDeployment = async (name: string, replicas: number) => {
+        if (!selectedNamespace) return;
+        try {
+            await apiClient.scaleKubernetesDeployment(selectedNamespace, name, replicas);
+            refresh();
+        } catch (e: any) { setError(e.message); throw e; }
+    };
+
+    const restartDeployment = async (name: string) => {
+        if (!selectedNamespace) return;
+        try {
+            await apiClient.restartKubernetesDeployment(selectedNamespace, name);
+            refresh();
+        } catch (e: any) { setError(e.message); throw e; }
+    };
+
+    const deleteResource = async (type: string, name: string) => {
+        if (!selectedNamespace) return;
+        try {
+            await apiClient.deleteKubernetesResource(selectedNamespace, type, name);
+            refresh();
+        } catch (e: any) { setError(e.message); throw e; }
+    };
 
     return {
         available, context, namespaces, selectedNamespace, setSelectedNamespace,
         pods, metrics, events, deployments, loading, error,
-        refresh: () => fetchNamespaceData(selectedNamespace),
+        refresh,
+        scaleDeployment, restartDeployment, deleteResource,
     };
+
 }

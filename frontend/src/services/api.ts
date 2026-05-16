@@ -381,6 +381,34 @@ class ApiClient {
     const response = await this.client.get(`/api/kubernetes${nsPath}/yaml/${type}/${name}`);
     return response.data;
   }
+
+  // --- Management Actions ---
+  async scaleKubernetesDeployment(namespace: string, name: string, replicas: number) {
+    const response = await this.client.post(`/api/kubernetes/namespaces/${namespace}/deployments/${name}/scale`, { replicas });
+    return response.data;
+  }
+
+  async restartKubernetesDeployment(namespace: string, name: string) {
+    const response = await this.client.post(`/api/kubernetes/namespaces/${namespace}/deployments/${name}/restart`);
+    return response.data;
+  }
+
+  async deleteKubernetesResource(namespace: string, type: string, name: string) {
+    const response = await this.client.delete(`/api/kubernetes/namespaces/${namespace}/${type}/${name}`);
+    return response.data;
+  }
+
+  // --- System Configuration ---
+  async getApmConfig() {
+    const response = await this.client.get('/api/system/apm-config');
+    return response.data;
+  }
+
+  async updateApmConfig(config: { ignoredRoutes: string[] }) {
+    const response = await this.client.put('/api/system/apm-config', config);
+    return response.data;
+  }
+
 }
 
 export const apiClient = new ApiClient();

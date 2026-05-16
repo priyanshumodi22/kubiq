@@ -132,7 +132,34 @@ router.get('/namespaces/:ns/secrets', async (req, res) => {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
 });
 
-// GET /api/kubernetes/namespaces/:ns/yaml/:type/:name
+// --- Management Actions ---
+
+// POST /api/kubernetes/namespaces/:ns/deployments/:name/scale
+router.post('/namespaces/:ns/deployments/:name/scale', async (req, res) => {
+    try {
+        const { replicas } = req.body;
+        if (typeof replicas !== 'number') return res.status(400).json({ message: 'Replicas must be a number' });
+        await k8sService.scaleDeployment(req.params.ns, req.params.name, replicas);
+        res.json({ message: 'Scaling initiated' });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+});
+
+// POST /api/kubernetes/namespaces/:ns/deployments/:name/restart
+router.post('/namespaces/:ns/deployments/:name/restart', async (req, res) => {
+    try {
+        await k8sService.restartDeployment(req.params.ns, req.params.name);
+        res.json({ message: 'Restart initiated' });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+});
+
+// DELETE /api/kubernetes/namespaces/:ns/:type/:name
+router.delete('/namespaces/:ns/:type/:name', async (req, res) => {
+    try {
+        await k8sService.deleteResource(req.params.ns, req.params.type, req.params.name);
+        res.json({ message: 'Deletion initiated' });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+});
+
 router.get('/namespaces/:ns/yaml/:type/:name', async (req, res) => {
     try {
         if (!k8sService.available) return res.status(503).json({ message: 'K8s not available' });

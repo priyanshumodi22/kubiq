@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Settings, AlertCircle, Save } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
+import { apiClient } from '../services/api';
 
 interface ApmConfigModalProps {
   isOpen: boolean;
@@ -22,19 +23,7 @@ export function ApmConfigModal({ isOpen, onClose }: ApmConfigModalProps) {
   const fetchConfig = async () => {
     try {
       setIsLoading(true);
-      const baseUrl = import.meta.env.VITE_API_URL || '';
-      const ctxPath = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
-      
-      const token = localStorage.getItem('kubiq_token');
-      const headers: Record<string, string> = {};
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const res = await fetch(`${baseUrl}${ctxPath}/api/system/apm-config`, {
-        headers
-      });
-      
-      if (!res.ok) throw new Error('Failed to fetch APM config');
-      const data = await res.json();
+      const data = await apiClient.getApmConfig();
       
       if (data.ignoredRoutes && Array.isArray(data.ignoredRoutes)) {
         setIgnoredRoutesStr(data.ignoredRoutes.join(', '));
@@ -50,27 +39,12 @@ export function ApmConfigModal({ isOpen, onClose }: ApmConfigModalProps) {
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      const baseUrl = import.meta.env.VITE_API_URL || '';
-      const ctxPath = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
-      
       const ignoredRoutes = ignoredRoutesStr
         .split(',')
         .map(s => s.trim())
         .filter(s => s.length > 0);
 
-      const token = localStorage.getItem('kubiq_token');
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const res = await fetch(`${baseUrl}${ctxPath}/api/system/apm-config`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ ignoredRoutes })
-      });
-
-      if (!res.ok) throw new Error('Failed to save APM config');
+      await apiClient.updateApmConfig({ ignoredRoutes });
       
       addToast('APM configuration saved successfully', 'success');
       onClose();
