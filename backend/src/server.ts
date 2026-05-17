@@ -30,6 +30,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { LogStreamService } from './services/LogStreamService';
 import { KubeLogStreamService } from './services/KubeLogStreamService';
+import { KubeTerminalStreamService } from './services/KubeTerminalStreamService';
 
 const app: Express = express();
 const httpServer = createServer(app);
@@ -195,6 +196,11 @@ const startServer = async () => {
       const kubeLogStreamService = KubeLogStreamService.getInstance();
       kubeLogStreamService.initialize(io, k8sService.getKubeConfig());
       console.log('☸️  Socket.IO Server Initialized for K8s Pod Log Streaming');
+
+      // Initialize Kubernetes Terminal Stream Service with Socket.IO
+      const kubeTerminalStreamService = KubeTerminalStreamService.getInstance();
+      kubeTerminalStreamService.initialize(io, k8sService.getKubeConfig());
+      console.log('☸️  Socket.IO Server Initialized for K8s Pod Terminal Execution');
 
       // Start monitoring services
       serviceMonitor.start();

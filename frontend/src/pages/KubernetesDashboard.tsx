@@ -17,6 +17,7 @@ import { useKubernetes, KubeMetric } from '../hooks/useKubernetes';
 import { apiClient } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { K8sLogViewer } from '../components/K8sLogViewer';
+import K8sTerminal from '../components/K8sTerminal';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -335,7 +336,7 @@ function DetailPanel({
     const [isEditing, setIsEditing] = useState(false);
     const [editedYaml, setEditedYaml] = useState<string>('');
     const [applyingYaml, setApplyingYaml] = useState(false);
-    const [activeTab, setActiveTab] = useState<'details' | 'yaml' | 'logs'>('details');
+    const [activeTab, setActiveTab] = useState<'details' | 'yaml' | 'logs' | 'terminal'>('details');
     const { addToast } = useToast() as any;
     const canShowLogs = item?.type === 'pods' || item?.type === 'deployments';
 
@@ -438,10 +439,26 @@ function DetailPanel({
                             Logs
                         </button>
                     )}
+                    {item?.type === 'pods' && (
+                        <button onClick={() => setActiveTab('terminal')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'terminal' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
+                            Terminal
+                        </button>
+                    )}
                 </div>
 
                 <div className="flex-1 overflow-y-auto bg-[#111111] min-h-0">
-                    {activeTab === 'logs' && canShowLogs ? (
+                    {activeTab === 'terminal' && item?.type === 'pods' ? (
+                        <K8sTerminal
+                            namespace={item.data.namespace || item.data.metadata?.namespace || namespace}
+                            podName={item.data.name || item.data.metadata?.name}
+                            containers={
+                                item.data.containers || 
+                                item.data.spec?.containers || 
+                                item.data.spec?.template?.spec?.containers || 
+                                [{ name: 'main' }]
+                            }
+                        />
+                    ) : activeTab === 'logs' && canShowLogs ? (
                         <K8sLogViewer
                             namespace={item.data.namespace || item.data.metadata?.namespace || namespace}
                             podName={item.type === 'pods' ? (item.data.name || item.data.metadata?.name) : undefined}
@@ -1266,7 +1283,7 @@ export default function KubernetesDashboard() {
         setMetricsHistory(prev => {
             const next = { ...prev };
             const now = Date.now();
-            const oneDayAgo = now - 24 * 60 * 60 * 1000;
+            const oneHourAgo = now - 1 * 60 * 60 * 1000;
 
             metrics.forEach(m => {
                 const podName = m.name;
@@ -1284,11 +1301,11 @@ export default function KubernetesDashboard() {
                 next[key].timestamps.push(now);
             });
 
-            // Prune data older than 24 hours across ALL keys
+            // Prune data older than 1 hour across ALL keys
             for (const key of Object.keys(next)) {
                 const timestamps = next[key].timestamps;
                 let pruneIndex = 0;
-                while (pruneIndex < timestamps.length && timestamps[pruneIndex] < oneDayAgo) {
+                while (pruneIndex < timestamps.length && timestamps[pruneIndex] < oneHourAgo) {
                     pruneIndex++;
                 }
                 if (pruneIndex > 0) {
