@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import io from 'socket.io-client';
-import { Play, Pause, Trash2, ArrowDown, ChevronDown, Check } from 'lucide-react';
+import { Play, Pause, Trash2, ArrowDown, ChevronDown, Check, Search, X } from 'lucide-react';
 
 interface K8sLogViewerProps {
     namespace: string;
@@ -42,6 +42,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
     const [tailDropdownOpen, setTailDropdownOpen] = useState(false);
 
     const [logs, setLogs] = useState<LogLine[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
     const [isConnected, setIsConnected] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [newLogsCount, setNewLogsCount] = useState(0);
@@ -52,6 +53,18 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
     const virtuosoRef = useRef<any>(null);
     const isPausedRef = useRef(isPaused);
     isPausedRef.current = isPaused;
+
+    // Filter logs based on search query (literal or regex)
+    const filteredLogs = useMemo(() => {
+        if (!searchQuery) return logs;
+        try {
+            const regex = new RegExp(searchQuery, 'i');
+            return logs.filter((log) => regex.test(log.content));
+        } catch {
+            const lowerQuery = searchQuery.toLowerCase();
+            return logs.filter((log) => log.content.toLowerCase().includes(lowerQuery));
+        }
+    }, [logs, searchQuery]);
 
     // Connect to Socket.IO and start streaming
     useEffect(() => {
@@ -199,6 +212,23 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                     )}
                 </div>
 
+                {/* Search / Filter logs */}
+                <div className="relative flex items-center bg-white/[0.03] border border-gray-800 focus-within:border-primary/40 rounded px-2 py-0.5 min-w-[180px] gap-1.5 transition-all">
+                    <Search className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search or Regex logs..."
+                        className="bg-transparent text-[10px] text-gray-200 placeholder-gray-500 outline-none w-full font-mono py-0.5"
+                    />
+                    {searchQuery && (
+                        <button onClick={() => setSearchQuery('')} className="p-0.5 hover:bg-white/10 rounded text-gray-500 hover:text-white transition-colors">
+                            <X className="w-3 h-3" />
+                        </button>
+                    )}
+                </div>
+
                 <div className="ml-auto flex items-center gap-1">
                     {/* Pause / Resume */}
                     <button
@@ -254,9 +284,15 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                     </div>
                 )}
 
+                {filteredLogs.length === 0 && logs.length > 0 && (
+                    <div className="flex items-center justify-center h-full text-gray-500 text-xs font-mono">
+                        No logs match search query filter
+                    </div>
+                )}
+
                 <Virtuoso
                     ref={virtuosoRef}
-                    data={logs}
+                    data={filteredLogs}
                     followOutput={isPaused ? false : 'auto'}
                     atBottomStateChange={(bottom) => {
                         if (bottom) setNewLogsCount(0);
