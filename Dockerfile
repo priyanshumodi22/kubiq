@@ -1,5 +1,5 @@
 # Stage 1: Build Frontend
-FROM node:18-slim AS ui-build
+FROM node:20-slim AS ui-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
@@ -8,7 +8,7 @@ COPY frontend/ ./
 RUN npm run build 
 
 # Stage 2: Build Backend
-FROM node:18-slim AS server-build
+FROM node:20-slim AS server-build
 WORKDIR /app/backend
 # Install build tools for native modules (bcrypt, etc.)
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
@@ -20,7 +20,7 @@ RUN npm run build
 RUN npm run build:ncc
 
 # Stage 3: Production Runner
-FROM node:18-slim
+FROM node:20-slim
 WORKDIR /app
 
 # Install runtime dependencies
