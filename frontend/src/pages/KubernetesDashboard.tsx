@@ -10,6 +10,7 @@ import { apiClient } from '../services/api';
 import { K8sPodStatusBadge } from '../components/K8sPodStatusBadge';
 import { K8sMiniSparkline } from '../components/K8sMiniSparkline';
 import { K8sNamespaceOverview } from '../components/K8sNamespaceOverview';
+import { K8sRelationshipMap } from '../components/K8sRelationshipMap';
 import { K8sDetailPanel } from '../components/K8sDetailPanel';
 import { 
     parseCpu, parseMemory, getMetricForPod, timeAgo 
@@ -37,6 +38,7 @@ function NotConfigured() {
 
 const SIDEBAR_MENU = [
     { id: 'overview', label: 'Overview', icon: Activity, type: 'overview' },
+    { id: 'topology', label: 'Service Topology', icon: Network, type: 'topology' },
     { 
         id: 'workloads', label: 'Workloads', icon: Box, children: [
             { id: 'deployments', label: 'Deployments', type: 'deployments' },
@@ -73,9 +75,60 @@ const SIDEBAR_MENU = [
 
 export default function KubernetesDashboard() {
     const { 
-        available, context, namespaces, selectedNamespace, setSelectedNamespace,
+        available, context, contexts, switchContext, namespaces, selectedNamespace, setSelectedNamespace,
         scaleDeployment, restartDeployment, deleteResource 
     } = useKubernetes();
+
+    const formatContextName = (name: string) => {
+        if (!name) return '';
+        if (name.startsWith('arn:aws:eks:')) {
+            const parts = name.split('/');
+            const clusterName = parts[parts.length - 1];
+            const regionMatch = name.match(/eks:([a-z0-9-]+):/);
+            const region = regionMatch ? regionMatch[1] : '';
+            return region ? `${clusterName} [EKS:${region}]` : `${clusterName} [EKS]`;
+        }
+        if (name.startsWith('gke_')) {
+            const parts = name.split('_');
+            return `${parts[parts.length - 1]} [GKE]`;
+        }
+        // Azure AKS: clusterName_resourceGroup_location
+        if (name.includes('_') && (name.toLowerCase().includes('aks') || name.toLowerCase().includes('azure'))) {
+            const parts = name.split('_');
+            return `${parts[0]} [AKS]`;
+        }
+        return name;
+    };
+
+    const getClusterProvider = (name: string) => {
+        if (!name) return 'Kubernetes Cluster';
+        if (name.startsWith('arn:aws:eks:')) return 'AWS Elastic Kubernetes Service';
+        if (name.startsWith('gke_')) return 'Google Kubernetes Engine';
+        if (name.toLowerCase().includes('aks') || name.toLowerCase().includes('azure')) return 'Azure Kubernetes Service';
+        if (name.includes('minikube')) return 'Minikube Local Development';
+        if (name.includes('kind')) return 'Kind Cluster';
+        if (name.includes('docker-desktop')) return 'Docker Desktop';
+        return 'Kubernetes Cluster';
+    };
+
+    const [hoveredCtx, setHoveredCtx] = useState<string | null>(null);
+
+    // Context dropdown state
+    const ctxTriggerRef = useRef<HTMLButtonElement>(null);
+    const ctxPanelRef = useRef<HTMLDivElement>(null);
+    const [isCtxOpen, setIsCtxOpen] = useState(false);
+    const [ctxRect, setCtxRect] = useState<{ top: number; left: number; width: number } | null>(null);
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            const t = e.target as Node;
+            if (!ctxTriggerRef.current?.contains(t) && !ctxPanelRef.current?.contains(t)) {
+                setIsCtxOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
 
     // Use our own state for all the resources
     const [activeResource, setActiveResource] = useState<string>('overview');
@@ -199,6 +252,24 @@ export default function KubernetesDashboard() {
                     setResourceData(ev);
                     break;
                 }
+                case 'topology': {
+                    const [p, s, ing, cm, sec] = await Promise.all([
+                        apiClient.getKubernetesPods(selectedNamespace).catch(() => []),
+                        apiClient.getKubernetesServices(selectedNamespace).catch(() => []),
+                        apiClient.getKubernetesIngresses(selectedNamespace).catch(() => []),
+                        apiClient.getKubernetesConfigMaps(selectedNamespace).catch(() => []),
+                        apiClient.getKubernetesSecrets(selectedNamespace).catch(() => []),
+                    ]);
+                    setOverviewData({
+                        pods: p,
+                        services: s,
+                        ingresses: ing,
+                        configMaps: cm,
+                        secrets: sec,
+                    });
+                    setResourceData([]);
+                    break;
+                }
                 case 'pods': {
                     const [p, m] = await Promise.all([
                         apiClient.getKubernetesPods(selectedNamespace),
@@ -317,6 +388,145 @@ export default function KubernetesDashboard() {
                             Refreshes in {countdown}s
                         </div>
 
+                        {/* Context Dropdown */}
+                        {contexts.length > 0 && (
+                            <div className="relative">
+                                <button
+                                    ref={ctxTriggerRef}
+                                    type="button"
+                                    onClick={() => {
+                                        if (!isCtxOpen && ctxTriggerRef.current) {
+                                            const r = ctxTriggerRef.current.getBoundingClientRect();
+                                            setCtxRect({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 240) });
+                                        }
+                                        setIsCtxOpen(o => !o);
+                                        setHoveredCtx(null);
+                                    }}
+                                    onMouseEnter={() => { if (!isCtxOpen) setHoveredCtx(context); }}
+                                    onMouseLeave={() => setHoveredCtx(null)}
+                                    className="bg-[#1a1a1a] border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2 transition-colors focus:outline-none w-[240px]"
+                                >
+                                    <Server className="w-4 h-4 text-gray-400 shrink-0" />
+                                    <span className="flex-1 text-left truncate w-[170px] font-mono text-xs font-semibold">{formatContextName(context) || 'Select context'}</span>
+                                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isCtxOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {/* Trigger-Only Tooltip (Shown below the button only when dropdown is closed) */}
+                                {hoveredCtx && !isCtxOpen && (
+                                    <div 
+                                        className="absolute right-0 top-full mt-2 bg-[#121212]/95 border border-gray-800 rounded-xl p-4 shadow-2xl z-[10000] backdrop-blur-md min-w-[320px] pointer-events-none transition-all animate-fade-in"
+                                        style={{ boxShadow: '0 20px 40px -5px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.05)' }}
+                                    >
+                                        <div className="text-[10px] font-bold text-primary uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                            Connection Details
+                                        </div>
+                                        <div className="space-y-2.5 font-mono text-[11px] text-gray-300">
+                                            <div>
+                                                <div className="text-[9px] text-gray-500 uppercase font-bold mb-0.5">Provider</div>
+                                                <div className="text-white font-medium text-xs">{getClusterProvider(hoveredCtx)}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-[9px] text-gray-500 uppercase font-bold mb-0.5">Raw Context Identifier</div>
+                                                <div className="text-white break-all bg-black/45 p-2 rounded-lg border border-white/[0.04] text-[10px] leading-relaxed">
+                                                    {hoveredCtx}
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2 pt-1.5 border-t border-gray-900">
+                                                <div>
+                                                    <div className="text-[9px] text-gray-500 uppercase font-bold mb-0.5">Cluster Target</div>
+                                                    <div className="text-gray-200 truncate">
+                                                        {contexts.find(c => c.name === hoveredCtx)?.cluster || '—'}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-[9px] text-gray-500 uppercase font-bold mb-0.5">Auth User</div>
+                                                    <div className="text-gray-200 truncate">
+                                                        {contexts.find(c => c.name === hoveredCtx)?.user || '—'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Portal-Docked Option Tooltip (Shown to the left of the list when dropdown is open) */}
+                                {isCtxOpen && hoveredCtx && ctxRect && createPortal(
+                                    <div 
+                                        className="fixed bg-[#121212]/95 border border-gray-800 rounded-xl p-4 shadow-2xl z-[10000] backdrop-blur-md w-[320px] pointer-events-none transition-all animate-fade-in"
+                                        style={{ 
+                                            top: ctxRect.top, 
+                                            left: ctxRect.left - 330, 
+                                            boxShadow: '0 20px 40px -5px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.05)' 
+                                        }}
+                                    >
+                                        <div className="text-[10px] font-bold text-primary uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                            Connection Details
+                                        </div>
+                                        <div className="space-y-2.5 font-mono text-[11px] text-gray-300">
+                                            <div>
+                                                <div className="text-[9px] text-gray-500 uppercase font-bold mb-0.5">Provider</div>
+                                                <div className="text-white font-medium text-xs">{getClusterProvider(hoveredCtx)}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-[9px] text-gray-500 uppercase font-bold mb-0.5">Raw Context Identifier</div>
+                                                <div className="text-white break-all bg-black/45 p-2 rounded-lg border border-white/[0.04] text-[10px] leading-relaxed">
+                                                    {hoveredCtx}
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2 pt-1.5 border-t border-gray-900">
+                                                <div>
+                                                    <div className="text-[9px] text-gray-500 uppercase font-bold mb-0.5">Cluster Target</div>
+                                                    <div className="text-gray-200 truncate">
+                                                        {contexts.find(c => c.name === hoveredCtx)?.cluster || '—'}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-[9px] text-gray-500 uppercase font-bold mb-0.5">Auth User</div>
+                                                    <div className="text-gray-200 truncate">
+                                                        {contexts.find(c => c.name === hoveredCtx)?.user || '—'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>,
+                                    document.body
+                                )}
+
+                                {isCtxOpen && ctxRect && createPortal(
+                                    <div
+                                        ref={ctxPanelRef}
+                                        style={{ position: 'fixed', top: ctxRect.top, left: ctxRect.left, width: ctxRect.width, zIndex: 9999 }}
+                                        className="bg-[#1e1e1e] border border-gray-700 rounded-xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto custom-scrollbar animate-fade-in"
+                                    >
+                                        <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-500 border-b border-gray-800 uppercase tracking-wider bg-[#151515]">
+                                            Available Contexts
+                                        </div>
+                                        {contexts.map(ctx => (
+                                            <button
+                                                key={ctx.name}
+                                                type="button"
+                                                onClick={() => { switchContext(ctx.name); setIsCtxOpen(false); }}
+                                                onMouseEnter={() => setHoveredCtx(ctx.name)}
+                                                onMouseLeave={() => setHoveredCtx(null)}
+                                                className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-primary/20 flex flex-col items-start gap-1 border-b border-gray-800/40 last:border-0 ${context === ctx.name ? 'text-primary font-medium bg-primary/5' : 'text-gray-300'}`}
+                                            >
+                                                <div className="flex items-center gap-2 w-full min-w-0">
+                                                    <Server className="w-3.5 h-3.5 opacity-60 shrink-0 text-primary" />
+                                                    <span className="truncate block font-mono text-xs font-semibold">{formatContextName(ctx.name)}</span>
+                                                </div>
+                                                <span className="text-[9px] text-gray-500 ml-5.5 truncate w-[90%] block font-mono">
+                                                    Provider: {getClusterProvider(ctx.name).replace(' Elastic Kubernetes Service', ' EKS').replace(' Kubernetes Engine', ' GKE')}
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>,
+                                    document.body
+                                )}
+                            </div>
+                        )}
+
                         {/* Namespace Dropdown */}
                         <div className="relative">
                             <button
@@ -428,6 +638,16 @@ export default function KubernetesDashboard() {
                             <K8sNamespaceOverview 
                                 data={overviewData} 
                                 onSwitchTab={(tab) => { setActiveResource(tab); setSearchQuery(''); }}
+                                onSelectItem={setSelectedItem}
+                            />
+                        ) : activeResource === 'topology' ? (
+                            <K8sRelationshipMap
+                                namespace={selectedNamespace}
+                                pods={overviewData?.pods || []}
+                                services={overviewData?.services || []}
+                                ingresses={overviewData?.ingresses || []}
+                                configMaps={overviewData?.configMaps || []}
+                                secrets={overviewData?.secrets || []}
                                 onSelectItem={setSelectedItem}
                             />
                         ) : (

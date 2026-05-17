@@ -122,6 +122,39 @@ export class KubernetesService {
         }
     }
 
+    public getContexts(): { name: string; cluster: string; user: string }[] {
+        return this.kc.contexts.map(c => ({
+            name: c.name,
+            cluster: c.cluster ?? '',
+            user: c.user ?? ''
+        }));
+    }
+
+    public async switchContext(contextName: string): Promise<void> {
+        try {
+            this.kc.setCurrentContext(contextName);
+            this.coreApi = this.kc.makeApiClient(k8s.CoreV1Api);
+            this.appsApi = this.kc.makeApiClient(k8s.AppsV1Api);
+            this.customApi = this.kc.makeApiClient(k8s.CustomObjectsApi);
+            this.netApi = this.kc.makeApiClient(k8s.NetworkingV1Api);
+            this.storageApi = this.kc.makeApiClient(k8s.StorageV1Api);
+            this.objectApi = k8s.KubernetesObjectApi.makeApiClient(this.kc);
+            this.currentContext = contextName;
+
+            const timeout = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('K8s context connection timeout (5s)')), 5000)
+            );
+            await Promise.race([this.coreApi.listNamespace({ limit: 1 }), timeout]);
+
+            this.available = true;
+            console.log(`☸️  Switched Kubernetes context — active: ${this.currentContext}`);
+        } catch (err: any) {
+            this.available = false;
+            console.error(`☸️  Failed connecting to context ${contextName}:`, err.message);
+            throw new Error(`Context unreachable: ${err.message}`);
+        }
+    }
+
     public async getNamespaces(): Promise<string[]> {
         if (!this.available) return [];
         const res = await this.coreApi.listNamespace();
@@ -154,8 +187,34 @@ export class KubernetesService {
                 detailedStatus = termState.state.terminated.reason;
             }
 
+            const referencedConfigMaps: string[] = [];
+            const referencedSecrets: string[] = [];
+
+            // Parse volumes
+            (pod.spec?.volumes ?? []).forEach(v => {
+                if (v.configMap?.name) referencedConfigMaps.push(v.configMap.name);
+                if (v.secret?.secretName) referencedSecrets.push(v.secret.secretName);
+            });
+
+            // Parse container env
+            specContainers.forEach(c => {
+                (c.env ?? []).forEach(e => {
+                    if (e.valueFrom?.configMapKeyRef?.name) referencedConfigMaps.push(e.valueFrom.configMapKeyRef.name);
+                    if (e.valueFrom?.secretKeyRef?.name) referencedSecrets.push(e.valueFrom.secretKeyRef.name);
+                });
+                (c.envFrom ?? []).forEach(ef => {
+                    if (ef.configMapRef?.name) referencedConfigMaps.push(ef.configMapRef.name);
+                    if (ef.secretRef?.name) referencedSecrets.push(ef.secretRef.name);
+                });
+            });
+
+            const uniqueConfigMaps = Array.from(new Set(referencedConfigMaps));
+            const uniqueSecrets = Array.from(new Set(referencedSecrets));
+
             return {
                 name: pod.metadata?.name ?? '—',
+                refConfigMaps: uniqueConfigMaps,
+                refSecrets: uniqueSecrets,
                 namespace: pod.metadata?.namespace ?? namespace,
                 status: detailedStatus,
                 isTerminating: !!pod.metadata?.deletionTimestamp,
@@ -180,6 +239,8 @@ export class KubernetesService {
                             : cs?.state?.terminated ? 'terminated'
                             : 'unknown',
                         stateReason: cs?.state?.waiting?.reason ?? cs?.state?.terminated?.reason,
+                        imageID: cs?.imageID ?? '',
+                        securityContext: c.securityContext ?? {},
                     };
                 }),
                 conditions: (pod.status?.conditions ?? []).map(c => ({

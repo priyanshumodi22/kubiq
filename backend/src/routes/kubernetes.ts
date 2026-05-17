@@ -13,6 +13,35 @@ router.get('/status', (_req, res) => {
     });
 });
 
+// GET /api/kubernetes/contexts
+router.get('/contexts', (_req, res) => {
+    try {
+        const contexts = k8sService.getContexts();
+        res.json({
+            current: k8sService.currentContext,
+            contexts
+        });
+    } catch (e: any) {
+        res.status(500).json({ message: e.message });
+    }
+});
+
+// POST /api/kubernetes/contexts/switch
+router.post('/contexts/switch', async (req, res) => {
+    try {
+        const { context } = req.body;
+        if (!context) return res.status(400).json({ message: 'Context name is required' });
+        await k8sService.switchContext(context);
+        res.json({
+            message: `Context switched to ${context}`,
+            available: k8sService.available,
+            context: k8sService.currentContext
+        });
+    } catch (e: any) {
+        res.status(500).json({ message: e.message });
+    }
+});
+
 // GET /api/kubernetes/namespaces
 router.get('/namespaces', async (_req, res) => {
     try {

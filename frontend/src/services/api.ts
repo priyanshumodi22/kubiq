@@ -309,6 +309,16 @@ class ApiClient {
     return response.data;
   }
 
+  async getKubernetesContexts() {
+    const response = await this.client.get('/api/kubernetes/contexts');
+    return response.data;
+  }
+
+  async switchKubernetesContext(context: string) {
+    const response = await this.client.post('/api/kubernetes/contexts/switch', { context });
+    return response.data;
+  }
+
   async getKubernetesPods(namespace: string) {
     const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/pods`);
     return response.data;

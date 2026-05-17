@@ -32,6 +32,8 @@ export interface KubePod {
     labels: Record<string, string>;
     containers: KubeContainer[];
     conditions: KubeCondition[];
+    refConfigMaps?: string[];
+    refSecrets?: string[];
 }
 
 export interface KubeMetric {
@@ -65,6 +67,7 @@ export interface KubeDeployment {
 export function useKubernetes() {
     const [available, setAvailable] = useState<boolean | null>(null);
     const [context, setContext] = useState<string>('');
+    const [contexts, setContexts] = useState<any[]>([]);
     const [namespaces, setNamespaces] = useState<string[]>([]);
     const [selectedNamespace, setSelectedNamespace] = useState<string>('');
     const [pods, setPods] = useState<KubePod[]>([]);
@@ -79,7 +82,10 @@ export function useKubernetes() {
             .then(data => {
                 setAvailable(data.available);
                 setContext(data.context || '');
-                if (data.available) fetchNamespaces();
+                if (data.available) {
+                    fetchNamespaces();
+                    fetchContexts();
+                }
             })
             .catch(() => setAvailable(false));
     }, []);
@@ -90,6 +96,46 @@ export function useKubernetes() {
             setNamespaces(data);
             if (data.length > 0) setSelectedNamespace(data[0]);
         } catch (e: any) { setError(e.message); }
+    };
+
+    const fetchContexts = async () => {
+        try {
+            const data = await apiClient.getKubernetesContexts();
+            setContexts(data.contexts || []);
+        } catch (e) {}
+    };
+
+    const switchContext = async (contextName: string) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await apiClient.switchKubernetesContext(contextName);
+            setAvailable(res.available);
+            setContext(res.context || '');
+            if (res.available) {
+                // Fetch namespaces and reset list
+                const nsData: string[] = await apiClient.getKubernetesNamespaces();
+                setNamespaces(nsData);
+                if (nsData.length > 0) {
+                    setSelectedNamespace(nsData[0]);
+                } else {
+                    setSelectedNamespace('');
+                }
+                // Reload contexts lists
+                await fetchContexts();
+            } else {
+                setNamespaces([]);
+                setSelectedNamespace('');
+                setPods([]);
+                setMetrics([]);
+                setEvents([]);
+                setDeployments([]);
+            }
+        } catch (e: any) { 
+            setError(e.message); 
+        } finally { 
+            setLoading(false); 
+        }
     };
 
     const fetchNamespaceData = useCallback(async (ns: string) => {
@@ -141,7 +187,7 @@ export function useKubernetes() {
     };
 
     return {
-        available, context, namespaces, selectedNamespace, setSelectedNamespace,
+        available, context, contexts, switchContext, namespaces, selectedNamespace, setSelectedNamespace,
         pods, metrics, events, deployments, loading, error,
         refresh,
         scaleDeployment, restartDeployment, deleteResource,
