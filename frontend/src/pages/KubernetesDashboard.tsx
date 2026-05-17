@@ -706,8 +706,59 @@ export default function KubernetesDashboard() {
                                                         <th className="text-left px-4 py-3 font-medium">Status</th>
                                                     </>
                                                 )}
-                                                {['services', 'endpoints', 'ingresses', 'configmaps', 'secrets', 'nodes'].includes(activeResource) && (
-                                                    <th className="text-right px-4 py-3 font-medium">Creation Time</th>
+                                                {activeResource === 'services' && (
+                                                    <>
+                                                        <th className="text-left px-4 py-3 font-medium">Type</th>
+                                                        <th className="text-left px-4 py-3 font-medium">Ports</th>
+                                                    </>
+                                                )}
+                                                {activeResource === 'endpoints' && (
+                                                    <th className="text-left px-4 py-3 font-medium">Endpoints</th>
+                                                )}
+                                                {activeResource === 'ingresses' && (
+                                                    <>
+                                                        <th className="text-left px-4 py-3 font-medium">Class</th>
+                                                        <th className="text-left px-4 py-3 font-medium">Hosts</th>
+                                                    </>
+                                                )}
+                                                {activeResource === 'persistentvolumes' && (
+                                                    <>
+                                                        <th className="text-left px-4 py-3 font-medium">Capacity</th>
+                                                        <th className="text-left px-4 py-3 font-medium">Status</th>
+                                                        <th className="text-left px-4 py-3 font-medium">Claim</th>
+                                                    </>
+                                                )}
+                                                {activeResource === 'persistentvolumeclaims' && (
+                                                    <>
+                                                        <th className="text-left px-4 py-3 font-medium">Status</th>
+                                                        <th className="text-left px-4 py-3 font-medium">Volume</th>
+                                                        <th className="text-left px-4 py-3 font-medium">Capacity</th>
+                                                    </>
+                                                )}
+                                                {activeResource === 'storageclasses' && (
+                                                    <>
+                                                        <th className="text-left px-4 py-3 font-medium">Provisioner</th>
+                                                        <th className="text-left px-4 py-3 font-medium">Binding Mode</th>
+                                                    </>
+                                                )}
+                                                {activeResource === 'configmaps' && (
+                                                    <th className="text-left px-4 py-3 font-medium">Keys</th>
+                                                )}
+                                                {activeResource === 'secrets' && (
+                                                    <>
+                                                        <th className="text-left px-4 py-3 font-medium">Type</th>
+                                                        <th className="text-left px-4 py-3 font-medium">Keys</th>
+                                                    </>
+                                                )}
+                                                {activeResource === 'nodes' && (
+                                                    <>
+                                                        <th className="text-left px-4 py-3 font-medium">Status</th>
+                                                        <th className="text-left px-4 py-3 font-medium">Roles</th>
+                                                        <th className="text-left px-4 py-3 font-medium">Version</th>
+                                                    </>
+                                                )}
+                                                {['services', 'endpoints', 'ingresses', 'persistentvolumes', 'persistentvolumeclaims', 'storageclasses', 'configmaps', 'secrets', 'nodes', 'events'].includes(activeResource) && (
+                                                    <th className="text-right px-4 py-3 font-medium">Age</th>
                                                 )}
                                                 <th className="w-10"></th>
                                             </tr>
@@ -783,10 +834,138 @@ export default function KubernetesDashboard() {
                                                             </>
                                                         )}
 
+                                                        {/* Services Specific */}
+                                                        {activeResource === 'services' && (
+                                                            <>
+                                                                <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
+                                                                    {item.spec?.type || '—'}
+                                                                </td>
+                                                                <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
+                                                                    {item.spec?.ports?.map((p: any) => `${p.port}/${p.protocol}`).join(', ') || '—'}
+                                                                </td>
+                                                            </>
+                                                        )}
+
+                                                        {/* Endpoints Specific */}
+                                                        {activeResource === 'endpoints' && (
+                                                            <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400 max-w-xs truncate" title={item.subsets?.map((s: any) => s.addresses?.map((a: any) => `${a.ip}:${s.ports?.[0]?.port || ''}`).join(', ')).join(', ') || '—'}>
+                                                                {item.subsets?.map((s: any) => s.addresses?.map((a: any) => `${a.ip}:${s.ports?.[0]?.port || ''}`).join(', ')).join(', ') || '—'}
+                                                            </td>
+                                                        )}
+
+                                                        {/* Ingresses Specific */}
+                                                        {activeResource === 'ingresses' && (
+                                                            <>
+                                                                <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
+                                                                    {item.spec?.ingressClassName || '—'}
+                                                                </td>
+                                                                <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400 max-w-xs truncate" title={item.spec?.rules?.map((r: any) => r.host).join(', ') || '*'}>
+                                                                    {item.spec?.rules?.map((r: any) => r.host).join(', ') || '*'}
+                                                                </td>
+                                                            </>
+                                                        )}
+
+                                                        {/* PV Specific */}
+                                                        {activeResource === 'persistentvolumes' && (
+                                                            <>
+                                                                <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
+                                                                    {item.spec?.capacity?.storage || '—'}
+                                                                </td>
+                                                                <td className="px-4 py-2.5 text-left text-xs">
+                                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                                                        item.status?.phase === 'Bound' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
+                                                                        item.status?.phase === 'Available' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' :
+                                                                        'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                                                                    }`}>
+                                                                        {item.status?.phase || 'Bound'}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
+                                                                    {item.spec?.claimRef?.name || '—'}
+                                                                </td>
+                                                            </>
+                                                        )}
+
+                                                        {/* PVC Specific */}
+                                                        {activeResource === 'persistentvolumeclaims' && (
+                                                            <>
+                                                                <td className="px-4 py-2.5 text-left text-xs">
+                                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                                                        item.status?.phase === 'Bound' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
+                                                                        'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                                                                    }`}>
+                                                                        {item.status?.phase || 'Bound'}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
+                                                                    {item.spec?.volumeName || '—'}
+                                                                </td>
+                                                                <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
+                                                                    {item.status?.capacity?.storage || item.spec?.resources?.requests?.storage || '—'}
+                                                                </td>
+                                                            </>
+                                                        )}
+
+                                                        {/* StorageClasses Specific */}
+                                                        {activeResource === 'storageclasses' && (
+                                                            <>
+                                                                <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
+                                                                    {item.provisioner || '—'}
+                                                                </td>
+                                                                <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
+                                                                    {item.volumeBindingMode || '—'}
+                                                                </td>
+                                                            </>
+                                                        )}
+
+                                                        {/* ConfigMaps Specific */}
+                                                        {activeResource === 'configmaps' && (
+                                                            <td className="px-4 py-2.5 text-left text-xs">
+                                                                <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded text-[10px] font-bold font-mono">
+                                                                    {Object.keys(item.data || {}).length} keys
+                                                                </span>
+                                                            </td>
+                                                        )}
+
+                                                        {/* Secrets Specific */}
+                                                        {activeResource === 'secrets' && (
+                                                            <>
+                                                                <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
+                                                                    {item.type || 'Opaque'}
+                                                                </td>
+                                                                <td className="px-4 py-2.5 text-left text-xs">
+                                                                    <span className="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2 py-0.5 rounded text-[10px] font-bold font-mono">
+                                                                        {Object.keys(item.data || {}).length} keys
+                                                                    </span>
+                                                                </td>
+                                                            </>
+                                                        )}
+
+                                                        {/* Nodes Specific */}
+                                                        {activeResource === 'nodes' && (
+                                                            <>
+                                                                <td className="px-4 py-2.5 text-left text-xs">
+                                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                                                        item.status?.conditions?.find((c: any) => c.type === 'Ready')?.status === 'True'
+                                                                            ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                                                                            : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                                                    }`}>
+                                                                        {item.status?.conditions?.find((c: any) => c.type === 'Ready')?.status === 'True' ? 'Ready' : 'NotReady'}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
+                                                                    {Object.keys(item.metadata?.labels || {}).filter(l => l.startsWith('node-role.kubernetes.io/')).map(l => l.split('/').pop()).join(', ') || 'worker'}
+                                                                </td>
+                                                                <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
+                                                                    {item.status?.nodeInfo?.kubeletVersion || '—'}
+                                                                </td>
+                                                            </>
+                                                        )}
+
                                                         {/* Generic Timestamp for Others */}
-                                                        {['services', 'endpoints', 'ingresses', 'configmaps', 'secrets', 'nodes'].includes(activeResource) && (
+                                                        {['services', 'endpoints', 'ingresses', 'persistentvolumes', 'persistentvolumeclaims', 'storageclasses', 'configmaps', 'secrets', 'nodes', 'events'].includes(activeResource) && (
                                                             <td className="px-4 py-2.5 text-right text-xs text-gray-500">
-                                                                {cTime ? new Date(cTime).toLocaleString() : '—'}
+                                                                {cTime ? timeAgo(cTime) : '—'}
                                                             </td>
                                                         )}
 
@@ -821,3 +1000,4 @@ export default function KubernetesDashboard() {
         </div>
     );
 }
+
