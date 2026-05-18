@@ -33,70 +33,101 @@
 
 ## ✨ Key Features
 
-*   **⚡ Real-Time Streaming & Monitoring**
-    *   **Live Updates:** Sub-second latency for CPU, RAM, and Disk changes.
-    *   **Service Monitoring:** Native checks for **HTTP/HTTPS** (with SSL monitoring), **TCP Ports**, **MySQL**, and **MongoDB**.
-    *   **Log Streaming:** Watch logs tail live with support for glob patterns (e.g., `/var/log/*.error`) and auto-rotation.
+*   **☸️ v2.0.0 — The Kubernetes Control Plane (Latest)**
+    *   **Multi-Cluster Context Switching:** Switch between local or remote EKS/AKS/GKE clusters on the fly with custom connection inspect tooltips displaying active cloud provider details, users, and API endpoints.
+    *   **Pixel-Perfect Service Topology Map:** A mathematically aligned 4-column dependency graph (Hosts/Ingresses ➡️ Services ➡️ Pods ➡️ Configs/Secrets) with custom SVG curves, active hover-tracing, zoom controls, and touchscreen touch/drag gesture support.
+    *   **Direct YAML Monaco Editor:** Embedded full-scale VS Code-powered Monaco Editor for YAML manifest search, live schema validation, and instant hot-patch deployments.
+    *   **Interactive TTY Pod Container Shell:** Styled Xterm.js terminal canvas supporting multi-container sidecar switching and real-time execution streaming (Exec streams).
+    *   **Real-time Observability & Sparklines:** Pod CPU/RAM live utilization sparklines, radial progress resource limit gauges, and real-time active alarm logs (OOMKilled, CrashLoopBackOff).
 
-*   **📈 Advanced Analytics**
-    *   **Interactive Dashboard:** Beautiful, animated gauges and charts.
-    *   **Predictive Storage Analytics:** Intelligent forecasting tells you exactly how many days until your disk is full.
+*   **📈 APM & Trace Ingestion Engine (v1.2.0 Observability)**
+    *   **Zero-Config `kubiq-apm`:** Automatic instrumentation NPM package for Node.js apps serving real-time overviews of throughput (RPM), latency (P95), and query trace waterfalls.
+    *   **Global Ingestion Filtering:** Drop entire trace trees for ignored background paths (e.g. `/health`, `/metrics`) to drastically reduce DB storage and eliminate orphaned span leakage.
+    *   **Faceted Trace Search & Analytics:** Filter traces by route attributes, custom latency thresholds (e.g. `> 2s`), and instant `Errors Only` search toggles with visual status icons.
 
-*   **🔗 Distributed APM & Tracing**
-    *   **Auto-Instrumentation:** Zero-config NPM package (`kubiq-apm`) for Node.js apps.
-    *   **Topology Map:** Auto-generated visual map of service dependencies and network architectures.
-    *   **Trace Inspector:** Granular tracing showing Throughput (RPM), P95 Latency, Error Rates, and bottlenecks.
+*   **🤫 Alert Debouncing & Stability (v1.1.0 Reliability)**
+    *   **Anti-Flapping Controls:** Configure custom consecutive failure thresholds per service to prevent notification spam from 1-second glitches.
+    *   **Hardened Notification Engine:** Strict 5-second webhook timeouts, SMTP connection pooling/caching to decrease CPU load, and automatic exponential backoff retries (3 attempts).
 
-*   **💾 Multi-Database Support**
-    *   **JSON (Default):** Zero-config, file-based persistence. Perfect for single nodes.
-    *   **MySQL / MongoDB:** Switch to enterprise-grade databases for high-availability setups.
+*   **⚡ High-Throughput Log Streaming (v1.1.0 Logs Overhaul)**
+    *   **WebSocket Backpressure Handling:** Batches and buffers log emission cascades in 100ms intervals (or 64KB chunks) to prevent client UI browser freeze.
+    *   **Shared Watcher Reference Counting:** Multiple client log views of the same pod are automatically bound to a single active watcher thread, eliminating severe file system descriptor leaks.
+    *   **Advanced Log Management:** Real-time log streaming using full Glob pattern matchings (e.g., `/var/log/**/*.log`).
 
-*   **🔐 Triple-Layer Security**
-    *   **Authentication:** Secure JWT-based login.
-    *   **Passkeys (WebAuthn):** Passwordless biometric login (FaceID, TouchID, YubiKey).
-    *   **SSO:** OpenID Connect (OIDC) support for **Keycloak** integration.
-    *   **RBAC:** Granular control with **Admin** (Read/Write) and **Viewer** (Read-Only) roles.
+*   **⏱️ Core Uptime & Per-Service Control (v1.0.1 Patch)**
+    *   **Custom Polling Intervals:** Set service checks individually (10s, 30s, 1m, 5m, 10m) from the dashboard, respecting the global fallback.
+    *   **Dark-Theme Portal Dropdowns:** Replaced all native OS browser select menus with clean, consistent portals ensuring zero overflow clipping in modals.
 
-*   **🔔 Smart Notifications**
-    *   Get alerts via **Email (SMTP)** or Webhooks (**Discord, Slack, Teams**).
-
-
-*  **🖥️ Cross-Platform**
-   * Native support for **AMD64** and **ARM64** (Raspberry Pi, Oracle Cloud).
+*   **💾 Enterprise Storage & Security (v1.0.0 Launch)**
+    *   **Uptime Monitoring:** Live TCP ports, HTTP/HTTPS connectivity checks, and database checks (MySQL/MongoDB).
+    *   **Predictive Storage Analytics:** Multi-linear regression analytics engine providing intelligent "Days Remaining" disk full forecasting.
+    *   **Triple-Layer Security:** Secure JWT sessions, passwordless biometric Passkeys (WebAuthn: FaceID, TouchID, YubiKey), and OpenID Connect (OIDC) SSO support for Keycloak.
+    *   **RBAC Control:** Granular separation between Admin (Full Read/Write) and Viewer (Read-Only) users.
+    *   **Cross-Platform Architecture:** Native builds optimized for `AMD64` and `ARM64` (Raspberry Pi, Oracle Cloud VPS).
 
 ---
 
 ## 🚀 Quick Start
 
 ### ⚙️ 1. Setup Environment (.env)
-Before running kubiq, you must provide its configuration. Create a `.env` file in your current directory:
+Create a `.env` file in your directory to configure kubiq:
 
 ```env
-PORT=3000
+PORT=3001
 NODE_ENV=production
-# Add your domain if using HTTPS, otherwise leave as is
-FRONTEND_DNS=http://localhost:3000
-CORS_ORIGIN=http://localhost:3000
-BACKEND_DNS=http://localhost:3000
+# Add your VPS domain if using HTTPS, otherwise leave as is
+FRONTEND_DNS=http://localhost:3001
+CORS_ORIGIN=http://localhost:3001
+BACKEND_DNS=http://localhost:3001
 DB_TYPE=json
 ```
-*(You can view/download the full advanced `.env.example` template at [kubiq.priyanshumodi.in](https://kubiq.priyanshumodi.in/view/env))*
+*(Grab the full `.env.example` configurations template from [kubiq.priyanshumodi.in/view/env](https://kubiq.priyanshumodi.in/view/env))*
 
-### 🐳 2. Docker Run
-Run the container using the `.env` file:
+### 🐳 2. Run with Docker
+Run kubiq based on your desired operational mode:
 
+#### Option A: Lightweight VPS & System Monitor (Default)
 ```bash
 docker run -d \
   --name kubiq \
-  -p 3000:3000 \
+  -p 3001:3001 \
   -v kubiq-data:/app/data \
   --env-file .env \
   --restart unless-stopped \
   priyanshumodi22/kubiq:latest
 ```
 
-### 🐙 3. Docker Compose
-Create a `docker-compose.yml` file:
+#### Option B: With Local Kubernetes Cluster Access (Minikube / k3s / On-Premise)
+```bash
+docker run -d \
+  --name kubiq \
+  -p 3001:3001 \
+  -v ~/.kube:/root/.kube:ro \
+  -v kubiq-data:/app/data \
+  --env-file .env \
+  --restart unless-stopped \
+  priyanshumodi22/kubiq:latest
+```
+
+#### Option C: With Multi-Cloud Managed Clusters (AWS EKS, GCP GKE, Azure AKS)
+Mount your local cloud credentials and run in host network mode to authorize credentials securely:
+```bash
+docker run -d \
+  --name kubiq \
+  --network host \
+  -e KUBECONFIG=/root/.kube/config \
+  -v ~/.kube:/root/.kube:ro \
+  -v ~/.aws:/root/.aws:ro \
+  -v ~/.azure:/root/.azure:ro \
+  -v ~/.config/gcloud:/root/.config/gcloud:ro \
+  -v kubiq-data:/app/data \
+  --env-file .env \
+  --restart unless-stopped \
+  priyanshumodi22/kubiq:latest
+```
+
+### 🐙 3. Run with Docker Compose
+Alternatively, save this `docker-compose.yml` to orchestrate your setup:
 
 ```yaml
 version: '3.8'
@@ -106,15 +137,15 @@ services:
     container_name: kubiq
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3001:3001"
     volumes:
       - kubiq-data:/app/data
+      - ~/.kube:/root/.kube:ro
     env_file:
       - .env
 
 volumes:
   kubiq-data:
-```
 ```
 
 Run it:
