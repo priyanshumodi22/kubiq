@@ -23,8 +23,29 @@ RUN npm run build:ncc
 FROM node:20-slim
 WORKDIR /app
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y libstdc++6 libgcc1 ca-certificates && rm -rf /var/lib/apt/lists/*
+# Install runtime dependencies, AWS CLI, and utilities
+RUN apt-get update && apt-get install -y \
+    libstdc++6 \
+    libgcc1 \
+    ca-certificates \
+    awscli \
+    curl \
+    unzip \
+    gnupg \
+    apt-transport-https \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Azure AKS kubelogin
+RUN curl -LO https://github.com/Azure/kubelogin/releases/download/v0.1.4/kubelogin-linux-amd64.zip && \
+    unzip kubelogin-linux-amd64.zip && \
+    mv bin/linux_amd64/kubelogin /usr/local/bin/kubelogin && \
+    rm -rf kubelogin-linux-amd64.zip bin
+
+# Install Google Cloud CLI & GKE Auth Plugin
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    curl https://packages.cloud.google.com/apt/doc/crt.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
+    apt-get update && apt-get install -y google-cloud-cli-gke-gcloud-auth-plugin && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy the ncc bundle (single file)
 COPY --from=server-build /app/backend/build/index.js ./index.js
