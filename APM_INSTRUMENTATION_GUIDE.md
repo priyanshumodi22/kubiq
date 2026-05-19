@@ -46,33 +46,35 @@ node --require kubiq-apm/auto index.js
 
 ## 2. Python (Django, Flask, FastAPI)
 
-Python relies on the standard `opentelemetry-bootstrap` command to automatically detect and wrap your pip packages (like SQLAlchemy, Requests, Django).
+Python instrumentation is now just as simple as Node.js! Use the official **kubiq APM Python package** (`kubiq-apm`). This package wraps the standard OpenTelemetry setup and handles all environment configurations automatically.
 
 ### Step 1: Install Dependencies
 ```bash
-pip install opentelemetry-distro opentelemetry-exporter-otlp
+pip install kubiq-apm
 ```
 
 ### Step 2: Bootstrap Auto-Instrumentation
-Run this command once in your virtual environment to download the relevant plugins:
+Run this one-time command in your virtual environment to download the relevant plugins (for Flask, Django, SQLAlchemy, etc.):
 ```bash
-opentelemetry-bootstrap -a install
+kubiq-apm install
 ```
 
 ### Step 3: Run your app with the wrapper
-Prefix your normal startup command (like `python manage.py runserver` or `uvicorn`) with the `opentelemetry-instrument` wrapper. 
-
-*Note: The Python OTLP exporter correctly supports HTTP/JSON, so it connects perfectly to the standard `/v1/traces` kubiq endpoint.*
+Simply prefix your normal startup command (like `python manage.py runserver` or `uvicorn`) with `kubiq-apm`. It will automatically configure endpoints and read your environment variables.
 
 ```bash
 export OTEL_SERVICE_NAME="my-python-service"
-export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="http://localhost:3001/api/apm/v1/traces"
+# Optional: It defaults to http://localhost:3001/api/apm/v1/traces automatically!
+# export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="http://localhost:3001/api/apm/v1/traces"
+
+# For generic Python files
+kubiq-apm python main.py
 
 # For FastAPI / Uvicorn Server
-opentelemetry-instrument uvicorn main:app
+kubiq-apm uvicorn main:app
 
 # For Django Server
-opentelemetry-instrument python manage.py runserver
+kubiq-apm python manage.py runserver
 ```
 
 ---
