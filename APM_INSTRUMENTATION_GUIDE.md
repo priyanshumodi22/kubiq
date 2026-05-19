@@ -104,6 +104,7 @@ nohup java \
     -Dotel.logs.exporter=none \
     -Dotel.bsp.schedule.delay=2000 \
     -Dotel.bsp.max.export.batch.size=50 \
+    -Dspring.config.location=path/to/application.properties \
     -jar myapp.jar 2>&1 &
 ```
 
