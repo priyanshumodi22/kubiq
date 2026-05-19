@@ -23,7 +23,7 @@ Across *all* languages and frameworks, kubiq APM relies on these standard OpenTe
 
 ## 1. Node.js (Express, NestJS, Fastify)
 
-To make Node.js instrumentation as simple as possible, use the official **kubiq APM Node.js package** (`kubiq-apm`). This package bundles all the complex OpenTelemetry dependencies and auto-instrumentations into a single seamless wrapper.
+To make Node.js instrumentation as simple as possible, use the official **kubiq APM Node.js package** [![npm](https://img.shields.io/npm/v/kubiq-apm?logo=npm&color=CB3837&style=flat-square)](https://www.npmjs.com/package/kubiq-apm). This package bundles all the complex OpenTelemetry dependencies and auto-instrumentations into a single seamless wrapper.
 
 ### Step 1: Install Dependencies
 ```bash
@@ -46,7 +46,7 @@ node --require kubiq-apm/auto index.js
 
 ## 2. Python (Django, Flask, FastAPI)
 
-Python instrumentation is now just as simple as Node.js! Use the official **kubiq APM Python package** (`kubiq-apm`). This package wraps the standard OpenTelemetry setup and handles all environment configurations automatically.
+Python instrumentation is now just as simple as Node.js! Use the official **kubiq APM Python package** [![PyPI](https://img.shields.io/pypi/v/kubiq-apm?logo=pypi&color=3775A9&style=flat-square)](https://pypi.org/project/kubiq-apm/). This package wraps the standard OpenTelemetry setup and handles all environment configurations automatically.
 
 ### Step 1: Install Dependencies
 ```bash
