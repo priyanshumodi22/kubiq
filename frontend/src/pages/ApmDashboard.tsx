@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Activity, Clock, AlertTriangle, Search, Server, X, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { Activity, Clock, AlertTriangle, Search, Server, X, ChevronDown, CheckCircle2, Download } from 'lucide-react';
 import { useApm } from '../hooks/useApm';
 import { useTrace } from '../hooks/useTrace';
 import { useServiceMap } from '../hooks/useServiceMap';
@@ -36,6 +36,19 @@ export default function ApmDashboard() {
     
     // Config Modal
     const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+
+    // Export Modal
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
+    const [exportError, setExportError] = useState<string | null>(null);
+    const [exportService, setExportService] = useState('');
+    const [exportFromTime, setExportFromTime] = useState('');
+    const [exportToTime, setExportToTime] = useState('');
+    const [exportMinDuration, setExportMinDuration] = useState(0);
+    const [exportErrorOnly, setExportErrorOnly] = useState(false);
+    const [exportSpanSearch, setExportSpanSearch] = useState('');
+    const [isExportServiceOpen, setIsExportServiceOpen] = useState(false);
+    const [isExportDurationOpen, setIsExportDurationOpen] = useState(false);
 
     const sidebarRef = useRef<HTMLDivElement>(null);
     const timeRangeTriggerRef = useRef<HTMLButtonElement>(null);
@@ -268,6 +281,33 @@ export default function ApmDashboard() {
                     >
                         <Activity className={`w-4 h-4 ${apmLoading ? 'animate-spin' : ''}`} />
                         Refresh
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            setExportError(null);
+                            const now = new Date();
+                            const from = new Date(now.getTime() - timeRange);
+                            const pad = (n: number) => String(n).padStart(2, '0');
+                            const to12hTimeStr = (d: Date) => {
+                                let h = d.getHours();
+                                const m = pad(d.getMinutes());
+                                const s = pad(d.getSeconds());
+                                const ampm = h >= 12 ? 'PM' : 'AM';
+                                h = h % 12;
+                                h = h ? h : 12;
+                                return `${pad(h)}:${m}:${s} ${ampm}`;
+                            };
+                            setExportFromTime(to12hTimeStr(from));
+                            setExportToTime(to12hTimeStr(now));
+                            setExportService(selectedInspectorService || '');
+                            setIsExportModalOpen(true);
+                        }}
+                        className="px-4 py-2 bg-bg-elevated border border-gray-700 hover:border-green-500/70 text-text rounded-lg flex items-center gap-2 transition-colors"
+                        title="Export Slow Queries as CSV"
+                    >
+                        <Download className="w-4 h-4 text-green-400" />
+                        Export
                     </button>
 
                     {isAdmin && (
@@ -766,10 +806,224 @@ export default function ApmDashboard() {
                 </>
             )}
 
-            <ApmConfigModal 
-                isOpen={isConfigModalOpen} 
-                onClose={() => setIsConfigModalOpen(false)} 
+            <ApmConfigModal
+                isOpen={isConfigModalOpen}
+                onClose={() => setIsConfigModalOpen(false)}
             />
+
+            {/* Export Slow Queries Modal */}
+            {isExportModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity duration-300" onClick={() => setIsExportModalOpen(false)} />
+                    <div className="relative bg-[#0B0C10] bg-gradient-to-b from-[#13151A] to-[#0B0C10] border border-gray-700/60 rounded-2xl shadow-2xl shadow-green-900/10 w-full max-w-lg animate-fade-in ring-1 ring-white/5">
+                        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-800/80 bg-white/[0.02] rounded-t-2xl">
+                            <div className="flex items-center gap-4">
+                                <div className="p-2.5 bg-green-500/10 rounded-xl border border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]">
+                                    <Download className="w-5 h-5 text-green-400" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-semibold text-white tracking-wide">Export Slow Queries</h2>
+                                    <p className="text-[11px] text-gray-400 font-medium">All filters optional — AND-ed together</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setIsExportModalOpen(false)} className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition-all hover:rotate-90 duration-300">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="px-6 py-6 space-y-6">
+                            <div>
+                                <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5 text-blue-400" /> Time Range
+                                    <span className="text-gray-600 font-normal normal-case tracking-normal ml-1">— today, IST</span>
+                                </label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-[10px] text-gray-500 mb-1.5 ml-1">From (e.g. 11:03:55 PM)</p>
+                                        <input type="text" value={exportFromTime} onChange={e => setExportFromTime(e.target.value)}
+                                            placeholder="11:03:55 PM"
+                                            className="w-full bg-[#1A1C23] border border-gray-700/60 text-white text-sm rounded-xl px-4 py-2.5 focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20 outline-none placeholder:text-gray-600 transition-all shadow-inner" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-gray-500 mb-1.5 ml-1">To (e.g. 11:08:30 PM)</p>
+                                        <input type="text" value={exportToTime} onChange={e => setExportToTime(e.target.value)}
+                                            placeholder="11:08:30 PM"
+                                            className="w-full bg-[#1A1C23] border border-gray-700/60 text-white text-sm rounded-xl px-4 py-2.5 focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20 outline-none placeholder:text-gray-600 transition-all shadow-inner" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="relative">
+                                    <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                                        <Server className="w-3.5 h-3.5 text-purple-400" /> Service
+                                    </label>
+                                    <button 
+                                        type="button"
+                                        onClick={() => { setIsExportServiceOpen(!isExportServiceOpen); setIsExportDurationOpen(false); }}
+                                        className="w-full bg-[#1A1C23] border border-gray-700/60 hover:border-purple-500/50 text-white text-sm rounded-xl px-4 py-2.5 transition-all flex items-center justify-between shadow-inner focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                                    >
+                                        <span className="truncate">{exportService || 'All Services'}</span>
+                                        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isExportServiceOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    
+                                    {isExportServiceOpen && (
+                                        <div className="absolute z-20 w-full mt-2 bg-[#1A1C23] border border-gray-700/80 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.6)] max-h-52 overflow-y-auto overflow-hidden animate-fade-in ring-1 ring-white/5 py-1 custom-scrollbar">
+                                            <button 
+                                                type="button"
+                                                onClick={() => { setExportService(''); setIsExportServiceOpen(false); }}
+                                                className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-purple-500/15 ${exportService === '' ? 'text-purple-400 font-medium bg-purple-500/5' : 'text-gray-300'}`}
+                                            >
+                                                All Services
+                                            </button>
+                                            {metrics.map(m => (
+                                                <button 
+                                                    type="button"
+                                                    key={m.serviceName}
+                                                    onClick={() => { setExportService(m.serviceName); setIsExportServiceOpen(false); }}
+                                                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-purple-500/15 ${exportService === m.serviceName ? 'text-purple-400 font-medium bg-purple-500/5' : 'text-gray-300'}`}
+                                                >
+                                                    {m.serviceName}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="relative">
+                                    <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                                        <Activity className="w-3.5 h-3.5 text-orange-400" /> Min Duration
+                                    </label>
+                                    <button 
+                                        type="button"
+                                        onClick={() => { setIsExportDurationOpen(!isExportDurationOpen); setIsExportServiceOpen(false); }}
+                                        className="w-full bg-[#1A1C23] border border-gray-700/60 hover:border-orange-500/50 text-white text-sm rounded-xl px-4 py-2.5 transition-all flex items-center justify-between shadow-inner focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                                    >
+                                        <span>
+                                            {exportMinDuration === 0 ? 'Any Duration' : 
+                                             exportMinDuration === 100 ? '> 100ms' : 
+                                             exportMinDuration === 500 ? '> 500ms' : 
+                                             exportMinDuration === 1000 ? '> 1s' : 
+                                             exportMinDuration === 2000 ? '> 2s' : '> 5s'}
+                                        </span>
+                                        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isExportDurationOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    {isExportDurationOpen && (
+                                        <div className="absolute z-20 w-full mt-2 bg-[#1A1C23] border border-gray-700/80 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.6)] overflow-hidden animate-fade-in ring-1 ring-white/5 py-1">
+                                            {[
+                                                { v: 0, l: 'Any Duration' },
+                                                { v: 100, l: '> 100ms' },
+                                                { v: 500, l: '> 500ms' },
+                                                { v: 1000, l: '> 1s' },
+                                                { v: 2000, l: '> 2s' },
+                                                { v: 5000, l: '> 5s' }
+                                            ].map(opt => (
+                                                <button 
+                                                    type="button"
+                                                    key={opt.v}
+                                                    onClick={() => { setExportMinDuration(opt.v); setIsExportDurationOpen(false); }}
+                                                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-orange-500/15 ${exportMinDuration === opt.v ? 'text-orange-400 font-medium bg-orange-500/5' : 'text-gray-300'}`}
+                                                >
+                                                    {opt.l}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                                    <Search className="w-3.5 h-3.5 text-cyan-400" /> Span Name Filter
+                                </label>
+                                <input type="text" value={exportSpanSearch} onChange={e => setExportSpanSearch(e.target.value)}
+                                    placeholder="e.g. mongodb.query, postgresql, http.request..."
+                                    className="w-full bg-[#1A1C23] border border-gray-700/60 text-white text-sm rounded-xl px-4 py-2.5 focus:border-cyan-500/60 focus:ring-2 focus:ring-cyan-500/20 outline-none placeholder:text-gray-600 transition-all shadow-inner" />
+                            </div>
+                            <div className="flex items-center justify-between bg-[#1A1C23]/60 border border-gray-700/50 rounded-xl px-5 py-4 transition-colors hover:border-gray-600/50 group cursor-pointer" onClick={() => setExportErrorOnly(!exportErrorOnly)}>
+                                <div className="flex items-center gap-4">
+                                    <div className={`p-2 rounded-lg transition-colors duration-300 ${exportErrorOnly ? 'bg-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-gray-800'}`}>
+                                        <AlertTriangle className={`w-4 h-4 transition-colors duration-300 ${exportErrorOnly ? 'text-red-400' : 'text-gray-500'}`} />
+                                    </div>
+                                    <div>
+                                        <span className="text-sm text-gray-200 font-medium block">Errors Only</span>
+                                        <span className="text-[10px] text-gray-500 mt-0.5 block">(spans with ERROR status)</span>
+                                    </div>
+                                </div>
+                                <button type="button" className={`relative w-11 h-6 rounded-full transition-all duration-300 outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0B0C10] focus:ring-red-500/50 ${exportErrorOnly ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]' : 'bg-gray-700'}`}>
+                                    <span className={`absolute top-0.5 left-1 w-5 h-5 bg-white rounded-full transition-transform duration-300 shadow-sm ${exportErrorOnly ? 'translate-x-4' : 'translate-x-0'}`} />
+                                </button>
+                            </div>
+                            {exportError && (
+                                <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm animate-fade-in flex items-start gap-2">
+                                    <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                    <span>{exportError}</span>
+                                </div>
+                            )}
+                            <p className="text-[10px] text-gray-600 leading-relaxed max-w-[90%]">
+                                Up to 2,000 spans, slowest first. Columns: traceId, spanName, service, startTime, durationMs, status, db.system, db.statement, http.method, http.url, net.peer.name, rpc.service, messaging.destination
+                            </p>
+                        </div>
+                        <div className="px-6 py-5 border-t border-gray-800/80 bg-white/[0.02] rounded-b-2xl flex justify-end gap-3">
+                            <button onClick={() => setIsExportModalOpen(false)}
+                                className="px-5 py-2.5 text-sm font-medium text-gray-400 hover:text-white bg-transparent border border-gray-700 hover:border-gray-500 rounded-xl transition-all hover:bg-white/5">
+                                Cancel
+                            </button>
+                            <button disabled={isExporting} onClick={async () => {
+                                try {
+                                    setIsExporting(true);
+                                    setExportError(null);
+                                    const baseUrl = import.meta.env.VITE_API_URL || '';
+                                    const ctxPath = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
+                                    const params = new URLSearchParams();
+                                    // todayDate YYYY-MM-DD + HH:MM:SS AM/PM → JS treats as local (IST) → toISOString() = UTC
+                                    const todayDate = new Date().toLocaleDateString('en-CA');
+                                    
+                                    const parseUserTime = (timeStr: string) => {
+                                        const cleanTimeStr = timeStr.trim().replace(/([ap]m)/i, ' $1').toUpperCase();
+                                        const d = new Date(`${todayDate} ${cleanTimeStr}`);
+                                        if (isNaN(d.getTime())) {
+                                            throw new Error(`Invalid time format: "${timeStr}". Try "11:03:55 PM"`);
+                                        }
+                                        return d;
+                                    };
+
+                                    if (exportFromTime) params.append('from', parseUserTime(exportFromTime).toISOString());
+                                    if (exportToTime) params.append('to', parseUserTime(exportToTime).toISOString());
+                                    if (exportService) params.append('service', exportService);
+                                    if (exportMinDuration > 0) params.append('minDuration', exportMinDuration.toString());
+                                    if (exportErrorOnly) params.append('errorOnly', 'true');
+                                    if (exportSpanSearch.trim()) params.append('search', exportSpanSearch.trim());
+                                    const url = `${baseUrl}${ctxPath}/api/apm/export?${params.toString()}`;
+                                    const res = await fetch(url);
+                                    if (!res.ok) {
+                                        const err = await res.json().catch(() => ({ error: 'No data found for these filters.' }));
+                                        setExportError(err.error || 'Export failed.');
+                                        return;
+                                    }
+                                    const blob = await res.blob();
+                                    const disposition = res.headers.get('Content-Disposition') || '';
+                                    const filenameMatch = disposition.match(/filename="(.+?)"/);
+                                    const filename = filenameMatch ? filenameMatch[1] : 'slow-queries.csv';
+                                    const link = document.createElement('a');
+                                    link.href = URL.createObjectURL(blob);
+                                    link.download = filename;
+                                    link.click();
+                                    URL.revokeObjectURL(link.href);
+                                    setIsExportModalOpen(false);
+                                } catch (e: any) {
+                                    setExportError('Network error: ' + e.message);
+                                } finally {
+                                    setIsExporting(false);
+                                }
+                            }} className="px-6 py-2.5 text-sm font-semibold bg-green-600 hover:bg-green-500 disabled:bg-green-800/50 disabled:cursor-not-allowed text-white rounded-xl transition-all shadow-[0_0_15px_rgba(34,197,94,0.3)] hover:shadow-[0_0_25px_rgba(34,197,94,0.5)] hover:-translate-y-0.5 flex items-center gap-2 border border-green-500/50 disabled:border-transparent disabled:hover:translate-y-0 disabled:hover:shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+                                {isExporting
+                                    ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Exporting...</>
+                                    : <><Download className="w-4 h-4" /> Download CSV</>
+                                }
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

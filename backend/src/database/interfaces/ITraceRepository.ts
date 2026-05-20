@@ -75,4 +75,17 @@ export interface ITraceRepository {
    * Retrieves the most recent trace ID that traverses a specific edge (source -> target)
    */
   getRecentTraceIdForEdge(sourceName: string, targetName: string): Promise<string | null>;
+
+  /**
+   * Retrieves detailed spans for CSV export with all call attributes (db, http, rpc, messaging).
+   * All parameters are optional and AND-ed together.
+   */
+  getSpansForExport(options: {
+    serviceName?: string;
+    fromTime?: Date;
+    toTime?: Date;
+    minDurationMs?: number;
+    errorOnly?: boolean;
+    spanNameSearch?: string;
+  }): Promise<any[]>;
 }

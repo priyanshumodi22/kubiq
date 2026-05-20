@@ -347,3 +347,100 @@ apmAnalyticsRouter.get('/service-map', async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Failed to retrieve service map data.' });
     }
 });
+
+/**
+ * GET /api/apm/export
+ * Export slow query spans as a downloadable CSV file.
+ * All query params are optional and are AND-ed together:
+ *   - from        ISO datetime string (e.g. 2026-05-20T17:03:55)
+ *   - to          ISO datetime string (e.g. 2026-05-20T17:08:30)
+ *   - service     service name filter
+ *   - minDuration minimum span duration in ms
+ *   - errorOnly   'true' to include only error spans
+ *   - search      partial match on span name
+ */
+apmAnalyticsRouter.get('/export', async (req: Request, res: Response) => {
+    try {
+        const fromParam = req.query.from as string | undefined;
+        const toParam = req.query.to as string | undefined;
+        const serviceName = req.query.service as string | undefined;
+        const minDurationMs = req.query.minDuration ? parseInt(req.query.minDuration as string, 10) : undefined;
+        const errorOnly = req.query.errorOnly === 'true';
+        const spanNameSearch = req.query.search as string | undefined;
+
+        const fromTime = fromParam ? new Date(fromParam) : undefined;
+        const toTime = toParam ? new Date(toParam) : undefined;
+
+        const traceRepository = await DatabaseFactory.getTraceRepository();
+        const spans = await traceRepository.getSpansForExport({
+            serviceName,
+            fromTime,
+            toTime,
+            minDurationMs,
+            errorOnly: errorOnly || undefined,
+            spanNameSearch,
+        });
+
+        if (!spans || spans.length === 0) {
+            res.status(404).json({ error: 'No spans found matching the given filters.' });
+            return;
+        }
+
+        // Helper to safely escape a CSV field (handles commas, quotes, newlines)
+        const csvField = (val: any): string => {
+            if (val === null || val === undefined) return '';
+            const str = String(val);
+            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
+        };
+
+        const header = [
+            'traceId', 'spanName', 'service', 'startTime', 'durationMs', 'status',
+            'db.system', 'db.statement', 'http.method', 'http.url',
+            'net.peer.name', 'rpc.service', 'rpc.method',
+            'messaging.system', 'messaging.destination'
+        ].join(',');
+
+        const rows = spans.map((s: any) => {
+            const attrs = s.attributes || {};
+            const startTime = new Date(s.startTimeUnixNano / 1_000_000).toISOString();
+            const status = s.statusCode === 2 ? 'ERROR' : 'OK';
+            return [
+                csvField(s.traceId),
+                csvField(s.name),
+                csvField(s.serviceName),
+                csvField(startTime),
+                csvField(s.durationMs?.toFixed(2)),
+                csvField(status),
+                csvField(attrs['db.system']),
+                csvField(attrs['db.statement']),
+                csvField(attrs['http.method']),
+                csvField(attrs['http.url']),
+                csvField(attrs['net.peer.name']),
+                csvField(attrs['rpc.service']),
+                csvField(attrs['rpc.method']),
+                csvField(attrs['messaging.system']),
+                csvField(attrs['messaging.destination']),
+            ].join(',');
+        });
+
+        const csv = [header, ...rows].join('\n');
+
+        // Build a descriptive filename from applied filters
+        const svcLabel = serviceName ? `_${serviceName}` : '_all-services';
+        const durLabel = minDurationMs ? `_gt${minDurationMs}ms` : '';
+        const errLabel = errorOnly ? '_errors' : '';
+        const dateLabel = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+        const filename = `slow-queries${svcLabel}${durLabel}${errLabel}_${dateLabel}.csv`;
+
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(csv);
+    } catch (error) {
+        console.error('Failed to export spans:', error);
+        res.status(500).json({ error: 'Failed to export spans.' });
+    }
+});
+

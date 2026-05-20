@@ -218,4 +218,38 @@ export class MongoTraceRepository implements ITraceRepository {
 
         return result.length > 0 ? result[0].traceId : null;
     }
+
+    async getSpansForExport(options: {
+        serviceName?: string;
+        fromTime?: Date;
+        toTime?: Date;
+        minDurationMs?: number;
+        errorOnly?: boolean;
+        spanNameSearch?: string;
+    }): Promise<any[]> {
+        const { serviceName, fromTime, toTime, minDurationMs, errorOnly, spanNameSearch } = options;
+
+        const matchQuery: any = {};
+
+        // AND all provided filters together
+        if (serviceName) matchQuery.serviceName = serviceName;
+        if (minDurationMs && minDurationMs > 0) matchQuery.durationMs = { $gte: minDurationMs };
+        if (errorOnly) matchQuery.statusCode = 2;
+        if (spanNameSearch) matchQuery.name = { $regex: spanNameSearch, $options: 'i' };
+
+        // Timestamp range: if either bound is provided, build the timestamp filter
+        if (fromTime || toTime) {
+            matchQuery.timestamp = {};
+            if (fromTime) matchQuery.timestamp.$gte = fromTime;
+            if (toTime) matchQuery.timestamp.$lte = toTime;
+        }
+
+        const spans = await ApmSpanModel
+            .find(matchQuery)
+            .sort({ durationMs: -1 })
+            .limit(2000)
+            .lean();
+
+        return spans;
+    }
 }

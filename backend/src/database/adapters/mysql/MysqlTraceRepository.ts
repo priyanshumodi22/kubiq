@@ -232,4 +232,61 @@ export class MysqlTraceRepository implements ITraceRepository {
 
         return rows.length > 0 ? rows[0].trace_id : null;
     }
+
+    async getSpansForExport(options: {
+        serviceName?: string;
+        fromTime?: Date;
+        toTime?: Date;
+        minDurationMs?: number;
+        errorOnly?: boolean;
+        spanNameSearch?: string;
+    }): Promise<any[]> {
+        const { serviceName, fromTime, toTime, minDurationMs, errorOnly, spanNameSearch } = options;
+
+        let query = `
+            SELECT * FROM apm_spans
+            WHERE 1=1
+        `;
+        const params: any[] = [];
+
+        if (serviceName) {
+            query += ` AND service_name = ?`;
+            params.push(serviceName);
+        }
+        if (fromTime) {
+            query += ` AND timestamp >= ?`;
+            params.push(fromTime);
+        }
+        if (toTime) {
+            query += ` AND timestamp <= ?`;
+            params.push(toTime);
+        }
+        if (minDurationMs && minDurationMs > 0) {
+            query += ` AND duration_ms >= ?`;
+            params.push(minDurationMs);
+        }
+        if (errorOnly) {
+            query += ` AND status_code = 2`;
+        }
+        if (spanNameSearch) {
+            query += ` AND span_name LIKE ?`;
+            params.push(`%${spanNameSearch}%`);
+        }
+
+        query += ` ORDER BY duration_ms DESC LIMIT 2000`;
+
+        const [rows] = await this.pool.query<RowDataPacket[]>(query, params);
+
+        // Normalize to match the ISpan-like shape the endpoint expects
+        return rows.map((row: any) => ({
+            traceId: row.trace_id,
+            spanId: row.span_id,
+            name: row.span_name,
+            serviceName: row.service_name,
+            startTimeUnixNano: row.start_time_unix_nano,
+            durationMs: row.duration_ms,
+            statusCode: row.status_code,
+            attributes: typeof row.attributes === 'string' ? JSON.parse(row.attributes) : (row.attributes || {})
+        }));
+    }
 }
