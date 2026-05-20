@@ -82,7 +82,8 @@ app.use(
   cors({
     origin: (requestOrigin, callback) => {
       // Allow requests with no origin (like mobile apps or curl requests)
-      if (!requestOrigin) return callback(null, true);
+      // Also allow "null" origin which can happen during corporate proxy redirects (e.g., Smoothwall)
+      if (!requestOrigin || requestOrigin === 'null') return callback(null, true);
 
       // In development, allow any localhost or local IP
       if (process.env.NODE_ENV !== 'production') {
@@ -90,10 +91,14 @@ app.use(
       }
 
       // Production: Strict check against CORS_ORIGIN
-      const allowedOrigin = process.env.FRONTEND_DNS || process.env.CORS_ORIGIN || 'http://localhost:3000';
-      if (requestOrigin === allowedOrigin) {
+      const allowedOriginsStr = process.env.CORS_ORIGIN || process.env.FRONTEND_DNS || 'http://localhost:3000';
+      const allowedOrigins = allowedOriginsStr.split(',').map(o => o.trim().replace(/\/$/, ''));
+      const cleanRequestOrigin = requestOrigin.replace(/\/$/, '');
+
+      if (allowedOrigins.includes(cleanRequestOrigin)) {
         return callback(null, true);
       } else {
+        console.error(`[CORS] Blocked request from origin: "${requestOrigin}"`);
         return callback(new Error('Not allowed by CORS'));
       }
     },
