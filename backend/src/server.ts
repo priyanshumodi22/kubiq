@@ -43,7 +43,7 @@ const io = new Server(httpServer, {
   cors: {
     origin: process.env.FRONTEND_DNS || process.env.CORS_ORIGIN || 'http://localhost:3000',
     methods: ["GET", "POST"],
-    credentials: true
+    credentials: false
   },
   path: `${BACKEND_CONTEXT_PATH}/socket.io` // Use context path if set
 });
@@ -102,7 +102,7 @@ app.use(
         return callback(new Error('Not allowed by CORS'));
       }
     },
-    credentials: true, // Required for cookies/sessions
+    credentials: false, // Disabled to allow flexible origins (*) behind corporate proxies
   })
 );
 app.use(compression()); // Enable gzip compression

@@ -24,6 +24,7 @@ class ApiClient {
     this.client = axios.create({
       baseURL: BASE_PATH,
       timeout: 10000,
+      withCredentials: false, // Ensure credentials are not sent (Proxy CORS fix)
       headers: {
         'Content-Type': 'application/json',
       },
