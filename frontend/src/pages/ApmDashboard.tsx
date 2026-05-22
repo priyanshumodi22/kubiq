@@ -9,6 +9,62 @@ import ServiceMap from '../components/ServiceMap';
 import { ApmConfigModal } from '../components/ApmConfigModal';
 import { useAuth } from '../contexts/AuthContext';
 import { Settings } from 'lucide-react';
+import { TimeRangeSlider } from '../components/TimeRangeSlider';
+
+export type TimeFilter = 
+    | { type: 'relative', ms: number, label: string }
+    | { type: 'absolute', fromMs: number, toMs: number, label: string };
+
+const getPresets = () => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    const twoDaysAgo = new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000);
+    const prevWeekEnd = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const prevWeekStart = new Date(prevWeekEnd.getTime() - 6 * 24 * 60 * 60 * 1000);
+
+    const formatShortDate = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    return [
+        { label: 'Last minute', ms: 60 * 1000, type: 'relative' as const },
+        { label: 'Last 5 minutes', ms: 5 * 60 * 1000, type: 'relative' as const },
+        { label: 'Last 10 minutes', ms: 10 * 60 * 1000, type: 'relative' as const },
+        { label: 'Last 30 minutes', ms: 30 * 60 * 1000, type: 'relative' as const },
+        { label: 'Last hour', ms: 60 * 60 * 1000, type: 'relative' as const },
+        { label: 'Last 6 hours', ms: 6 * 60 * 60 * 1000, type: 'relative' as const },
+        { label: 'Last 12 hours', ms: 12 * 60 * 60 * 1000, type: 'relative' as const },
+        { label: 'Last 24 hours', ms: 24 * 60 * 60 * 1000, type: 'relative' as const },
+        { 
+            label: 'Yesterday', 
+            subLabel: formatShortDate(yesterday),
+            type: 'absolute' as const, 
+            fromMs: yesterday.getTime(), 
+            toMs: yesterday.getTime() + 24 * 60 * 60 * 1000 - 1 
+        },
+        { 
+            label: 'Two days ago', 
+            subLabel: formatShortDate(twoDaysAgo),
+            type: 'absolute' as const, 
+            fromMs: twoDaysAgo.getTime(), 
+            toMs: twoDaysAgo.getTime() + 24 * 60 * 60 * 1000 - 1 
+        },
+        { 
+            label: 'Last seven days', 
+            subLabel: `${formatShortDate(sevenDaysAgo)} - ${formatShortDate(today)}`,
+            type: 'absolute' as const, 
+            fromMs: sevenDaysAgo.getTime(), 
+            toMs: now.getTime() 
+        },
+        { 
+            label: 'Previous week', 
+            subLabel: `${formatShortDate(prevWeekStart)} - ${formatShortDate(prevWeekEnd)}`,
+            type: 'absolute' as const, 
+            fromMs: prevWeekStart.getTime(), 
+            toMs: prevWeekEnd.getTime() + 24 * 60 * 60 * 1000 - 1 
+        },
+    ];
+};
 
 export default function ApmDashboard() {
     const { hasRole } = useAuth();
@@ -17,7 +73,12 @@ export default function ApmDashboard() {
     const { spans, loading: traceLoading, error: traceError, fetchTrace, clearTrace } = useTrace();
     const { dependencies, loading: mapLoading, error: mapError, fetchServiceMap } = useServiceMap();
 
-    const [timeRange, setTimeRange] = useState(60 * 60 * 1000); // Default 1H
+    const [timeFilter, setTimeFilter] = useState<TimeFilter>({ type: 'relative', ms: 60 * 60 * 1000, label: 'Last hour' });
+    const [customFromDate, setCustomFromDate] = useState('');
+    const [customFromTime, setCustomFromTime] = useState('');
+    const [customToDate, setCustomToDate] = useState('');
+    const [customToTime, setCustomToTime] = useState('');
+    
     const [traceIdInput, setTraceIdInput] = useState('');
     const [isTraceDropdownOpen, setIsTraceDropdownOpen] = useState(false);
     const [serviceFilter, setServiceFilter] = useState('');
@@ -99,14 +160,20 @@ export default function ApmDashboard() {
     // Fetch map data when switching to map view
     useEffect(() => {
         if (activeView === 'map') {
-            fetchServiceMap(timeRange);
+            const opts = timeFilter.type === 'relative' 
+                ? { timeRangeMs: timeFilter.ms }
+                : { fromMs: timeFilter.fromMs, toMs: timeFilter.toMs, timeRangeMs: timeFilter.toMs - timeFilter.fromMs };
+            fetchServiceMap(opts);
         }
-    }, [activeView, timeRange, fetchServiceMap]);
+    }, [activeView, timeFilter, fetchServiceMap]);
 
     const handleRefresh = () => {
-        refresh(timeRange);
+        const opts = timeFilter.type === 'relative' 
+            ? { timeRangeMs: timeFilter.ms }
+            : { fromMs: timeFilter.fromMs, toMs: timeFilter.toMs, timeRangeMs: timeFilter.toMs - timeFilter.fromMs };
+        refresh(opts);
         if (activeView === 'map') {
-            fetchServiceMap(timeRange);
+            fetchServiceMap(opts);
         }
     };
 
@@ -116,22 +183,23 @@ export default function ApmDashboard() {
         await fetchTracesWithFilters(serviceName, minDurationFilter, errorOnlyFilter, routeSearch, true);
     };
 
-    const fetchTracesWithFilters = async (
-        serviceName: string, 
-        minDuration: number, 
-        errorOnly: boolean, 
-        search: string,
-        autoSelectFirst = false
-    ) => {
+    const fetchTracesWithFilters = async (serviceName: string, minDur: number, errorOnly: boolean, search: string, autoSelectFirst: boolean = true) => {
         try {
             setIsFetchingTraces(true);
             const baseUrl = import.meta.env.VITE_API_URL || '';
             const ctxPath = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
             
-            const params = new URLSearchParams({ limit: '50' });
-            if (minDuration > 0) params.append('minDuration', minDuration.toString());
+            const params = new URLSearchParams();
+            if (minDur > 0) params.append('minDuration', minDur.toString());
             if (errorOnly) params.append('errorOnly', 'true');
             if (search.trim()) params.append('search', search.trim());
+            
+            // Apply global time filter to the trace list
+            const now = Date.now();
+            const from = timeFilter.type === 'relative' ? now - timeFilter.ms : timeFilter.fromMs;
+            const to = timeFilter.type === 'relative' ? now : timeFilter.toMs;
+            params.append('fromMs', from.toString());
+            params.append('toMs', to.toString());
 
             const res = await fetch(`${baseUrl}${ctxPath}/api/apm/services/${serviceName}/traces?${params.toString()}`);
             if (res.ok) {
@@ -172,7 +240,7 @@ export default function ApmDashboard() {
         if (selectedInspectorService) {
             fetchTracesWithFilters(selectedInspectorService, minDurationFilter, errorOnlyFilter, routeSearch, false);
         }
-    }, [minDurationFilter, errorOnlyFilter, routeSearch]);
+    }, [minDurationFilter, errorOnlyFilter, routeSearch, timeFilter]);
 
     const handleEdgeClick = async (source: string, target: string) => {
         try {
@@ -198,6 +266,82 @@ export default function ApmDashboard() {
 
     const selectedTraceObj = tracesList.find(t => t.traceId === traceIdInput);
 
+    const applyCustomTime = () => {
+        if (!customFromDate || !customFromTime || !customToDate || !customToTime) return;
+        
+        const from = new Date(`${customFromDate}T${customFromTime}`).getTime();
+        const to = new Date(`${customToDate}T${customToTime}`).getTime();
+        
+        const now = Date.now();
+        if (from > now || to > now) {
+            alert('Cannot select a time in the future.');
+            return;
+        }
+        
+        if (from >= to) {
+            alert('Start time must be before end time.');
+            return;
+        }
+        
+        const newFilter: TimeFilter = { type: 'absolute', fromMs: from, toMs: to, label: `${customFromDate} ${customFromTime} to ${customToDate} ${customToTime}` };
+        setTimeFilter(newFilter);
+        
+        const opts = { fromMs: from, toMs: to, timeRangeMs: to - from };
+        refresh(opts);
+        if (activeView === 'map') fetchServiceMap(opts);
+        setIsTimeRangeOpen(false);
+    };
+
+    // Initialize custom dates when opening the dropdown based on current timeFilter
+    useEffect(() => {
+        if (isTimeRangeOpen) {
+            const pad = (n: number) => String(n).padStart(2, '0');
+            const now = Date.now();
+            const from = timeFilter.type === 'relative' ? now - timeFilter.ms : timeFilter.fromMs;
+            const to = timeFilter.type === 'relative' ? now : timeFilter.toMs;
+            
+            const fromDate = new Date(from);
+            setCustomFromDate(`${fromDate.getFullYear()}-${pad(fromDate.getMonth()+1)}-${pad(fromDate.getDate())}`);
+            setCustomFromTime(`${pad(fromDate.getHours())}:${pad(fromDate.getMinutes())}`);
+            
+            const toDate = new Date(to);
+            setCustomToDate(`${toDate.getFullYear()}-${pad(toDate.getMonth()+1)}-${pad(toDate.getDate())}`);
+            setCustomToTime(`${pad(toDate.getHours())}:${pad(toDate.getMinutes())}`);
+        }
+    }, [isTimeRangeOpen, timeFilter]);
+
+    const handleSliderChange = (val: [number, number]) => {
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const fromDate = new Date(val[0]);
+        setCustomFromDate(`${fromDate.getFullYear()}-${pad(fromDate.getMonth()+1)}-${pad(fromDate.getDate())}`);
+        setCustomFromTime(`${pad(fromDate.getHours())}:${pad(fromDate.getMinutes())}`);
+        
+        const toDate = new Date(val[1]);
+        setCustomToDate(`${toDate.getFullYear()}-${pad(toDate.getMonth()+1)}-${pad(toDate.getDate())}`);
+        setCustomToTime(`${pad(toDate.getHours())}:${pad(toDate.getMinutes())}`);
+    };
+
+    const sliderMaxMs = Date.now();
+    const sliderMinMs = sliderMaxMs - 7 * 24 * 60 * 60 * 1000;
+    
+    let sliderFromMs = sliderMaxMs - 60 * 60 * 1000;
+    if (customFromDate && customFromTime) {
+        sliderFromMs = new Date(`${customFromDate}T${customFromTime}`).getTime();
+    }
+    
+    let sliderToMs = sliderMaxMs;
+    if (customToDate && customToTime) {
+        sliderToMs = new Date(`${customToDate}T${customToTime}`).getTime();
+    }
+    
+    // Clamp to slider bounds
+    sliderFromMs = Math.max(sliderMinMs, Math.min(sliderFromMs, sliderMaxMs));
+    sliderToMs = Math.max(sliderMinMs, Math.min(sliderToMs, sliderMaxMs));
+
+    const todayObj = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const todayString = `${todayObj.getFullYear()}-${pad(todayObj.getMonth()+1)}-${pad(todayObj.getDate())}`;
+
     return (
         <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full animate-fade-in relative z-10">
             {/* Background Effects (Matched to Dashboard and Logs) */}
@@ -217,7 +361,7 @@ export default function ApmDashboard() {
                     <p className="text-gray-400 mt-1">Monitor application performance and distributed traces</p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto mt-4 sm:mt-0">
                     {/* Time Range — Custom Portal Dropdown */}
                     <div className="relative">
                         <button
@@ -226,19 +370,34 @@ export default function ApmDashboard() {
                             onClick={() => {
                                 if (!isTimeRangeOpen && timeRangeTriggerRef.current) {
                                     const r = timeRangeTriggerRef.current.getBoundingClientRect();
-                                    setTimeRangeRect({ top: r.bottom + 4, left: r.left, width: r.width });
+                                    const isMobile = window.innerWidth < 640;
+                                    if (isMobile) {
+                                        setTimeRangeRect({ top: r.bottom + 4, left: 16, width: window.innerWidth - 32 });
+                                    } else {
+                                        setTimeRangeRect({ top: r.bottom + 4, left: r.right - 580 > 0 ? r.right - 580 : Math.max(16, r.left), width: 580 });
+                                    }
                                 }
                                 setIsTimeRangeOpen(o => !o);
                             }}
-                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2.5 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-[150px]"
+                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2.5 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-[180px]"
                         >
-                            <span>
-                                {[
-                                    { value: 15 * 60 * 1000,       label: 'Last 15 Minutes' },
-                                    { value: 60 * 60 * 1000,       label: 'Last 1 Hour' },
-                                    { value: 24 * 60 * 60 * 1000,  label: 'Last 24 Hours' },
-                                ].find(o => o.value === timeRange)?.label ?? 'Last 1 Hour'}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-primary shrink-0" />
+                                {timeFilter.type === 'absolute' && timeFilter.label.includes(' to ') && timeFilter.label.split(' ').length === 5 ? (
+                                    <div className="flex flex-col items-start text-left min-w-[150px]">
+                                        <span className="text-[10px] text-gray-400 leading-tight">
+                                            {timeFilter.label.split(' ')[0]} to {timeFilter.label.split(' ')[3]}
+                                        </span>
+                                        <span className="text-sm leading-tight text-white">
+                                            {timeFilter.label.split(' ')[1]} to {timeFilter.label.split(' ')[4]}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <span className="truncate max-w-[200px]">
+                                        {timeFilter.label}
+                                    </span>
+                                )}
+                            </div>
                             <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isTimeRangeOpen ? 'rotate-180' : ''}`} />
                         </button>
                     </div>
@@ -246,30 +405,126 @@ export default function ApmDashboard() {
                     {isTimeRangeOpen && timeRangeRect && createPortal(
                         <div
                             ref={timeRangePanelRef}
-                            style={{ position: 'fixed', top: timeRangeRect.top, left: timeRangeRect.left, width: timeRangeRect.width, zIndex: 9999 }}
-                            className="bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl overflow-hidden"
+                            style={{ 
+                                position: 'fixed', 
+                                top: timeRangeRect.top, 
+                                left: window.innerWidth < 640 ? '16px' : timeRangeRect.left, 
+                                right: window.innerWidth < 640 ? '16px' : 'auto',
+                                width: window.innerWidth < 640 ? 'auto' : timeRangeRect.width, 
+                                zIndex: 9999 
+                            }}
+                            className="bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col"
                         >
-                            {[
-                                { value: 15 * 60 * 1000,       label: 'Last 15 Minutes' },
-                                { value: 60 * 60 * 1000,       label: 'Last 1 Hour' },
-                                { value: 24 * 60 * 60 * 1000,  label: 'Last 24 Hours' },
-                            ].map(opt => (
-                                <button
-                                    key={opt.value}
-                                    type="button"
-                                    onClick={() => {
-                                        setTimeRange(opt.value);
-                                        refresh(opt.value);
-                                        if (activeView === 'map') fetchServiceMap(opt.value);
-                                        setIsTimeRangeOpen(false);
-                                    }}
-                                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-primary/20 ${
-                                        timeRange === opt.value ? 'text-primary font-medium' : 'text-gray-300'
-                                    }`}
-                                >
-                                    {opt.label}
-                                </button>
-                            ))}
+                            {/* Header */}
+                            <div className="flex border-b border-white/10 bg-black/20">
+                                <div className="py-2 sm:py-3 px-4 sm:px-6 text-sm font-medium text-primary border-b-2 border-primary flex items-center gap-2">
+                                    <Clock className="w-4 h-4" /> Time range
+                                </div>
+                            </div>
+
+                            <div className="p-3 sm:p-4 flex flex-col gap-3 sm:gap-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                                {/* Presets Section */}
+                                <div>
+                                    <h3 className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-2 sm:mb-3">Presets</h3>
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                        {getPresets().map(preset => {
+                                            const isActive = preset.type === 'relative' 
+                                                ? timeFilter.type === 'relative' && timeFilter.ms === preset.ms
+                                                : timeFilter.type === 'absolute' && timeFilter.fromMs === preset.fromMs && timeFilter.toMs === preset.toMs;
+                                            
+                                            const hideOnMobile = ['Last 12 hours', 'Last 24 hours', 'Yesterday', 'Two days ago', 'Last seven days', 'Previous week'].includes(preset.label);
+
+                                            return (
+                                                <button
+                                                    key={preset.label}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newFilter: TimeFilter = preset.type === 'relative' 
+                                                            ? { type: 'relative', ms: preset.ms, label: preset.label }
+                                                            : { type: 'absolute', fromMs: preset.fromMs, toMs: preset.toMs, label: preset.label };
+                                                            
+                                                        setTimeFilter(newFilter);
+                                                        const opts = preset.type === 'relative' 
+                                                            ? { timeRangeMs: preset.ms }
+                                                            : { fromMs: preset.fromMs, toMs: preset.toMs, timeRangeMs: preset.toMs - preset.fromMs };
+                                                            
+                                                        refresh(opts);
+                                                        if (activeView === 'map') fetchServiceMap(opts);
+                                                        setIsTimeRangeOpen(false);
+                                                    }}
+                                                    className={`px-2 py-1.5 sm:py-3 text-xs border rounded-md transition-all text-left flex-col justify-center h-full min-h-[36px] sm:min-h-[50px] ${hideOnMobile ? 'hidden sm:flex' : 'flex'} ${
+                                                        isActive 
+                                                            ? 'border-primary bg-primary/10 text-white font-medium shadow-sm' 
+                                                            : 'border-gray-700 bg-bg-elevated text-gray-300 hover:border-gray-500 hover:bg-gray-800'
+                                                    }`}
+                                                >
+                                                    {preset.subLabel && <span className="text-[10px] opacity-70 mb-0.5 font-normal truncate w-full">{preset.subLabel}</span>}
+                                                    <span className="truncate w-full">{preset.label}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Custom Time Range Section */}
+                                <div>
+                                    <h3 className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-2 sm:mb-3">Custom Range</h3>
+                                    
+                                    <div className="mb-2 sm:mb-4">
+                                        <TimeRangeSlider 
+                                            minMs={sliderMinMs} 
+                                            maxMs={sliderMaxMs} 
+                                            value={[sliderFromMs, sliderToMs]} 
+                                            onChange={handleSliderChange} 
+                                        />
+                                    </div>
+
+                                    {/* Inputs */}
+                                    <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 bg-black/20 p-2 sm:p-3 rounded-lg border border-gray-800">
+                                        <div className="flex gap-2 flex-1 w-full">
+                                            <input 
+                                                type="date" 
+                                                max={todayString}
+                                                className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none w-full"
+                                                value={customFromDate}
+                                                onChange={e => setCustomFromDate(e.target.value)}
+                                            />
+                                            <input 
+                                                type="time" 
+                                                className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none"
+                                                value={customFromTime}
+                                                onChange={e => setCustomFromTime(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="text-gray-500 text-sm font-medium px-1">to</div>
+                                        <div className="flex gap-2 flex-1 w-full">
+                                            <input 
+                                                type="date" 
+                                                max={todayString}
+                                                className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none w-full"
+                                                value={customToDate}
+                                                onChange={e => setCustomToDate(e.target.value)}
+                                            />
+                                            <input 
+                                                type="time" 
+                                                className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none"
+                                                value={customToTime}
+                                                onChange={e => setCustomToTime(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-2 sm:mt-4 flex justify-end">
+                                        <button
+                                            onClick={applyCustomTime}
+                                            disabled={!customFromDate || !customFromTime || !customToDate || !customToTime}
+                                            className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                        >
+                                            Set time
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>,
                         document.body
                     )}
@@ -287,7 +542,8 @@ export default function ApmDashboard() {
                         onClick={() => {
                             setExportError(null);
                             const now = new Date();
-                            const from = new Date(now.getTime() - timeRange);
+                            const from = timeFilter.type === 'relative' ? new Date(now.getTime() - timeFilter.ms) : new Date(timeFilter.fromMs);
+                            const toDateExp = timeFilter.type === 'relative' ? now : new Date(timeFilter.toMs);
                             const pad = (n: number) => String(n).padStart(2, '0');
                             const to12hTimeStr = (d: Date) => {
                                 let h = d.getHours();
@@ -299,7 +555,7 @@ export default function ApmDashboard() {
                                 return `${pad(h)}:${m}:${s} ${ampm}`;
                             };
                             setExportFromTime(to12hTimeStr(from));
-                            setExportToTime(to12hTimeStr(now));
+                            setExportToTime(to12hTimeStr(toDateExp));
                             setExportService(selectedInspectorService || '');
                             setIsExportModalOpen(true);
                         }}
@@ -313,10 +569,10 @@ export default function ApmDashboard() {
                     {isAdmin && (
                         <button
                             onClick={() => setIsConfigModalOpen(true)}
-                            className="px-3 py-2 bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text rounded-lg flex items-center gap-2 transition-colors"
+                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text rounded-lg flex items-center justify-center transition-colors w-[42px] h-[42px]"
                             title="APM Configuration"
                         >
-                            <Settings className="w-4 h-4" />
+                            <Settings className="w-5 h-5 text-gray-400" />
                         </button>
                     )}
                 </div>
@@ -346,7 +602,7 @@ export default function ApmDashboard() {
                 <div className="hidden md:block w-px h-8 bg-gray-700 mx-2" />
                 <div className="md:hidden h-px w-full bg-gray-700 my-1" />
 
-                <div className="relative flex-1 w-full flex gap-2">
+                <div className="relative flex-1 w-full flex flex-col sm:flex-row gap-2">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <input
@@ -415,8 +671,9 @@ export default function ApmDashboard() {
                     {/* Right Panel: Trace Dropdown & Waterfall */}
                     <div className="flex-1 flex flex-col gap-4">
                         <div className="bg-bg-surface border border-gray-800 rounded-xl p-4 shadow-sm flex flex-col gap-4">
-                            <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-2">
-                                <Search className="w-5 h-5 text-primary" /> Trace Inspector ({selectedInspectorService})
+                            <h2 className="text-xl font-bold text-white flex items-start sm:items-center gap-2 mb-2">
+                                <Search className="w-5 h-5 text-primary shrink-0 mt-1 sm:mt-0" /> 
+                                <span className="break-words">Trace Inspector ({selectedInspectorService})</span>
                             </h2>
                             
                             {/* Filter Bar */}

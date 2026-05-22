@@ -15,8 +15,13 @@ export function useApm() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchMetrics = useCallback(async (timeRangeMs: number = 60 * 60 * 1000) => {
+    const fetchMetrics = useCallback(async (options: { timeRangeMs?: number; fromMs?: number; toMs?: number } = {}) => {
         try {
+            const timeRangeMs = options.timeRangeMs || 60 * 60 * 1000;
+            const params = new URLSearchParams();
+            if (options.fromMs) params.append('fromMs', options.fromMs.toString());
+            if (options.toMs) params.append('toMs', options.toMs.toString());
+            params.append('timeRangeMs', timeRangeMs.toString());
             setLoading(true);
             setError(null);
 
@@ -25,7 +30,7 @@ export function useApm() {
             const BACKEND_CONTEXT_PATH = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
 
             // IMPORTANT: Include credentials for the authMiddleware
-            const response = await fetch(`${baseUrl}${BACKEND_CONTEXT_PATH}/api/apm/services?timeRangeMs=${timeRangeMs}`, {
+            const response = await fetch(`${baseUrl}${BACKEND_CONTEXT_PATH}/api/apm/services?${params.toString()}`, {
                 credentials: 'omit', // We temporarily made it public, but omitting is safer for cross-origin testing initially if no cookies are set
             });
 
@@ -49,7 +54,9 @@ export function useApm() {
 
     useEffect(() => {
         fetchMetrics();
-        // Auto-refresh every 15 seconds
+        // Auto-refresh every 15 seconds. Note: This will re-use the default empty args if not provided, 
+        // but ApmDashboard typically calls refresh manually when options change.
+        // A better pattern for absolute time ranges is to NOT auto-refresh, or explicitly manage the interval in the component.
         const intervalId = setInterval(() => fetchMetrics(), 15000);
         return () => clearInterval(intervalId);
     }, [fetchMetrics]);

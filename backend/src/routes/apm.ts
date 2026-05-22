@@ -214,11 +214,16 @@ apmAnalyticsRouter.get('/services', async (req: Request, res: Response) => {
     try {
         const timeRangeParam = Array.isArray(req.query.timeRangeMs) ? req.query.timeRangeMs[0] : req.query.timeRangeMs;
         const timeRangeMs = parseInt(timeRangeParam as string) || 60 * 60 * 1000; // Default 1 hour
+
+        // Support exact boundaries (fromMs / toMs)
+        const fromMs = req.query.fromMs ? parseInt(req.query.fromMs as string, 10) : (Date.now() - timeRangeMs);
+        const toMs = req.query.toMs ? parseInt(req.query.toMs as string, 10) : Date.now();
+
         const traceRepository = await DatabaseFactory.getTraceRepository();
-        const metrics = await traceRepository.getServiceMetrics(timeRangeMs);
+        const metrics = await traceRepository.getServiceMetrics(fromMs, toMs);
 
         // Add RPM (Requests Per Minute) calculation
-        const timeRangeMinutes = timeRangeMs / 60000;
+        const timeRangeMinutes = (toMs - fromMs) / 60000;
         const enrichedMetrics = metrics.map(m => ({
             ...m,
             rpm: m.requestCount / timeRangeMinutes,
@@ -270,9 +275,12 @@ apmAnalyticsRouter.get('/services/:serviceName/traces', async (req: Request, res
         const minDurationMs = req.query.minDuration ? parseInt(req.query.minDuration as string, 10) : undefined;
         const errorOnly = req.query.errorOnly === 'true';
         const attributeSearch = req.query.search ? (req.query.search as string) : undefined;
+        
+        const fromMs = req.query.fromMs ? parseInt(req.query.fromMs as string, 10) : undefined;
+        const toMs = req.query.toMs ? parseInt(req.query.toMs as string, 10) : undefined;
 
         const traceRepository = await DatabaseFactory.getTraceRepository();
-        const traces = await traceRepository.getRecentTraces(serviceName, limit, minDurationMs, errorOnly, attributeSearch);
+        const traces = await traceRepository.getRecentTraces(serviceName, limit, minDurationMs, errorOnly, attributeSearch, fromMs, toMs);
 
         res.json(traces);
     } catch (error) {
@@ -338,9 +346,13 @@ apmAnalyticsRouter.get('/traces/:traceId', async (req: Request, res: Response) =
 apmAnalyticsRouter.get('/service-map', async (req: Request, res: Response) => {
     try {
         const timeRangeMs = parseInt(req.query.timeRange as string) || 60 * 60 * 1000;
+        
+        const fromMs = req.query.fromMs ? parseInt(req.query.fromMs as string, 10) : (Date.now() - timeRangeMs);
+        const toMs = req.query.toMs ? parseInt(req.query.toMs as string, 10) : Date.now();
+
         const traceRepository = await DatabaseFactory.getTraceRepository();
 
-        const dependencies = await traceRepository.getServiceDependencies(timeRangeMs);
+        const dependencies = await traceRepository.getServiceDependencies(fromMs, toMs);
         res.json(dependencies);
     } catch (error) {
         console.error('Failed to get service dependencies:', error);

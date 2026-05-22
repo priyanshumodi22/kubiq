@@ -495,12 +495,12 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
                             />
                         </div>
                     ) : (
-                        <div className="bg-bg-elevated border border-gray-800 rounded-lg p-4 flex items-center justify-between">
-                            <div className="flex items-center gap-4">
+                        <div className="bg-bg-elevated border border-gray-800 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden">
+                            <div className="flex items-center gap-3 sm:gap-4 min-w-0 w-full sm:w-auto">
                                 {/* Toggle Switch */}
                                 <button
                                     onClick={() => handleToggle(channel)}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                                    className={`shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-gray-900 ${
                                         channel.enabled ? 'bg-green-500' : 'bg-red-500/50'
                                     } ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     title={!isAdmin ? 'Access Denied' : (channel.enabled ? 'Disable Channel' : 'Enable Channel')}
@@ -512,17 +512,17 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
                                     />
                                 </button>
 
-                                <div>
+                                <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <h3 className={`font-semibold ${channel.enabled ? 'text-text' : 'text-gray-500 line-through'}`}>{channel.name}</h3>
-                                        <span className="text-xs px-2 py-0.5 rounded bg-gray-700 text-gray-300 uppercase">{channel.type}</span>
+                                        <h3 className={`font-semibold truncate ${channel.enabled ? 'text-text' : 'text-gray-500 line-through'}`}>{channel.name}</h3>
+                                        <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded bg-gray-700 text-gray-300 uppercase shrink-0">{channel.type}</span>
                                     </div>
-                                    <div className="text-sm text-text-dim truncate max-w-md">
+                                    <div className="text-xs sm:text-sm text-text-dim truncate">
                                         {channel.type === 'webhook' ? channel.config.webhookUrl : channel.config.email}
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 shrink-0 justify-end sm:justify-start">
                                 <button
                                     onClick={() => initiateEdit(channel.id)}
                                     className={`p-2 hover:bg-gray-700 rounded-lg transition-colors ${!isAdmin ? 'text-gray-600 cursor-not-allowed' : 'text-gray-400 hover:text-blue-500'}`}

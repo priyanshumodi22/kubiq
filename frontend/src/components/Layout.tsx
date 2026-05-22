@@ -20,7 +20,7 @@ export default function Layout({ children }: LayoutProps) {
         <div className="fixed top-0 left-0 right-0 z-50">
           <Header />
         </div>
-        <main className="container mx-auto px-3 sm:px-4 lg:px-6 pt-20 sm:pt-24 pb-20 sm:pb-24">
+        <main className="container mx-auto px-3 sm:px-4 lg:px-6 pt-36 sm:pt-24 pb-20 sm:pb-24">
           {children}
         </main>
         <Footer />

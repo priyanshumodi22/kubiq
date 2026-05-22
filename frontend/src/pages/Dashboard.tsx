@@ -107,7 +107,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen pt-4 sm:pt-0">
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-br from-bg via-bg to-bg-surface"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
@@ -154,109 +154,114 @@ export default function Dashboard() {
               />
             </div>
 
-            {/* Filter */}
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-text-dim flex-shrink-0" />
-              <div className="relative" ref={filterDropdownRef}>
-                <button
-                  onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
-                  className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base bg-bg-elevated rounded-lg border border-gray-700 hover:border-primary focus:border-primary focus:outline-none transition-colors cursor-pointer"
-                >
-                  <span className="whitespace-nowrap">
-                    {statusFilter === 'all' && 'All Status'}
-                    {statusFilter === 'healthy' && 'Healthy'}
-                    {statusFilter === 'unhealthy' && 'Unhealthy'}
-                    {statusFilter === 'unknown' && 'Unknown'}
-                  </span>
-                  <ChevronDown
-                    className={`w-4 h-4 text-text-dim transition-transform ${
-                      filterDropdownOpen ? 'rotate-180' : ''
-                    }`}
-                  />
-                </button>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
+              {/* Filter and Refresh Group */}
+              <div className="flex gap-3 sm:gap-4 w-full sm:w-auto">
+                {/* Filter */}
+                <div className="flex items-center gap-2 flex-1 sm:flex-none min-w-0">
+                  <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-text-dim flex-shrink-0" />
+                  <div className="relative flex-1 min-w-0" ref={filterDropdownRef}>
+                    <button
+                      onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
+                      className="flex items-center justify-between w-full gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base bg-bg-elevated rounded-lg border border-gray-700 hover:border-primary focus:border-primary focus:outline-none transition-colors cursor-pointer"
+                    >
+                      <span className="whitespace-nowrap truncate">
+                        {statusFilter === 'all' && 'All Status'}
+                        {statusFilter === 'healthy' && 'Healthy'}
+                        {statusFilter === 'unhealthy' && 'Unhealthy'}
+                        {statusFilter === 'unknown' && 'Unknown'}
+                      </span>
+                      <ChevronDown
+                        className={`w-4 h-4 text-text-dim flex-shrink-0 transition-transform ${
+                          filterDropdownOpen ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
 
-                {/* Dropdown Menu */}
-                {filterDropdownOpen && (
-                  <div className="absolute top-full mt-2 right-0 w-full bg-bg-surface border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
-                    <button
-                      onClick={() => {
-                        setStatusFilter('all');
-                        setFilterDropdownOpen(false);
-                      }}
-                      className={`w-full px-4 py-2 text-sm text-left hover:bg-bg-elevated transition-colors ${
-                        statusFilter === 'all' ? 'bg-primary/10 text-primary' : 'text-text'
-                      }`}
-                    >
-                      All Status
-                    </button>
-                    <button
-                      onClick={() => {
-                        setStatusFilter('healthy');
-                        setFilterDropdownOpen(false);
-                      }}
-                      className={`w-full px-4 py-2 text-sm text-left hover:bg-bg-elevated transition-colors ${
-                        statusFilter === 'healthy' ? 'bg-primary/10 text-primary' : 'text-text'
-                      }`}
-                    >
-                      Healthy
-                    </button>
-                    <button
-                      onClick={() => {
-                        setStatusFilter('unhealthy');
-                        setFilterDropdownOpen(false);
-                      }}
-                      className={`w-full px-4 py-2 text-sm text-left hover:bg-bg-elevated transition-colors ${
-                        statusFilter === 'unhealthy' ? 'bg-primary/10 text-primary' : 'text-text'
-                      }`}
-                    >
-                      Unhealthy
-                    </button>
-                    <button
-                      onClick={() => {
-                        setStatusFilter('unknown');
-                        setFilterDropdownOpen(false);
-                      }}
-                      className={`w-full px-4 py-2 text-sm text-left hover:bg-bg-elevated transition-colors ${
-                        statusFilter === 'unknown' ? 'bg-primary/10 text-primary' : 'text-text'
-                      }`}
-                    >
-                      Unknown
-                    </button>
+                    {/* Dropdown Menu */}
+                    {filterDropdownOpen && (
+                      <div className="absolute top-full mt-2 right-0 w-full min-w-[140px] bg-bg-surface border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                        <button
+                          onClick={() => {
+                            setStatusFilter('all');
+                            setFilterDropdownOpen(false);
+                          }}
+                          className={`w-full px-4 py-2 text-sm text-left hover:bg-bg-elevated transition-colors ${
+                            statusFilter === 'all' ? 'bg-primary/10 text-primary' : 'text-text'
+                          }`}
+                        >
+                          All Status
+                        </button>
+                        <button
+                          onClick={() => {
+                            setStatusFilter('healthy');
+                            setFilterDropdownOpen(false);
+                          }}
+                          className={`w-full px-4 py-2 text-sm text-left hover:bg-bg-elevated transition-colors ${
+                            statusFilter === 'healthy' ? 'bg-primary/10 text-primary' : 'text-text'
+                          }`}
+                        >
+                          Healthy
+                        </button>
+                        <button
+                          onClick={() => {
+                            setStatusFilter('unhealthy');
+                            setFilterDropdownOpen(false);
+                          }}
+                          className={`w-full px-4 py-2 text-sm text-left hover:bg-bg-elevated transition-colors ${
+                            statusFilter === 'unhealthy' ? 'bg-primary/10 text-primary' : 'text-text'
+                          }`}
+                        >
+                          Unhealthy
+                        </button>
+                        <button
+                          onClick={() => {
+                            setStatusFilter('unknown');
+                            setFilterDropdownOpen(false);
+                          }}
+                          className={`w-full px-4 py-2 text-sm text-left hover:bg-bg-elevated transition-colors ${
+                            statusFilter === 'unknown' ? 'bg-primary/10 text-primary' : 'text-text'
+                          }`}
+                        >
+                          Unknown
+                        </button>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
+
+                {/* Refresh */}
+                <button
+                  onClick={refresh}
+                  disabled={loading}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-bg-elevated border border-gray-700 hover:border-blue-500 text-text hover:text-blue-400 rounded-lg transition-all whitespace-nowrap h-[42px] sm:h-[42px] h-auto disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 ${loading ? 'animate-spin' : ''}`} />
+                  <span className="text-sm sm:text-base">Refresh</span>
+                </button>
               </div>
+
+              {/* Admin Actions */}
+              {isAdmin && (
+                <div className="flex gap-3 sm:gap-4 w-full sm:w-auto">
+                  <button
+                    onClick={() => setShowStatusModal(true)}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-bg-elevated border border-gray-700 hover:border-cyan-500 hover:text-cyan-400 text-text rounded-lg transition-all whitespace-nowrap h-auto sm:h-[42px]"
+                    title="Configure Public Status Page"
+                  >
+                    <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span className="text-sm sm:text-base inline xl:inline">Status Page</span>
+                  </button>
+                  <button
+                    onClick={() => setShowAddModal(true)}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-primary hover:bg-primary/80 text-white rounded-lg transition-colors whitespace-nowrap h-auto sm:h-[42px] shadow-lg shadow-indigo-900/20"
+                  >
+                    <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span className="text-sm sm:text-base inline sm:inline">Add Service</span>
+                  </button>
+                </div>
+              )}
             </div>
-
-            {/* Refresh */}
-            <button
-              onClick={refresh}
-              disabled={loading}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-bg-elevated border border-gray-700 hover:border-blue-500 text-text hover:text-blue-400 rounded-lg transition-all whitespace-nowrap h-[42px] disabled:opacity-50"
-            >
-              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
-
-            {/* Admin Actions */}
-            {isAdmin && (
-              <>
-                <button
-                  onClick={() => setShowStatusModal(true)}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-bg-elevated border border-gray-700 hover:border-cyan-500 hover:text-cyan-400 text-text rounded-lg transition-all whitespace-nowrap h-[42px]"
-                  title="Configure Public Status Page"
-                >
-                  <Globe className="w-5 h-5" />
-                  <span className="hidden xl:inline">Status Page</span>
-                </button>
-                <button
-                  onClick={() => setShowAddModal(true)}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary/80 text-white rounded-lg transition-colors whitespace-nowrap h-[42px] shadow-lg shadow-indigo-900/20"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span className="hidden sm:inline">Add Service</span>
-                </button>
-              </>
-            )}
           </div>
         </div>
 

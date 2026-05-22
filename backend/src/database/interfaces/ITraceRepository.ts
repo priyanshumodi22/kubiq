@@ -49,7 +49,7 @@ export interface ITraceRepository {
   /**
    * Retrieves aggregated metrics for all monitored services
    */
-  getServiceMetrics(timeRangeMs: number): Promise<IServiceMetrics[]>;
+  getServiceMetrics(fromMs: number, toMs: number): Promise<IServiceMetrics[]>;
 
   /**
    * Retrieves all spans for a given trace ID to build a waterfall view
@@ -59,7 +59,7 @@ export interface ITraceRepository {
   /**
    * Identifies dependent service calls and their frequencies to build a topology map
    */
-  getServiceDependencies(timeRangeMs: number): Promise<IServiceDependency[]>;
+  getServiceDependencies(fromMs: number, toMs: number): Promise<IServiceDependency[]>;
 
   /**
    * Retrieves the most recent trace ID for a given service to enable 1-click drilldowns
@@ -69,7 +69,7 @@ export interface ITraceRepository {
   /**
    * Retrieves a list of the most recent traces for a given service to populate UI dropdowns
    */
-  getRecentTraces(serviceName: string, limit?: number, minDurationMs?: number, errorOnly?: boolean, attributeSearch?: string): Promise<ITraceSummary[]>;
+  getRecentTraces(serviceName: string, limit?: number, minDurationMs?: number, errorOnly?: boolean, attributeSearch?: string, fromMs?: number, toMs?: number): Promise<ITraceSummary[]>;
 
   /**
    * Retrieves the most recent trace ID that traverses a specific edge (source -> target)

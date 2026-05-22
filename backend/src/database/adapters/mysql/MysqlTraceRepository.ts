@@ -90,8 +90,9 @@ export class MysqlTraceRepository implements ITraceRepository {
         }
     }
 
-    async getServiceMetrics(timeRangeMs: number): Promise<IServiceMetrics[]> {
-        const since = new Date(Date.now() - timeRangeMs);
+    async getServiceMetrics(fromMs: number, toMs: number): Promise<IServiceMetrics[]> {
+        const fromDate = new Date(fromMs);
+        const toDate = new Date(toMs);
 
         // In MySQL 8.x we could use PERCENTILE_CONT for p95, but we fallback
         // to a simpler approx or do calculation in JS for vast compat. 
@@ -105,11 +106,11 @@ export class MysqlTraceRepository implements ITraceRepository {
         SUM(CASE WHEN status_code = 2 THEN 1 ELSE 0 END) as errorCount,
         AVG(duration_ms) as avgDurationMs
       FROM apm_spans
-      WHERE timestamp >= ?
+      WHERE timestamp >= ? AND timestamp <= ?
       GROUP BY service_name
     `;
 
-        const [rows] = await this.pool.query<RowDataPacket[]>(query, [since]);
+        const [rows] = await this.pool.query<RowDataPacket[]>(query, [fromDate, toDate]);
 
         return rows.map(row => ({
             serviceName: row.serviceName,
@@ -145,8 +146,9 @@ export class MysqlTraceRepository implements ITraceRepository {
         }));
     }
 
-    async getServiceDependencies(timeRangeMs: number): Promise<import('../../interfaces/ITraceRepository').IServiceDependency[]> {
-        const since = new Date(Date.now() - timeRangeMs);
+    async getServiceDependencies(fromMs: number, toMs: number): Promise<import('../../interfaces/ITraceRepository').IServiceDependency[]> {
+        const fromDate = new Date(fromMs);
+        const toDate = new Date(toMs);
         const query = `
             SELECT 
                 p.service_name AS source, 
@@ -156,11 +158,11 @@ export class MysqlTraceRepository implements ITraceRepository {
             FROM apm_spans c
             JOIN apm_spans p ON c.parent_span_id = p.span_id
             WHERE c.service_name != p.service_name
-            AND c.timestamp >= ?
+            AND c.timestamp >= ? AND c.timestamp <= ?
             GROUP BY p.service_name, c.service_name
         `;
 
-        const [rows] = await this.pool.query<RowDataPacket[]>(query, [since]);
+        const [rows] = await this.pool.query<RowDataPacket[]>(query, [fromDate, toDate]);
 
         return Array.isArray(rows)
             ? rows.map((row: any) => ({
@@ -183,7 +185,7 @@ export class MysqlTraceRepository implements ITraceRepository {
         return rows.length > 0 ? rows[0].trace_id : null;
     }
 
-    async getRecentTraces(serviceName: string, limit: number = 50, minDurationMs?: number, errorOnly?: boolean, attributeSearch?: string): Promise<any[]> {
+    async getRecentTraces(serviceName: string, limit: number = 50, minDurationMs?: number, errorOnly?: boolean, attributeSearch?: string, fromMs?: number, toMs?: number): Promise<any[]> {
         let query = `
             SELECT trace_id as traceId, 
                     MAX(span_name) as name, 
@@ -205,6 +207,14 @@ export class MysqlTraceRepository implements ITraceRepository {
         if (attributeSearch) {
             query += ` AND span_name LIKE ?`;
             params.push(`%${attributeSearch}%`);
+        }
+        if (fromMs) {
+            query += ` AND timestamp >= ?`;
+            params.push(new Date(fromMs));
+        }
+        if (toMs) {
+            query += ` AND timestamp <= ?`;
+            params.push(new Date(toMs));
         }
 
         query += ` GROUP BY trace_id ORDER BY startTimeUnixNano DESC LIMIT ?`;

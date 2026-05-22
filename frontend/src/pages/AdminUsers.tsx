@@ -36,6 +36,9 @@ export default function AdminUsers() {
   const [openDropdownUserId, setOpenDropdownUserId] = useState<string | null>(null);
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
 
+  // Mobile accordion state
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+
   useEffect(() => {
     loadUsers();
   }, []);
@@ -141,19 +144,19 @@ export default function AdminUsers() {
         )}
 
         <div className="bg-bg-surface border border-gray-800 rounded-xl overflow-hidden shadow-xl animate-scale-up">
-            <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-black/20 border-b border-gray-700/50">
-                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider w-[30%]">User</th>
-                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center w-[15%]">Role</th>
-                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center w-[20%]">Joined</th>
-                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center w-[20%]">Last Login</th>
-                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center w-[10%]">Status</th>
-                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center w-[5%]">Actions</th>
+            <div className="overflow-x-hidden sm:overflow-x-auto">
+                <table className="w-full text-left border-collapse block sm:table">
+                    <thead className="hidden sm:table-header-group">
+                        <tr className="bg-black/20 border-b border-gray-700/50 block sm:table-row">
+                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider sm:w-[30%] block sm:table-cell">User</th>
+                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center sm:w-[15%] block sm:table-cell">Role</th>
+                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center sm:w-[20%] block sm:table-cell">Joined</th>
+                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center sm:w-[20%] block sm:table-cell">Last Login</th>
+                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center sm:w-[10%] block sm:table-cell">Status</th>
+                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center sm:w-[5%] block sm:table-cell">Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-800/50">
+                    <tbody className="divide-y divide-gray-800/50 block sm:table-row-group">
                         {loading && users.length === 0 ? (
                             <tr>
                                 <td colSpan={6} className="p-8 text-center text-text-dim">
@@ -167,8 +170,11 @@ export default function AdminUsers() {
                             </tr>
                         ) : (
                             users.map((user) => (
-                                <tr key={user.id} className="hover:bg-white/5 transition-colors group">
-                                    <td className="p-4">
+                                <tr key={user.id} className="flex flex-col sm:table-row hover:bg-white/5 transition-colors group border-b sm:border-0 border-gray-800/50">
+                                    <td 
+                                        className="p-4 flex items-center justify-between sm:table-cell bg-black/10 sm:bg-transparent cursor-pointer sm:cursor-default"
+                                        onClick={() => setExpandedUserId(prev => prev === user.id ? null : user.id)}
+                                    >
                                         <div className="flex items-center gap-3">
                                             <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
                                                 <Users className="w-4.5 h-4.5 text-primary" />
@@ -178,9 +184,11 @@ export default function AdminUsers() {
                                                 {user.email && <div className="text-xs text-text-dim">{user.email}</div>}
                                             </div>
                                         </div>
+                                        <ChevronDown className={`sm:hidden w-5 h-5 text-gray-500 transition-transform ${expandedUserId === user.id ? 'rotate-180' : ''}`} />
                                     </td>
-                                    <td className="p-4">
-                                        <div className="flex items-center justify-center gap-2">
+                                    <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 ${expandedUserId === user.id ? 'flex' : 'hidden sm:table-cell'}`}>
+                                        <span className="sm:hidden text-xs text-text-dim uppercase tracking-wider font-semibold">Role</span>
+                                        <div className="flex items-center sm:justify-center gap-2">
                                             <Shield className={`w-4 h-4 ${user.role === 'kubiq-admin' ? 'text-yellow-500' : 'text-blue-500'}`} />
                                             <button
                                                 onClick={(e) => {
@@ -205,13 +213,16 @@ export default function AdminUsers() {
                                             </button>
                                         </div>
                                     </td>
-                                    <td className="p-4 text-sm text-text-dim text-center">
-                                         {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}
+                                    <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 text-sm text-text-dim sm:text-center ${expandedUserId === user.id ? 'flex' : 'hidden sm:table-cell'}`}>
+                                        <span className="sm:hidden text-xs text-text-dim uppercase tracking-wider font-semibold">Joined</span>
+                                        <span>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}</span>
                                     </td>
-                                    <td className="p-4 text-sm text-text-dim text-center">
-                                        {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}
+                                    <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 text-sm text-text-dim sm:text-center ${expandedUserId === user.id ? 'flex' : 'hidden sm:table-cell'}`}>
+                                        <span className="sm:hidden text-xs text-text-dim uppercase tracking-wider font-semibold">Last Login</span>
+                                        <span>{user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}</span>
                                     </td>
-                                    <td className="p-4 text-center">
+                                    <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 sm:text-center ${expandedUserId === user.id ? 'flex' : 'hidden sm:table-cell'}`}>
+                                        <span className="sm:hidden text-xs text-text-dim uppercase tracking-wider font-semibold">Status</span>
                                          <button
                                             onClick={() => handleStatusToggle(user)}
                                             disabled={String(user.id) === String(currentUser?.id)}
@@ -229,16 +240,22 @@ export default function AdminUsers() {
                                              )}
                                          </button>
                                     </td>
-                                    <td className="p-4 text-center">
-                                        {String(user.id) !== String(currentUser?.id) && (
-                                            <button 
-                                                onClick={() => confirmDelete(user.id)}
-                                                className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded transition-colors"
-                                                title="Delete User"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        )}
+                                    <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 sm:text-center ${expandedUserId === user.id ? 'flex' : 'hidden sm:table-cell'}`}>
+                                        <span className="sm:hidden text-xs text-text-dim uppercase tracking-wider font-semibold">Actions</span>
+                                        <div>
+                                            {String(user.id) !== String(currentUser?.id) ? (
+                                                <button 
+                                                    onClick={() => confirmDelete(user.id)}
+                                                    className="flex items-center gap-2 p-1.5 px-3 sm:px-1.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded transition-colors"
+                                                    title="Delete User"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                    <span className="sm:hidden text-sm font-medium">Delete</span>
+                                                </button>
+                                            ) : (
+                                                <span className="sm:hidden text-sm text-text-dim">Current User</span>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))

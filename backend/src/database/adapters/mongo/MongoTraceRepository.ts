@@ -46,11 +46,12 @@ export class MongoTraceRepository implements ITraceRepository {
         }
     }
 
-    async getServiceMetrics(timeRangeMs: number): Promise<IServiceMetrics[]> {
-        const since = new Date(Date.now() - timeRangeMs);
+    async getServiceMetrics(fromMs: number, toMs: number): Promise<IServiceMetrics[]> {
+        const fromDate = new Date(fromMs);
+        const toDate = new Date(toMs);
 
         const pipeline = [
-            { $match: { timestamp: { $gte: since } } },
+            { $match: { timestamp: { $gte: fromDate, $lte: toDate } } },
             {
                 $group: {
                     _id: '$serviceName',
@@ -99,12 +100,13 @@ export class MongoTraceRepository implements ITraceRepository {
         return spans as unknown as ISpan[];
     }
 
-    async getServiceDependencies(timeRangeMs: number): Promise<import('../../interfaces/ITraceRepository').IServiceDependency[]> {
-        const since = new Date(Date.now() - timeRangeMs);
+    async getServiceDependencies(fromMs: number, toMs: number): Promise<import('../../interfaces/ITraceRepository').IServiceDependency[]> {
+        const fromDate = new Date(fromMs);
+        const toDate = new Date(toMs);
 
         const pipeline = [
             // 1. Filter to recent traffic
-            { $match: { timestamp: { $gte: since } } },
+            { $match: { timestamp: { $gte: fromDate, $lte: toDate } } },
 
             // 2. Perform a self-join to find the parent span for each child span
             {
@@ -166,12 +168,17 @@ export class MongoTraceRepository implements ITraceRepository {
         return span ? (span as any).traceId : null;
     }
 
-    async getRecentTraces(serviceName: string, limit: number = 50, minDurationMs?: number, errorOnly?: boolean, attributeSearch?: string): Promise<any[]> {
+    async getRecentTraces(serviceName: string, limit: number = 50, minDurationMs?: number, errorOnly?: boolean, attributeSearch?: string, fromMs?: number, toMs?: number): Promise<any[]> {
         const matchQuery: any = { serviceName };
         if (minDurationMs) matchQuery.durationMs = { $gte: minDurationMs };
         if (errorOnly) matchQuery.statusCode = 2;
         if (attributeSearch) {
             matchQuery.name = { $regex: attributeSearch, $options: 'i' };
+        }
+        if (fromMs || toMs) {
+            matchQuery.timestamp = {};
+            if (fromMs) matchQuery.timestamp.$gte = new Date(fromMs);
+            if (toMs) matchQuery.timestamp.$lte = new Date(toMs);
         }
 
         // Group by traceId so we can show traces that involve this service, 

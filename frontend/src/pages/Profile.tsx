@@ -270,38 +270,38 @@ const Profile: React.FC = () => {
       </div>
 
       <div className="max-w-6xl mx-auto relative z-10">
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-4 mb-6 md:mb-8">
           <Link to="/dashboard" className="p-2 bg-bg-surface/30 backdrop-blur-md border border-white/5 rounded-lg hover:bg-white/5 transition-colors group">
             <ArrowLeft className="w-5 h-5 text-text-dim group-hover:text-text" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-text">User Settings</h1>
-            <p className="text-text-dim text-sm">Manage your account and preferences</p>
+            <h1 className="text-xl md:text-2xl font-bold text-text">User Settings</h1>
+            <p className="text-text-dim text-xs md:text-sm">Manage your account and preferences</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
         
         {/* Sidebar Nav */}
-        <div className="md:col-span-3 space-y-6">
-          <div className="bg-bg-surface/30 backdrop-blur-md border border-white/5 rounded-2xl p-6 flex flex-col items-center text-center">
-            <div className="w-24 h-24 bg-gradient-to-br from-primary to-blue-600 rounded-full flex items-center justify-center mb-4 shadow-xl shadow-blue-500/20">
-               <span className="text-3xl font-bold text-white">{profile.username.substring(0, 2).toUpperCase()}</span>
+        <div className="md:col-span-3 flex flex-row md:flex-col gap-4 md:gap-6">
+          <div className="flex-1 bg-bg-surface/30 backdrop-blur-md border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 md:w-24 md:h-24 bg-gradient-to-br from-primary to-blue-600 rounded-full flex items-center justify-center mb-2 md:mb-4 shadow-xl shadow-blue-500/20 shrink-0">
+               <span className="text-xl md:text-3xl font-bold text-white">{profile.username.substring(0, 2).toUpperCase()}</span>
             </div>
-            <h2 className="text-xl font-bold">{profile.username}</h2>
-            <div className="flex flex-col gap-2 mt-2 items-center">
-                <span className="px-3 py-1 bg-white/5 rounded-full text-xs text-text-dim capitalize">
+            <h2 className="text-lg md:text-xl font-bold truncate w-full">{profile.username}</h2>
+            <div className="flex flex-col gap-1 md:gap-2 mt-1 items-center">
+                <span className="px-3 py-1 bg-white/5 rounded-full text-[10px] md:text-xs text-text-dim capitalize">
                    Kubiq User
                 </span>
                 {!isNative && (
-                    <span className="flex items-center gap-1 px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-xs">
-                        <ExternalLink className="w-3 h-3" /> Managed by SSO
+                    <span className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-[10px] md:text-xs">
+                        <ExternalLink className="w-3 h-3 md:w-3 md:h-3" /> <span className="hidden sm:inline">Managed by SSO</span><span className="sm:hidden">SSO</span>
                     </span>
                 )}
             </div>
           </div>
 
-          <nav className="space-y-2">
+          <nav className="flex-[1.2] flex flex-col justify-center space-y-2">
             {[
               { id: 'details', label: 'Personal Details', icon: User },
               { id: 'security', label: 'Login & Security', icon: Shield },
@@ -310,14 +310,14 @@ const Profile: React.FC = () => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
+                  "w-full flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl transition-all duration-200 text-sm md:text-base",
                   activeTab === tab.id 
                     ? "bg-primary text-white shadow-lg shadow-blue-500/20 font-medium" 
                     : "text-text-dim hover:bg-white/5 hover:text-text"
                 )}
               >
-                <tab.icon className="w-5 h-5" />
-                {tab.label}
+                <tab.icon className="w-4 h-4 md:w-5 md:h-5 shrink-0" />
+                <span className="truncate">{tab.label}</span>
               </button>
             ))}
           </nav>
@@ -410,9 +410,9 @@ const Profile: React.FC = () => {
 
                    {/* Passkeys Section */}
                    <section>
-                      <div className="flex items-center justify-between mb-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                          <div className="flex items-center gap-3">
-                           <div className="p-2 bg-primary/10 rounded-lg">
+                           <div className="p-2 bg-primary/10 rounded-lg shrink-0">
                              <Fingerprint className="w-6 h-6 text-primary" />
                            </div>
                            <div>
@@ -420,8 +420,8 @@ const Profile: React.FC = () => {
                              <p className="text-text-dim text-sm">Login passwordless with your devices.</p>
                            </div>
                          </div>
-                         <Button variant="outline" onClick={() => setShowPasskeyModal(true)} disabled={!isNative}>
-                            <Plus className="w-4 h-4" /> Add Passkey
+                         <Button variant="outline" onClick={() => setShowPasskeyModal(true)} disabled={!isNative} className="w-full sm:w-auto">
+                            <Plus className="w-4 h-4 shrink-0" /> Add Passkey
                          </Button>
                       </div>
 

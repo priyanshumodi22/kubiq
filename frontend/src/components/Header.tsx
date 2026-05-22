@@ -34,6 +34,68 @@ export default function Header() {
   const kubiqRoles = roles.filter((role) => role.toLowerCase().startsWith('kubiq'));
   const userRole = kubiqRoles.length > 0 ? kubiqRoles.join(', ') : 'No Role Assigned';
 
+  const renderNavLinks = () => (
+    <>
+      <Link
+        to="/dashboard?tab=services"
+        className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${location.pathname === '/dashboard' && (!location.search.includes('tab=system'))
+          ? 'bg-primary text-white shadow-md'
+          : 'text-gray-400 hover:text-white hover:bg-white/5'
+          }`}
+      >
+        Services
+      </Link>
+
+      {isAuthenticated && roles.includes('kubiq-admin') && (
+        <Link
+          to="/dashboard?tab=system"
+          className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${location.pathname === '/dashboard' && location.search.includes('tab=system')
+            ? 'bg-primary text-white shadow-md'
+            : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+        >
+          <span className="hidden sm:inline">System Health</span><span className="sm:hidden">System Health</span>
+        </Link>
+      )}
+
+      {isAuthenticated && (
+        <Link
+          to="/logs"
+          className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${location.pathname.startsWith('/logs')
+            ? 'bg-primary text-white shadow-md'
+            : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+        >
+          Logs
+        </Link>
+      )}
+
+      {isAuthenticated && roles.includes('kubiq-admin') && (
+        <Link
+          to="/apm"
+          className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${location.pathname.startsWith('/apm')
+            ? 'bg-primary text-white shadow-md'
+            : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+        >
+          <span className="hidden sm:inline">APM & Traces</span><span className="sm:hidden">APM</span>
+        </Link>
+      )}
+
+      {isAuthenticated && roles.includes('kubiq-admin') && (
+        <Link
+          to="/kubernetes"
+          className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${location.pathname.startsWith('/kubernetes')
+            ? 'bg-primary text-white shadow-md'
+            : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+        >
+          <span className="hidden sm:inline">Kubernetes</span><span className="sm:hidden">K8s</span>
+        </Link>
+      )}
+    </>
+  );
+
   return (
     <header className="bg-gradient-to-r from-bg via-bg-surface to-bg border-b border-gray-800/50 relative">
       {/* Background container with overflow hidden */}
@@ -44,8 +106,8 @@ export default function Header() {
         <div className="absolute top-0 right-20 w-80 h-80 bg-primary/3 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 relative z-10">
-        <div className="flex items-center justify-between gap-2 sm:gap-4">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 relative z-10 flex flex-col md:block">
+        <div className="flex items-center justify-between gap-2 sm:gap-4 w-full">
           <Link to="/dashboard" className="flex items-center gap-2 sm:gap-3 min-w-0 hover:opacity-90 transition-opacity">
             <div className="inline-flex items-center justify-center w-12 h-12 sm:w-12 sm:h-12 bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl shadow-lg shadow-primary/10">
               <img
@@ -58,70 +120,14 @@ export default function Header() {
               />
             </div>
             <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl font-bold text-text">kubiq</h1>
-              <p className="text-xs text-text-dim hidden sm:block">Uptime Radar</p>
+              <h1 className="text-lg sm:text-xl font-bold text-text leading-tight">kubiq</h1>
+              <p className="text-[12px] sm:text-xs text-text-dim mt-0.5">Uptime Radar</p>
             </div>
           </Link>
 
           <nav className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
             <div className="bg-bg-card border border-gray-700/50 p-1 rounded-xl flex space-x-1 shadow-lg backdrop-blur-md">
-              <Link
-                to="/dashboard?tab=services"
-                className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${location.pathname === '/dashboard' && (!location.search.includes('tab=system'))
-                  ? 'bg-primary text-white shadow-md'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
-                  }`}
-              >
-                Services
-              </Link>
-
-              {isAuthenticated && roles.includes('kubiq-admin') && (
-                <Link
-                  to="/dashboard?tab=system"
-                  className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${location.pathname === '/dashboard' && location.search.includes('tab=system')
-                    ? 'bg-primary text-white shadow-md'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                    }`}
-                >
-                  System Health
-                </Link>
-              )}
-
-              {isAuthenticated && (
-                <Link
-                  to="/logs"
-                  className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${location.pathname.startsWith('/logs')
-                    ? 'bg-primary text-white shadow-md'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                    }`}
-                >
-                  Logs
-                </Link>
-              )}
-
-              {isAuthenticated && roles.includes('kubiq-admin') && (
-                <Link
-                  to="/apm"
-                  className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${location.pathname.startsWith('/apm')
-                    ? 'bg-primary text-white shadow-md'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                    }`}
-                >
-                  APM & Traces
-                </Link>
-              )}
-
-              {isAuthenticated && roles.includes('kubiq-admin') && (
-                <Link
-                  to="/kubernetes"
-                  className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${location.pathname.startsWith('/kubernetes')
-                    ? 'bg-primary text-white shadow-md'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                    }`}
-                >
-                  Kubernetes
-                </Link>
-              )}
+              {renderNavLinks()}
             </div>
           </nav>
 
@@ -247,6 +253,14 @@ export default function Header() {
             )}
           </div>
         </div>
+
+        {/* Mobile Navigation Tabs */}
+        <nav className="md:hidden mt-[20px] mb-2 overflow-x-auto overflow-y-hidden scrollbar-hide">
+          <div className="bg-bg-card border border-gray-700/50 p-1 rounded-xl flex space-x-1 shadow-lg backdrop-blur-md w-max mx-auto">
+            {renderNavLinks()}
+          </div>
+        </nav>
+
       </div>
 
       <NotificationConfigModal

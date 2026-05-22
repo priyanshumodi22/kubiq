@@ -12,15 +12,20 @@ export function useServiceMap() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchServiceMap = useCallback(async (timeRangeMs: number) => {
+    const fetchServiceMap = useCallback(async (options: { timeRangeMs?: number; fromMs?: number; toMs?: number } = {}) => {
         try {
+            const timeRangeMs = options.timeRangeMs || 60 * 60 * 1000;
+            const params = new URLSearchParams();
+            if (options.fromMs) params.append('fromMs', options.fromMs.toString());
+            if (options.toMs) params.append('toMs', options.toMs.toString());
+            params.append('timeRange', timeRangeMs.toString());
             setLoading(true);
             setError(null);
 
             const baseUrl = import.meta.env.VITE_API_URL || '';
             const BACKEND_CONTEXT_PATH = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
 
-            const response = await fetch(`${baseUrl}${BACKEND_CONTEXT_PATH}/api/apm/service-map?timeRange=${timeRangeMs}`, {
+            const response = await fetch(`${baseUrl}${BACKEND_CONTEXT_PATH}/api/apm/service-map?${params.toString()}`, {
                 credentials: 'omit',
             });
 
