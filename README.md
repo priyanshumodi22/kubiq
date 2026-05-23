@@ -9,6 +9,8 @@
   [![Docker Pulls](https://img.shields.io/docker/pulls/priyanshumodi22/kubiq)](https://hub.docker.com/r/priyanshumodi22/kubiq)
   [![Platform](https://img.shields.io/badge/Platform-linux%2Famd64%20%7C%20linux%2Farm64-lightgrey)](https://hub.docker.com/r/priyanshumodi22/kubiq/tags)
   <br>
+  <a href="https://www.producthunt.com/products/kubiq?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-kubiq" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1154261&theme=light" alt="kubiq - Unify APM, monitoring, observability & Kubernetes management | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+  <br><br>
   ![React](https://img.shields.io/badge/react-%2320232a.svg?style=flat&logo=react&logoColor=%2361DAFB)
   ![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=flat&logo=vite&logoColor=white)
   ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=flat&logo=tailwind-css&logoColor=white)
@@ -33,7 +35,14 @@
 
 ## ✨ Key Features
 
-*   **☸️ v2.0.0 — The Kubernetes Control Plane (Latest)**
+*   **⚖️ v2.1.0 — Autoscaling Management (Latest)**
+    *   **HPA & VPA Resource Control:** Full support for fetching, reading, and managing raw YAML for Horizontal and Vertical Pod Autoscalers, including secure deletion workflows.
+
+*   **📊 v2.0.1 — Advanced APM Trace Exports**
+    *   **Spreadsheet-Ready CSV Exports:** Download trace data and slow queries directly from the APM dashboard into clean CSV files for external analysis, reporting, and archiving.
+    *   **Precision Filtering & Formatting:** Filter exports by custom 12-hour time ranges, specific services, minimum duration thresholds, or "Errors Only". Automatically maps OpenTelemetry attributes (e.g., `db.statement`, `http.url`) into organized columns.
+
+*   **☸️ v2.0.0 — The Kubernetes Control Plane**
     *   **Multi-Cluster Context Switching:** Switch between local or remote EKS/AKS/GKE clusters on the fly with custom connection inspect tooltips displaying active cloud provider details, users, and API endpoints.
     *   **Pixel-Perfect Service Topology Map:** A mathematically aligned 4-column dependency graph (Hosts/Ingresses ➡️ Services ➡️ Pods ➡️ Configs/Secrets) with custom SVG curves, active hover-tracing, zoom controls, and touchscreen touch/drag gesture support.
     *   **Direct YAML Monaco Editor:** Embedded full-scale VS Code-powered Monaco Editor for YAML manifest search, live schema validation, and instant hot-patch deployments.
