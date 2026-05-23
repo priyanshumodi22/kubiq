@@ -120,7 +120,7 @@ export default function Dashboard() {
 
 
         {/* SYSTEM HEALTH TAB */}
-        {activeTab === 'system' && isAdmin && (
+        {activeTab === 'system' && (
             <div className="animate-fade-in-down">
                 <SystemResourcesWidget />
                 <StorageAnalyticsWidget />

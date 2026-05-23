@@ -46,7 +46,7 @@ export default function Header() {
         Services
       </Link>
 
-      {isAuthenticated && roles.includes('kubiq-admin') && (
+      {isAuthenticated && (
         <Link
           to="/dashboard?tab=system"
           className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${location.pathname === '/dashboard' && location.search.includes('tab=system')
@@ -70,7 +70,7 @@ export default function Header() {
         </Link>
       )}
 
-      {isAuthenticated && roles.includes('kubiq-admin') && (
+      {isAuthenticated && (
         <Link
           to="/apm"
           className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${location.pathname.startsWith('/apm')
@@ -82,7 +82,7 @@ export default function Header() {
         </Link>
       )}
 
-      {isAuthenticated && roles.includes('kubiq-admin') && (
+      {isAuthenticated && (
         <Link
           to="/kubernetes"
           className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${location.pathname.startsWith('/kubernetes')

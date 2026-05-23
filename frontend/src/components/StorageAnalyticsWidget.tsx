@@ -4,8 +4,10 @@ import { createPortal } from 'react-dom';
 import { HardDrive, Settings, AlertTriangle, CheckCircle } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { StoragePrediction, SystemMetrics, DiskInfo } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 export const StorageAnalyticsWidget = () => {
+    const { hasRole } = useAuth();
     const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
     const [predictions, setPredictions] = useState<StoragePrediction[]>([]);
     const [showConfig, setShowConfig] = useState(false);
@@ -121,6 +123,7 @@ export const StorageAnalyticsWidget = () => {
                     </h3>
                     
                     {/* Configuration Dropdown */}
+                    {hasRole('kubiq-admin') && (
                     <div className="relative">
                         <button 
                             ref={(el) => {
@@ -192,6 +195,7 @@ export const StorageAnalyticsWidget = () => {
                             ), document.body
                         )}
                     </div>
+                    )}
                 </div>
     
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">

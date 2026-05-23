@@ -93,6 +93,9 @@ app.use(
       // Production: Strict check against CORS_ORIGIN
       const allowedOriginsStr = process.env.CORS_ORIGIN || process.env.FRONTEND_DNS || 'http://localhost:3000';
       const allowedOrigins = allowedOriginsStr.split(',').map(o => o.trim().replace(/\/$/, ''));
+      // Always allow local development origins to connect for easier debugging
+      allowedOrigins.push('http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:5173');
+
       const cleanRequestOrigin = requestOrigin.replace(/\/$/, '');
 
       if (allowedOrigins.includes(cleanRequestOrigin)) {
@@ -176,7 +179,7 @@ const startServer = async () => {
 
     // Initialize Kubernetes Service in the background — never blocks startup.
     // Routes already guard with k8sService.available before doing anything.
-    KubernetesService.getInstance().initialize().catch(() => {});
+    KubernetesService.getInstance().initialize().catch(() => { });
 
     // Initialize User Repository (triggers DB connection)
     await DatabaseFactory.getUserRepository();

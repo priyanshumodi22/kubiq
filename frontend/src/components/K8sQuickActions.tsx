@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { RefreshCw, Sliders, Trash2, Settings, Minus, Plus } from 'lucide-react';
 import { K8sConfirmModal } from './K8sConfirmModal';
+import { useAuth } from '../contexts/AuthContext';
 
 export interface K8sQuickActionsProps {
     item: any;
@@ -22,6 +23,10 @@ export function K8sQuickActions({
     // Hide management for non-manageable resources
     const nonManageable = ['nodes', 'events', 'storageclasses', 'namespaces'];
     if (nonManageable.includes(item.type?.toLowerCase())) return null;
+
+    const { hasRole } = useAuth();
+    const isAdmin = hasRole('kubiq-admin');
+    if (!isAdmin) return null;
 
     const [isScaling, setIsScaling] = useState(false);
     const [replicas, setReplicas] = useState(item.data.totalContainers || item.data.replicas || 0);
@@ -73,7 +78,7 @@ export function K8sQuickActions({
                             className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-xs font-medium transition-all ${isScaling ? 'bg-primary text-black border-primary' : 'bg-primary/10 hover:bg-primary/20 text-primary border-primary/20'}`}
                         >
                             <Sliders className="w-3.5 h-3.5" />
-                            Scale
+                            Replicas
                         </button>
                         <button 
                             onClick={() => setConfirmState({ type: 'restart', open: true })}
@@ -89,7 +94,7 @@ export function K8sQuickActions({
                 <button 
                     onClick={() => setConfirmState({ type: 'delete', open: true })}
                     disabled={actionLoading}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg text-xs font-medium transition-all ml-auto disabled:opacity-50"
+                    className="flex items-center justify-center gap-2 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg text-xs font-medium transition-all sm:ml-auto disabled:opacity-50"
                 >
                     <Trash2 className="w-3.5 h-3.5" />
                     Delete

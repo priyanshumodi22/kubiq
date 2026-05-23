@@ -19,6 +19,7 @@ const BASE_PATH = `${BACKEND_DNS}${BACKEND_CONTEXT}`;
 class ApiClient {
   private client: AxiosInstance;
   private token: string | null = null;
+  private activeK8sContext: string | null = null;
 
   constructor() {
     this.client = axios.create({
@@ -30,10 +31,13 @@ class ApiClient {
       },
     });
 
-    // Request interceptor to add auth token
+    // Request interceptor to add auth token and K8s context
     this.client.interceptors.request.use((config) => {
       if (this.token) {
         config.headers.Authorization = `Bearer ${this.token}`;
+      }
+      if (this.activeK8sContext) {
+        config.headers['x-kubernetes-context'] = this.activeK8sContext;
       }
       return config;
     });
@@ -55,6 +59,10 @@ class ApiClient {
 
   clearToken() {
     this.token = null;
+  }
+
+  setKubernetesContext(context: string | null) {
+    this.activeK8sContext = context;
   }
 
   // Auth endpoints
@@ -316,8 +324,21 @@ class ApiClient {
   }
 
   async switchKubernetesContext(context: string) {
-    const response = await this.client.post('/api/kubernetes/contexts/switch', { context });
-    return response.data;
+    this.setKubernetesContext(context);
+    try {
+        const response = await this.client.get('/api/kubernetes/status');
+        return {
+            message: `Context switched to ${context}`,
+            available: response.data.available,
+            context: context
+        };
+    } catch (e) {
+        return {
+            message: `Context switched locally but status check failed`,
+            available: false,
+            context: context
+        };
+    }
   }
 
   async getKubernetesPods(namespace: string) {
@@ -390,6 +411,11 @@ class ApiClient {
     // some resources are cluster scoped (nodes, pv, storageclasses), so namespace might be 'cluster' or '-'
     const nsPath = namespace && namespace !== '-' ? `/namespaces/${namespace}` : '';
     const response = await this.client.get(`/api/kubernetes${nsPath}/yaml/${type}/${name}`);
+    return response.data;
+  }
+
+  async getKubernetesAutoscalers(namespace: string, type: string, name: string) {
+    const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/autoscalers/${type}/${name}`);
     return response.data;
   }
 

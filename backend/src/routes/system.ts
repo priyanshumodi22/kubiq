@@ -2,6 +2,7 @@
 import express from 'express';
 import { SystemMonitorService } from '../services/SystemMonitorService';
 import { DatabaseFactory } from '../database/DatabaseFactory';
+import { requireRole } from '../middleware/auth';
 
 const router = express.Router();
 const systemMonitor = SystemMonitorService.getInstance();
@@ -37,7 +38,7 @@ router.get('/disks/config', async (req, res) => {
 });
 
 // PUT /api/system/disks/config - Update monitored list
-router.put('/disks/config', async (req, res) => {
+router.put('/disks/config', requireRole('kubiq-admin'), async (req, res) => {
   try {
     const { mounts } = req.body;
     if (!Array.isArray(mounts)) {
@@ -73,7 +74,7 @@ router.get('/apm-config', async (req, res) => {
 });
 
 // PUT /api/system/apm-config
-router.put('/apm-config', async (req, res) => {
+router.put('/apm-config', requireRole('kubiq-admin'), async (req, res) => {
   try {
     const { ignoredRoutes } = req.body;
     if (!Array.isArray(ignoredRoutes)) {

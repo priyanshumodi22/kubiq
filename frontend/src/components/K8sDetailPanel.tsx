@@ -15,8 +15,10 @@ loader.config({ monaco });
 
 import { apiClient } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 import { K8sLogViewer } from './K8sLogViewer';
 import K8sTerminal from './K8sTerminal';
+import { K8sAutoscalerPanel } from './K8sAutoscalerPanel';
 import { K8sQuickActions } from './K8sQuickActions';
 import { copyToClipboard } from '../utils/k8sHelpers';
 
@@ -47,9 +49,12 @@ export function K8sDetailPanel({
     const [isEditing, setIsEditing] = useState(false);
     const [editedYaml, setEditedYaml] = useState<string>('');
     const [applyingYaml, setApplyingYaml] = useState(false);
-    const [activeTab, setActiveTab] = useState<'details' | 'yaml' | 'logs' | 'terminal'>('details');
+    const [activeTab, setActiveTab] = useState<'details' | 'yaml' | 'logs' | 'terminal' | 'autoscale'>('details');
     const [expandedContainers, setExpandedContainers] = useState<Record<number, boolean>>({});
+
     const { addToast } = useToast() as any;
+    const { hasRole } = useAuth();
+    const isAdmin = hasRole('kubiq-admin');
     const canShowLogs = item?.type === 'pods' || item?.type === 'deployments';
 
     const toggleContainerExpand = (idx: number) => {
@@ -112,7 +117,7 @@ export function K8sDetailPanel({
 
     if (!item) return null;
 
-    const isReadOnly = ['nodes', 'events', 'storageclasses', 'namespaces'].includes(item.type?.toLowerCase());
+    const isReadOnly = ['nodes', 'events', 'storageclasses', 'namespaces'].includes(item.type?.toLowerCase()) || !isAdmin;
 
     const resName = item.data.name || item.data.metadata?.name;
     const resNs = item.data.namespace || item.data.metadata?.namespace || (item.type === 'events' ? namespace : null);
@@ -145,7 +150,12 @@ export function K8sDetailPanel({
                             Logs
                         </button>
                     )}
-                    {item?.type === 'pods' && (
+                    {canShowLogs && isAdmin && (
+                        <button onClick={() => setActiveTab('autoscale')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'autoscale' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
+                            AutoScale
+                        </button>
+                    )}
+                    {item?.type === 'pods' && isAdmin && (
                         <button onClick={() => setActiveTab('terminal')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'terminal' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
                             Terminal
                         </button>
@@ -184,7 +194,7 @@ export function K8sDetailPanel({
                                     <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">Resource Manifest</span>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    {!isReadOnly && (
+                                    {!isReadOnly && isAdmin && (
                                         <div className="flex items-center gap-2">
                                             <span className={`text-[10px] font-bold uppercase transition-colors ${isEditing ? 'text-primary' : 'text-gray-500'}`}>Edit Mode</span>
                                             <button 
@@ -265,6 +275,12 @@ export function K8sDetailPanel({
                                 </div>
                             )}
                         </div>
+                    ) : activeTab === 'autoscale' ? (
+                        <K8sAutoscalerPanel 
+                            item={item} 
+                            namespace={namespace} 
+                            onApplyManifest={onApplyManifest} 
+                        />
                     ) : (
                         <div className="p-6 space-y-6">
                             <K8sQuickActions 
