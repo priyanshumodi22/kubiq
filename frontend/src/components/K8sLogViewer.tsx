@@ -142,7 +142,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
     return (
         <div className="flex flex-col h-full bg-[#0d0d0d] font-mono text-xs overflow-hidden">
             {/* ── Toolbar ────────────────────────────────────────── */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-800 bg-[#111111] shrink-0 flex-wrap">
+            <div className="flex flex-row items-center gap-2 px-3 py-2 border-b border-gray-800 bg-[#111111] shrink-0 flex-wrap">
                 {/* Connection Badge */}
                 {isConnected ? (
                     <span className="flex items-center gap-1.5 text-[10px] text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20 shrink-0">
@@ -213,7 +213,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                 </div>
 
                 {/* Search / Filter logs */}
-                <div className="relative flex items-center bg-white/[0.03] border border-gray-800 focus-within:border-primary/40 rounded px-2 py-0.5 min-w-[180px] gap-1.5 transition-all">
+                <div className="relative flex-1 min-w-[120px] flex items-center bg-white/[0.03] border border-gray-800 focus-within:border-primary/40 rounded px-2 py-0.5 gap-1.5 transition-all">
                     <Search className="w-3.5 h-3.5 text-gray-500 shrink-0" />
                     <input
                         type="text"

@@ -1,5 +1,5 @@
-import { useState, useRef, useMemo } from 'react';
-import { 
+import { useState, useRef, useMemo, useEffect } from 'react';
+import {
     Box, Globe, Settings,
     Search, ZoomIn, ZoomOut, Maximize2, Server, HelpCircle, Shield
 } from 'lucide-react';
@@ -31,6 +31,17 @@ export function K8sRelationshipMap({
     const dragStart = useRef({ x: 0, y: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
 
+    // Auto-scale on mount for mobile devices to show 2 columns initially
+    useEffect(() => {
+        if (!containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        if (rect.width > 0 && rect.width < 640) {
+            // Padding (60) + 2 columns (2 * 260) = 580px needed.
+            const mobileScale = Math.max(0.4, Math.min(rect.width / 550, 1));
+            setScale(mobileScale);
+        }
+    }, []);
+
     // Search & Hover Filter states
     const [searchQuery, setSearchQuery] = useState('');
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
@@ -59,10 +70,32 @@ export function K8sRelationshipMap({
 
     const handleMouseUp = () => setIsDragging(false);
 
+    // Touch handlers for mobile panning
+    const handleTouchStart = (e: React.TouchEvent) => {
+        const target = e.target as SVGElement;
+        if (target.tagName === 'BUTTON' || target.closest('.node-card')) return;
+        if (e.touches.length === 1) {
+            setIsDragging(true);
+            dragStart.current = { x: e.touches[0].clientX - pan.x, y: e.touches[0].clientY - pan.y };
+        }
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!isDragging) return;
+        if (e.touches.length === 1) {
+            setPan({
+                x: e.touches[0].clientX - dragStart.current.x,
+                y: e.touches[0].clientY - dragStart.current.y
+            });
+        }
+    };
+
+    const handleTouchEnd = () => setIsDragging(false);
+
     // Layout configuration
     const colWidth = 260;
     const paddingLeft = 60;
-    
+
     // Column coordinates
     const xIngresses = paddingLeft;
     const xServices = paddingLeft + colWidth;
@@ -121,7 +154,7 @@ export function K8sRelationshipMap({
         // 4. Configs & Secrets combined
         const totalConfigs = configMaps.length + secrets.length;
         const configSpacing = height / (totalConfigs + 1);
-        
+
         configMaps.forEach((cm, idx) => {
             list.push({
                 id: `configmap-${cm.metadata?.name}`,
@@ -278,7 +311,7 @@ export function K8sRelationshipMap({
 
     // Render node icons helper
     const getNodeIcon = (type: string) => {
-        switch(type) {
+        switch (type) {
             case 'ingresses': return <Globe className="w-4 h-4 text-cyan-400" />;
             case 'services': return <Server className="w-4 h-4 text-emerald-400" />;
             case 'pods': return <Box className="w-4 h-4 text-primary" />;
@@ -291,30 +324,30 @@ export function K8sRelationshipMap({
     return (
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative select-none">
             {/* Header Control Panel */}
-            <div className="p-3 border-b border-gray-800 bg-[#1a1a1a] flex items-center justify-between z-10">
-                <div className="flex items-center gap-2">
+            <div className="p-3 border-b border-gray-800 bg-[#1a1a1a] flex flex-col sm:flex-row items-stretch sm:items-center justify-between z-10 gap-3">
+                <div className="flex items-center gap-2 justify-between sm:justify-start">
                     <span className="text-sm font-semibold text-white">Service Topology Map ({namespace})</span>
-                    <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full shrink-0">
                         {nodes.length} Nodes / {edges.length} Edges
                     </span>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap sm:flex-nowrap items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
                     {/* Search bar */}
-                    <div className="relative">
+                    <div className="relative flex-1 sm:flex-initial">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             placeholder="Filter nodes..."
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            className="bg-[#111111] border border-gray-700 text-xs text-white rounded-md pl-9 pr-4 py-1.5 focus:outline-none focus:border-primary/50 w-48 transition-all"
+                            className="bg-[#111111] border border-gray-700 text-xs text-white rounded-md pl-9 pr-4 py-1.5 focus:outline-none focus:border-primary/50 w-full sm:w-48 transition-all"
                         />
                     </div>
 
                     {/* Canvas controls */}
-                    <div className="flex items-center gap-1.5 border-l border-gray-800 pl-4">
-                        <button 
+                    <div className="flex items-center gap-1.5 border-l border-gray-800 pl-4 shrink-0">
+                        <button
                             onClick={handleZoomOut}
                             className="p-1.5 hover:bg-white/10 text-gray-400 hover:text-white rounded transition-colors"
                             title="Zoom Out"
@@ -324,14 +357,14 @@ export function K8sRelationshipMap({
                         <span className="text-xs font-mono text-gray-500 min-w-[32px] text-center">
                             {Math.round(scale * 100)}%
                         </span>
-                        <button 
+                        <button
                             onClick={handleZoomIn}
                             className="p-1.5 hover:bg-white/10 text-gray-400 hover:text-white rounded transition-colors"
                             title="Zoom In"
                         >
                             <ZoomIn className="w-4 h-4" />
                         </button>
-                        <button 
+                        <button
                             onClick={handleResetZoom}
                             className="p-1.5 hover:bg-white/10 text-gray-400 hover:text-white rounded transition-colors"
                             title="Reset View"
@@ -342,22 +375,34 @@ export function K8sRelationshipMap({
                 </div>
             </div>
 
-            {/* Layout Column Headers */}
-            <div className="grid grid-cols-4 border-b border-gray-900 bg-black/25 text-[10px] uppercase font-bold tracking-wider text-gray-500 py-2 relative z-10">
-                <div style={{ paddingLeft: `${xIngresses}px` }}>Hosts & Ingresses</div>
-                <div style={{ paddingLeft: `${xServices - colWidth}px` }}>Services</div>
-                <div style={{ paddingLeft: `${xPods - colWidth * 2}px` }}>Pods Replicas</div>
-                <div style={{ paddingLeft: `${xConfigs - colWidth * 3}px` }}>Configurations</div>
+            {/* Layout Column Headers (Synced with Canvas X-Axis) */}
+            <div className="border-b border-gray-900 bg-black/25 relative z-10 overflow-hidden shrink-0 h-8 select-none pointer-events-none">
+                <div 
+                    className="absolute top-0 bottom-0 left-0 text-[10px] uppercase font-bold tracking-wider text-gray-500 whitespace-nowrap"
+                    style={{
+                        transform: `translateX(${pan.x}px)`,
+                        transition: isDragging ? 'none' : 'transform 0.15s ease-out'
+                    }}
+                >
+                    <div className="absolute top-2" style={{ left: `${xIngresses * scale}px`, transition: isDragging ? 'none' : 'left 0.15s ease-out' }}>Hosts & Ingresses</div>
+                    <div className="absolute top-2" style={{ left: `${xServices * scale}px`, transition: isDragging ? 'none' : 'left 0.15s ease-out' }}>Services</div>
+                    <div className="absolute top-2" style={{ left: `${xPods * scale}px`, transition: isDragging ? 'none' : 'left 0.15s ease-out' }}>Pods Replicas</div>
+                    <div className="absolute top-2" style={{ left: `${xConfigs * scale}px`, transition: isDragging ? 'none' : 'left 0.15s ease-out' }}>Configurations</div>
+                </div>
             </div>
 
             {/* Topology Canvas Area */}
-            <div 
+            <div
                 ref={containerRef}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
-                className="flex-1 overflow-hidden bg-[#0d0d0d] relative cursor-grab active:cursor-grabbing"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onTouchCancel={handleTouchEnd}
+                className="flex-1 overflow-hidden bg-[#0d0d0d] relative cursor-grab active:cursor-grabbing touch-none"
             >
                 {/* Single transformed wrapper for perfect SVG & Card coordinate alignment */}
                 <div
@@ -373,7 +418,7 @@ export function K8sRelationshipMap({
                     }}
                 >
                     {/* SVG Graph connections */}
-                    <svg 
+                    <svg
                         width={width}
                         height={height}
                         style={{
@@ -396,10 +441,45 @@ export function K8sRelationshipMap({
                             </filter>
                         </defs>
 
+                        {/* Animated active paths */}
+                        {edges.map(edge => {
+                            const isEdgeTrace = hoveredNodeId && activeTraceEdgeIds.has(edge.id);
+                            if (!isEdgeTrace) return null;
+
+                            const startX = edge.source.x + 190;
+                            const startY = edge.source.y + 24;
+                            const endX = edge.target.x;
+                            const endY = edge.target.y + 24;
+
+                            const dx = endX - startX;
+                            const controlX1 = startX + dx * 0.3;
+                            const controlX2 = endX - dx * 0.3;
+                            const pathData = `M ${startX} ${startY} C ${controlX1} ${startY}, ${controlX2} ${endY}, ${endX} ${endY}`;
+
+                            return (
+                                <g key={`active-${edge.id}`}>
+                                    <path
+                                        d={pathData}
+                                        fill="none"
+                                        stroke="rgba(0, 240, 255, 0.25)"
+                                        strokeWidth={6}
+                                        filter="url(#glow-glow)"
+                                    />
+                                    <path
+                                        d={pathData}
+                                        fill="none"
+                                        stroke="#00f0ff"
+                                        strokeWidth={2.5}
+                                        className="animate-[dash_10s_linear_infinite]"
+                                    />
+                                </g>
+                            );
+                        })}
+
                         {/* Standard inactive paths */}
                         {edges.map(edge => {
-                            const isNodeTrace = hoveredNodeId && activeTraceEdgeIds.has(edge.id);
-                            if (isNodeTrace) return null;
+                            const isEdgeTrace = hoveredNodeId && activeTraceEdgeIds.has(edge.id);
+                            if (isEdgeTrace) return null;
 
                             const startX = edge.source.x + 190;
                             const startY = edge.source.y + 24;
@@ -475,7 +555,7 @@ export function K8sRelationshipMap({
                         const isFiltered = searchQuery && !node.name.toLowerCase().includes(searchQuery.toLowerCase());
                         const isPod = node.type === 'pods';
                         const podReady = isPod && node.data.ready;
-                        
+
                         // Pod status-specific backgrounds
                         let statusColor = 'border-gray-800 bg-[#161616]';
                         if (isPod) {
@@ -505,12 +585,15 @@ export function K8sRelationshipMap({
                                     onClick={() => onSelectItem({ type: node.type, data: node.data })}
                                     onMouseEnter={() => setHoveredNodeId(node.id)}
                                     onMouseLeave={() => setHoveredNodeId(null)}
+                                    onTouchStart={() => setHoveredNodeId(node.id)}
+                                    onTouchEnd={() => setHoveredNodeId(null)}
+                                    onTouchCancel={() => setHoveredNodeId(null)}
                                     className={`
                                         w-full h-full text-left rounded-xl border p-2 flex items-center gap-2.5 
                                         transition-all duration-300 backdrop-blur-md shadow-lg
                                         hover:scale-[1.03] hover:shadow-black/60
-                                        ${hoveredNodeId === node.id 
-                                            ? 'border-primary bg-primary/10 shadow-primary/20 scale-[1.02]' 
+                                        ${hoveredNodeId === node.id
+                                            ? 'border-primary bg-primary/10 shadow-primary/20 scale-[1.02]'
                                             : isNodeTrace && !isFiltered
                                                 ? `${statusColor} text-gray-100 hover:border-gray-600`
                                                 : 'border-gray-900/60 bg-[#141414]/30 text-gray-500 opacity-25'

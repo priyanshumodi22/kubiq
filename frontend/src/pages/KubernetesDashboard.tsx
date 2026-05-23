@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
     Activity, Box, Network, Globe, Settings, Server, Database,
-    AlertTriangle, Search, X, ChevronDown, FileJson, Layers, RefreshCw
+    AlertTriangle, Search, X, ChevronDown, FileJson, Layers, RefreshCw, Menu
 } from 'lucide-react';
 
 import { useKubernetes, KubeMetric } from '../hooks/useKubernetes';
@@ -205,6 +205,7 @@ export default function KubernetesDashboard() {
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
         workloads: true, network: true, storage: false, config: false
     });
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const toggleGroup = (id: string) => setExpandedGroups(prev => ({ ...prev, [id]: !prev[id] }));
 
@@ -367,8 +368,8 @@ export default function KubernetesDashboard() {
             </div>
 
             {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 shrink-0 border-b border-gray-800 pb-6">
-                <div>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 shrink-0 border-b border-gray-800 pb-6">
+                <div className="text-left min-w-0 w-full md:w-auto">
                     <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
                         <Network className="w-7 h-7 text-primary" /> Kubernetes Explorer
                     </h1>
@@ -381,16 +382,16 @@ export default function KubernetesDashboard() {
                 </div>
 
                 {available && (
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                         {/* Auto refresh indicator */}
-                        <div className="text-xs text-gray-500 flex items-center gap-2 mr-2">
+                        <div className="text-xs text-gray-500 flex items-center gap-2 mr-2 w-full sm:w-auto justify-between sm:justify-start">
                             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                             Refreshes in {countdown}s
                         </div>
 
                         {/* Context Dropdown */}
                         {contexts.length > 0 && (
-                            <div className="relative">
+                            <div className="relative w-full sm:w-auto">
                                 <button
                                     ref={ctxTriggerRef}
                                     type="button"
@@ -404,7 +405,7 @@ export default function KubernetesDashboard() {
                                     }}
                                     onMouseEnter={() => { if (!isCtxOpen) setHoveredCtx(context); }}
                                     onMouseLeave={() => setHoveredCtx(null)}
-                                    className="bg-[#1a1a1a] border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2 transition-colors focus:outline-none w-[240px]"
+                                    className="bg-[#1a1a1a] border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2 transition-colors focus:outline-none w-full sm:w-[240px]"
                                 >
                                     <Server className="w-4 h-4 text-gray-400 shrink-0" />
                                     <span className="flex-1 text-left truncate w-[170px] font-mono text-xs font-semibold">{formatContextName(context) || 'Select context'}</span>
@@ -528,7 +529,7 @@ export default function KubernetesDashboard() {
                         )}
 
                         {/* Namespace Dropdown */}
-                        <div className="relative">
+                        <div className="relative w-full sm:w-auto">
                             <button
                                 ref={nsTriggerRef}
                                 type="button"
@@ -539,7 +540,7 @@ export default function KubernetesDashboard() {
                                     }
                                     setIsNsOpen(o => !o);
                                 }}
-                                className="bg-[#1a1a1a] border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2 transition-colors focus:outline-none min-w-[160px]"
+                                className="bg-[#1a1a1a] border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2 transition-colors focus:outline-none w-full sm:min-w-[160px]"
                             >
                                 <Layers className="w-4 h-4 text-gray-400 shrink-0" />
                                 <span className="flex-1 text-left">{selectedNamespace || 'Select namespace'}</span>
@@ -570,7 +571,7 @@ export default function KubernetesDashboard() {
                         <button
                             onClick={() => fetchData()}
                             disabled={loading}
-                            className="bg-[#1a1a1a] border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center gap-2 px-3 py-2 transition-colors"
+                            className="bg-[#1a1a1a] border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-center gap-2 px-3 py-2 transition-colors w-full sm:w-auto"
                         >
                             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                             Refresh
@@ -582,9 +583,66 @@ export default function KubernetesDashboard() {
             {!available ? (
                 <NotConfigured />
             ) : (
-                <div className="flex flex-1 overflow-hidden gap-6">
+                <div className="flex flex-col lg:flex-row flex-1 overflow-visible lg:overflow-hidden gap-6 relative z-10 min-h-0">
+                    {/* Mobile View Selector Dropdown */}
+                    <div className="lg:hidden w-full relative z-[60] mb-1 shrink-0">
+                        <button
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            className="w-full bg-[#1a1a1a] border border-gray-700 hover:border-primary/50 text-gray-300 text-xs rounded-lg flex items-center justify-between gap-3 px-3 py-2 transition-all focus:outline-none"
+                        >
+                            <div className="flex items-center gap-2.5">
+                                <Menu className="w-3.5 h-3.5 text-primary" />
+                                <span className="font-semibold text-[10px] tracking-wider uppercase text-gray-500">Resource:</span>
+                                <span className="font-bold text-xs text-white capitalize">
+                                    {SIDEBAR_MENU.find(i => i.type === activeResource)?.label || 
+                                     SIDEBAR_MENU.flatMap(i => i.children || []).find(c => c.type === activeResource)?.label || 
+                                     activeResource}
+                                </span>
+                            </div>
+                            <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isMobileMenuOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {isMobileMenuOpen && (
+                            <div className="absolute top-full left-0 right-0 mt-1.5 bg-[#1e1e1e] border border-gray-700 rounded-xl shadow-2xl p-2 z-50 max-h-72 overflow-y-auto custom-scrollbar">
+                                <div className="space-y-0.5">
+                                    {SIDEBAR_MENU.map(item => (
+                                        <div key={item.id} className="mb-1">
+                                            {item.children ? (
+                                                <>
+                                                    <div className="flex items-center gap-2 px-2.5 py-1 text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+                                                        <item.icon className="w-3 h-3 text-gray-500" />
+                                                        <span>{item.label}</span>
+                                                    </div>
+                                                    <div className="ml-4 border-l border-gray-800 pl-2 mt-0.5 space-y-0.5">
+                                                        {item.children.map(child => (
+                                                            <button
+                                                                key={child.id}
+                                                                onClick={() => { setActiveResource(child.type); setSearchQuery(''); setIsMobileMenuOpen(false); }}
+                                                                className={`w-full text-left px-2.5 py-1 text-[11px] rounded-lg transition-colors ${activeResource === child.type ? 'bg-primary/10 text-primary font-bold' : 'text-gray-400 hover:text-gray-200'}`}
+                                                            >
+                                                                {child.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <button
+                                                    onClick={() => { setActiveResource(item.type); setSearchQuery(''); setIsMobileMenuOpen(false); }}
+                                                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-xs rounded-lg transition-colors ${activeResource === item.type ? 'bg-primary/10 text-primary font-bold' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                                                >
+                                                    <item.icon className="w-3.5 h-3.5" />
+                                                    <span className="font-semibold text-[11px]">{item.label}</span>
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     {/* ── LEFT SIDEBAR TREE ── */}
-                    <div className="w-64 shrink-0 flex flex-col overflow-y-auto custom-scrollbar pr-2">
+                    <div className="hidden lg:flex w-64 shrink-0 flex-col overflow-y-auto custom-scrollbar pr-2">
                         {SIDEBAR_MENU.map(item => (
                             <div key={item.id} className="mb-1">
                                 {item.children ? (
@@ -627,7 +685,7 @@ export default function KubernetesDashboard() {
                     </div>
 
                     {/* ── RIGHT CONTENT PANEL ── */}
-                    <div className="flex-1 bg-[#141414] border border-gray-800 rounded-xl overflow-hidden flex flex-col relative shadow-xl">
+                    <div className="flex-1 bg-[#141414] border border-gray-800 rounded-xl overflow-hidden flex flex-col relative shadow-xl min-h-[500px] h-[500px] lg:h-[75vh]">
                         {loading && (
                             <div className="absolute top-0 left-0 w-full h-0.5 bg-gray-800 overflow-hidden z-20">
                                 <div className="h-full bg-primary w-1/3 animate-[slide-right_1s_ease-in-out_infinite]" />
@@ -653,19 +711,19 @@ export default function KubernetesDashboard() {
                         ) : (
                             <>
                                 {/* Toolbar */}
-                                <div className="p-3 border-b border-gray-800 flex items-center justify-between bg-[#1a1a1a]">
+                                <div className="p-3 border-b border-gray-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-[#1a1a1a] shrink-0 text-left gap-2">
                                     <div className="flex items-center gap-2 px-2">
                                         <span className="text-sm font-semibold text-white capitalize">{activeResource.replace('persistent', 'Persistent ')}</span>
                                         <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">{filteredAndSortedData.length}</span>
                                     </div>
-                                    <div className="relative">
+                                    <div className="relative w-full sm:w-auto">
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
                                         <input 
                                             type="text" 
                                             placeholder="Search name..."
                                             value={searchQuery}
                                             onChange={e => setSearchQuery(e.target.value)}
-                                            className="bg-[#111111] border border-gray-700 text-sm text-white rounded-md pl-9 pr-4 py-1.5 focus:outline-none focus:border-primary/50 w-56 transition-all"
+                                            className="bg-[#111111] border border-gray-700 text-sm text-white rounded-md pl-9 pr-4 py-1.5 focus:outline-none focus:border-primary/50 w-full sm:w-56 transition-all"
                                         />
                                         {searchQuery && (
                                             <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">

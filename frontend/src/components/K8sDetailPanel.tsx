@@ -451,11 +451,11 @@ export function K8sDetailPanel({
                                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex justify-between">
                                     <span>Metadata</span>
                                 </h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    {resNs && <div><span className="text-gray-500 text-xs block">Namespace</span><span className="text-sm font-mono text-gray-200">{resNs}</span></div>}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {resNs && <div><span className="text-gray-500 text-xs block">Namespace</span><span className="text-sm font-mono text-gray-200 break-all">{resNs}</span></div>}
                                     {resStartTime && <div><span className="text-gray-500 text-xs block">Last Active</span><span className="text-sm text-gray-200">{new Date(resStartTime).toLocaleString()}</span></div>}
-                                    {resNode && <div><span className="text-gray-500 text-xs block">Node</span><span className="text-sm font-mono text-primary cursor-pointer hover:underline" onClick={() => copyToClipboard(resNode)}>{resNode}</span></div>}
-                                    {item.data.podIP && <div><span className="text-gray-500 text-xs block">IP Address</span><span className="text-sm font-mono text-gray-200">{item.data.podIP}</span></div>}
+                                    {resNode && <div><span className="text-gray-500 text-xs block">Node</span><span className="text-sm font-mono text-primary cursor-pointer hover:underline break-all" onClick={() => copyToClipboard(resNode)}>{resNode}</span></div>}
+                                    {item.data.podIP && <div><span className="text-gray-500 text-xs block">IP Address</span><span className="text-sm font-mono text-gray-200 break-all">{item.data.podIP}</span></div>}
                                 </div>
                                 {resLabels && Object.keys(resLabels).length > 0 && (
                                     <div className="mt-4">
@@ -483,7 +483,7 @@ export function K8sDetailPanel({
                                                 <div className="text-xs text-gray-400 leading-relaxed bg-black/20 p-2 rounded break-all whitespace-pre-wrap">{item.data.message}</div>
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-800/50">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-gray-800/50">
                                             <div className="min-w-0 flex-1">
                                                 <span className="text-gray-500 text-[10px] uppercase block">Involved Object</span>
                                                 <span className="text-xs text-primary font-mono truncate block" title={`${item.data.involvedKind}: ${item.data.involvedObject}`}>{item.data.involvedKind}: {item.data.involvedObject}</span>
@@ -554,21 +554,21 @@ export function K8sDetailPanel({
                                                     {/* Image Inspector Details */}
                                                     {isExpanded && (
                                                         <div className="pt-2 border-t border-gray-800/60 space-y-3 text-xs">
-                                                            <div className="grid grid-cols-2 gap-3 bg-black/10 p-3 rounded-lg border border-white/[0.02]">
-                                                                <div>
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-black/10 p-3 rounded-lg border border-white/[0.02]">
+                                                                <div className="min-w-0">
                                                                     <span className="text-gray-500 text-[10px] uppercase block font-semibold">Registry Source</span>
-                                                                    <span className="text-gray-300 font-mono">{registry}</span>
+                                                                    <span className="text-gray-300 font-mono break-all">{registry}</span>
                                                                 </div>
-                                                                <div>
+                                                                <div className="min-w-0">
                                                                     <span className="text-gray-500 text-[10px] uppercase block font-semibold">Image Tag</span>
-                                                                    <span className="text-primary font-mono font-bold bg-primary/5 border border-primary/20 px-1.5 py-0.5 rounded inline-block mt-0.5">{tag}</span>
+                                                                    <span className="text-primary font-mono font-bold bg-primary/5 border border-primary/20 px-1.5 py-0.5 rounded inline-block mt-0.5 break-all">{tag}</span>
                                                                 </div>
-                                                                <div className="col-span-2">
+                                                                <div className="col-span-1 sm:col-span-2 min-w-0">
                                                                     <span className="text-gray-500 text-[10px] uppercase block font-semibold">Registry Repository</span>
                                                                     <span className="text-gray-300 font-mono break-all">{repository}</span>
                                                                 </div>
                                                                 {digest && (
-                                                                    <div className="col-span-2">
+                                                                    <div className="col-span-1 sm:col-span-2 min-w-0">
                                                                         <span className="text-gray-500 text-[10px] uppercase block font-semibold">SHA-256 Digest Signature</span>
                                                                         <span className="text-[10px] text-gray-400 font-mono break-all bg-black/35 p-1.5 rounded border border-white/[0.01] block mt-0.5">{digest}</span>
                                                                     </div>
@@ -581,7 +581,7 @@ export function K8sDetailPanel({
                                                                     <ShieldCheck className="w-3.5 h-3.5 text-primary" />
                                                                     <span>Container Security Context</span>
                                                                 </div>
-                                                                <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono">
                                                                     <div className="flex items-center justify-between bg-black/20 px-2 py-1 rounded">
                                                                         <span className="text-gray-500">Run As Non-Root:</span>
                                                                         <span className={c.securityContext?.runAsNonRoot ? 'text-green-400 font-bold' : 'text-gray-400'}>
@@ -594,7 +594,7 @@ export function K8sDetailPanel({
                                                                             {c.securityContext?.privileged ? 'Yes' : 'No'}
                                                                         </span>
                                                                     </div>
-                                                                    <div className="flex items-center justify-between bg-black/20 px-2 py-1 rounded col-span-2">
+                                                                    <div className="flex items-center justify-between bg-black/20 px-2 py-1 rounded col-span-1 sm:col-span-2">
                                                                         <span className="text-gray-500">ReadOnly RootFS:</span>
                                                                         <span className={c.securityContext?.readOnlyRootFilesystem ? 'text-green-400 font-bold' : 'text-gray-400'}>
                                                                             {c.securityContext?.readOnlyRootFilesystem ? 'Yes' : 'No'}

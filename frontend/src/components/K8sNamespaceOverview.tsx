@@ -326,19 +326,21 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
                             <div 
                                 key={i} 
                                 onClick={() => onSelectItem({ type: 'events', data: ev })}
-                                className="px-5 py-3.5 flex items-start gap-4 hover:bg-white/[0.02] cursor-pointer transition-colors group"
+                                className="px-5 py-3 flex items-start gap-3 hover:bg-white/[0.02] cursor-pointer transition-colors group"
                             >
-                                <span className="text-[10px] font-bold text-orange-400 bg-orange-400/10 border border-orange-500/20 px-2 py-0.5 rounded uppercase tracking-wider shrink-0 mt-0.5">
+                                <span className="text-[9px] font-bold text-orange-400 bg-orange-400/10 border border-orange-500/20 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0 mt-0.5">
                                     {ev.reason}
                                 </span>
-                                <div className="flex-1 min-w-0">
-                                    <div className="text-xs text-gray-300 font-medium leading-relaxed group-hover:text-white transition-colors">{ev.message}</div>
-                                    <div className="text-[10px] text-gray-500 mt-1.5 flex items-center gap-2">
+                                <div className="flex-1 min-w-0 overflow-hidden">
+                                    <div className="text-[11px] text-gray-300 font-medium leading-relaxed group-hover:text-white transition-colors overflow-y-auto max-h-[72px] custom-scrollbar break-all pr-2 mb-1.5">
+                                        {ev.message}
+                                    </div>
+                                    <div className="text-[9px] text-gray-500 flex flex-wrap items-center gap-1.5">
                                         <span className="text-primary font-mono">{ev.involvedKind}: {ev.involvedObject}</span>
-                                        <span>•</span>
+                                        <span className="opacity-50">•</span>
                                         <span>{timeAgo(ev.lastTimestamp)} ago</span>
-                                        <span>•</span>
-                                        <span className="bg-white/5 border border-white/10 text-gray-400 px-1.5 py-0.2 rounded font-mono font-bold">{ev.count} alerts</span>
+                                        <span className="opacity-50">•</span>
+                                        <span className="bg-white/5 border border-white/10 text-gray-400 px-1 py-0.5 rounded font-mono font-bold">{ev.count} alerts</span>
                                     </div>
                                 </div>
                             </div>
