@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { parseTTLToSeconds } from '../../utils/TTLParser';
 
 export interface IApmSpanDocument extends Document {
     traceId: string;
@@ -38,5 +39,9 @@ const ApmSpanSchema: Schema = new Schema(
 // We assume a capped collection isn't necessary initially, 
 // but compound indexes help Analytics APIs greatly.
 ApmSpanSchema.index({ serviceName: 1, timestamp: -1 });
+
+// TTL index to automatically delete old APM spans
+const apmTTL = parseTTLToSeconds(process.env.APM_RETENTION_PERIOD, 3 * 24 * 60 * 60); // Default 3 days
+ApmSpanSchema.index({ timestamp: 1 }, { expireAfterSeconds: apmTTL });
 
 export const ApmSpanModel = mongoose.models.ApmSpan || mongoose.model<IApmSpanDocument>('ApmSpan', ApmSpanSchema);

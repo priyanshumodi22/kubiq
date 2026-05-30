@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import io from 'socket.io-client';
-import { Play, Pause, Trash2, ArrowDown, ChevronDown, Check, Search, X, Activity, Sparkles, Lock, CheckCircle2, Zap } from 'lucide-react';
+import { Play, Pause, Trash2, ArrowDown, ChevronDown, Check, Search, X, Activity, Sparkles, Lock, CheckCircle2, Zap, Copy, RefreshCw } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -167,8 +167,8 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
         if (logs.length === 0) return;
         setSummarizing(true);
         try {
-            // Map LogLine to expected LogEntry format
-            const logsToSummarize = logs.map(l => ({
+            // Map LogLine to expected LogEntry format and send only the last 200 logs
+            const logsToSummarize = logs.slice(-200).map(l => ({
                 _id: String(l.id),
                 timestamp: new Date().toISOString(),
                 level: l.level.toUpperCase(),
@@ -223,9 +223,23 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                                         <Sparkles className="w-5 h-5 text-purple-400" />
                                         AI Log Analysis
                                     </h3>
-                                    <button onClick={() => setShowSummaryModal(false)} className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-white/10">
-                                        <X className="w-5 h-5" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        {summary && !summarizing && (
+                                            <button 
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(summary);
+                                                }} 
+                                                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors px-2 py-1 rounded hover:bg-white/10 border border-gray-700/50"
+                                                title="Copy to clipboard"
+                                            >
+                                                <Copy className="w-3.5 h-3.5" />
+                                                Copy
+                                            </button>
+                                        )}
+                                        <button onClick={() => setShowSummaryModal(false)} className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-white/10">
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="p-6 overflow-y-auto custom-scrollbar font-sans text-gray-300 text-sm leading-relaxed prose prose-invert max-w-none">
                                     {summarizing ? (
@@ -504,7 +518,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                             className="group flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white px-5 py-2.5 rounded-full shadow-[0_0_20px_rgba(147,51,234,0.3)] transition-all transform hover:scale-105"
                         >
                             {summarizing ? (
-                                <Activity className="w-4 h-4 animate-spin" />
+                                <RefreshCw className="w-4 h-4 animate-spin" />
                             ) : (
                                 <Sparkles className="w-4 h-4 group-hover:animate-pulse text-yellow-300" />
                             )}

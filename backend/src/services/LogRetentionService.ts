@@ -4,15 +4,10 @@ export class LogRetentionService {
     private static instance: LogRetentionService;
     private logBuffer: any[] = [];
     private flushInterval: NodeJS.Timeout;
-    private cleanupInterval: NodeJS.Timeout;
 
     private constructor() {
         // flush logs every 3 seconds
         this.flushInterval = setInterval(() => this.flushLogs(), 3000);
-        // cleanup every 12 hours
-        this.cleanupInterval = setInterval(() => this.cleanupLogs(), 12 * 60 * 60 * 1000);
-        // Do an initial cleanup on startup
-        setTimeout(() => this.cleanupLogs(), 5000);
     }
 
     public static getInstance(): LogRetentionService {
@@ -71,27 +66,6 @@ export class LogRetentionService {
             await repo.insertLogs(logsToWrite);
         } catch (err) {
             console.error('Failed to flush logs to retention DB:', err);
-        }
-    }
-
-    private async cleanupLogs() {
-        const dbType = process.env.DB_TYPE?.toLowerCase() || 'json';
-        if (dbType !== 'mongo' && dbType !== 'mongodb') {
-            return;
-        }
-        
-        try {
-            const repo = await DatabaseFactory.getLogRepository();
-            const retentionDays = parseInt(process.env.LOG_RETENTION_DAYS || '7', 10);
-            const cutoff = new Date();
-            cutoff.setDate(cutoff.getDate() - retentionDays);
-            
-            const deleted = await repo.deleteLogsBefore(cutoff);
-            if (deleted > 0) {
-                console.log(`🧹 LogRetentionService: Cleaned up ${deleted} old logs.`);
-            }
-        } catch (err) {
-            console.error('Failed to cleanup logs:', err);
         }
     }
 }

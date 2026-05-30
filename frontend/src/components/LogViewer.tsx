@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Virtuoso } from 'react-virtuoso';
 import io from 'socket.io-client';
-import { X, Play, Pause, Trash2, ArrowDown, FileText, ChevronDown, Check, Activity, Search, Sparkles, Lock, CheckCircle2, Zap, RefreshCw } from 'lucide-react';
+import { Play, Pause, Trash2, ArrowDown, FileText, ChevronDown, Check, Activity, Search, Sparkles, Lock, CheckCircle2, Zap, Copy, X, RefreshCw } from 'lucide-react';
 import { LogSource } from '../types';
 import { LogSearch } from './LogSearch';
 import ReactMarkdown from 'react-markdown';
@@ -217,7 +217,8 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
         if (logs.length === 0) return;
         setSummarizing(true);
         try {
-            const payload = logs.map(l => ({ message: l.content, level: l.level.toUpperCase() }));
+            // Send only the last 200 logs to prevent massive payloads and 413 errors
+            const payload = logs.slice(-200).map(l => ({ message: l.content, level: l.level.toUpperCase() }));
             const data = await apiClient.summarizeLogs(payload);
 
             setShowSummaryModal(true);
@@ -270,9 +271,23 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                                         <Sparkles className="w-5 h-5 text-purple-400" />
                                         AI Log Analysis
                                     </h3>
-                                    <button onClick={() => setShowSummaryModal(false)} className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-white/10">
-                                        <X className="w-5 h-5" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        {summary && !summarizing && (
+                                            <button 
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(summary);
+                                                }} 
+                                                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors px-2 py-1 rounded hover:bg-white/10 border border-gray-700/50"
+                                                title="Copy to clipboard"
+                                            >
+                                                <Copy className="w-3.5 h-3.5" />
+                                                Copy
+                                            </button>
+                                        )}
+                                        <button onClick={() => setShowSummaryModal(false)} className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-white/10">
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="p-6 overflow-y-auto custom-scrollbar font-sans text-gray-300 text-sm leading-relaxed prose prose-invert max-w-none">
                                     {summarizing ? (

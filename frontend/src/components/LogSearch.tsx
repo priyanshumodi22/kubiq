@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Virtuoso } from 'react-virtuoso';
-import { Search, Clock, Filter, Sparkles, RefreshCw, AlertCircle, X, Lock, CheckCircle2, Zap, ChevronDown } from 'lucide-react';
+import { Search, Clock, Filter, Sparkles, RefreshCw, AlertCircle, X, Lock, CheckCircle2, Zap, ChevronDown, Copy } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiClient } from '../services/api';
@@ -143,7 +143,8 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
         if (logs.length === 0) return;
         setSummarizing(true);
         try {
-            const data = await apiClient.summarizeLogs(logs);
+            // Send only the last 200 logs to prevent massive payloads and 413 errors
+            const data = await apiClient.summarizeLogs(logs.slice(-200));
 
             setShowSummaryModal(true);
             if (data.summary) {
@@ -169,7 +170,7 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
     return (
         <div className="flex flex-col h-full bg-[#0d0d0d] font-sans">
             {/* Filters Header */}
-            <div className="bg-[#161920] border-b border-gray-800 p-4 flex flex-wrap gap-4 items-end z-10">
+            <div className="bg-[#111111] border-b border-gray-800 p-4 flex flex-wrap gap-4 items-end z-10">
                 <div className="flex-1 min-w-[200px]">
                     <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1">
                         <Search className="w-3 h-3" /> Search Text
@@ -311,9 +312,23 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
                                         <Sparkles className="w-5 h-5 text-purple-400" />
                                         AI Log Analysis
                                     </h3>
-                                    <button onClick={() => setShowSummaryModal(false)} className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-white/10">
-                                        <X className="w-5 h-5" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        {summary && !summarizing && (
+                                            <button 
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(summary);
+                                                }} 
+                                                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors px-2 py-1 rounded hover:bg-white/10 border border-gray-700/50"
+                                                title="Copy to clipboard"
+                                            >
+                                                <Copy className="w-3.5 h-3.5" />
+                                                Copy
+                                            </button>
+                                        )}
+                                        <button onClick={() => setShowSummaryModal(false)} className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-white/10">
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="p-6 overflow-y-auto custom-scrollbar font-sans text-gray-300 text-sm leading-relaxed prose prose-invert max-w-none">
                                     {summarizing ? (
