@@ -69,6 +69,37 @@ const getPresets = () => {
 export default function ApmDashboard() {
     const { hasRole } = useAuth();
     const isAdmin = hasRole('kubiq-admin');
+    const [status, setStatus] = useState<{ supported: boolean; dbType: string; reason?: string; fix?: string } | null>(null);
+    const [checkingStatus, setCheckingStatus] = useState(true);
+
+    useEffect(() => {
+        async function checkApmStatus() {
+            try {
+                const baseUrl = import.meta.env.VITE_API_URL || '';
+                const ctxPath = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
+                const res = await fetch(`${baseUrl}${ctxPath}/api/apm/status`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setStatus(data);
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    setStatus({
+                        supported: false,
+                        dbType: data.dbType || 'json',
+                        reason: data.reason || 'APM is not supported with the current database adapter.',
+                        fix: data.fix || 'Configure MySQL or MongoDB.'
+                    });
+                }
+            } catch (e) {
+                console.error('Failed to check APM status:', e);
+                setStatus({ supported: true, dbType: 'unknown' });
+            } finally {
+                setCheckingStatus(false);
+            }
+        }
+        checkApmStatus();
+    }, []);
+
     const { metrics, loading: apmLoading, error: apmError, refresh } = useApm();
     const { spans, loading: traceLoading, error: traceError, fetchTrace, clearTrace } = useTrace();
     const { dependencies, loading: mapLoading, error: mapError, fetchServiceMap } = useServiceMap();
@@ -341,6 +372,120 @@ export default function ApmDashboard() {
     const todayObj = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
     const todayString = `${todayObj.getFullYear()}-${pad(todayObj.getMonth()+1)}-${pad(todayObj.getDate())}`;
+
+    if (checkingStatus) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] relative z-10 animate-fade-in">
+                {/* Background Effects */}
+                <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+                    <div className="absolute inset-0 bg-gradient-to-br from-bg via-bg to-bg-surface"></div>
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
+                </div>
+                <div className="flex flex-col items-center gap-4">
+                    <div className="relative">
+                        <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></div>
+                        <Activity className="w-6 h-6 text-primary absolute inset-0 m-auto animate-pulse" />
+                    </div>
+                    <p className="text-text-dim text-sm animate-pulse">Analyzing system configuration...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (status && !status.supported) {
+        return (
+            <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full animate-fade-in relative z-10">
+                {/* Background Effects */}
+                <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+                    <div className="absolute inset-0 bg-gradient-to-br from-bg via-bg to-bg-surface"></div>
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(239,68,68,0.08),transparent_60%)]"></div>
+                    <div className="absolute -top-40 -left-40 w-96 h-96 bg-error/5 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-20 right-20 w-80 h-80 bg-primary/3 rounded-full blur-3xl"></div>
+                </div>
+
+                <div className="mt-8 mb-6 text-center sm:text-left">
+                    <h1 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-400">
+                        APM & Distributed Traces
+                    </h1>
+                    <p className="text-text-dim mt-1">Application performance monitoring and diagnostics</p>
+                </div>
+
+                {/* Glassmorphic main alert box */}
+                <div className="bg-bg-surface/60 backdrop-blur-xl border border-error/20 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+                    {/* Top edge glowing stripe */}
+                    <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-error/50 to-transparent"></div>
+
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+                        <div className="p-4 rounded-xl bg-error/10 border border-error/20 text-error animate-pulse-slow">
+                            <AlertTriangle className="w-8 h-8" />
+                        </div>
+                        
+                        <div className="flex-1 text-center sm:text-left">
+                            <h2 className="text-xl font-semibold text-white mb-2">APM is Disabled (json mode)</h2>
+                            <p className="text-text-dim text-sm sm:text-base leading-relaxed mb-6">
+                                Kubiq is currently configured with <code className="px-1.5 py-0.5 rounded bg-bg-elevated border border-gray-700 text-error font-mono text-xs font-bold font-semibold">DB_TYPE=json</code>. 
+                                APM, distributed trace collection, metrics, and service maps require a persistent database backend with advanced indexing capabilities.
+                            </p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <div className="p-4 rounded-xl bg-bg-elevated/40 border border-gray-800 text-left">
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Why this database?</h3>
+                                    <p className="text-xs text-text-dim leading-normal">
+                                        The JSON adapter saves data directly to flat files. Ingesting and querying thousands of spans would quickly overwhelm disk storage and block the main Node.js event loop.
+                                    </p>
+                                </div>
+                                <div className="p-4 rounded-xl bg-bg-elevated/40 border border-gray-800 text-left">
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Supported Engines</h3>
+                                    <p className="text-xs text-text-dim leading-normal">
+                                        APM is fully integrated with <span className="text-white font-medium">MySQL (or MariaDB)</span> and <span className="text-white font-medium">MongoDB</span>. They provide indexing for traceId/service searches and aggregate metrics fast.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="border-t border-gray-800/80 pt-6">
+                                <h3 className="text-sm font-semibold text-white mb-3 text-left">How to Enable APM</h3>
+                                <p className="text-xs text-text-dim text-left mb-3">
+                                    Edit your environment configuration <code className="px-1 py-0.5 rounded bg-bg-elevated text-white font-mono text-xs">.env</code> in the backend root directory, set <code className="text-primary font-mono font-semibold">DB_TYPE</code>, and restart your Kubiq backend process.
+                                </p>
+
+                                <div className="bg-black/40 border border-gray-800 rounded-lg p-4 font-mono text-xs text-left relative overflow-hidden select-all group">
+                                    <div className="absolute top-2 right-2 text-[10px] text-gray-500 font-sans group-hover:text-primary transition-colors">
+                                        Click to select all
+                                    </div>
+                                    <div className="text-gray-500"># e:\kubiq-product\kubiq\backend\.env</div>
+                                    <div className="text-gray-400 mt-1 font-sans"># Change from DB_TYPE=json to one of:</div>
+                                    <div><span className="text-primary">DB_TYPE</span>=mysql</div>
+                                    <div className="text-gray-500 mt-1"># Or:</div>
+                                    <div><span className="text-primary">DB_TYPE</span>=mongodb</div>
+                                    <div className="text-gray-400 mt-2 font-sans"># If using MySQL, configure connection settings:</div>
+                                    <div><span className="text-primary">MYSQL_HOST</span>=localhost</div>
+                                    <div><span className="text-primary">MYSQL_USER</span>=root</div>
+                                    <div><span className="text-primary">MYSQL_PASSWORD</span>=yourpassword</div>
+                                    <div><span className="text-primary">MYSQL_DATABASE</span>=kubiq</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Additional assistance cards */}
+                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
+                    <div className="p-5 bg-bg-surface/40 border border-gray-800 hover:border-gray-700 rounded-xl transition-all">
+                        <h4 className="text-sm font-medium text-white mb-1">Live Logs are Available</h4>
+                        <p className="text-xs text-text-dim leading-relaxed">
+                            You can still view real-time log streams and container tailing. Logs do not require trace database adapters.
+                        </p>
+                    </div>
+                    <div className="p-5 bg-bg-surface/40 border border-gray-800 hover:border-gray-700 rounded-xl transition-all">
+                        <h4 className="text-sm font-medium text-white mb-1">Local Testing Tip</h4>
+                        <p className="text-xs text-text-dim leading-relaxed">
+                            For quick testing, spin up a lightweight MySQL or MongoDB container using Docker, update your configuration, and restart Kubiq.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full animate-fade-in relative z-10">

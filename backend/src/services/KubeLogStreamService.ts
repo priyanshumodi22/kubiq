@@ -14,6 +14,8 @@ interface SharedPodStream {
     targetRooms: Set<string>; 
     pendingBuffer: string;
     flushTimer: NodeJS.Timeout | null;
+    serviceName: string;
+    sourceName: string;
 }
 
 export class KubeLogStreamService {
@@ -183,6 +185,8 @@ export class KubeLogStreamService {
             targetRooms: new Set([roomName]),
             pendingBuffer: '',
             flushTimer: null,
+            serviceName: `k8s:${namespace}:${podName.split('-')[0]}`, // Derive logical service
+            sourceName: `pod:${podName}:${targetContainer ?? '_default_'}`,
         };
         this.podStreams.set(podRoomKey, shared);
 
@@ -211,6 +215,15 @@ export class KubeLogStreamService {
             liveStream.on('data', (chunk: Buffer) => {
                 const text = chunk.toString();
                 shared.pendingBuffer += text;
+
+                // Forward to Log Retention Service asynchronously
+                import('./LogRetentionService').then(({ LogRetentionService }) => {
+                    LogRetentionService.getInstance().ingest(
+                        shared.serviceName, 
+                        shared.sourceName, 
+                        text.split('\n')
+                    );
+                }).catch(e => console.error('Error importing LogRetentionService:', e));
 
                 if (!shared.flushTimer) {
                     shared.flushTimer = setTimeout(() => {

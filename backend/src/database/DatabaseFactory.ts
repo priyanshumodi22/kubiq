@@ -4,6 +4,7 @@ import { IUserRepository } from './interfaces/IUserRepository';
 import { IPasskeyRepository } from './interfaces/IPasskeyRepository';
 import { ISystemRepository } from './interfaces/ISystemRepository';
 import { ITraceRepository } from './interfaces/ITraceRepository';
+import { ILogRepository } from './interfaces/ILogRepository';
 
 export class DatabaseFactory {
   private static serviceRepository: IServiceRepository;
@@ -12,6 +13,19 @@ export class DatabaseFactory {
   private static passkeyRepository: IPasskeyRepository;
   private static systemRepository: ISystemRepository;
   private static traceRepository: ITraceRepository;
+  private static logRepository: ILogRepository;
+
+  // False when DB_TYPE=json — APM requires MySQL or MongoDB
+  private static _apmSupported: boolean | null = null;
+
+  /** Returns true only when DB_TYPE is mysql or mongodb. */
+  public static isApmSupported(): boolean {
+    if (this._apmSupported === null) {
+      const db = (process.env.DB_TYPE || 'json').toLowerCase();
+      this._apmSupported = db === 'mysql' || db === 'mariadb' || db === 'mongo' || db === 'mongodb';
+    }
+    return this._apmSupported;
+  }
 
   public static async getServiceRepository(): Promise<IServiceRepository> {
     if (this.serviceRepository) {
@@ -185,14 +199,43 @@ export class DatabaseFactory {
         break;
       case 'json':
       default:
-        // Fallback to MySQL or Mongo if json not specifically handled for APM
-        console.warn('⚠️ APM telemetry requires a robust database. Falling back to MongoDB for APM.');
-        const { MongoTraceRepository: FallbackMongoTraceRepository } = await import('./adapters/mongo/MongoTraceRepository');
-        this.traceRepository = new FallbackMongoTraceRepository();
-        break;
+        // APM is not supported with the JSON adapter.
+        // Callers must check DatabaseFactory.isApmSupported() before calling this.
+        throw new Error(
+          'APM_NOT_SUPPORTED: APM & Traces require DB_TYPE=mysql or DB_TYPE=mongodb. ' +
+          'Update your DB_TYPE environment variable and restart kubiq to enable APM.'
+        );
     }
 
     await this.traceRepository.initialize();
     return this.traceRepository;
+  }
+
+  public static async getLogRepository(): Promise<ILogRepository> {
+    if (this.logRepository) {
+      return this.logRepository;
+    }
+
+    const startArgs = process.env.DB_TYPE || 'json';
+    console.log(`🔌 Initializing Log Repository: ${startArgs}`);
+
+    switch (startArgs.toLowerCase()) {
+      case 'mongo':
+      case 'mongodb':
+        const { MongoLogRepository } = await import('./adapters/mongo/MongoLogRepository');
+        this.logRepository = new MongoLogRepository();
+        break;
+      case 'mysql':
+      case 'mariadb':
+      case 'json':
+      default:
+        throw new Error(
+          'LOG_RETENTION_NOT_SUPPORTED: Log Retention & Search require DB_TYPE=mongodb. ' +
+          'Update your DB_TYPE environment variable to enable this feature.'
+        );
+    }
+
+    await this.logRepository.initialize();
+    return this.logRepository;
   }
 }

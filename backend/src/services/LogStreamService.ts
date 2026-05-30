@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { EventEmitter } from 'events';
 import { glob } from 'glob';
+import { isPathSafe } from '../utils/pathSecurity';
 
 // ─── Shared file watcher: ONE per unique file path ─────────────────
 interface SharedFileWatcher {
@@ -12,6 +13,8 @@ interface SharedFileWatcher {
     refCount: number;              // Number of sockets subscribed
     pendingBuffer: string;         // Batched chunks waiting to be flushed
     flushTimer: NodeJS.Timeout | null;  // 100ms flush timer
+    serviceName: string;           // Track for retention
+    sourceName: string;            // Track for retention
 }
 
 // ─── Shared directory watcher: ONE per glob pattern ────────────────
@@ -56,14 +59,20 @@ export class LogStreamService extends EventEmitter {
         this.io.on('connection', (socket: Socket) => {
             console.log(`🔌 Client connected to logs: ${socket.id}`);
 
-            socket.on('watch:log', async (data: { path: string, pattern?: string, limit?: number }) => {
-                const { path: logPath, pattern, limit } = data;
-                console.log(`👀 Client ${socket.id} requested to watch: ${logPath} (Pattern: ${pattern}, Limit: ${limit})`);
+            socket.on('watch:log', async (data: { path: string, pattern?: string, limit?: number, serviceName?: string }) => {
+                const { path: logPath, pattern, limit, serviceName } = data;
+                console.log(`👀 Client ${socket.id} requested to watch: ${logPath} (Pattern: ${pattern}, Limit: ${limit}, Service: ${serviceName})`);
                 
+                if (!isPathSafe(logPath) || (pattern && !isPathSafe(pattern))) {
+                    console.warn(`⚠️ Path traversal or blocked directory access attempt detected from ${socket.id}: ${logPath} / ${pattern}`);
+                    socket.emit('error', { message: 'Access denied: The requested path is in a restricted system directory.' });
+                    return;
+                }
+
                 // Always clean up previous subscription first
                 this.unsubscribeSocket(socket);
 
-                await this.startStreaming(socket, logPath, pattern, limit);
+                await this.startStreaming(socket, logPath, pattern, limit, serviceName);
             });
 
             socket.on('stop:watch', () => {
@@ -78,7 +87,7 @@ export class LogStreamService extends EventEmitter {
     }
 
     // ─── Core streaming logic ──────────────────────────────────────────
-    private async startStreaming(socket: Socket, filePath: string, pattern?: string, limit?: number) {
+    private async startStreaming(socket: Socket, filePath: string, pattern?: string, limit?: number, serviceName?: string) {
         let targetFile = filePath;
         const isPathGlob = filePath.includes('*');
         const searchPattern = pattern || (isPathGlob ? filePath : undefined);
@@ -142,11 +151,11 @@ export class LogStreamService extends EventEmitter {
         }
 
         // 5. Subscribe to shared file watcher (creates one if needed)
-        this.subscribeToFileWatcher(socket, targetFile);
+        this.subscribeToFileWatcher(socket, targetFile, serviceName || 'unknown-service');
     }
 
     // ─── Shared file watcher: join room, create watcher if first ───────
-    private subscribeToFileWatcher(socket: Socket, filePath: string) {
+    private subscribeToFileWatcher(socket: Socket, filePath: string, serviceName: string) {
         const roomName = `file::${filePath}`;
 
         // Join the socket.io room for this file
@@ -178,7 +187,16 @@ export class LogStreamService extends EventEmitter {
             interval: 1000,
         });
 
-        const shared: SharedFileWatcher = { watcher, currentSize, refCount: 1, pendingBuffer: '', flushTimer: null };
+        const sourceName = path.basename(filePath);
+        const shared: SharedFileWatcher = { 
+            watcher, 
+            currentSize, 
+            refCount: 1, 
+            pendingBuffer: '', 
+            flushTimer: null,
+            serviceName,
+            sourceName
+        };
         this.fileWatchers.set(filePath, shared);
 
         watcher.on('change', (changedPath) => {
@@ -192,8 +210,18 @@ export class LogStreamService extends EventEmitter {
                     });
                     
                     stream.on('data', (chunk) => {
+                        const chunkStr = chunk.toString();
                         // Buffer chunks instead of emitting immediately (backpressure)
-                        shared.pendingBuffer += chunk.toString();
+                        shared.pendingBuffer += chunkStr;
+
+                        // Forward to Log Retention Service asynchronously
+                        import('./LogRetentionService').then(({ LogRetentionService }) => {
+                            LogRetentionService.getInstance().ingest(
+                                shared.serviceName, 
+                                shared.sourceName, 
+                                chunkStr.split('\n')
+                            );
+                        }).catch(e => console.error('Error importing LogRetentionService:', e));
 
                         // Force-flush if buffer exceeds 64KB to cap memory usage
                         if (shared.pendingBuffer.length > 65536) {

@@ -94,32 +94,46 @@ export class MysqlTraceRepository implements ITraceRepository {
         const fromDate = new Date(fromMs);
         const toDate = new Date(toMs);
 
-        // In MySQL 8.x we could use PERCENTILE_CONT for p95, but we fallback
-        // to a simpler approx or do calculation in JS for vast compat. 
-        // Usually for heavy TimeSeries, you use ClickHouse.
-        // For now we get AVG and Count, and approximate p95 or skip it.
+        // Raise GROUP_CONCAT limit so high-traffic services don't get truncated durations.
+        // Default MySQL limit is 1024 chars which would cut off after ~100 spans.
+        await this.pool.query(`SET SESSION group_concat_max_len = 1000000`);
 
+        // Collect all individual durations per service (ORDER BY ASC so the array
+        // arrives pre-sorted — same as what MongoDB's JS sort does).
         const query = `
-      SELECT 
-        service_name as serviceName,
-        COUNT(*) as requestCount,
-        SUM(CASE WHEN status_code = 2 THEN 1 ELSE 0 END) as errorCount,
-        AVG(duration_ms) as avgDurationMs
-      FROM apm_spans
-      WHERE timestamp >= ? AND timestamp <= ?
-      GROUP BY service_name
-    `;
+            SELECT
+                service_name                                                    AS serviceName,
+                COUNT(*)                                                        AS requestCount,
+                SUM(CASE WHEN status_code = 2 THEN 1 ELSE 0 END)               AS errorCount,
+                AVG(duration_ms)                                                AS avgDurationMs,
+                GROUP_CONCAT(duration_ms ORDER BY duration_ms ASC SEPARATOR ',') AS durations
+            FROM apm_spans
+            WHERE timestamp >= ? AND timestamp <= ?
+            GROUP BY service_name
+        `;
 
         const [rows] = await this.pool.query<RowDataPacket[]>(query, [fromDate, toDate]);
 
-        return rows.map(row => ({
-            serviceName: row.serviceName,
-            requestCount: Number(row.requestCount),
-            errorCount: Number(row.errorCount),
-            avgDurationMs: Number(row.avgDurationMs) || 0,
-            // p95 is complex in vanilla MySQL without GROUP_CONCAT limits. Defaulting to avg for now.
-            p95DurationMs: Number(row.avgDurationMs) || 0
-        }));
+        return rows.map(row => {
+            // Parse the comma-separated duration list into a numeric array.
+            // Already sorted ASC by MySQL so no extra JS sort needed.
+            const sorted: number[] = row.durations
+                ? row.durations.split(',').map(Number)
+                : [];
+
+            // Same index formula MongoDB uses:
+            // Math.max(0, Math.floor(sorted.length * 0.95) - 1)
+            const index = Math.max(0, Math.floor(sorted.length * 0.95) - 1);
+            const p95 = sorted.length > 0 ? sorted[index] : 0;
+
+            return {
+                serviceName: row.serviceName,
+                requestCount: Number(row.requestCount),
+                errorCount: Number(row.errorCount),
+                avgDurationMs: Number(row.avgDurationMs) || 0,
+                p95DurationMs: p95
+            };
+        });
     }
 
     async getTraceDetails(traceId: string): Promise<ISpan[]> {

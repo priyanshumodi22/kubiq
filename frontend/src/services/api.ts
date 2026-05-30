@@ -435,6 +435,23 @@ class ApiClient {
     return response.data;
   }
 
+  // --- Logs ---
+  async getLogSources(serviceName: string) {
+    const response = await this.client.get(`/api/logs/sources?serviceName=${encodeURIComponent(serviceName)}`);
+    return response.data;
+  }
+
+  async queryLogs(params: URLSearchParams) {
+    const response = await this.client.get(`/api/logs/query?${params.toString()}`);
+    return response.data;
+  }
+
+  async summarizeLogs(logs: any[]) {
+    // LLM API calls can take longer than the default 10s global timeout
+    const response = await this.client.post('/api/logs/summarize', { logs }, { timeout: 60000 });
+    return response.data;
+  }
+
   // --- System Configuration ---
   async getApmConfig() {
     const response = await this.client.get('/api/system/apm-config');

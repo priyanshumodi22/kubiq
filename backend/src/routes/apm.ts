@@ -5,6 +5,50 @@ import { ISpan } from '../database/interfaces/ITraceRepository';
 export const apmIngestRouter = Router();
 export const apmAnalyticsRouter = Router();
 
+// Ingest middleware: bypass trace processing if APM is unsupported
+apmIngestRouter.use((req, res, next) => {
+    if (!DatabaseFactory.isApmSupported()) {
+        res.status(202).json({ message: 'APM ingestion disabled (DB_TYPE is json)' });
+        return;
+    }
+    next();
+});
+
+// Analytics middleware: block all routes except /status if APM is unsupported
+apmAnalyticsRouter.use((req, res, next) => {
+    if (req.path === '/status') {
+        return next();
+    }
+    if (!DatabaseFactory.isApmSupported()) {
+        res.status(503).json({
+            error: 'APM_NOT_SUPPORTED',
+            message: 'APM & Traces require DB_TYPE=mysql or DB_TYPE=mongodb.'
+        });
+        return;
+    }
+    next();
+});
+
+/**
+ * GET /api/apm/status
+ * Lightweight check the frontend calls on mount to know if APM is available.
+ * Returns { supported: true } for mysql/mongodb, { supported: false, reason, dbType } for json.
+ */
+apmAnalyticsRouter.get('/status', (req: Request, res: Response) => {
+    const supported = DatabaseFactory.isApmSupported();
+    const dbType = process.env.DB_TYPE || 'json';
+    if (supported) {
+        res.json({ supported: true, dbType });
+    } else {
+        res.status(503).json({
+            supported: false,
+            dbType,
+            reason: 'APM & Traces require a persistent database backend.',
+            fix: 'Set DB_TYPE=mysql or DB_TYPE=mongodb in your kubiq environment and restart.',
+        });
+    }
+});
+
 let cachedApmConfig: { ignoredRoutes: string[] } | null = null;
 let lastApmConfigFetch = 0;
 
