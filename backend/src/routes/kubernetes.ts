@@ -13,6 +13,7 @@ router.get('/status', (_req, res) => {
     res.json({
         available: k8sService.available,
         context: k8sService.defaultContext,
+        scrapeInterval: parseInt(process.env.APM_SCRAPE_INTERVAL_SECONDS || '60', 10)
     });
 });
 

@@ -25,11 +25,12 @@ export class KubernetesMetricsScraper {
             return;
         }
         
-        console.log('KubernetesMetricsScraper: Starting background metric scraper (1-minute intervals).');
+        const scrapeIntervalSec = parseInt(process.env.APM_SCRAPE_INTERVAL_SECONDS || '60', 10);
+        console.log(`KubernetesMetricsScraper: Starting background metric scraper (${scrapeIntervalSec}-second intervals).`);
         
-        // Run immediately then every 60s
+        // Run immediately then on the interval
         this.scrape();
-        this.interval = setInterval(() => this.scrape(), 60000);
+        this.interval = setInterval(() => this.scrape(), scrapeIntervalSec * 1000);
     }
     
     stop() {

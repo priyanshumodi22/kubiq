@@ -69,27 +69,59 @@ export function K8sDetailPanel({
         return () => clearTimeout(timer);
     }, [item]);
 
+    const [refreshCountdown, setRefreshCountdown] = useState(60);
+    const [scrapeIntervalSec, setScrapeIntervalSec] = useState(60);
+    const [isFetchingHistory, setIsFetchingHistory] = useState(true);
+
     useEffect(() => {
         if (item?.type === 'pods' && activeTab === 'details') {
             const podName = item.data.name || item.data.metadata?.name;
-            if (podName) {
-                apiClient.getKubernetesPodMetricsHistory(namespace, podName)
-                    .then(data => {
-                        if (Array.isArray(data) && data.length > 0) {
-                            setClickhouseMetrics({
-                                cpu: data.map((d: any) => d.cpu_m),
-                                memory: data.map((d: any) => d.memory_mi),
-                                timestamps: data.map((d: any) => d.timestamp_ms)
-                            });
-                        } else if (Array.isArray(data) && data.length === 0) {
-                            setClickhouseMetrics({ cpu: [], memory: [], timestamps: [] });
-                        }
-                    })
-                    .catch(() => {
-                        // Silently fallback if endpoint returns 404 (not configured)
-                        setClickhouseMetrics(null);
-                    });
-            }
+            if (!podName) return;
+
+            let intervalId: NodeJS.Timeout;
+            let countdownId: NodeJS.Timeout;
+
+            setIsFetchingHistory(true);
+
+            apiClient.getKubernetesStatus().then(status => {
+                const interval = status?.scrapeInterval || 60;
+                setScrapeIntervalSec(interval);
+                
+                const fetchMetrics = () => {
+                    setRefreshCountdown(interval);
+                    apiClient.getKubernetesPodMetricsHistory(namespace, podName)
+                        .then(data => {
+                            if (Array.isArray(data) && data.length > 0) {
+                                setClickhouseMetrics({
+                                    cpu: data.map((d: any) => d.cpu_m),
+                                    memory: data.map((d: any) => d.memory_mi),
+                                    timestamps: data.map((d: any) => d.timestamp_ms)
+                                });
+                            } else if (Array.isArray(data) && data.length === 0) {
+                                setClickhouseMetrics({ cpu: [], memory: [], timestamps: [] });
+                            }
+                        })
+                        .catch(() => {
+                            // Silently fallback if endpoint returns 404 (not configured)
+                            setClickhouseMetrics(null);
+                        })
+                        .finally(() => {
+                            setIsFetchingHistory(false);
+                        });
+                };
+
+                fetchMetrics(); // Initial fetch
+                intervalId = setInterval(fetchMetrics, interval * 1000); 
+                
+                countdownId = setInterval(() => {
+                    setRefreshCountdown(prev => Math.max(0, prev - 1));
+                }, 1000);
+            });
+
+            return () => {
+                if (intervalId) clearInterval(intervalId);
+                if (countdownId) clearInterval(countdownId);
+            };
         }
     }, [item, namespace, activeTab]);
 
@@ -326,12 +358,16 @@ export function K8sDetailPanel({
                                 const timestamps = podHistory?.timestamps || [];
                                 if (item.type !== 'pods') return null;
 
-                                if (!mountChart || cpuData.length === 0) {
+                                if (!mountChart || isFetchingHistory || cpuData.length === 0) {
                                     return (
                                         <div className="bg-[#1a1a1a] rounded-xl p-5 border border-gray-800 shadow-inner flex flex-col items-center justify-center py-12 text-center min-h-[250px]">
                                             <Activity className="w-8 h-8 text-cyan-400 animate-pulse mb-3" />
-                                            <span className="text-xs font-semibold text-gray-300">Synchronizing live APM stream...</span>
-                                            <span className="text-[10px] text-gray-500 font-mono mt-1">Collecting telemetry coordinates (updated every 30s)</span>
+                                            <span className="text-xs font-semibold text-gray-300">
+                                                {isFetchingHistory ? 'Loading historical metrics...' : 'Synchronizing live APM stream...'}
+                                            </span>
+                                            <span className="text-[10px] text-gray-500 font-mono mt-1">
+                                                {isFetchingHistory ? 'Connecting to Clickhouse long-term storage' : 'Collecting telemetry coordinates (updated every 30s)'}
+                                            </span>
                                         </div>
                                     );
                                 }
@@ -370,8 +406,11 @@ export function K8sDetailPanel({
                                                 <h3 className="text-xs font-semibold text-gray-200 uppercase tracking-wider">
                                                     {clickhouseMetrics !== null ? 'Historical Resource Trends' : 'Live Resource Trends'}
                                                 </h3>
-                                                <p className="text-[10px] text-gray-500 font-mono mt-0.5">
-                                                    {clickhouseMetrics !== null ? 'Clickhouse long-term storage (1m intervals)' : 'Real-time telemetry (30s intervals)'}
+                                                <p className="text-[10px] text-gray-500 font-mono mt-0.5 flex items-center gap-2">
+                                                    <span>{clickhouseMetrics !== null ? `Clickhouse long-term storage (${scrapeIntervalSec >= 60 && scrapeIntervalSec % 60 === 0 ? scrapeIntervalSec / 60 + 'm' : scrapeIntervalSec + 's'} intervals)` : 'Real-time telemetry (30s intervals)'}</span>
+                                                    {clickhouseMetrics !== null && (
+                                                        <span className="text-gray-600 bg-black/40 px-1.5 py-0.5 rounded border border-white/5">Next update in {refreshCountdown}s</span>
+                                                    )}
                                                 </p>
                                             </div>
                                             <div className="flex items-center gap-3 text-[10px] font-mono">
