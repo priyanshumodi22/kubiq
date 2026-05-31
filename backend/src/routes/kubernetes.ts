@@ -6,7 +6,7 @@ import { requireRole } from '../middleware/auth';
 const router = express.Router();
 const k8sService = KubernetesService.getInstance();
 
-const getContext = (req: express.Request) => { const ctx = req.headers['x-kubernetes-context']; return (Array.isArray(ctx) ? ctx[0] : ctx) || ''; };
+const getContext = (req: express.Request) => { const ctx = req.headers['x-kubernetes-context']; const parsed = (Array.isArray(ctx) ? ctx[0] : ctx) || ''; return parsed || k8sService.defaultContext; };
 
 // GET /api/kubernetes/status
 router.get('/status', (_req, res) => {
