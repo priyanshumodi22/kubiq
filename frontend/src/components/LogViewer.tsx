@@ -73,6 +73,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
     const [summarizing, setSummarizing] = useState(false);
     const [showSummaryModal, setShowSummaryModal] = useState(false);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [recentSummaryData, setRecentSummaryData] = useState<{ summary: string, timestamp: number } | null>(null);
 
     const [availableFiles, setAvailableFiles] = useState<any[]>([]);
 
@@ -111,6 +112,20 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
             setActiveFile(source.path);
         }
     }, [isOpen, selectedSourceId, serviceName]); // Re-init on service switch too
+
+    // Fetch recent AI summary
+    useEffect(() => {
+        if (!isOpen || !serviceName) return;
+        apiClient.getRecentSummary(serviceName)
+            .then(res => {
+                if (res.available) {
+                    setRecentSummaryData(res.summary);
+                } else {
+                    setRecentSummaryData(null);
+                }
+            })
+            .catch(err => console.error('Failed to fetch recent summary', err));
+    }, [isOpen, serviceName]);
 
     // Safe-guard: if selectedSourceId is no longer valid (e.g. data reloaded), reset to first
     useEffect(() => {
@@ -219,7 +234,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
         try {
             // Send only the last 200 logs to prevent massive payloads and 413 errors
             const payload = logs.slice(-200).map(l => ({ message: l.content, level: l.level.toUpperCase() }));
-            const data = await apiClient.summarizeLogs(payload);
+            const data = await apiClient.summarizeLogs(payload, serviceName);
 
             setShowSummaryModal(true);
             if (data.summary) {
@@ -588,6 +603,26 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                                     )}
                                     <span className="font-sans font-medium text-sm">Summarize with AI</span>
                                 </button>
+                                
+                                {recentSummaryData && !summarizing && (
+                                    <div className="absolute bottom-full right-0 mb-3 w-64">
+                                        <button 
+                                            onClick={() => {
+                                                setSummary(recentSummaryData.summary);
+                                                setShowSummaryModal(true);
+                                            }}
+                                            className="w-full bg-[#161920]/90 backdrop-blur border border-purple-500/30 hover:border-purple-500/60 rounded-xl p-3 shadow-lg hover:shadow-[0_0_15px_rgba(147,51,234,0.2)] transition-all text-left group/banner"
+                                        >
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Sparkles className="w-3.5 h-3.5 text-purple-400 group-hover/banner:animate-pulse" />
+                                                <span className="text-xs font-semibold text-purple-300">AI Insight Available</span>
+                                            </div>
+                                            <div className="text-[10px] text-gray-400">
+                                                Analyzed {Math.floor((Date.now() - recentSummaryData.timestamp) / 60000)} mins ago
+                                            </div>
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

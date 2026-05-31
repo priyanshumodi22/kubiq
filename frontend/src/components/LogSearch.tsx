@@ -98,10 +98,23 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
     const [summarizing, setSummarizing] = useState(false);
     const [showSummaryModal, setShowSummaryModal] = useState(false);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [recentSummaryData, setRecentSummaryData] = useState<{ summary: string, timestamp: number } | null>(null);
 
     useEffect(() => {
         fetchSources();
         handleSearch(); // initial search
+        
+        // Fetch recent AI summary
+        if (!serviceName) return;
+        apiClient.getRecentSummary(serviceName)
+            .then(res => {
+                if (res.available) {
+                    setRecentSummaryData(res.summary);
+                } else {
+                    setRecentSummaryData(null);
+                }
+            })
+            .catch(err => console.error('Failed to fetch recent summary', err));
     }, [serviceName]);
 
     const fetchSources = async () => {
@@ -144,7 +157,7 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
         setSummarizing(true);
         try {
             // Send only the last 200 logs to prevent massive payloads and 413 errors
-            const data = await apiClient.summarizeLogs(logs.slice(-200));
+            const data = await apiClient.summarizeLogs(logs.slice(-200), serviceName);
 
             setShowSummaryModal(true);
             if (data.summary) {
@@ -285,6 +298,26 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
                             )}
                             <span className="font-sans font-medium text-sm">Summarize with AI</span>
                         </button>
+                        
+                        {recentSummaryData && !summarizing && (
+                            <div className="absolute bottom-full right-0 mb-3 w-64">
+                                <button 
+                                    onClick={() => {
+                                        setSummary(recentSummaryData.summary);
+                                        setShowSummaryModal(true);
+                                    }}
+                                    className="w-full bg-[#161920]/90 backdrop-blur border border-purple-500/30 hover:border-purple-500/60 rounded-xl p-3 shadow-lg hover:shadow-[0_0_15px_rgba(147,51,234,0.2)] transition-all text-left group/banner"
+                                >
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Sparkles className="w-3.5 h-3.5 text-purple-400 group-hover/banner:animate-pulse" />
+                                        <span className="text-xs font-semibold text-purple-300">AI Insight Available</span>
+                                    </div>
+                                    <div className="text-[10px] text-gray-400">
+                                        Analyzed {Math.floor((Date.now() - recentSummaryData.timestamp) / 60000)} mins ago
+                                    </div>
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

@@ -4,6 +4,7 @@ import path from 'path';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import axios from 'axios';
 import { isPathSafe } from '../utils/pathSecurity';
+import { AICacheService } from '../services/AICacheService';
 
 export const logRouter = Router();
 
@@ -73,12 +74,48 @@ logRouter.get('/query', async (req: Request, res: Response) => {
     }
 });
 
+// GET /api/logs/recent-summary - Fetch the most recent AI summary for a service
+logRouter.get('/recent-summary', async (req: Request, res: Response) => {
+    try {
+        const serviceName = req.query.serviceName as string;
+        if (!serviceName) {
+            return res.status(400).json({ error: 'serviceName is required' });
+        }
+
+        const cacheService = AICacheService.getInstance();
+        const recentSummary = cacheService.getMostRecentSummary(serviceName);
+        
+        if (recentSummary) {
+            return res.json({ available: true, summary: recentSummary });
+        }
+
+        return res.json({ available: false });
+    } catch (err: any) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 // POST /api/logs/summarize - AI log summarization
 logRouter.post('/summarize', async (req: Request, res: Response) => {
     try {
-        const { logs } = req.body;
+        const { logs, serviceName } = req.body;
         if (!logs || !Array.isArray(logs) || logs.length === 0) {
             return res.status(400).json({ error: 'Array of logs is required in the body' });
+        }
+
+        const cacheService = AICacheService.getInstance();
+        let timeBucketStart = 0;
+        let timeBucketEnd = 0;
+
+        if (serviceName) {
+            const bucket = cacheService.calculateTimeBucket();
+            timeBucketStart = bucket.start;
+            timeBucketEnd = bucket.end;
+
+            const cached = cacheService.getSummary(serviceName, timeBucketStart);
+            if (cached) {
+                return res.json({ summary: cached.summary, cached: true });
+            }
         }
 
         // 1. License Check
@@ -170,9 +207,13 @@ ${logLines}`;
         if (summary) {
             // Strip markdown block wrappers that LLMs sometimes add (e.g. ```markdown ... ```)
             summary = summary.replace(/^```(?:markdown)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+            
+            if (serviceName) {
+                cacheService.saveSummary(serviceName, timeBucketStart, timeBucketEnd, summary);
+            }
         }
 
-        return res.json({ summary });
+        return res.json({ summary, cached: false });
 
     } catch (err: any) {
         console.error('Failed to summarize logs:', err.response?.data || err.message);

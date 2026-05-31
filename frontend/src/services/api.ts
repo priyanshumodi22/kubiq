@@ -446,9 +446,14 @@ class ApiClient {
     return response.data;
   }
 
-  async summarizeLogs(logs: any[]) {
+  async summarizeLogs(logs: any[], serviceName?: string) {
     // LLM API calls can take longer than the default 10s global timeout
-    const response = await this.client.post('/api/logs/summarize', { logs }, { timeout: 60000 });
+    const response = await this.client.post('/api/logs/summarize', { logs, serviceName }, { timeout: 60000 });
+    return response.data;
+  }
+
+  async getRecentSummary(serviceName: string) {
+    const response = await this.client.get(`/api/logs/recent-summary?serviceName=${encodeURIComponent(serviceName)}`);
     return response.data;
   }
 
