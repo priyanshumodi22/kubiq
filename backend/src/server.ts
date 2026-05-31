@@ -171,6 +171,8 @@ app.use(errorHandler);
 const serviceMonitor = ServiceMonitor.getInstance();
 const notificationManager = NotificationManager.getInstance();
 import { SystemMonitorService } from './services/SystemMonitorService'; // Lazy import to avoid circular dependency issues if any
+import { clickhouseService } from './services/ClickhouseService';
+import { kubernetesMetricsScraper } from './services/KubernetesMetricsScraper';
 
 const startServer = async () => {
   try {
@@ -212,6 +214,11 @@ const startServer = async () => {
 
       // Start monitoring services
       serviceMonitor.start();
+
+      // Initialize Clickhouse and start K8s metrics scraper
+      clickhouseService.initialize().then(() => {
+        kubernetesMetricsScraper.start();
+      }).catch(err => console.error('Failed to initialize Clickhouse:', err));
 
       // Start System Monitoring (Snapshot every 30 minutes)
       const systemMonitor = SystemMonitorService.getInstance();

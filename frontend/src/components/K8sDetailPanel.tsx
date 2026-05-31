@@ -51,6 +51,7 @@ export function K8sDetailPanel({
     const [applyingYaml, setApplyingYaml] = useState(false);
     const [activeTab, setActiveTab] = useState<'details' | 'yaml' | 'logs' | 'terminal' | 'autoscale'>('details');
     const [expandedContainers, setExpandedContainers] = useState<Record<number, boolean>>({});
+    const [clickhouseMetrics, setClickhouseMetrics] = useState<{cpu: number[], memory: number[], timestamps: number[]} | null>(null);
 
     const { addToast } = useToast() as any;
     const { hasRole } = useAuth();
@@ -67,6 +68,30 @@ export function K8sDetailPanel({
         const timer = setTimeout(() => setMountChart(true), 400);
         return () => clearTimeout(timer);
     }, [item]);
+
+    useEffect(() => {
+        if (item?.type === 'pods' && activeTab === 'details') {
+            const podName = item.data.name || item.data.metadata?.name;
+            if (podName) {
+                apiClient.getKubernetesPodMetricsHistory(namespace, podName)
+                    .then(data => {
+                        if (Array.isArray(data) && data.length > 0) {
+                            setClickhouseMetrics({
+                                cpu: data.map((d: any) => d.cpu_m),
+                                memory: data.map((d: any) => d.memory_mi),
+                                timestamps: data.map((d: any) => d.timestamp_ms)
+                            });
+                        } else if (Array.isArray(data) && data.length === 0) {
+                            setClickhouseMetrics({ cpu: [], memory: [], timestamps: [] });
+                        }
+                    })
+                    .catch(() => {
+                        // Silently fallback if endpoint returns 404 (not configured)
+                        setClickhouseMetrics(null);
+                    });
+            }
+        }
+    }, [item, namespace, activeTab]);
 
     useEffect(() => {
         if (item && item.type && activeTab === 'yaml') {
@@ -295,7 +320,7 @@ export function K8sDetailPanel({
                             {/* Resource Metrics Trend Chart */}
                             {(() => {
                                 const historyKey = `${namespace}/${resName}`;
-                                const podHistory = metricsHistory?.[historyKey];
+                                const podHistory = clickhouseMetrics !== null ? clickhouseMetrics : metricsHistory?.[historyKey];
                                 const cpuData = podHistory?.cpu || [];
                                 const memData = podHistory?.memory || [];
                                 const timestamps = podHistory?.timestamps || [];
@@ -342,8 +367,12 @@ export function K8sDetailPanel({
                                     <div className="bg-[#1a1a1a] rounded-xl p-5 border border-gray-800 shadow-inner space-y-4">
                                         <div className="flex items-center justify-between border-b border-white/5 pb-2">
                                             <div>
-                                                <h3 className="text-xs font-semibold text-gray-200 uppercase tracking-wider">Live Resource Trends</h3>
-                                                <p className="text-[10px] text-gray-500 font-mono mt-0.5">Real-time telemetry (30s intervals)</p>
+                                                <h3 className="text-xs font-semibold text-gray-200 uppercase tracking-wider">
+                                                    {clickhouseMetrics !== null ? 'Historical Resource Trends' : 'Live Resource Trends'}
+                                                </h3>
+                                                <p className="text-[10px] text-gray-500 font-mono mt-0.5">
+                                                    {clickhouseMetrics !== null ? 'Clickhouse long-term storage (1m intervals)' : 'Real-time telemetry (30s intervals)'}
+                                                </p>
                                             </div>
                                             <div className="flex items-center gap-3 text-[10px] font-mono">
                                                 <div className="flex items-center gap-1 text-yellow-400">

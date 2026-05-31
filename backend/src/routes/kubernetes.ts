@@ -149,6 +149,37 @@ router.get('/namespaces/:ns/secrets', async (req, res) => {
     } catch (e: any) { res.status(500).json({ message: e.message }); }
 });
 
+import { clickhouseService } from '../services/ClickhouseService';
+
+// GET /api/kubernetes/namespaces/:ns/pods/:podName/metrics/history
+router.get('/namespaces/:ns/pods/:podName/metrics/history', async (req, res) => {
+    try {
+        if (!clickhouseService.isConfigured()) {
+            return res.status(404).json({ message: 'Clickhouse not configured for APM storage' });
+        }
+        
+        // Default to last 24 hours
+        let since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        if (req.query.hours) {
+            const h = parseInt(req.query.hours as string);
+            if (!isNaN(h) && h > 0) {
+                since = new Date(Date.now() - h * 60 * 60 * 1000);
+            }
+        }
+        
+        const history = await clickhouseService.getPodMetricsHistory(
+            getContext(req),
+            req.params.ns,
+            req.params.podName,
+            since
+        );
+        
+        res.json(history);
+    } catch (e: any) {
+        res.status(500).json({ message: e.message });
+    }
+});
+
 // --- Management Actions ---
 
 // POST /api/kubernetes/namespaces/:ns/deployments/:name/scale

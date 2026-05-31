@@ -351,6 +351,12 @@ class ApiClient {
     return response.data;
   }
 
+  async getKubernetesPodMetricsHistory(namespace: string, podName: string, hours?: number) {
+    const params = hours ? { hours } : {};
+    const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/pods/${podName}/metrics/history`, { params });
+    return response.data;
+  }
+
   async getKubernetesEvents(namespace: string) {
     const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/events`);
     return response.data;
