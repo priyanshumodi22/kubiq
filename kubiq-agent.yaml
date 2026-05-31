@@ -1,0 +1,165 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubiq-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubiq-agent
+  namespace: kubiq-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubiq-agent-role
+rules:
+- apiGroups: [""]
+  resources:
+  - namespaces
+  - pods
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubiq-agent-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubiq-agent-role
+subjects:
+- kind: ServiceAccount
+  name: kubiq-agent
+  namespace: kubiq-system
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubiq-agent-config
+  namespace: kubiq-system
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush         2
+        Log_Level     info
+        Daemon        off
+        Parsers_File  parsers.conf
+        HTTP_Server   On
+        HTTP_Listen   0.0.0.0
+        HTTP_Port     2020
+
+    [INPUT]
+        Name              tail
+        Tag               kube.*
+        Path              /var/log/containers/*.log
+        Parser            cri
+        DB                /var/log/flb_kube.db
+        Mem_Buf_Limit     50MB
+        Skip_Long_Lines   On
+        Refresh_Interval  10
+
+    [FILTER]
+        Name                kubernetes
+        Match               kube.*
+        Kube_URL            https://kubernetes.default.svc:443
+        Kube_CA_File        /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        Kube_Token_File     /var/run/secrets/kubernetes.io/serviceaccount/token
+        Kube_Tag_Prefix     kube.var.log.containers.
+        Merge_Log           On
+        Merge_Log_Key       log_processed
+        K8S-Logging.Parser  On
+        K8S-Logging.Exclude Off
+
+    [FILTER]
+        Name          modify
+        Match         kube.*
+        Rename        log message
+
+    [OUTPUT]
+        Name          http
+        Match         *
+        Host          ${KUBIQ_BACKEND_HOST}
+        Port          ${KUBIQ_BACKEND_PORT}
+        URI           /api/telemetry/logs
+        Format        json
+        json_date_key timestamp
+        json_date_format iso8601
+        Retry_Limit   5
+
+  parsers.conf: |
+    [PARSER]
+        Name   json
+        Format json
+        Time_Key time
+        Time_Format %d/%b/%Y:%H:%M:%S %z
+
+    [PARSER]
+        Name        docker
+        Format      json
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L
+        Time_Keep   On
+
+    [PARSER]
+        Name        cri
+        Format      regex
+        Regex       ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<message>.*)$
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kubiq-agent
+  namespace: kubiq-system
+  labels:
+    app: kubiq-agent
+spec:
+  selector:
+    matchLabels:
+      app: kubiq-agent
+  template:
+    metadata:
+      labels:
+        app: kubiq-agent
+    spec:
+      serviceAccountName: kubiq-agent
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: fluent-bit
+        image: fluent/fluent-bit:3.0.4
+        imagePullPolicy: Always
+        env:
+        - name: KUBIQ_BACKEND_HOST
+          # REPLACE THIS: Enter the IP address or domain of the VM where Kubiq is hosted
+          value: "YOUR_KUBIQ_VM_IP"
+        - name: KUBIQ_BACKEND_PORT
+          value: "3001"
+        ports:
+          - containerPort: 2020
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+        - name: config
+          mountPath: /fluent-bit/etc/
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: config
+        configMap:
+          name: kubiq-agent-config

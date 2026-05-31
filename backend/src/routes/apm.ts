@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { ISpan } from '../database/interfaces/ITraceRepository';
+import { IngestionBufferService } from '../services/IngestionBufferService';
 
 export const apmIngestRouter = Router();
 export const apmAnalyticsRouter = Router();
@@ -165,9 +166,8 @@ apmIngestRouter.post('/v1/traces', async (req: Request, res: Response) => {
             return;
         }
 
-        // 3. Insert into database using the Factory
-        const traceRepository = await DatabaseFactory.getTraceRepository();
-        await traceRepository.insertSpans(cleanSpans);
+        // 3. Insert into the high-throughput buffer instead of directly writing to the DB
+        IngestionBufferService.getInstance().addSpans(cleanSpans);
 
         // 3. Return 202 Accepted (standard for OTLP receivers)
         res.status(202).end();
@@ -240,8 +240,8 @@ apmIngestRouter.post('/v1/zipkin', async (req: Request, res: Response) => {
             return;
         }
 
-        const traceRepository = await DatabaseFactory.getTraceRepository();
-        await traceRepository.insertSpans(cleanSpans);
+        // Push to high-throughput buffer
+        IngestionBufferService.getInstance().addSpans(cleanSpans);
 
         res.status(202).end();
     } catch (error) {

@@ -216,14 +216,14 @@ export class KubeLogStreamService {
                 const text = chunk.toString();
                 shared.pendingBuffer += text;
 
-                // Forward to Log Retention Service asynchronously
-                import('./LogRetentionService').then(({ LogRetentionService }) => {
-                    LogRetentionService.getInstance().ingest(
-                        shared.serviceName, 
-                        shared.sourceName, 
+                // Forward to IngestionBufferService asynchronously
+                import('./IngestionBufferService').then(({ IngestionBufferService }) => {
+                    IngestionBufferService.getInstance().ingestLines(
+                        shared.serviceName,
+                        podName,
                         text.split('\n')
                     );
-                }).catch(e => console.error('Error importing LogRetentionService:', e));
+                }).catch(e => console.error('Error importing IngestionBufferService:', e));
 
                 if (!shared.flushTimer) {
                     shared.flushTimer = setTimeout(() => {

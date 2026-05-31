@@ -122,6 +122,7 @@ import { systemRouter } from './routes/system';
 import { logRouter } from './routes/logs';
 import { apmIngestRouter, apmAnalyticsRouter } from './routes/apm';
 import { kubernetesRouter } from './routes/kubernetes';
+import { telemetryRouter } from './routes/telemetry';
 import { KubernetesService } from './services/KubernetesService';
 import { DatabaseFactory } from './database/DatabaseFactory';
 
@@ -131,6 +132,7 @@ app.use(`${BACKEND_CONTEXT_PATH}/api/auth`, authRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/auth/webauthn`, authWebAuthnRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/public`, publicStatusRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/apm`, apmIngestRouter); // Unauthenticated OTLP ingestion
+app.use(`${BACKEND_CONTEXT_PATH}/api/telemetry`, telemetryRouter); // Agent telemetry ingestion
 app.use(`${BACKEND_CONTEXT_PATH}/api/apm`, apmAnalyticsRouter); // APM Analytics (Made public temporarily for testing)
 
 // Protected routes (with optional Keycloak auth)

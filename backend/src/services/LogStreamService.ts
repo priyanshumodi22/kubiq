@@ -214,14 +214,14 @@ export class LogStreamService extends EventEmitter {
                         // Buffer chunks instead of emitting immediately (backpressure)
                         shared.pendingBuffer += chunkStr;
 
-                        // Forward to Log Retention Service asynchronously
-                        import('./LogRetentionService').then(({ LogRetentionService }) => {
-                            LogRetentionService.getInstance().ingest(
-                                shared.serviceName, 
-                                shared.sourceName, 
+                        // Forward to IngestionBufferService asynchronously
+                        import('./IngestionBufferService').then(({ IngestionBufferService }) => {
+                            IngestionBufferService.getInstance().ingestLines(
+                                shared.serviceName,
+                                shared.sourceName,
                                 chunkStr.split('\n')
                             );
-                        }).catch(e => console.error('Error importing LogRetentionService:', e));
+                        }).catch(e => console.error('Error importing IngestionBufferService:', e));
 
                         // Force-flush if buffer exceeds 64KB to cap memory usage
                         if (shared.pendingBuffer.length > 65536) {

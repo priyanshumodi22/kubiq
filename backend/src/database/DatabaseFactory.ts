@@ -5,6 +5,7 @@ import { IPasskeyRepository } from './interfaces/IPasskeyRepository';
 import { ISystemRepository } from './interfaces/ISystemRepository';
 import { ITraceRepository } from './interfaces/ITraceRepository';
 import { ILogRepository } from './interfaces/ILogRepository';
+import { clickhouseService } from '../services/ClickhouseService';
 
 export class DatabaseFactory {
   private static serviceRepository: IServiceRepository;
@@ -186,6 +187,13 @@ export class DatabaseFactory {
     const startArgs = process.env.DB_TYPE || 'json';
     console.log(`🔌 Initializing Trace (APM) Repository: ${startArgs}`);
 
+    if (clickhouseService.isConfigured()) {
+        const { ClickhouseTraceRepository } = await import('./adapters/clickhouse/ClickhouseTraceRepository');
+        this.traceRepository = new ClickhouseTraceRepository();
+        await this.traceRepository.initialize();
+        return this.traceRepository;
+    }
+
     switch (startArgs.toLowerCase()) {
       case 'mysql':
       case 'mariadb':
@@ -218,6 +226,13 @@ export class DatabaseFactory {
 
     const startArgs = process.env.DB_TYPE || 'json';
     console.log(`🔌 Initializing Log Repository: ${startArgs}`);
+
+    if (clickhouseService.isConfigured()) {
+        const { ClickhouseLogRepository } = await import('./adapters/clickhouse/ClickhouseLogRepository');
+        this.logRepository = new ClickhouseLogRepository();
+        await this.logRepository.initialize();
+        return this.logRepository;
+    }
 
     switch (startArgs.toLowerCase()) {
       case 'mongo':

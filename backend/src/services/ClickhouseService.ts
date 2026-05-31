@@ -6,6 +6,12 @@ class ClickhouseService {
   private database = 'default';
 
   constructor() {
+    // We don't read process.env here to avoid race conditions with dotenv loading in server.ts
+  }
+
+  private ensureConfigured() {
+    if (this.configured) return;
+    
     const url = process.env.CLICKHOUSE_URL;
     const username = process.env.CLICKHOUSE_USER || 'default';
     const password = process.env.CLICKHOUSE_PASSWORD || '';
@@ -22,10 +28,22 @@ class ClickhouseService {
   }
 
   isConfigured(): boolean {
+    this.ensureConfigured();
     return this.configured;
   }
 
+  getClient(): ClickHouseClient | null {
+    this.ensureConfigured();
+    return this.client;
+  }
+
+  getDatabase(): string {
+    this.ensureConfigured();
+    return this.database;
+  }
+
   async initialize(): Promise<void> {
+    this.ensureConfigured();
     if (!this.client) return;
     try {
       await this.client.command({
