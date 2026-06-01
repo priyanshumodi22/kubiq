@@ -29,9 +29,11 @@ telemetryRouter.post('/logs', (req: Request, res: Response) => {
             const k8s = entry.kubernetes || {};
             const labels = k8s.labels || {};
             
-            // Prefer kubiq.service label, then app label, then container name
-            const serviceName = entry.serviceName || labels['kubiq.service'] || labels['app'] || k8s.container_name || 'unknown-service';
-            const sourceName = entry.sourceName || k8s.pod_name || 'unknown-pod';
+            const namespace = k8s.namespace_name || 'unknown';
+            const podName = k8s.pod_name;
+            const deployName = labels['kubiq.service'] || labels['app'] || (podName ? podName.split('-')[0] : k8s.container_name || 'unknown');
+            const serviceName = entry.serviceName || (k8s.namespace_name ? `k8s:${namespace}:${deployName}` : deployName);
+            const sourceName = entry.sourceName || podName || 'unknown-pod';
             
             return {
                 serviceName,

@@ -160,4 +160,24 @@ export class ClickhouseLogRepository implements ILogRepository {
             return [];
         }
     }
+    async getServices(): Promise<string[]> {
+        const client = clickhouseService.getClient();
+        if (!client) return [];
+        const dbName = clickhouseService.getDatabase();
+
+        try {
+            const resultSet = await client.query({
+                query: `
+                    SELECT DISTINCT serviceName 
+                    FROM ${dbName}.app_logs
+                `,
+                format: 'JSONEachRow'
+            });
+            const data: any[] = await resultSet.json();
+            return data.map((d: any) => d.serviceName);
+        } catch (err) {
+            console.error('ClickhouseLogRepository getServices error:', err);
+            return [];
+        }
+    }
 }

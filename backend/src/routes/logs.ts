@@ -25,6 +25,25 @@ logRouter.get('/check', (req: Request, res: Response) => {
     }
 });
 
+// GET /api/logs/all-services - fetch all discovered services from ClickHouse
+logRouter.get('/all-services', async (req: Request, res: Response) => {
+    try {
+        if (!DatabaseFactory.isApmSupported()) {
+            return res.json([]);
+        }
+
+        const repo = await DatabaseFactory.getLogRepository();
+        if (repo.getServices) {
+            const services = await repo.getServices();
+            res.json(services);
+        } else {
+            res.json([]);
+        }
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // GET /api/logs/sources - fetch all sources for a service
 logRouter.get('/sources', async (req: Request, res: Response) => {
     try {

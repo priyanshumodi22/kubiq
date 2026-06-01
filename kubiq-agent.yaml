@@ -81,7 +81,7 @@ data:
         Match         *
         Host          ${KUBIQ_BACKEND_HOST}
         Port          ${KUBIQ_BACKEND_PORT}
-        URI           /api/telemetry/logs
+        URI           /kubiq-api/api/telemetry/logs
         Format        json
         json_date_key timestamp
         json_date_format iso8601

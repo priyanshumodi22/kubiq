@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { useServices } from '../hooks/useServices';
 import { useAuth } from '../contexts/AuthContext';
 import { LogViewer } from '../components/LogViewer';
+import { K8sLogViewer } from '../components/K8sLogViewer';
+import { apiClient } from '../services/api';
+import { useEffect } from 'react';
 import { ConfigureLogModal } from '../components/ConfigureLogModal';
 import { DeleteLogDialog } from '../components/DeleteLogDialog';
 import { Plus, Search, Server, AlertCircle, FileText, Trash2, Edit2 } from 'lucide-react';
@@ -21,6 +24,11 @@ export default function LogsPage() {
 
     const [deleteLogService, setDeleteLogService] = useState<ServiceStatus | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [discoveredServices, setDiscoveredServices] = useState<string[]>([]);
+    
+    useEffect(() => {
+        apiClient.getDiscoveredLogServices().then(setDiscoveredServices).catch(console.error);
+    }, []);
 
     // Filter services that have logs configured (either legacy or new sources)
     // Filter services that have logs configured (strictly new sources)
@@ -32,7 +40,12 @@ export default function LogsPage() {
         s.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const filteredK8sServices = discoveredServices.filter(s => 
+        s.startsWith('k8s:') && s.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     const selectedService = services.find(s => s.name === selectedServiceName);
+    const isK8sSelected = selectedServiceName?.startsWith('k8s:');
 
     const handleDeleteClick = (e: React.MouseEvent, service: ServiceStatus) => {
         e.stopPropagation(); // Prevent selecting the service when clicking delete
@@ -80,7 +93,7 @@ export default function LogsPage() {
             <div className="w-full lg:w-1/4 flex flex-col bg-bg-surface/50 backdrop-blur-sm border border-gray-800 rounded-xl overflow-hidden z-10">
                 <div className="p-4 border-b border-gray-800 flex flex-col gap-3">
                     <div className="flex items-center justify-between">
-                        <h2 className="font-bold text-gray-200">Log Sources</h2>
+                        <h2 className="font-bold text-gray-200 text-sm">VM Services</h2>
          
                         {isAdmin && (
                             <button 
@@ -165,16 +178,67 @@ export default function LogsPage() {
                             </div>
                         ))
                     )}
+                    
+                    {/* Kubernetes Section */}
+                    {discoveredServices.length > 0 && (
+                        <>
+                            <div className="pt-4 pb-2 border-t border-gray-800/50 mt-2">
+                                <h2 className="font-bold text-gray-200 text-sm px-2">Kubernetes Workloads</h2>
+                            </div>
+                            
+                            {filteredK8sServices.length === 0 ? (
+                                <div className="text-center py-4 text-gray-500 text-xs">No matches found</div>
+                            ) : (
+                                filteredK8sServices.map(serviceName => {
+                                    // Parse k8s:namespace:deployment
+                                    const parts = serviceName.split(':');
+                                    const ns = parts[1] || 'unknown';
+                                    const deploy = parts[2] || parts[1] || serviceName;
+                                    
+                                    return (
+                                        <div
+                                            key={serviceName}
+                                            onClick={() => setSelectedServiceName(serviceName)}
+                                            className={`w-full text-left px-3 py-3 rounded-lg flex items-center space-x-3 transition-colors cursor-pointer group relative ${
+                                                selectedServiceName === serviceName 
+                                                ? 'bg-primary/10 border border-primary/20' 
+                                                : 'hover:bg-white/5 border border-transparent'
+                                            }`}
+                                        >
+                                            <div className={`p-1 rounded ${selectedServiceName === serviceName ? 'text-primary' : 'text-gray-400'}`}>
+                                                <Server className="w-4 h-4" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className={`text-sm font-medium truncate ${selectedServiceName === serviceName ? 'text-white' : 'text-gray-300'}`}>
+                                                    {deploy}
+                                                </div>
+                                                <div className="text-[10px] text-gray-500 truncate font-mono">
+                                                    ns: {ns}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </>
+                    )}
                 </div>
             </div>
 
             {/* Main Log Viewer Area */}
             <div className="flex-1 flex flex-col min-h-0 bg-bg-surface/30 border border-gray-800 rounded-xl overflow-hidden backdrop-blur-sm relative z-10">
-                {selectedService ? (
+                {isK8sSelected && selectedServiceName ? (
+                     <K8sLogViewer 
+                        key={selectedServiceName}
+                        namespace={selectedServiceName.split(':')[1] || 'default'}
+                        deploymentName={selectedServiceName.split(':')[2] || selectedServiceName.split(':')[1] || 'unknown'}
+                        containers={[{ name: 'main', image: '' }]}
+                     />
+                ) : selectedService ? (
                      <LogViewer 
-                        key={`${selectedService.id}-${selectedService.logSources?.length || 0}`} // CRITICAL: Force remount on source change to update dropdown
+                        key={`${selectedService.id}-${selectedService.logSources?.length || 0}`} 
                         logPath={selectedService.logPath!} 
-                        logSources={selectedService.logSources} // New Multi-Log Support
+                        logSources={selectedService.logSources} 
                         isOpen={true} 
                         onClose={() => {}} 
                         serviceName={selectedService.name}

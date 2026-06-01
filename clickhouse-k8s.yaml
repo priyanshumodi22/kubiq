@@ -41,7 +41,7 @@ spec:
       volumes:
       - name: clickhouse-data
         nfs:
-          server: 172.31.16.46
+          server: "NFS_SERVER_IP"
           path: /clickhouse-data
 ---
 apiVersion: v1

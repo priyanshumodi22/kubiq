@@ -11,4 +11,5 @@ export interface ILogRepository {
     }): Promise<any[]>;
     deleteLogsBefore(cutoff: Date): Promise<number>;
     getLogSourcesForService(serviceName: string): Promise<string[]>;
+    getServices(): Promise<string[]>;
 }

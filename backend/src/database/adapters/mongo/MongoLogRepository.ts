@@ -56,4 +56,8 @@ export class MongoLogRepository implements ILogRepository {
     async getLogSourcesForService(serviceName: string): Promise<string[]> {
         return await LogModel.distinct('sourceName', { serviceName }).exec();
     }
+
+    async getServices(): Promise<string[]> {
+        return await LogModel.distinct('serviceName').exec();
+    }
 }

@@ -442,6 +442,11 @@ class ApiClient {
   }
 
   // --- Logs ---
+  async getDiscoveredLogServices() {
+    const response = await this.client.get('/api/logs/all-services');
+    return response.data;
+  }
+
   async getLogSources(serviceName: string) {
     const response = await this.client.get(`/api/logs/sources?serviceName=${encodeURIComponent(serviceName)}`);
     return response.data;
