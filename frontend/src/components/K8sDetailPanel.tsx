@@ -71,7 +71,8 @@ export function K8sDetailPanel({
 
     const [refreshCountdown, setRefreshCountdown] = useState(60);
     const [scrapeIntervalSec, setScrapeIntervalSec] = useState(60);
-    const [isFetchingHistory, setIsFetchingHistory] = useState(true);
+    const [isFetchingHistory, setIsFetchingHistory] = useState(false);
+    const [isCheckingConfig, setIsCheckingConfig] = useState(true);
 
     useEffect(() => {
         if (item?.type === 'pods' && activeTab === 'details') {
@@ -81,13 +82,20 @@ export function K8sDetailPanel({
             let intervalId: NodeJS.Timeout;
             let countdownId: NodeJS.Timeout;
 
-            setIsFetchingHistory(true);
+            setIsCheckingConfig(true);
 
             apiClient.getKubernetesStatus().then(status => {
+                setIsCheckingConfig(false);
                 const interval = status?.scrapeInterval || 60;
                 setScrapeIntervalSec(interval);
                 
+                if (status?.clickhouseEnabled === false) {
+                    setClickhouseMetrics(null);
+                    return; // Fallback directly to live APM stream
+                }
+
                 const fetchMetrics = () => {
+                    setIsFetchingHistory(true);
                     setRefreshCountdown(interval);
                     apiClient.getKubernetesPodMetricsHistory(namespace, podName)
                         .then(data => {
@@ -363,10 +371,10 @@ export function K8sDetailPanel({
                                         <div className="bg-[#1a1a1a] rounded-xl p-5 border border-gray-800 shadow-inner flex flex-col items-center justify-center py-12 text-center min-h-[250px]">
                                             <Activity className="w-8 h-8 text-cyan-400 animate-pulse mb-3" />
                                             <span className="text-xs font-semibold text-gray-300">
-                                                {isFetchingHistory ? 'Loading historical metrics...' : 'Synchronizing live APM stream...'}
+                                                {isCheckingConfig ? 'Loading telemetry configuration...' : isFetchingHistory ? 'Loading historical metrics...' : 'Synchronizing live APM stream...'}
                                             </span>
                                             <span className="text-[10px] text-gray-500 font-mono mt-1">
-                                                {isFetchingHistory ? 'Connecting to Clickhouse long-term storage' : 'Collecting telemetry coordinates (updated every 30s)'}
+                                                {isCheckingConfig ? 'Checking storage backend' : isFetchingHistory ? 'Connecting to Clickhouse long-term storage' : 'Collecting telemetry coordinates (updated every 30s)'}
                                             </span>
                                         </div>
                                     );
