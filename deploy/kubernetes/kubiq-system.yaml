@@ -94,11 +94,10 @@ metadata:
     app.kubernetes.io/name: kubiq
 spec:
   replicas: 1
+  # The namespace is intentionally capped at 512 MiB. Recreate prevents a
+  # rolling update from briefly needing a second 512 MiB pod.
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: kubiq
