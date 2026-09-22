@@ -71,18 +71,28 @@ jobs:
   deploy:
     name: Roll out to k3s
     needs: build-and-push
-    # This remains skipped until the two VM secrets below are added in GitHub.
-    env:
-      SSH_HOST_CONFIGURED: ${{ secrets.KUBIQ_VM_HOST }}
-      SSH_KEY_CONFIGURED: ${{ secrets.KUBIQ_VM_SSH_KEY }}
-    if: ${{ env.SSH_HOST_CONFIGURED != '' && env.SSH_KEY_CONFIGURED != '' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: appleboy/ssh-action@v1.2.2
-        with:
-          host: ${{ secrets.KUBIQ_VM_HOST }}
-          username: ${{ secrets.KUBIQ_VM_USER || 'priyanshu' }}
-          key: ${{ secrets.KUBIQ_VM_SSH_KEY }}
-          script: |
-            sudo k3s kubectl -n kubiq-system set image deployment/kubiq kubiq=${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-            sudo k3s kubectl -n kubiq-system rollout status deployment/kubiq --timeout=180s
+      # Credentials are deliberately optional for the first image build. Once
+      # they are added as GitHub Secrets, every push to main deploys itself.
+      - name: Deploy when VM credentials are configured
+        env:
+          VM_HOST: ${{ secrets.KUBIQ_VM_HOST }}
+          VM_USER: ${{ secrets.KUBIQ_VM_USER }}
+          VM_SSH_KEY: ${{ secrets.KUBIQ_VM_SSH_KEY }}
+        run: |
+          if [ -z "$VM_HOST" ] || [ -z "$VM_SSH_KEY" ]; then
+            echo "::notice::Image published. Remote rollout will activate after KUBIQ_VM_HOST and KUBIQ_VM_SSH_KEY are added as GitHub Secrets."
+            exit 0
+          fi
+
+          vm_user="${VM_USER:-priyanshu}"
+          key_file="$(mktemp)"
+          trap 'rm -f "$key_file"' EXIT
+          printf '%s\n' "$VM_SSH_KEY" > "$key_file"
+          chmod 600 "$key_file"
+
+          ssh -i "$key_file" -o StrictHostKeyChecking=accept-new \
+            "$vm_user@$VM_HOST" \
+            "sudo -n k3s kubectl -n kubiq-system set image deployment/kubiq kubiq=${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} && \
+             sudo -n k3s kubectl -n kubiq-system rollout status deployment/kubiq --timeout=180s"
