@@ -1,0 +1,77 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: kubiq
+  namespace: flux-system
+spec:
+  interval: 1m
+  timeout: 60s
+  url: ssh://git@github.com/priyanshumodi22/kubiq.git
+  ref:
+    branch: main
+  secretRef:
+    name: kubiq-git-auth
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: kubiq
+  namespace: flux-system
+spec:
+  interval: 2m
+  timeout: 2m
+  path: ./deploy/kubernetes
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: kubiq
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: kubiq
+  namespace: flux-system
+spec:
+  image: priyanshumodi22/kubiq
+  interval: 2m
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: kubiq
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: kubiq
+  filterTags:
+    pattern: '^main-(?P<build>[0-9]+)$'
+    extract: '$build'
+  policy:
+    numerical:
+      order: asc
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: kubiq
+  namespace: flux-system
+spec:
+  interval: 2m
+  sourceRef:
+    kind: GitRepository
+    name: kubiq
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        name: fluxcdbot
+        email: fluxcdbot@users.noreply.github.com
+      messageTemplate: 'chore: update Kubiq image to {{range .Changed.Changes}}{{.NewValue}}{{end}}'
+    push:
+      branch: main
+  update:
+    path: ./deploy/kubernetes
+    strategy: Setters

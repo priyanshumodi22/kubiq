@@ -1,4 +1,4 @@
-name: Deploy Kubiq to Priyanshu k3s
+name: Build Kubiq image for Flux
 
 on:
   push:
@@ -21,6 +21,7 @@ permissions:
 env:
   IMAGE_NAME: priyanshumodi22/kubiq
   IMAGE_TAG: sha-${{ github.sha }}
+  FLUX_TAG: main-${{ github.run_number }}
 
 jobs:
   verify:
@@ -61,38 +62,10 @@ jobs:
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_NAME }}:${{ env.FLUX_TAG }}
             ${{ env.IMAGE_NAME }}:latest
           build-args: |
             VITE_FRONTEND_BASE_PATH=/kubiq/
             VITE_BACKEND_CONTEXT_PATH=/kubiq-api
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  deploy:
-    name: Roll out to k3s
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      # Credentials are deliberately optional for the first image build. Once
-      # they are added as GitHub Secrets, every push to main deploys itself.
-      - name: Deploy when VM credentials are configured
-        env:
-          VM_HOST: ${{ secrets.KUBIQ_VM_HOST }}
-          VM_USER: ${{ secrets.KUBIQ_VM_USER }}
-          VM_SSH_KEY: ${{ secrets.KUBIQ_VM_SSH_KEY }}
-        run: |
-          if [ -z "$VM_HOST" ] || [ -z "$VM_SSH_KEY" ]; then
-            echo "::notice::Image published. Remote rollout will activate after KUBIQ_VM_HOST and KUBIQ_VM_SSH_KEY are added as GitHub Secrets."
-            exit 0
-          fi
-
-          vm_user="${VM_USER:-priyanshu}"
-          key_file="$(mktemp)"
-          trap 'rm -f "$key_file"' EXIT
-          printf '%s\n' "$VM_SSH_KEY" > "$key_file"
-          chmod 600 "$key_file"
-
-          ssh -i "$key_file" -o StrictHostKeyChecking=accept-new \
-            "$vm_user@$VM_HOST" \
-            "sudo -n k3s kubectl -n kubiq-system set image deployment/kubiq kubiq=${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} && \
-             sudo -n k3s kubectl -n kubiq-system rollout status deployment/kubiq --timeout=180s"
