@@ -7,7 +7,6 @@ on:
       - Dockerfile
       - backend/**
       - frontend/**
-      - deploy/kubernetes/**
       - .github/workflows/gcp-k3s.yml
   workflow_dispatch:
 
