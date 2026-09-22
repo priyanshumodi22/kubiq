@@ -92,7 +92,11 @@ export class KubernetesService {
             // only for local Docker/VM installs.
             if (process.env.KUBERNETES_SERVICE_HOST) {
                 this.kc.loadFromCluster();
-                this.defaultContext = 'in-cluster';
+                // `loadFromCluster()` creates its own context name (currently
+                // `inCluster`).  A display label such as "in-cluster" is not a
+                // valid KubeConfig context, and setting it later leaves the API
+                // client with no active cluster.
+                this.defaultContext = this.kc.getCurrentContext();
                 this.available = true;
                 console.log('☸️  Kubernetes connected — in-cluster service account');
                 return;
