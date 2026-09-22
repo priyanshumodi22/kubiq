@@ -110,7 +110,7 @@ spec:
       automountServiceAccountToken: true
       containers:
         - name: kubiq
-          image: main-4 # {"$imagepolicy": "flux-system:kubiq:tag"}
+          image: priyanshumodi22/kubiq:main-4 # {"$imagepolicy": "flux-system:kubiq"}
           imagePullPolicy: Always
           ports:
             - name: http
