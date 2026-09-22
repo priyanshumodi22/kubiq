@@ -4,6 +4,14 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./
+# Kubiq is served beneath /kubiq while its API stays at /kubiq-api. Vite bakes
+# both values into the frontend bundle, so they must exist before npm run build.
+ARG VITE_FRONTEND_BASE_PATH=/kubiq/
+ARG VITE_BACKEND_CONTEXT_PATH=/kubiq-api
+ARG VITE_BACKEND_DNS=
+ENV VITE_FRONTEND_BASE_PATH=$VITE_FRONTEND_BASE_PATH \
+    VITE_BACKEND_CONTEXT_PATH=$VITE_BACKEND_CONTEXT_PATH \
+    VITE_BACKEND_DNS=$VITE_BACKEND_DNS
 # Build output: /app/frontend/dist
 RUN npm run build 
 
@@ -23,29 +31,11 @@ RUN npm run build:ncc
 FROM node:20-slim
 WORKDIR /app
 
-# Install runtime dependencies, AWS CLI, and utilities
-RUN apt-get update && apt-get install -y \
-    libstdc++6 \
-    libgcc1 \
-    ca-certificates \
-    awscli \
-    curl \
-    unzip \
-    gnupg \
-    apt-transport-https \
+# This production image runs inside k3s with a projected service-account token.
+# Cloud CLIs and cross-cloud auth helpers are deliberately excluded: they add
+# hundreds of MB and are unnecessary for this low-cost single-node deployment.
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Azure AKS kubelogin
-RUN curl -LO https://github.com/Azure/kubelogin/releases/download/v0.1.4/kubelogin-linux-amd64.zip && \
-    unzip kubelogin-linux-amd64.zip && \
-    mv bin/linux_amd64/kubelogin /usr/local/bin/kubelogin && \
-    rm -rf kubelogin-linux-amd64.zip bin
-
-# Install Google Cloud CLI & GKE Auth Plugin
-RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
-    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
-    apt-get update && apt-get install -y google-cloud-cli-gke-gcloud-auth-plugin && \
-    rm -rf /var/lib/apt/lists/*
 
 # Copy the ncc bundle (single file)
 COPY --from=server-build /app/backend/build/index.js ./index.js

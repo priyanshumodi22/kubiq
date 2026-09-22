@@ -56,3 +56,4 @@ auth-service/
 
 # Dummy stripe payment gateway
 stripe-payment-gateway/
+deploy/kubernetes/kubiq-runtime.secret.yaml

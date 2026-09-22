@@ -1,0 +1,88 @@
+name: Deploy Kubiq to Priyanshu k3s
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - backend/**
+      - frontend/**
+      - deploy/kubernetes/**
+      - .github/workflows/gcp-k3s.yml
+  workflow_dispatch:
+
+concurrency:
+  group: kubiq-production
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: priyanshumodi22/kubiq
+  IMAGE_TAG: sha-${{ github.sha }}
+
+jobs:
+  verify:
+    name: Verify application builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+      - run: npm ci --prefix backend
+      - run: npm run build --prefix backend
+      - run: npm ci --prefix frontend
+      - run: npm run build --prefix frontend
+        env:
+          VITE_FRONTEND_BASE_PATH: /kubiq/
+          VITE_BACKEND_CONTEXT_PATH: /kubiq-api
+
+  build-and-push:
+    name: Build and publish image
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_NAME }}:latest
+          build-args: |
+            VITE_FRONTEND_BASE_PATH=/kubiq/
+            VITE_BACKEND_CONTEXT_PATH=/kubiq-api
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Roll out to k3s
+    needs: build-and-push
+    # This remains skipped until the two VM secrets below are added in GitHub.
+    env:
+      SSH_HOST_CONFIGURED: ${{ secrets.KUBIQ_VM_HOST }}
+      SSH_KEY_CONFIGURED: ${{ secrets.KUBIQ_VM_SSH_KEY }}
+    if: ${{ env.SSH_HOST_CONFIGURED != '' && env.SSH_KEY_CONFIGURED != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.KUBIQ_VM_HOST }}
+          username: ${{ secrets.KUBIQ_VM_USER || 'priyanshu' }}
+          key: ${{ secrets.KUBIQ_VM_SSH_KEY }}
+          script: |
+            sudo k3s kubectl -n kubiq-system set image deployment/kubiq kubiq=${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            sudo k3s kubectl -n kubiq-system rollout status deployment/kubiq --timeout=180s

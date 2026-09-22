@@ -37,6 +37,10 @@ const httpServer = createServer(app);
 const PORT = process.env.PORT || 3001;
 const BACKEND_CONTEXT_PATH = process.env.BACKEND_CONTEXT_PATH || '';
 const FRONTEND_CONTEXT_PATH = process.env.FRONTEND_CONTEXT_PATH || '';
+const apmEnabled = process.env.APM_ENABLED === 'true';
+const k8sMetricsHistoryEnabled = process.env.K8S_METRICS_HISTORY_ENABLED === 'true';
+const systemMetricsEnabled = process.env.SYSTEM_METRICS_ENABLED !== 'false';
+const k8sTerminalEnabled = process.env.K8S_TERMINAL_ENABLED === 'true';
 
 // Socket.IO Setup
 const io = new Server(httpServer, {
@@ -131,9 +135,13 @@ app.use(`${BACKEND_CONTEXT_PATH}/api/health`, healthRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/auth`, authRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/auth/webauthn`, authWebAuthnRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/public`, publicStatusRouter);
-app.use(`${BACKEND_CONTEXT_PATH}/api/apm`, apmIngestRouter); // Unauthenticated OTLP ingestion
+if (apmEnabled) {
+  app.use(`${BACKEND_CONTEXT_PATH}/api/apm`, apmIngestRouter); // Unauthenticated OTLP ingestion
+}
 app.use(`${BACKEND_CONTEXT_PATH}/api/telemetry`, telemetryRouter); // Agent telemetry ingestion
-app.use(`${BACKEND_CONTEXT_PATH}/api/apm`, apmAnalyticsRouter); // APM Analytics (Made public temporarily for testing)
+if (apmEnabled) {
+  app.use(`${BACKEND_CONTEXT_PATH}/api/apm`, apmAnalyticsRouter);
+}
 
 // Protected routes (with optional Keycloak auth)
 app.use(`${BACKEND_CONTEXT_PATH}/api/services`, authMiddleware, servicesRouter);
@@ -210,26 +218,32 @@ const startServer = async () => {
       console.log('☸️  Socket.IO Server Initialized for K8s Pod Log Streaming');
 
       // Initialize Kubernetes Terminal Stream Service with Socket.IO
-      const kubeTerminalStreamService = KubeTerminalStreamService.getInstance();
-      kubeTerminalStreamService.initialize(io, k8sService.getKubeConfig());
-      console.log('☸️  Socket.IO Server Initialized for K8s Pod Terminal Execution');
+      if (k8sTerminalEnabled) {
+        const kubeTerminalStreamService = KubeTerminalStreamService.getInstance();
+        kubeTerminalStreamService.initialize(io, k8sService.getKubeConfig());
+        console.log('☸️  Socket.IO Server Initialized for K8s Pod Terminal Execution');
+      }
 
       // Start monitoring services
       serviceMonitor.start();
 
       // Initialize Clickhouse and start K8s metrics scraper
-      clickhouseService.initialize().then(() => {
-        kubernetesMetricsScraper.start();
-      }).catch(err => console.error('Failed to initialize Clickhouse:', err));
+      if (k8sMetricsHistoryEnabled && clickhouseService.isConfigured()) {
+        clickhouseService.initialize().then(() => {
+          kubernetesMetricsScraper.start();
+        }).catch(err => console.error('Failed to initialize Clickhouse:', err));
+      }
 
       // Start System Monitoring (Snapshot every 30 minutes)
-      const systemMonitor = SystemMonitorService.getInstance();
-      // Take one snapshot immediately (delayed slightly to ensure DB ready)
-      setTimeout(() => systemMonitor.snapshot().catch(err => console.error('System Snapshot Error:', err)), 10000);
+      if (systemMetricsEnabled) {
+        const systemMonitor = SystemMonitorService.getInstance();
+        // Take one snapshot immediately (delayed slightly to ensure DB ready)
+        setTimeout(() => systemMonitor.snapshot().catch(err => console.error('System Snapshot Error:', err)), 10000);
 
-      setInterval(() => {
-        systemMonitor.snapshot().catch(err => console.error('System Snapshot Error:', err));
-      }, 30 * 60 * 1000); // 30 mins
+        setInterval(() => {
+          systemMonitor.snapshot().catch(err => console.error('System Snapshot Error:', err));
+        }, 30 * 60 * 1000); // 30 mins
+      }
     });
   } catch (err) {
     console.error('Failed to start server:', err);

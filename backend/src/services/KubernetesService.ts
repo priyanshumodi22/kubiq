@@ -87,6 +87,17 @@ export class KubernetesService {
 
     public async initialize(): Promise<void> {
         try {
+            // A deployment inside Kubernetes should use its projected service
+            // account token. Falling back to a mounted developer kubeconfig is
+            // only for local Docker/VM installs.
+            if (process.env.KUBERNETES_SERVICE_HOST) {
+                this.kc.loadFromCluster();
+                this.defaultContext = 'in-cluster';
+                this.available = true;
+                console.log('☸️  Kubernetes connected — in-cluster service account');
+                return;
+            }
+
             const kubeConfigPath = process.env.KUBECONFIG ||
                 path.join(os.homedir(), '.kube', 'config');
 
@@ -95,7 +106,7 @@ export class KubernetesService {
                 return;
             }
 
-            this.kc.loadFromDefault();
+            this.kc.loadFromFile(kubeConfigPath);
             this.defaultContext = this.kc.getCurrentContext() || 'default';
             this.available = true;
             console.log(`☸️  Kubernetes connected — default context: ${this.defaultContext}`);
