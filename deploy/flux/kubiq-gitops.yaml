@@ -21,7 +21,9 @@ spec:
   interval: 2m
   timeout: 2m
   path: ./deploy/kubernetes
-  prune: true
+  # The private kubiq-runtime Secret is created only on the VM, never in Git.
+  # Keep it outside Flux's lifecycle so a source-file cleanup cannot delete it.
+  prune: false
   wait: true
   sourceRef:
     kind: GitRepository
