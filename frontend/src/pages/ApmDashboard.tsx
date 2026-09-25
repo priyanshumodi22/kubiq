@@ -1,16 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { apiClient } from '../services/api';
 import { createPortal } from 'react-dom';
-import { Activity, Clock, AlertTriangle, Search, Server, X, ChevronDown, CheckCircle2, Download } from 'lucide-react';
+import { Activity, Clock, AlertTriangle, Search, Server, X, ChevronDown, CheckCircle2, Download, Code2, Settings } from 'lucide-react';
 import { useApm } from '../hooks/useApm';
 import { useTrace } from '../hooks/useTrace';
 import { useServiceMap } from '../hooks/useServiceMap';
 import TraceWaterfall from '../components/TraceWaterfall';
 import ServiceMap from '../components/ServiceMap';
 import { ApmConfigModal } from '../components/ApmConfigModal';
+import { ApmInstrumentationModal } from '../components/ApmInstrumentationModal';
 import { useAuth } from '../contexts/AuthContext';
-import { Settings } from 'lucide-react';
 import { TimeRangeSlider } from '../components/TimeRangeSlider';
+
 
 export type TimeFilter = 
     | { type: 'relative', ms: number, label: string }
@@ -127,6 +128,9 @@ export default function ApmDashboard() {
     
     // Config Modal
     const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+    const [isInstrumentationModalOpen, setIsInstrumentationModalOpen] = useState(false);
+    const [percentileFilter, setPercentileFilter] = useState<'p50' | 'p90' | 'p95' | 'p99'>('p95');
+
 
     // Export Modal
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -695,6 +699,27 @@ export default function ApmDashboard() {
                         Export
                     </button>
 
+                    <select
+                        value={percentileFilter}
+                        onChange={(e) => setPercentileFilter(e.target.value as any)}
+                        className="bg-bg-elevated border border-gray-700 text-gray-300 text-xs rounded-lg px-2.5 py-2 outline-none focus:border-primary cursor-pointer"
+                        title="Latency Percentile Metric"
+                    >
+                        <option value="p50">P50 Latency (Median)</option>
+                        <option value="p90">P90 Latency</option>
+                        <option value="p95">P95 Latency (Standard)</option>
+                        <option value="p99">P99 Latency (Tail SRE)</option>
+                    </select>
+
+                    <button
+                        onClick={() => setIsInstrumentationModalOpen(true)}
+                        className="px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-colors"
+                        title="Auto-Instrumentation SDK Snippets Generator"
+                    >
+                        <Code2 className="w-4 h-4" />
+                        <span className="hidden sm:inline">Instrument Service</span>
+                    </button>
+
                     {isAdmin && (
                         <button
                             onClick={() => setIsConfigModalOpen(true)}
@@ -706,6 +731,7 @@ export default function ApmDashboard() {
                     )}
                 </div>
             </div>
+
 
             {/* Trace & Service Search Bar */}
             <div className="bg-bg-surface border border-gray-800 rounded-xl p-2 mb-8 flex flex-col md:flex-row items-center gap-2 shadow-sm">
@@ -779,23 +805,43 @@ export default function ApmDashboard() {
                                 Back to Overview
                             </button>
                         </div>
-                        {filteredMetrics.map((service) => (
-                            <div
-                                key={service.serviceName}
-                                onClick={() => handleServiceClick(service.serviceName)}
-                                className={`p-4 rounded-xl cursor-pointer transition-all border ${selectedInspectorService === service.serviceName ? 'bg-primary/10 border-primary shadow-[0_0_15px_rgba(59,130,246,0.1)]' : 'bg-bg-surface/40 border-gray-800 hover:border-gray-600'}`}
-                            >
-                                <h3 className="text-sm font-bold text-white flex justify-between">
-                                    {service.serviceName}
-                                    <span className={`text-xs ${service.errorRate > 5 ? 'text-red-400' : 'text-green-400'}`}>{service.errorRate.toFixed(1)}% err</span>
-                                </h3>
-                                <div className="flex justify-between text-xs text-gray-400 mt-2">
-                                    <span>{service.rpm.toFixed(1)} RPM</span>
-                                    <span>{service.p95DurationMs.toFixed(0)} ms (p95)</span>
+                        {filteredMetrics.map((service) => {
+                            const isRed = service.errorRate > 5;
+                            const isYellow = !isRed && (service.errorRate > 1 || service.p95DurationMs > 500);
+
+                            let borderClass = 'bg-bg-surface/40 border-gray-800 hover:border-gray-600';
+                            if (selectedInspectorService === service.serviceName) {
+                                borderClass = 'bg-primary/10 border-primary shadow-[0_0_15px_rgba(59,130,246,0.1)]';
+                            } else if (isRed) {
+                                borderClass = 'bg-red-500/10 border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]';
+                            } else if (isYellow) {
+                                borderClass = 'bg-amber-500/10 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.15)]';
+                            }
+
+                            const durationMetric = percentileFilter === 'p50' ? (service.p50DurationMs || service.avgDurationMs) :
+                                                   percentileFilter === 'p90' ? (service.p90DurationMs || service.p95DurationMs * 0.9) :
+                                                   percentileFilter === 'p99' ? (service.p99DurationMs || service.p95DurationMs * 1.2) :
+                                                   service.p95DurationMs;
+
+                            return (
+                                <div
+                                    key={service.serviceName}
+                                    onClick={() => handleServiceClick(service.serviceName)}
+                                    className={`p-4 rounded-xl cursor-pointer transition-all border ${borderClass}`}
+                                >
+                                    <h3 className="text-sm font-bold text-white flex justify-between">
+                                        {service.serviceName}
+                                        <span className={`text-xs ${isRed ? 'text-red-400 font-bold' : isYellow ? 'text-amber-400 font-bold' : 'text-green-400'}`}>{service.errorRate.toFixed(1)}% err</span>
+                                    </h3>
+                                    <div className="flex justify-between text-xs text-gray-400 mt-2">
+                                        <span>{service.rpm.toFixed(1)} RPM</span>
+                                        <span>{durationMetric.toFixed(0)} ms ({percentileFilter})</span>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
+
 
                     {/* Right Panel: Trace Dropdown & Waterfall */}
                     <div className="flex-1 flex flex-col gap-4">
@@ -1404,6 +1450,12 @@ export default function ApmDashboard() {
                     </div>
                 </div>
             )}
+
+            <ApmInstrumentationModal
+                isOpen={isInstrumentationModalOpen}
+                onClose={() => setIsInstrumentationModalOpen(false)}
+            />
         </div>
     );
 }
+

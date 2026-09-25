@@ -6,7 +6,10 @@ export interface ServiceMetrics {
     requestCount: number;
     errorCount: number;
     avgDurationMs: number;
+    p50DurationMs?: number;
+    p90DurationMs?: number;
     p95DurationMs: number;
+    p99DurationMs?: number;
     rpm: number;
     errorRate: number;
 }

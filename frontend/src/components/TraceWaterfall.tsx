@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ISpan } from '../hooks/useTrace';
-import { Clock, Server } from 'lucide-react';
+import { Clock, Server, FileText } from 'lucide-react';
 import { SpanDetailsSidebar } from './SpanDetailsSidebar';
 
 interface TraceWaterfallProps {
@@ -10,6 +10,25 @@ interface TraceWaterfallProps {
 interface SpanNode extends ISpan {
     children: SpanNode[];
     depth: number;
+}
+
+function getSpanLayerColor(span: ISpan): { bg: string; border: string; badge: string } {
+    if (span.statusCode === 2) {
+        return { bg: 'bg-red-500/80', border: 'border-red-400', badge: 'bg-red-500' };
+    }
+    const name = (span.name || '').toLowerCase();
+    const kind = String(span.kind || '').toLowerCase();
+
+    if (name.startsWith('select') || name.startsWith('insert') || name.startsWith('update') || name.startsWith('delete') || name.includes('db') || name.includes('sql') || name.includes('query')) {
+        return { bg: 'bg-amber-500/80', border: 'border-amber-400', badge: 'bg-amber-400' };
+    }
+    if (name.includes('middleware') || name.includes('auth') || name.includes('session')) {
+        return { bg: 'bg-purple-500/80', border: 'border-purple-400', badge: 'bg-purple-400' };
+    }
+    if (kind === 'client' || name.includes('fetch') || name.includes('axios') || name.includes('outbound')) {
+        return { bg: 'bg-cyan-500/80', border: 'border-cyan-400', badge: 'bg-cyan-400' };
+    }
+    return { bg: 'bg-blue-500/80', border: 'border-blue-400', badge: 'bg-blue-400' };
 }
 
 export default function TraceWaterfall({ spans }: TraceWaterfallProps) {
@@ -27,14 +46,12 @@ export default function TraceWaterfall({ spans }: TraceWaterfallProps) {
         const spanMap = new Map<string, SpanNode>();
         const roots: SpanNode[] = [];
 
-        // First pass: create nodes and find absolute start/end times
         spans.forEach(span => {
             spanMap.set(span.spanId, { ...span, children: [], depth: 0 });
             if (span.startTimeUnixNano < minStart) minStart = span.startTimeUnixNano;
             if (span.endTimeUnixNano > maxEnd) maxEnd = span.endTimeUnixNano;
         });
 
-        // Second pass: link children to parents
         spanMap.forEach(node => {
             if (node.parentSpanId && spanMap.has(node.parentSpanId)) {
                 const parent = spanMap.get(node.parentSpanId)!;
@@ -44,10 +61,8 @@ export default function TraceWaterfall({ spans }: TraceWaterfallProps) {
             }
         });
 
-        // Third pass: calculate depth for indentation
         const assignDepth = (node: SpanNode, currentDepth: number) => {
             node.depth = currentDepth;
-            // Sort children by start time so the waterfall flows naturally top-to-bottom
             node.children.sort((a, b) => a.startTimeUnixNano - b.startTimeUnixNano);
             node.children.forEach(child => assignDepth(child, currentDepth + 1));
         };
@@ -61,24 +76,23 @@ export default function TraceWaterfall({ spans }: TraceWaterfallProps) {
             rootSpans: roots,
             minStartTime: minStart,
             maxEndTime: maxEnd,
-            totalDurationMs: totalMs > 0 ? totalMs : 1 // prevent division by zero
+            totalDurationMs: totalMs > 0 ? totalMs : 1
         };
     }, [spans]);
 
     if (rootSpans.length === 0) return null;
 
-    // Helper to render the recursive tree
+    const traceId = spans[0]?.traceId;
+
     const renderNode = (node: SpanNode) => {
-        // Calculate percentages for the CSS width and margin-left
         const startOffsetMs = (node.startTimeUnixNano - minStartTime) / 1000000;
         const leftPercent = (startOffsetMs / totalDurationMs) * 100;
 
-        // Ensure minimum width of 2px so extremely fast spans are still visible, and max 100% to prevent overflow
         let widthPercent = (node.durationMs / totalDurationMs) * 100;
         if (widthPercent < 0.5) widthPercent = 0.5;
         if (widthPercent > 100) widthPercent = 100;
 
-        const isError = node.statusCode === 2; // OTel Error Code
+        const layerColor = getSpanLayerColor(node);
 
         return (
             <div key={node.spanId} className="flex flex-col mb-1 group">
@@ -86,12 +100,10 @@ export default function TraceWaterfall({ spans }: TraceWaterfallProps) {
                     onClick={() => setSelectedSpan(node)}
                     className={`flex items-center text-sm py-1 rounded px-2 transition-colors relative cursor-pointer ${selectedSpan?.spanId === node.spanId ? 'bg-primary/20 border border-primary/30' : 'hover:bg-white/5 border border-transparent'}`}
                 >
-
-                    {/* Left Column: Span Metadata (Name & Service) */}
                     <div className="w-1/3 flex-shrink-0 flex items-center pr-4 overflow-hidden" style={{ paddingLeft: `${node.depth * 16}px` }}>
                         <div className="flex flex-col min-w-0">
                             <div className="flex items-center gap-1.5 min-w-0">
-                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isError ? 'bg-red-500' : 'bg-primary'}`}></span>
+                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${layerColor.badge}`}></span>
                                 <span className="font-medium text-white truncate text-xs sm:text-sm">{node.name}</span>
                             </div>
                             <div className="flex items-center gap-1 text-xs text-gray-500 ml-3.5 mt-0.5 min-w-0">
@@ -101,23 +113,16 @@ export default function TraceWaterfall({ spans }: TraceWaterfallProps) {
                         </div>
                     </div>
 
-                    {/* Right Column: The Gantt Bar */}
                     <div className="w-2/3 flex-grow relative h-6 border-l border-gray-800 flex items-center">
                         <div
-                            className={`absolute h-4 rounded-sm ${isError ? 'bg-red-500/80 border border-red-400' : 'bg-primary/80 border border-primary/50'}`}
+                            className={`absolute h-4 rounded-sm ${layerColor.bg} border ${layerColor.border}`}
                             style={{
                                 left: `${leftPercent}%`,
-                                // Important: We cap widthPercent + leftPercent to 100% so it never overflows
                                 width: `${Math.min(widthPercent, 100 - leftPercent)}%`,
                                 minWidth: '4px'
                             }}
                         />
 
-                        {/* 
-                          * Duration Text Placement
-                          * If the bar is long enough (15% or more), we safely place the text INSIDE the bar with a subtle background so it's perfectly readable.
-                          * If the bar is short, we place it to the right of the bar. If it's short AND near the right edge, we place it to the left.
-                          */}
                         <span
                             className={`absolute font-mono text-xs z-10 px-1 py-0.5 rounded ${widthPercent >= 15 ? 'text-white bg-black/20' : 'text-gray-300'}`}
                             style={{
@@ -134,7 +139,6 @@ export default function TraceWaterfall({ spans }: TraceWaterfallProps) {
                     </div>
                 </div>
 
-                {/* Render Children */}
                 {node.children.map(child => renderNode(child))}
             </div>
         );
@@ -147,8 +151,22 @@ export default function TraceWaterfall({ spans }: TraceWaterfallProps) {
                     <Clock className="w-5 h-5 text-primary" />
                     Trace Waterfall
                 </h3>
-                <div className="text-sm font-mono text-gray-400">
-                    Total Duration: <span className="text-white font-bold">{totalDurationMs.toFixed(2)}ms</span>
+                <div className="flex items-center gap-4">
+                    {traceId && (
+                        <a
+                            href={`/logs?search=${traceId}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-semibold transition-all"
+                            title="View all logs correlated to this trace ID"
+                        >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>View Spanned Logs</span>
+                        </a>
+                    )}
+                    <div className="text-sm font-mono text-gray-400">
+                        Total Duration: <span className="text-white font-bold">{totalDurationMs.toFixed(2)}ms</span>
+                    </div>
                 </div>
             </div>
 

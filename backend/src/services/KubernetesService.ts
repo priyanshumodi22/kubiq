@@ -712,4 +712,55 @@ export class KubernetesService {
             throw error;
         }
     }
+
+    public async getResourceQuotas(ctx: string, namespace: string): Promise<any[]> {
+        if (!this.available) return [];
+        try {
+            const { coreApi } = this.getClients(ctx);
+            const res = await coreApi.listNamespacedResourceQuota({ namespace });
+            return (res.items ?? []).map((q: any) => ({
+                name: q.metadata?.name || '—',
+                namespace: q.metadata?.namespace || namespace,
+                hard: q.status?.hard || q.spec?.hard || {},
+                used: q.status?.used || {}
+            }));
+        } catch (e: any) {
+            this.checkRbacError(e);
+            return [];
+        }
+    }
+
+    public async getLimitRanges(ctx: string, namespace: string): Promise<any[]> {
+        if (!this.available) return [];
+        try {
+            const { coreApi } = this.getClients(ctx);
+            const res = await coreApi.listNamespacedLimitRange({ namespace });
+            return (res.items ?? []).map((l: any) => ({
+                name: l.metadata?.name || '—',
+                namespace: l.metadata?.namespace || namespace,
+                limits: l.spec?.limits || []
+            }));
+        } catch (e: any) {
+            this.checkRbacError(e);
+            return [];
+        }
+    }
+
+    public async getPodLogs(ctx: string, namespace: string, podName: string, containerName?: string, tailLines: number = 50): Promise<string> {
+        if (!this.available) return '';
+        try {
+            const { coreApi } = this.getClients(ctx);
+            const res = await coreApi.readNamespacedPodLog({
+                name: podName,
+                namespace,
+                container: containerName,
+                tailLines
+            });
+            return typeof res === 'string' ? res : String(res || '');
+        } catch (e: any) {
+            return `(Log read error: ${e.message})`;
+        }
+    }
 }
+
+

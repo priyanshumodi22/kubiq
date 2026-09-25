@@ -127,6 +127,8 @@ import { logRouter } from './routes/logs';
 import { apmIngestRouter, apmAnalyticsRouter } from './routes/apm';
 import { kubernetesRouter } from './routes/kubernetes';
 import { telemetryRouter } from './routes/telemetry';
+import { auditLogRouter } from './routes/auditLogs';
+
 import { KubernetesService } from './services/KubernetesService';
 import { DatabaseFactory } from './database/DatabaseFactory';
 
@@ -150,6 +152,8 @@ app.use(`${BACKEND_CONTEXT_PATH}/api/users`, authMiddleware, usersRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/system`, authMiddleware, systemRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/logs`, authMiddleware, logRouter); // Log Management
 app.use(`${BACKEND_CONTEXT_PATH}/api/kubernetes`, authMiddleware, kubernetesRouter); // Kubernetes Monitoring
+app.use(`${BACKEND_CONTEXT_PATH}/api/audit-logs`, authMiddleware, auditLogRouter); // Audit Logging
+
 
 // Serve frontend static files
 const frontendPath = path.join(process.cwd(), 'public');

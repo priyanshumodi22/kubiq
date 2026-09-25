@@ -169,6 +169,21 @@ export const requireRole = (...requiredRoles: string[]) => {
   };
 };
 
+export const checkNamespaceAccess = (req: Request, res: Response, next: NextFunction) => {
+    const user = req.user as any;
+    const requestedNs = req.params.ns;
+
+    if (user && Array.isArray(user.allowedNamespaces) && user.allowedNamespaces.length > 0 && requestedNs) {
+        if (!user.allowedNamespaces.includes(requestedNs)) {
+            return res.status(403).json({
+                error: 'RBAC_FORBIDDEN',
+                message: `Access to namespace '${requestedNs}' is restricted by your user RBAC policy. Allowed: ${user.allowedNamespaces.join(', ')}`
+            });
+        }
+    }
+    next();
+};
+
 // Helper to check if user has a specific role
 export const hasRole = (user: any, role: string): boolean => {
   return user?.roles?.includes(role) || false;
@@ -184,3 +199,4 @@ declare global {
 }
 
 export const requireAuth = authMiddleware;
+

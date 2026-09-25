@@ -147,6 +147,14 @@ export class NotificationManager {
     throw lastError;
   }
 
+  public async notifyCustomAlert(title: string, message: string): Promise<void> {
+    const promises = Array.from(this.channels.values())
+      .filter(c => c.enabled)
+      .map(channel => this.sendAlert(channel, title, message));
+
+    await Promise.allSettled(promises);
+  }
+
   private async sendWebhook(channel: NotificationChannel, title: string, message: string): Promise<void> {
     if (!channel.config.webhookUrl) throw new Error('Missing Webhook URL');
     
@@ -162,6 +170,20 @@ export class NotificationManager {
         payload = {
             text: `*${title}*\n${message}`
         };
+    } else if (url.includes('telegram')) {
+        payload = {
+            text: `<b>${title}</b>\n${message}`,
+            parse_mode: 'HTML'
+        };
+    } else if (url.includes('pagerduty')) {
+        payload = {
+            payload: {
+                summary: title,
+                severity: 'error',
+                source: 'Kubiq Enterprise SRE'
+            },
+            event_action: 'trigger'
+        };
     } else if (url.includes('office') || url.includes('teams')) {
         payload = {
             title: title,
@@ -172,14 +194,14 @@ export class NotificationManager {
             text: `*${title}*\n${message}`
         };
     } else {
-        // Generic Default
-        payload = { // Discord style default for broad compatibility
+        payload = {
             content: `**${title}**\n${message}`, 
             text: `*${title}*\n${message}`,
             title: title,
             message: message
         };
     }
+
 
     // Add explicit Content-Type just in case
     await axios.post(channel.config.webhookUrl, payload, {

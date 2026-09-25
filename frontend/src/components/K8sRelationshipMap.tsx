@@ -1,8 +1,9 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
 import {
     Box, Globe, Settings,
-    Search, ZoomIn, ZoomOut, Maximize2, Server, HelpCircle, Shield
+    Search, ZoomIn, ZoomOut, Maximize2, Server, HelpCircle, Shield, Download
 } from 'lucide-react';
+
 
 interface K8sRelationshipMapProps {
     namespace: string;
@@ -371,9 +372,34 @@ export function K8sRelationshipMap({
                         >
                             <Maximize2 className="w-4 h-4" />
                         </button>
+
+                        <div className="h-4 w-px bg-gray-800 mx-1" />
+
+                        <button
+                            onClick={() => {
+                                if (!containerRef.current) return;
+                                const svgEl = containerRef.current.querySelector('svg');
+                                if (!svgEl) return;
+                                const svgData = new XMLSerializer().serializeToString(svgEl);
+                                const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                                const url = URL.createObjectURL(blob);
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.download = `kubiq-topology-${namespace || 'cluster'}-${Date.now()}.svg`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                            }}
+                            className="flex items-center gap-1 px-2 py-1 bg-white/5 hover:bg-white/10 text-gray-300 rounded text-xs transition-colors border border-white/10"
+                            title="Export Cluster Topology as SVG Architecture Diagram"
+                        >
+                            <Download className="w-3.5 h-3.5 text-primary" />
+                            <span className="hidden sm:inline">Export SVG</span>
+                        </button>
                     </div>
                 </div>
             </div>
+
 
             {/* Layout Column Headers (Synced with Canvas X-Axis) */}
             <div className="border-b border-gray-900 bg-black/25 relative z-10 overflow-hidden shrink-0 h-8 select-none pointer-events-none">

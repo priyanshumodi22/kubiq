@@ -44,6 +44,101 @@ function classifyLine(content: string): LogLine['level'] {
     return 'plain';
 }
 
+function renderFormattedLogContent(content: string) {
+    const traceRegex = /(traceId|trace_id|requestId|request_id)[=:]\s*["']?([a-fA-F0-9-]{12,64})["']?/gi;
+    const parts: (string | React.ReactNode)[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = traceRegex.exec(content)) !== null) {
+        const key = match[1];
+        const traceId = match[2];
+        const matchStart = match.index;
+        const matchEnd = traceRegex.lastIndex;
+
+        if (matchStart > lastIndex) {
+            parts.push(content.substring(lastIndex, matchStart));
+        }
+
+        parts.push(
+            <span key={matchStart} className="inline-flex items-center gap-1 font-mono">
+                <span className="text-gray-400">{key}=</span>
+                <a
+                    href={`/apm?traceId=${traceId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-primary hover:underline bg-primary/10 border border-primary/20 px-1 rounded font-bold cursor-pointer transition-colors text-[11px]"
+                    title={`View APM Trace ${traceId}`}
+                >
+                    {traceId.substring(0, 12)}...
+                </a>
+            </span>
+        );
+
+        lastIndex = matchEnd;
+    }
+
+    if (lastIndex < content.length) {
+        parts.push(content.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : content;
+}
+
+function LogVolumeHistogram({ logs }: { logs: LogLine[] }) {
+    if (!logs || logs.length === 0) return null;
+
+    const bucketCount = 15;
+    const bucketSize = Math.max(1, Math.ceil(logs.length / bucketCount));
+    const buckets: { error: number; warn: number; info: number; other: number }[] = Array.from({ length: bucketCount }, () => ({
+        error: 0,
+        warn: 0,
+        info: 0,
+        other: 0
+    }));
+
+    logs.forEach((log, idx) => {
+        const bIdx = Math.min(bucketCount - 1, Math.floor(idx / bucketSize));
+        if (log.level === 'error') buckets[bIdx].error++;
+        else if (log.level === 'warn') buckets[bIdx].warn++;
+        else if (log.level === 'info') buckets[bIdx].info++;
+        else buckets[bIdx].other++;
+    });
+
+    const maxTotal = Math.max(...buckets.map(b => b.error + b.warn + b.info + b.other), 1);
+
+    return (
+        <div className="bg-[#14161b] border-b border-gray-800 p-2 px-4 flex items-center justify-between text-xs font-mono shrink-0">
+            <div className="flex items-center gap-3 text-[10px] text-gray-400">
+                <span className="uppercase tracking-wider font-bold text-gray-300">Log Volume Histogram</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-400" /> Error</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-yellow-400" /> Warn</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-blue-400" /> Info</span>
+            </div>
+            
+            <div className="flex items-end gap-1 h-7 w-64 bg-black/40 p-1 rounded border border-white/5">
+                {buckets.map((b, i) => {
+                    const total = b.error + b.warn + b.info + b.other;
+                    const errPct = (b.error / maxTotal) * 100;
+                    const warnPct = (b.warn / maxTotal) * 100;
+                    const infoPct = (b.info / maxTotal) * 100;
+                    const othPct = (b.other / maxTotal) * 100;
+
+                    return (
+                        <div key={i} className="flex-1 flex flex-col justify-end h-full rounded-sm overflow-hidden" title={`Bucket ${i+1}: ${total} logs (${b.error} err, ${b.warn} warn)`}>
+                            {errPct > 0 && <div className="bg-red-500 w-full" style={{ height: `${errPct}%` }} />}
+                            {warnPct > 0 && <div className="bg-yellow-500 w-full" style={{ height: `${warnPct}%` }} />}
+                            {infoPct > 0 && <div className="bg-blue-500 w-full" style={{ height: `${infoPct}%` }} />}
+                            {othPct > 0 && <div className="bg-gray-600 w-full" style={{ height: `${othPct}%` }} />}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
 const LEVEL_COLORS: Record<LogLine['level'], string> = {
     error: 'text-red-400',
     warn: 'text-yellow-400',
@@ -51,6 +146,7 @@ const LEVEL_COLORS: Record<LogLine['level'], string> = {
     debug: 'text-gray-500',
     plain: 'text-gray-300',
 };
+
 
 export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpen, onClose, serviceName, isEmbedded = false }) => {
     // Determine effective sources
@@ -571,6 +667,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                             </div>
                         )}
 
+                        <LogVolumeHistogram logs={logs} />
                         <Virtuoso
                             ref={virtuosoRef}
                             data={logs}
@@ -582,11 +679,12 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                             itemContent={(index, log) => (
                                 <div className={`px-4 py-0.5 hover:bg-white/5 border-l-2 border-transparent hover:border-gray-600 flex gap-3 ${LEVEL_COLORS[log.level] || LEVEL_COLORS.plain}`}>
                                     <span className="select-none opacity-30 w-8 text-right shrink-0 text-[10px] pt-px">{index + 1}</span>
-                                    <span className="break-all whitespace-pre-wrap flex-1 select-text leading-relaxed">{log.content}</span>
+                                    <span className="break-all whitespace-pre-wrap flex-1 select-text leading-relaxed">{renderFormattedLogContent(log.content)}</span>
                                 </div>
                             )}
                             className="h-full scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent"
                         />
+
 
                         {/* AI Floating Button (Live Stream) */}
                         {logs.length > 0 && (

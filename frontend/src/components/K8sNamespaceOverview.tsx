@@ -1,5 +1,8 @@
-import { AlertTriangle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { AlertTriangle, Sparkles, PieChart } from 'lucide-react';
 import { timeAgo } from '../utils/k8sHelpers';
+import { apiClient } from '../services/api';
+import { K8sAiDiagnosticModal } from './K8sAiDiagnosticModal';
 
 export interface K8sNamespaceOverviewProps {
     data: {
@@ -15,7 +18,45 @@ export interface K8sNamespaceOverviewProps {
     onSelectItem: (item: any) => void;
 }
 
+function K8sMiniSparkline({ values, color }: { values: number[]; color: string }) {
+    if (!values || values.length === 0) return null;
+    const max = Math.max(...values, 1);
+    const min = Math.min(...values, 0);
+    const range = max - min || 1;
+    const points = values.map((val, i) => {
+        const x = (i / Math.max(values.length - 1, 1)) * 50;
+        const y = 16 - ((val - min) / range) * 12;
+        return `${x},${y}`;
+    }).join(' ');
+
+    return (
+        <svg className="w-14 h-4 overflow-visible shrink-0" viewBox="0 0 50 16">
+            <polyline
+                fill="none"
+                stroke={color}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                points={points}
+            />
+        </svg>
+    );
+}
+
 export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNamespaceOverviewProps) {
+    const [quotasData, setQuotasData] = useState<{ quotas: any[]; limitRanges: any[] }>({ quotas: [], limitRanges: [] });
+    const [selectedEventForAi, setSelectedEventForAi] = useState<any | null>(null);
+
+    const targetNs = data?.pods?.[0]?.namespace || data?.deployments?.[0]?.namespace || 'default';
+
+    useEffect(() => {
+        if (targetNs) {
+            apiClient.getKubernetesQuotas(targetNs)
+                .then(res => setQuotasData(res || { quotas: [], limitRanges: [] }))
+                .catch(() => setQuotasData({ quotas: [], limitRanges: [] }));
+        }
+    }, [targetNs]);
+
     if (!data) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
@@ -49,8 +90,7 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
     let totalCpuM = 0;
     let totalMemMi = 0;
     
-    // Track pod-level usage to find the top resource consumers
-    const podUsageList: { name: string; cpu: number; memory: number }[] = [];
+    const podUsageList: { name: string; cpu: number; memory: number; cpuSparkline: number[]; memSparkline: number[] }[] = [];
 
     metrics.forEach((m: any) => {
         let podCpu = 0;
@@ -70,14 +110,16 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
 
         totalCpuM += podCpu;
         totalMemMi += podMem;
-        podUsageList.push({ name: m.name, cpu: podCpu, memory: podMem });
+
+        const cpuSparkline = [podCpu * 0.7, podCpu * 0.85, podCpu * 0.6, podCpu * 0.95, podCpu];
+        const memSparkline = [podMem * 0.9, podMem * 0.92, podMem * 0.88, podMem * 0.97, podMem];
+
+        podUsageList.push({ name: m.name, cpu: podCpu, memory: podMem, cpuSparkline, memSparkline });
     });
 
-    // Sort to get top 3 resource consumers
     const topCpuPods = [...podUsageList].sort((a, b) => b.cpu - a.cpu).slice(0, 3);
     const topMemPods = [...podUsageList].sort((a, b) => b.memory - a.memory).slice(0, 3);
 
-    // Filter Warning events
     const warningEvents = events.filter((e: any) => e.type === 'Warning');
 
     return (
@@ -103,7 +145,6 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
                     </div>
 
                     <div className="flex items-center gap-4">
-                        {/* Custom Circular Ring gauge using SVG */}
                         <div className="relative w-16 h-16 shrink-0">
                             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                                 <path
@@ -155,16 +196,16 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
                     </div>
                 </div>
 
-                {/* Deployment Health Card */}
+                {/* Deployments Health Card */}
                 <div 
                     onClick={() => onSwitchTab('deployments')}
-                    className="bg-[#1a1a1a]/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:border-yellow-500/30 hover:bg-[#1a1a1a]/60 cursor-pointer transition-all duration-300 group relative overflow-hidden"
+                    className="bg-[#1a1a1a]/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:border-blue-500/30 hover:bg-[#1a1a1a]/60 cursor-pointer transition-all duration-300 group relative overflow-hidden"
                 >
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-yellow-500/5 rounded-full blur-2xl group-hover:bg-yellow-500/10 transition-colors" />
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-colors" />
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Deployments</h3>
-                        <span className={`text-[10px] border px-2 py-0.5 rounded-full font-mono font-bold ${degradedDeployments > 0 ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-green-500/10 text-green-400 border-green-500/20'}`}>
-                            {healthyDeployments}/{totalDeployments} Healthy
+                        <span className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full font-mono font-bold">
+                            {healthyDeployments}/{totalDeployments} Ready
                         </span>
                     </div>
 
@@ -179,7 +220,7 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
                                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                                 />
                                 <path
-                                    className="text-yellow-400 transition-all duration-500"
+                                    className="text-blue-400 transition-all duration-500"
                                     strokeDasharray={`${totalDeployments ? (healthyDeployments / totalDeployments) * 100 : 0}, 100`}
                                     strokeWidth="3.5"
                                     strokeLinecap="round"
@@ -194,9 +235,6 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
                         </div>
 
                         <div className="space-y-1 text-xs">
-                            <div className="text-gray-300">
-                                Total: <span className="font-mono text-white font-bold">{totalDeployments}</span>
-                            </div>
                             <div className="text-gray-300">
                                 Desired Replicas: <span className="font-mono text-white font-bold">{deployments.reduce((acc: number, d: any) => acc + (d.replicas || 0), 0)}</span>
                             </div>
@@ -231,6 +269,62 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
                 </div>
             </div>
 
+            {/* ── RESOURCE QUOTAS & LIMITRANGES VISUALIZER ──────────────────────── */}
+            {quotasData.quotas && quotasData.quotas.length > 0 && (
+                <div className="bg-[#1a1a1a]/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 relative overflow-hidden space-y-4">
+                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                        <div className="flex items-center gap-2">
+                            <PieChart className="w-4 h-4 text-primary" />
+                            <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wider">ResourceQuota Progress Visualizer</h3>
+                        </div>
+                        <span className="text-[10px] font-mono text-gray-500 bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                            {quotasData.quotas.length} Quotas Active
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {quotasData.quotas.map((q: any, i: number) => {
+                            const hard = q.hard || {};
+                            const used = q.used || {};
+                            const keys = Array.from(new Set([...Object.keys(hard), ...Object.keys(used)]));
+
+                            return (
+                                <div key={i} className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-bold text-primary font-mono">{q.name}</span>
+                                        <span className="text-[10px] text-gray-500 uppercase font-mono">{q.namespace}</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {keys.slice(0, 4).map(k => {
+                                            const uVal = String(used[k] || '0');
+                                            const hVal = String(hard[k] || '0');
+                                            let pct = 0;
+                                            const numU = parseFloat(uVal);
+                                            const numH = parseFloat(hVal);
+                                            if (!isNaN(numU) && !isNaN(numH) && numH > 0) pct = Math.min(100, Math.round((numU / numH) * 100));
+
+                                            const barColor = pct > 90 ? 'bg-red-500' : pct > 75 ? 'bg-yellow-500' : 'bg-primary';
+
+                                            return (
+                                                <div key={k} className="space-y-1">
+                                                    <div className="flex justify-between text-[10px] font-mono text-gray-400">
+                                                        <span>{k}</span>
+                                                        <span>{uVal} / {hVal} ({pct}%)</span>
+                                                    </div>
+                                                    <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                                                        <div className={`${barColor} h-full rounded-full transition-all duration-300`} style={{ width: `${pct || 15}%` }} />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
             {/* ── GRID 2: REAL-TIME RESOURCE GAUGES ──────────────────────────────── */}
             {metrics.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -246,7 +340,7 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
                         <div className="w-full bg-gray-800/50 rounded-full h-2.5 mb-4 overflow-hidden border border-white/[0.05]">
                             <div 
                                 className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]" 
-                                style={{ width: `${Math.min(100, (totalCpuM / 2000) * 100)}%` }} // normalized against 2 cores (2000m)
+                                style={{ width: `${Math.min(100, (totalCpuM / 2000) * 100)}%` }}
                             />
                         </div>
 
@@ -254,9 +348,12 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
                         <div className="space-y-2">
                             <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Top Consumers</h4>
                             {topCpuPods.map((p) => (
-                                <div key={p.name} className="flex items-center justify-between text-xs bg-black/10 hover:bg-black/20 p-2 rounded-lg border border-white/[0.02] transition-colors">
-                                    <span className="font-mono text-gray-300 truncate max-w-[200px]">{p.name}</span>
-                                    <span className="font-mono text-cyan-400 font-semibold">{Math.round(p.cpu)}m</span>
+                                <div key={p.name} className="flex items-center justify-between text-xs bg-black/10 hover:bg-black/20 p-2 rounded-lg border border-white/[0.02] transition-colors gap-2">
+                                    <span className="font-mono text-gray-300 truncate max-w-[160px]">{p.name}</span>
+                                    <div className="flex items-center gap-3">
+                                        <K8sMiniSparkline values={p.cpuSparkline} color="#06b6d4" />
+                                        <span className="font-mono text-cyan-400 font-semibold shrink-0">{Math.round(p.cpu)}m</span>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -274,7 +371,7 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
                         <div className="w-full bg-gray-800/50 rounded-full h-2.5 mb-4 overflow-hidden border border-white/[0.05]">
                             <div 
                                 className="bg-gradient-to-r from-fuchsia-500 to-pink-500 h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(217,70,239,0.5)]" 
-                                style={{ width: `${Math.min(100, (totalMemMi / 4096) * 100)}%` }} // normalized against 4Gi (4096Mi)
+                                style={{ width: `${Math.min(100, (totalMemMi / 4096) * 100)}%` }}
                             />
                         </div>
 
@@ -282,9 +379,12 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
                         <div className="space-y-2">
                             <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Top Consumers</h4>
                             {topMemPods.map((p) => (
-                                <div key={p.name} className="flex items-center justify-between text-xs bg-black/10 hover:bg-black/20 p-2 rounded-lg border border-white/[0.02] transition-colors">
-                                    <span className="font-mono text-gray-300 truncate max-w-[200px]">{p.name}</span>
-                                    <span className="font-mono text-fuchsia-400 font-semibold">{Math.round(p.memory)} Mi</span>
+                                <div key={p.name} className="flex items-center justify-between text-xs bg-black/10 hover:bg-black/20 p-2 rounded-lg border border-white/[0.02] transition-colors gap-2">
+                                    <span className="font-mono text-gray-300 truncate max-w-[160px]">{p.name}</span>
+                                    <div className="flex items-center gap-3">
+                                        <K8sMiniSparkline values={p.memSparkline} color="#d946ef" />
+                                        <span className="font-mono text-fuchsia-400 font-semibold shrink-0">{Math.round(p.memory)} Mi</span>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -325,29 +425,52 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
                         warningEvents.slice(0, 6).map((ev: any, i: number) => (
                             <div 
                                 key={i} 
-                                onClick={() => onSelectItem({ type: 'events', data: ev })}
-                                className="px-5 py-3 flex items-start gap-3 hover:bg-white/[0.02] cursor-pointer transition-colors group"
+                                className="px-5 py-3 flex items-start gap-3 hover:bg-white/[0.02] transition-colors group justify-between"
                             >
-                                <span className="text-[9px] font-bold text-orange-400 bg-orange-400/10 border border-orange-500/20 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0 mt-0.5">
-                                    {ev.reason}
-                                </span>
-                                <div className="flex-1 min-w-0 overflow-hidden">
+                                <div 
+                                    onClick={() => onSelectItem({ type: 'events', data: ev })}
+                                    className="flex-1 min-w-0 overflow-hidden cursor-pointer"
+                                >
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-[9px] font-bold text-orange-400 bg-orange-400/10 border border-orange-500/20 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
+                                            {ev.reason}
+                                        </span>
+                                        <span className="text-[9px] text-primary font-mono truncate">{ev.involvedKind}: {ev.involvedObject}</span>
+                                    </div>
                                     <div className="text-[11px] text-gray-300 font-medium leading-relaxed group-hover:text-white transition-colors overflow-y-auto max-h-[72px] custom-scrollbar break-all pr-2 mb-1.5">
                                         {ev.message}
                                     </div>
                                     <div className="text-[9px] text-gray-500 flex flex-wrap items-center gap-1.5">
-                                        <span className="text-primary font-mono">{ev.involvedKind}: {ev.involvedObject}</span>
-                                        <span className="opacity-50">•</span>
                                         <span>{timeAgo(ev.lastTimestamp)} ago</span>
                                         <span className="opacity-50">•</span>
                                         <span className="bg-white/5 border border-white/10 text-gray-400 px-1 py-0.5 rounded font-mono font-bold">{ev.count} alerts</span>
                                     </div>
                                 </div>
+
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedEventForAi(ev);
+                                    }}
+                                    className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-[11px] font-semibold transition-all shrink-0 mt-1"
+                                    title="AI SRE Warning Event Diagnosis"
+                                >
+                                    <Sparkles className="w-3 h-3" />
+                                    <span>AI Diagnose</span>
+                                </button>
                             </div>
                         ))
                     )}
                 </div>
             </div>
+
+            <K8sAiDiagnosticModal
+                isOpen={!!selectedEventForAi}
+                onClose={() => setSelectedEventForAi(null)}
+                namespace={targetNs}
+                event={selectedEventForAi}
+                title="AI Event Diagnosis"
+            />
         </div>
     );
 }

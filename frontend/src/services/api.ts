@@ -441,6 +441,22 @@ class ApiClient {
     return response.data;
   }
 
+  async getKubernetesQuotas(namespace: string) {
+    const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/quotas`);
+    return response.data;
+  }
+
+  async aiDiagnosePod(namespace: string, name: string) {
+    const response = await this.client.post(`/api/kubernetes/namespaces/${namespace}/pods/${name}/ai-diagnose`);
+    return response.data;
+  }
+
+  async aiDiagnoseEvent(namespace: string, event: any) {
+    const response = await this.client.post(`/api/kubernetes/namespaces/${namespace}/events/ai-diagnose`, { event });
+    return response.data;
+  }
+
+
   // --- Logs ---
   async getDiscoveredLogServices() {
     const response = await this.client.get('/api/logs/all-services');
@@ -509,6 +525,13 @@ class ApiClient {
     const response = await this.client.get(`/api/apm/edges/${encodeURIComponent(source)}/${encodeURIComponent(target)}/recent-trace`);
     return response.data;
   }
+
+  async getAuditLogs(search?: string) {
+    const params = search ? { search } : {};
+    const response = await this.client.get('/api/audit-logs', { params });
+    return response.data;
+  }
+
 
   async getApmServiceMap(params: Record<string, string>) {
     const response = await this.client.get('/api/apm/service-map', { params });

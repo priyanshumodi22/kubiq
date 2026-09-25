@@ -4,9 +4,9 @@ import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import {
-    RefreshCw, Activity, X, FileJson, Copy, Save, Terminal, ChevronRight, ShieldCheck
+    RefreshCw, Activity, X, FileJson, Copy, Save, Terminal, ChevronRight, ShieldCheck, Sparkles, GitCompare
 } from 'lucide-react';
-import { Editor, loader } from '@monaco-editor/react';
+import { Editor, DiffEditor, loader } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import yamlParser from 'js-yaml';
 
@@ -20,7 +20,9 @@ import { K8sLogViewer } from './K8sLogViewer';
 import K8sTerminal from './K8sTerminal';
 import { K8sAutoscalerPanel } from './K8sAutoscalerPanel';
 import { K8sQuickActions } from './K8sQuickActions';
+import { K8sAiDiagnosticModal } from './K8sAiDiagnosticModal';
 import { copyToClipboard } from '../utils/k8sHelpers';
+
 
 export interface K8sDetailPanelProps {
     item: any;
@@ -47,9 +49,12 @@ export function K8sDetailPanel({
     const [yaml, setYaml] = useState<string>('');
     const [loadingYaml, setLoadingYaml] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [showDiff, setShowDiff] = useState(false);
     const [editedYaml, setEditedYaml] = useState<string>('');
     const [applyingYaml, setApplyingYaml] = useState(false);
+    const [showAiModal, setShowAiModal] = useState(false);
     const [activeTab, setActiveTab] = useState<'details' | 'yaml' | 'logs' | 'terminal' | 'autoscale'>('details');
+
     const [expandedContainers, setExpandedContainers] = useState<Record<number, boolean>>({});
     const [clickhouseMetrics, setClickhouseMetrics] = useState<{cpu: number[], memory: number[], timestamps: number[]} | null>(null);
 
@@ -202,10 +207,23 @@ export function K8sDetailPanel({
                         </h2>
                         <span className="text-xs bg-white/10 text-gray-400 px-2 py-0.5 rounded capitalize shrink-0">{item.type}</span>
                     </div>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors shrink-0">
-                        <X className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                        {(item.type === 'pods' || item.type === 'events') && (
+                            <button
+                                onClick={() => setShowAiModal(true)}
+                                className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-semibold transition-all"
+                                title="Run 1-Click AI SRE Diagnostic"
+                            >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>AI Diagnose</span>
+                            </button>
+                        )}
+                        <button onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
+
                 
                 <div className="flex border-b border-gray-800 bg-[#1a1a1a] px-4 pt-2">
                     <button onClick={() => setActiveTab('details')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'details' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>Overview</button>
@@ -259,11 +277,24 @@ export function K8sDetailPanel({
                                     <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">Resource Manifest</span>
                                 </div>
                                 <div className="flex items-center gap-4">
+                                    {isEditing && (
+                                        <button
+                                            onClick={() => setShowDiff(!showDiff)}
+                                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold transition-all ${showDiff ? 'bg-primary text-black' : 'bg-white/10 text-gray-300 hover:bg-white/20'}`}
+                                            title="Toggle side-by-side YAML diff view"
+                                        >
+                                            <GitCompare className="w-3.5 h-3.5" />
+                                            <span>{showDiff ? 'Editor View' : 'View Diff'}</span>
+                                        </button>
+                                    )}
                                     {!isReadOnly && isAdmin && (
                                         <div className="flex items-center gap-2">
                                             <span className={`text-[10px] font-bold uppercase transition-colors ${isEditing ? 'text-primary' : 'text-gray-500'}`}>Edit Mode</span>
                                             <button 
-                                                onClick={() => setIsEditing(!isEditing)}
+                                                onClick={() => {
+                                                    setIsEditing(!isEditing);
+                                                    if (isEditing) setShowDiff(false);
+                                                }}
                                                 className={`relative w-10 h-5 rounded-full transition-all duration-300 ${isEditing ? 'bg-primary' : 'bg-gray-700'}`}
                                             >
                                                 <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all duration-300 ${isEditing ? 'left-6' : 'left-1'}`} />
@@ -287,22 +318,42 @@ export function K8sDetailPanel({
                                     {isEditing ? (
                                         <div className="flex-1 flex flex-col min-h-0">
                                             <div className="flex-1 min-h-0 bg-[#1e1e1e]">
-                                                <Editor
-                                                    height="100%"
-                                                    defaultLanguage="yaml"
-                                                    theme="vs-dark"
-                                                    value={editedYaml}
-                                                    onChange={(val) => setEditedYaml(val || '')}
-                                                    options={{
-                                                        minimap: { enabled: false },
-                                                        fontSize: 12,
-                                                        fontFamily: 'JetBrains Mono, monospace',
-                                                        scrollBeyondLastLine: false,
-                                                        lineNumbers: 'on',
-                                                        automaticLayout: true,
-                                                        padding: { top: 16, bottom: 16 }
-                                                    }}
-                                                />
+                                                {showDiff ? (
+                                                    <DiffEditor
+                                                        height="100%"
+                                                        original={yaml}
+                                                        modified={editedYaml}
+                                                        language="yaml"
+                                                        theme="vs-dark"
+                                                        options={{
+                                                            minimap: { enabled: false },
+                                                            fontSize: 12,
+                                                            fontFamily: 'JetBrains Mono, monospace',
+                                                            scrollBeyondLastLine: false,
+                                                            lineNumbers: 'on',
+                                                            automaticLayout: true,
+                                                            readOnly: false,
+                                                            renderSideBySide: true,
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <Editor
+                                                        height="100%"
+                                                        defaultLanguage="yaml"
+                                                        theme="vs-dark"
+                                                        value={editedYaml}
+                                                        onChange={(val) => setEditedYaml(val || '')}
+                                                        options={{
+                                                            minimap: { enabled: false },
+                                                            fontSize: 12,
+                                                            fontFamily: 'JetBrains Mono, monospace',
+                                                            scrollBeyondLastLine: false,
+                                                            lineNumbers: 'on',
+                                                            automaticLayout: true,
+                                                            padding: { top: 16, bottom: 16 }
+                                                        }}
+                                                    />
+                                                )}
                                             </div>
                                             <div className="p-4 bg-[#141414] border-t border-white/10 flex justify-end items-center gap-4">
                                                 {editedYaml !== yaml && !applyingYaml && (
@@ -340,6 +391,7 @@ export function K8sDetailPanel({
                                 </div>
                             )}
                         </div>
+
                     ) : activeTab === 'autoscale' ? (
                         <K8sAutoscalerPanel 
                             item={item} 
@@ -744,7 +796,16 @@ export function K8sDetailPanel({
                     )}
                 </div>
             </div>
+
+            <K8sAiDiagnosticModal
+                isOpen={showAiModal}
+                onClose={() => setShowAiModal(false)}
+                namespace={resNs || namespace}
+                podName={item.type === 'pods' ? resName : undefined}
+                event={item.type === 'events' ? item.data : undefined}
+            />
         </div>,
         document.body
     );
 }
+
