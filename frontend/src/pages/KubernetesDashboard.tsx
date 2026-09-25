@@ -12,6 +12,7 @@ import { K8sMiniSparkline } from '../components/K8sMiniSparkline';
 import { K8sNamespaceOverview } from '../components/K8sNamespaceOverview';
 import { K8sRelationshipMap } from '../components/K8sRelationshipMap';
 import { K8sDetailPanel } from '../components/K8sDetailPanel';
+import { K8sRbacPermissionBanner } from '../components/K8sRbacPermissionBanner';
 import { 
     parseCpu, parseMemory, getMetricForPod, timeAgo 
 } from '../utils/k8sHelpers';
@@ -144,6 +145,7 @@ export default function KubernetesDashboard() {
         }
     });
     const [loading, setLoading] = useState(false);
+    const [rbacError, setRbacError] = useState<{ resource: string; namespace: string; message: string } | null>(null);
 
     useEffect(() => {
         if (!metrics || metrics.length === 0) return;
@@ -229,16 +231,17 @@ export default function KubernetesDashboard() {
     const fetchData = async () => {
         if (!available || !selectedNamespace && activeResource !== 'nodes' && activeResource !== 'persistentvolumes' && activeResource !== 'storageclasses') return;
         setLoading(true);
+        setRbacError(null);
         try {
             switch(activeResource) {
                 case 'overview': {
                     const [p, d, s, cm, sec, ev, m] = await Promise.all([
-                        apiClient.getKubernetesPods(selectedNamespace),
-                        apiClient.getKubernetesDeployments(selectedNamespace),
-                        apiClient.getKubernetesServices(selectedNamespace),
+                        apiClient.getKubernetesPods(selectedNamespace).catch(() => []),
+                        apiClient.getKubernetesDeployments(selectedNamespace).catch(() => []),
+                        apiClient.getKubernetesServices(selectedNamespace).catch(() => []),
                         apiClient.getKubernetesConfigMaps(selectedNamespace).catch(() => []),
                         apiClient.getKubernetesSecrets(selectedNamespace).catch(() => []),
-                        apiClient.getKubernetesEvents(selectedNamespace),
+                        apiClient.getKubernetesEvents(selectedNamespace).catch(() => []),
                         apiClient.getKubernetesMetrics(selectedNamespace).catch(() => [])
                     ]);
                     setOverviewData({
@@ -274,7 +277,7 @@ export default function KubernetesDashboard() {
                 case 'pods': {
                     const [p, m] = await Promise.all([
                         apiClient.getKubernetesPods(selectedNamespace),
-                        apiClient.getKubernetesMetrics(selectedNamespace)
+                        apiClient.getKubernetesMetrics(selectedNamespace).catch(() => [])
                     ]);
                     setResourceData(p); setMetrics(m); break;
                 }
@@ -291,15 +294,28 @@ export default function KubernetesDashboard() {
                 case 'secrets': setResourceData(await apiClient.getKubernetesSecrets(selectedNamespace)); break;
             }
             setCountdown(30);
-        } catch (e) {
+        } catch (e: any) {
             console.error('Error fetching data:', e);
+            const status = e.response?.status;
+            if (status === 403 || e.response?.data?.error === 'RBAC_FORBIDDEN') {
+                setRbacError({
+                    resource: activeResource,
+                    namespace: selectedNamespace || 'cluster',
+                    message: e.response?.data?.message || e.message || 'Permission denied by Kubernetes RBAC'
+                });
+            }
         } finally {
             setLoading(false);
         }
     };
 
-    // Refetch when category or namespace changes
-    useEffect(() => { fetchData(); }, [activeResource, selectedNamespace, available]);
+    // Refetch and reset state when category or namespace changes
+    useEffect(() => {
+        setResourceData([]);
+        setOverviewData(null);
+        setRbacError(null);
+        fetchData();
+    }, [activeResource, selectedNamespace, available]);
 
     // Auto-refresh tick
     useEffect(() => {
@@ -692,7 +708,14 @@ export default function KubernetesDashboard() {
                             </div>
                         )}
 
-                        {activeResource === 'overview' ? (
+                        {rbacError ? (
+                            <K8sRbacPermissionBanner 
+                                resource={rbacError.resource}
+                                namespace={rbacError.namespace}
+                                message={rbacError.message}
+                                onRetry={fetchData}
+                            />
+                        ) : activeResource === 'overview' ? (
                             <K8sNamespaceOverview 
                                 data={overviewData} 
                                 onSwitchTab={(tab) => { setActiveResource(tab); setSearchQuery(''); }}

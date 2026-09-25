@@ -4,6 +4,7 @@ import { Terminal as XtermTerminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import { Terminal, RefreshCw, AlertTriangle, ChevronDown } from 'lucide-react';
+import { K8sRbacPermissionBanner } from './K8sRbacPermissionBanner';
 
 interface K8sTerminalProps {
     namespace: string;
@@ -239,21 +240,32 @@ export default function K8sTerminal({ namespace, podName, containers }: K8sTermi
                 )}
 
                 {error && (
-                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0a0a0a]/95 space-y-4 p-6 text-center font-mono">
-                        <AlertTriangle className="w-10 h-10 text-red-400 animate-bounce" />
-                        <div className="space-y-1.5 max-w-sm">
-                            <p className="text-[10px] text-red-400 font-bold uppercase tracking-wider">TTY Connection Failed</p>
-                            <p className={`text-[10px] font-bold leading-relaxed bg-red-950/20 border border-red-500/10 p-3 rounded ${error.includes('DISABLED') ? 'text-red-500' : 'text-gray-400'}`}>
-                                {error}
-                            </p>
-                        </div>
-                        {!error.includes('DISABLED') && (
-                            <button 
-                                onClick={reconnect}
-                                className="bg-white/5 hover:bg-white/10 text-white border border-white/10 px-4 py-1.5 rounded text-[10px] font-bold tracking-wide transition-all uppercase"
-                            >
-                                Retry Handshake
-                            </button>
+                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0a0a0a]/95 p-6">
+                        {error.includes('403') || error.toLowerCase().includes('forbidden') ? (
+                            <K8sRbacPermissionBanner 
+                                resource="pods/exec"
+                                namespace={namespace}
+                                message={error}
+                                onRetry={reconnect}
+                            />
+                        ) : (
+                            <div className="flex flex-col items-center justify-center space-y-4 text-center font-mono">
+                                <AlertTriangle className="w-10 h-10 text-red-400 animate-bounce" />
+                                <div className="space-y-1.5 max-w-sm">
+                                    <p className="text-[10px] text-red-400 font-bold uppercase tracking-wider">TTY Connection Failed</p>
+                                    <p className={`text-[10px] font-bold leading-relaxed bg-red-950/20 border border-red-500/10 p-3 rounded ${error.includes('DISABLED') ? 'text-red-500' : 'text-gray-400'}`}>
+                                        {error}
+                                    </p>
+                                </div>
+                                {!error.includes('DISABLED') && (
+                                    <button 
+                                        onClick={reconnect}
+                                        className="bg-white/5 hover:bg-white/10 text-white border border-white/10 px-4 py-1.5 rounded text-[10px] font-bold tracking-wide transition-all uppercase"
+                                    >
+                                        Retry Handshake
+                                    </button>
+                                )}
+                            </div>
                         )}
                     </div>
                 )}

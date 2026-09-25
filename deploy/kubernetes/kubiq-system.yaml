@@ -11,8 +11,8 @@ metadata:
   name: kubiq
   namespace: kubiq-system
 ---
-# Kubiq can observe the single-node cluster and stream pod logs, but cannot
-# exec into pods, change manifests, delete workloads, or read Secret data.
+# Kubiq can observe the cluster, read Secret metadata (redacted),
+# stream pod logs, and exec into pods for interactive container debugging.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -26,13 +26,14 @@ rules:
       - services
       - endpoints
       - configmaps
+      - secrets
       - events
       - persistentvolumes
       - persistentvolumeclaims
     verbs: [get, list, watch]
   - apiGroups: ['']
-    resources: [pods/log]
-    verbs: [get]
+    resources: [pods/log, pods/exec]
+    verbs: [get, create]
   - apiGroups: ['apps']
     resources: [deployments, daemonsets, statefulsets, replicasets]
     verbs: [get, list, watch]

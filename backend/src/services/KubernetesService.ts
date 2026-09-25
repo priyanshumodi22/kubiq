@@ -161,94 +161,112 @@ export class KubernetesService {
             .sort();
     }
 
+    private checkRbacError(e: any) {
+        if (!e) return;
+        const code = e.statusCode || e.code || e.response?.statusCode || e.response?.status || e.body?.code;
+        const bodyStr = typeof e.body === 'string' ? e.body : JSON.stringify(e.body || {});
+        const msg = e.message || '';
+        if (code === 403 || bodyStr.includes('is forbidden') || bodyStr.includes('Forbidden') || msg.includes('403')) {
+            const err: any = new Error(e.body?.message || msg || 'Kubernetes RBAC Permission Denied (403)');
+            err.statusCode = 403;
+            throw err;
+        }
+    }
+
     public async getPods(ctx: string, namespace: string): Promise<KubePod[]> {
         if (!this.available) return [];
-        const { coreApi } = this.getClients(ctx);
-        const res = await coreApi.listNamespacedPod({ namespace });
-        return (res.items ?? []).map((pod: any) => {
-            const containerStatuses = pod.status?.containerStatuses ?? [];
-            const specContainers = pod.spec?.containers ?? [];
-            const totalRestarts = containerStatuses.reduce((s: number, cs: any) => s + (cs.restartCount ?? 0), 0);
-            const totalContainers = specContainers.length;
-            const readyContainers = containerStatuses.filter((cs: any) => cs.ready).length;
-            
-            // Determine detailed status like terminal kubectl (CrashLoopBackOff, etc.)
-            let detailedStatus = pod.status?.phase ?? 'Unknown';
-            
-            // Check container statuses for waiting reasons (more specific than Phase)
-            const waitingState = containerStatuses.find((cs: any) => cs.state?.waiting);
-            if (waitingState?.state?.waiting?.reason) {
-                detailedStatus = waitingState.state.waiting.reason;
-            }
-            const termState = containerStatuses.find((cs: any) => cs.state?.terminated);
-            if (termState?.state?.terminated?.reason) {
-                detailedStatus = termState.state.terminated.reason;
-            }
+        try {
+            const { coreApi } = this.getClients(ctx);
+            const res = await coreApi.listNamespacedPod({ namespace });
+            return (res.items ?? []).map((pod: any) => {
+                const containerStatuses = pod.status?.containerStatuses ?? [];
+                const specContainers = pod.spec?.containers ?? [];
+                const totalRestarts = containerStatuses.reduce((s: number, cs: any) => s + (cs.restartCount ?? 0), 0);
+                const totalContainers = specContainers.length;
+                const readyContainers = containerStatuses.filter((cs: any) => cs.ready).length;
+                
+                // Determine detailed status like terminal kubectl (CrashLoopBackOff, etc.)
+                let detailedStatus = pod.status?.phase ?? 'Unknown';
+                
+                // Check container statuses for waiting reasons (more specific than Phase)
+                const waitingState = containerStatuses.find((cs: any) => cs.state?.waiting);
+                if (waitingState?.state?.waiting?.reason) {
+                    detailedStatus = waitingState.state.waiting.reason;
+                }
+                const termState = containerStatuses.find((cs: any) => cs.state?.terminated);
+                if (termState?.state?.terminated?.reason) {
+                    detailedStatus = termState.state.terminated.reason;
+                }
 
-            const referencedConfigMaps: string[] = [];
-            const referencedSecrets: string[] = [];
+                const referencedConfigMaps: string[] = [];
+                const referencedSecrets: string[] = [];
 
-            // Parse volumes
-            (pod.spec?.volumes ?? []).forEach((v: any) => {
-                if (v.configMap?.name) referencedConfigMaps.push(v.configMap.name);
-                if (v.secret?.secretName) referencedSecrets.push(v.secret.secretName);
-            });
-
-            // Parse container env
-            specContainers.forEach((c: any) => {
-                (c.env ?? []).forEach((e: any) => {
-                    if (e.valueFrom?.configMapKeyRef?.name) referencedConfigMaps.push(e.valueFrom.configMapKeyRef.name);
-                    if (e.valueFrom?.secretKeyRef?.name) referencedSecrets.push(e.valueFrom.secretKeyRef.name);
+                // Parse volumes
+                (pod.spec?.volumes ?? []).forEach((v: any) => {
+                    if (v.configMap?.name) referencedConfigMaps.push(v.configMap.name);
+                    if (v.secret?.secretName) referencedSecrets.push(v.secret.secretName);
                 });
-                (c.envFrom ?? []).forEach((ef: any) => {
-                    if (ef.configMapRef?.name) referencedConfigMaps.push(ef.configMapRef.name);
-                    if (ef.secretRef?.name) referencedSecrets.push(ef.secretRef.name);
+
+                // Parse container env
+                specContainers.forEach((c: any) => {
+                    (c.env ?? []).forEach((e: any) => {
+                        if (e.valueFrom?.configMapKeyRef?.name) referencedConfigMaps.push(e.valueFrom.configMapKeyRef.name);
+                        if (e.valueFrom?.secretKeyRef?.name) referencedSecrets.push(e.valueFrom.secretKeyRef.name);
+                    });
+                    (c.envFrom ?? []).forEach((ef: any) => {
+                        if (ef.configMapRef?.name) referencedConfigMaps.push(ef.configMapRef.name);
+                        if (ef.secretRef?.name) referencedSecrets.push(ef.secretRef.name);
+                    });
                 });
+
+                const uniqueConfigMaps = Array.from(new Set(referencedConfigMaps));
+                const uniqueSecrets = Array.from(new Set(referencedSecrets));
+
+                return {
+                    name: pod.metadata?.name ?? '—',
+                    refConfigMaps: uniqueConfigMaps,
+                    refSecrets: uniqueSecrets,
+                    namespace: pod.metadata?.namespace ?? namespace,
+                    status: detailedStatus,
+                    isTerminating: !!pod.metadata?.deletionTimestamp,
+                    restarts: totalRestarts,
+                    ready: containerStatuses.length > 0 && containerStatuses.every((cs: any) => cs.ready),
+                    readyCount: readyContainers,
+                    totalContainers: totalContainers,
+                    podIP: pod.status?.podIP ?? '—',
+                    nodeName: pod.spec?.nodeName ?? '—',
+                    startTime: pod.status?.startTime?.toISOString() ?? null,
+                    lastTerminationReason: containerStatuses[0]?.lastState?.terminated?.reason,
+                    labels: pod.metadata?.labels ?? {},
+                    containers: specContainers.map((c: any) => {
+                        const cs = containerStatuses.find((s: any) => s.name === c.name);
+                        return {
+                            name: c.name,
+                            image: c.image ?? '—',
+                            ready: cs?.ready ?? false,
+                            restartCount: cs?.restartCount ?? 0,
+                            state: cs?.state?.running ? 'running'
+                                : cs?.state?.waiting ? 'waiting'
+                                : cs?.state?.terminated ? 'terminated'
+                                : 'unknown',
+                            stateReason: cs?.state?.waiting?.reason ?? cs?.state?.terminated?.reason,
+                            imageID: cs?.imageID ?? '',
+                            securityContext: c.securityContext ?? {},
+                        };
+                    }),
+                    conditions: (pod.status?.conditions ?? []).map((c: any) => ({
+                        type: c.type,
+                        status: c.status,
+                        reason: c.reason ?? '—',
+                        message: c.message ?? '—',
+                    })),
+                };
             });
-
-            const uniqueConfigMaps = Array.from(new Set(referencedConfigMaps));
-            const uniqueSecrets = Array.from(new Set(referencedSecrets));
-
-            return {
-                name: pod.metadata?.name ?? '—',
-                refConfigMaps: uniqueConfigMaps,
-                refSecrets: uniqueSecrets,
-                namespace: pod.metadata?.namespace ?? namespace,
-                status: detailedStatus,
-                isTerminating: !!pod.metadata?.deletionTimestamp,
-                restarts: totalRestarts,
-                ready: containerStatuses.length > 0 && containerStatuses.every((cs: any) => cs.ready),
-                readyCount: readyContainers,
-                totalContainers: totalContainers,
-                podIP: pod.status?.podIP ?? '—',
-                nodeName: pod.spec?.nodeName ?? '—',
-                startTime: pod.status?.startTime?.toISOString() ?? null,
-                lastTerminationReason: containerStatuses[0]?.lastState?.terminated?.reason,
-                labels: pod.metadata?.labels ?? {},
-                containers: specContainers.map((c: any) => {
-                    const cs = containerStatuses.find((s: any) => s.name === c.name);
-                    return {
-                        name: c.name,
-                        image: c.image ?? '—',
-                        ready: cs?.ready ?? false,
-                        restartCount: cs?.restartCount ?? 0,
-                        state: cs?.state?.running ? 'running'
-                            : cs?.state?.waiting ? 'waiting'
-                            : cs?.state?.terminated ? 'terminated'
-                            : 'unknown',
-                        stateReason: cs?.state?.waiting?.reason ?? cs?.state?.terminated?.reason,
-                        imageID: cs?.imageID ?? '',
-                        securityContext: c.securityContext ?? {},
-                    };
-                }),
-                conditions: (pod.status?.conditions ?? []).map((c: any) => ({
-                    type: c.type,
-                    status: c.status,
-                    reason: c.reason ?? '—',
-                    message: c.message ?? '—',
-                })),
-            };
-        });
+        } catch (e: any) {
+            this.checkRbacError(e);
+            console.error(`Error fetching pods for namespace ${namespace}:`, e.message || e);
+            return [];
+        }
     }
 
     public async getPodMetrics(ctx: string, namespace: string): Promise<KubeMetric[]> {
@@ -278,119 +296,185 @@ export class KubernetesService {
 
     public async getEvents(ctx: string, namespace: string): Promise<KubeEvent[]> {
         if (!this.available) return [];
-        const { coreApi } = this.getClients(ctx);
-        const res = await coreApi.listNamespacedEvent({ namespace });
-        return (res.items ?? [])
-            .filter((e: any) => e.type === 'Warning')
-            .sort((a: any, b: any) => (b.lastTimestamp?.getTime() ?? 0) - (a.lastTimestamp?.getTime() ?? 0))
-            .slice(0, 50)
-            .map((e: any) => ({
-                name: e.metadata?.name ?? '—',
-                type: e.type ?? 'Normal',
-                reason: e.reason ?? '—',
-                message: e.message ?? '—',
-                involvedObject: e.involvedObject?.name ?? '—',
-                involvedKind: e.involvedObject?.kind ?? '—',
-                count: e.count ?? 1,
-                lastTimestamp: e.lastTimestamp?.toISOString() ?? null,
-            }));
+        try {
+            const { coreApi } = this.getClients(ctx);
+            const res = await coreApi.listNamespacedEvent({ namespace });
+            return (res.items ?? [])
+                .filter((e: any) => e.type === 'Warning')
+                .sort((a: any, b: any) => (b.lastTimestamp?.getTime() ?? 0) - (a.lastTimestamp?.getTime() ?? 0))
+                .slice(0, 50)
+                .map((e: any) => ({
+                    name: e.metadata?.name ?? '—',
+                    type: e.type ?? 'Normal',
+                    reason: e.reason ?? '—',
+                    message: e.message ?? '—',
+                    involvedObject: e.involvedObject?.name ?? '—',
+                    involvedKind: e.involvedObject?.kind ?? '—',
+                    count: e.count ?? 1,
+                    lastTimestamp: e.lastTimestamp?.toISOString() ?? null,
+                }));
+        } catch (e: any) {
+            this.checkRbacError(e);
+            console.error(`Error fetching events for namespace ${namespace}:`, e.message || e);
+            return [];
+        }
     }
 
     public async getDeployments(ctx: string, namespace: string): Promise<KubeDeployment[]> {
         if (!this.available) return [];
-        const { appsApi } = this.getClients(ctx);
-        const res = await appsApi.listNamespacedDeployment({ namespace });
-        return (res.items ?? []).map((d: any) => ({
-            name: d.metadata?.name ?? '—',
-            namespace: d.metadata?.namespace ?? namespace,
-            replicas: d.spec?.replicas ?? 0,
-            readyReplicas: d.status?.readyReplicas ?? 0,
-            availableReplicas: d.status?.availableReplicas ?? 0,
-            strategy: d.spec?.strategy?.type ?? 'RollingUpdate',
-            labels: d.metadata?.labels ?? {},
-            conditions: (d.status?.conditions ?? []).map((c: any) => ({
-                type: c.type,
-                status: c.status,
-                reason: c.reason ?? '—',
-                message: c.message ?? '—',
-            })),
-        }));
+        try {
+            const { appsApi } = this.getClients(ctx);
+            const res = await appsApi.listNamespacedDeployment({ namespace });
+            return (res.items ?? []).map((d: any) => ({
+                name: d.metadata?.name ?? '—',
+                namespace: d.metadata?.namespace ?? namespace,
+                replicas: d.spec?.replicas ?? 0,
+                readyReplicas: d.status?.readyReplicas ?? 0,
+                availableReplicas: d.status?.availableReplicas ?? 0,
+                strategy: d.spec?.strategy?.type ?? 'RollingUpdate',
+                labels: d.metadata?.labels ?? {},
+                conditions: (d.status?.conditions ?? []).map((c: any) => ({
+                    type: c.type,
+                    status: c.status,
+                    reason: c.reason ?? '—',
+                    message: c.message ?? '—',
+                })),
+            }));
+        } catch (e: any) {
+            this.checkRbacError(e);
+            console.error(`Error fetching deployments for namespace ${namespace}:`, e.message || e);
+            return [];
+        }
     }
 
     public async getNodes(ctx: string): Promise<any[]> {
         if (!this.available) return [];
-        const { coreApi } = this.getClients(ctx);
-        const res = await coreApi.listNode();
-        return res.items ?? [];
+        try {
+            const { coreApi } = this.getClients(ctx);
+            const res = await coreApi.listNode();
+            return res.items ?? [];
+        } catch (e: any) {
+            this.checkRbacError(e);
+            console.error(`Error fetching nodes:`, e.message || e);
+            return [];
+        }
     }
 
     public async getServices(ctx: string, namespace: string): Promise<any[]> {
         if (!this.available) return [];
-        const { coreApi } = this.getClients(ctx);
-        const res = await coreApi.listNamespacedService({ namespace });
-        return res.items ?? [];
+        try {
+            const { coreApi } = this.getClients(ctx);
+            const res = await coreApi.listNamespacedService({ namespace });
+            return res.items ?? [];
+        } catch (e: any) {
+            this.checkRbacError(e);
+            console.error(`Error fetching services for namespace ${namespace}:`, e.message || e);
+            return [];
+        }
     }
 
     public async getEndpoints(ctx: string, namespace: string): Promise<any[]> {
         if (!this.available) return [];
-        const { coreApi } = this.getClients(ctx);
-        const res = await coreApi.listNamespacedEndpoints({ namespace });
-        return res.items ?? [];
+        try {
+            const { coreApi } = this.getClients(ctx);
+            const res = await coreApi.listNamespacedEndpoints({ namespace });
+            return res.items ?? [];
+        } catch (e: any) {
+            this.checkRbacError(e);
+            console.error(`Error fetching endpoints for namespace ${namespace}:`, e.message || e);
+            return [];
+        }
     }
 
     public async getIngresses(ctx: string, namespace: string): Promise<any[]> {
         if (!this.available) return [];
-        const { netApi } = this.getClients(ctx);
-        const res = await netApi.listNamespacedIngress({ namespace });
-        return res.items ?? [];
+        try {
+            const { netApi } = this.getClients(ctx);
+            const res = await netApi.listNamespacedIngress({ namespace });
+            return res.items ?? [];
+        } catch (e: any) {
+            this.checkRbacError(e);
+            console.error(`Error fetching ingresses for namespace ${namespace}:`, e.message || e);
+            return [];
+        }
     }
 
     public async getPersistentVolumes(ctx: string): Promise<any[]> {
         if (!this.available) return [];
-        const { coreApi } = this.getClients(ctx);
-        const res = await coreApi.listPersistentVolume();
-        return res.items ?? [];
+        try {
+            const { coreApi } = this.getClients(ctx);
+            const res = await coreApi.listPersistentVolume();
+            return res.items ?? [];
+        } catch (e: any) {
+            this.checkRbacError(e);
+            console.error(`Error fetching persistentvolumes:`, e.message || e);
+            return [];
+        }
     }
 
     public async getPersistentVolumeClaims(ctx: string, namespace: string): Promise<any[]> {
         if (!this.available) return [];
-        const { coreApi } = this.getClients(ctx);
-        const res = await coreApi.listNamespacedPersistentVolumeClaim({ namespace });
-        return res.items ?? [];
+        try {
+            const { coreApi } = this.getClients(ctx);
+            const res = await coreApi.listNamespacedPersistentVolumeClaim({ namespace });
+            return res.items ?? [];
+        } catch (e: any) {
+            this.checkRbacError(e);
+            console.error(`Error fetching PVCs for namespace ${namespace}:`, e.message || e);
+            return [];
+        }
     }
 
     public async getStorageClasses(ctx: string): Promise<any[]> {
         if (!this.available) return [];
-        const { storageApi } = this.getClients(ctx);
-        const res = await storageApi.listStorageClass();
-        return res.items ?? [];
+        try {
+            const { storageApi } = this.getClients(ctx);
+            const res = await storageApi.listStorageClass();
+            return res.items ?? [];
+        } catch (e: any) {
+            this.checkRbacError(e);
+            console.error(`Error fetching storageclasses:`, e.message || e);
+            return [];
+        }
     }
 
     public async getConfigMaps(ctx: string, namespace: string): Promise<any[]> {
         if (!this.available) return [];
-        const { coreApi } = this.getClients(ctx);
-        const res = await coreApi.listNamespacedConfigMap({ namespace });
-        return res.items ?? [];
+        try {
+            const { coreApi } = this.getClients(ctx);
+            const res = await coreApi.listNamespacedConfigMap({ namespace });
+            return res.items ?? [];
+        } catch (e: any) {
+            this.checkRbacError(e);
+            console.error(`Error fetching configmaps for namespace ${namespace}:`, e.message || e);
+            return [];
+        }
     }
 
     public async getSecrets(ctx: string, namespace: string): Promise<any[]> {
         if (!this.available) return [];
-        const { coreApi } = this.getClients(ctx);
-        const res = await coreApi.listNamespacedSecret({ namespace });
-        // Redact secret data for safety before sending to frontend
-        return (res.items ?? []).map((secret: any) => {
-            const redactedData: any = {};
-            const data = (secret as any).data;
-            if (data) {
-                for (const key of Object.keys(data)) {
-                    redactedData[key] = '***REDACTED***';
+        try {
+            const { coreApi } = this.getClients(ctx);
+            const res = await coreApi.listNamespacedSecret({ namespace });
+            // Redact secret data for safety before sending to frontend
+            return (res.items ?? []).map((secret: any) => {
+                const redactedData: any = {};
+                const data = (secret as any).data;
+                if (data) {
+                    for (const key of Object.keys(data)) {
+                        redactedData[key] = '***REDACTED***';
+                    }
                 }
-            }
-            return {
-                ...secret,
-                data: redactedData
-            };
-        });
+                return {
+                    ...secret,
+                    data: redactedData
+                };
+            });
+        } catch (e: any) {
+            this.checkRbacError(e);
+            console.error(`Error fetching secrets for namespace ${namespace}:`, e.message || e);
+            return [];
+        }
     }
 
     public async getResourceRaw(ctx: string, namespace: string, resourceType: string, name: string): Promise<any> {
