@@ -77,20 +77,16 @@ data:
   FRONTEND_DNS: https://priyanshumodi.in
   BACKEND_DNS: https://priyanshumodi.in
   CORS_ORIGIN: https://priyanshumodi.in
-
   # ── Service Monitoring ──
   SERVICES_CONFIG_PATH: ./data/services.ini
   POLL_INTERVAL: '30000'
   REQUEST_TIMEOUT: '5000'
-
   # ── Data Persistence ──
   ENABLE_PERSISTENCE: 'true'
-
   # ── Health Check ──
   MAX_HISTORY_SIZE: '100'
   HEALTH_CHECK_TIMEOUT: '5000'
   MAX_CONCURRENT_CHECKS: '10'
-
   # ── Auth (Native — Keycloak disabled) ──
   NATIVE_AUTH_ENABLED: 'true'
   KEYCLOAK_ENABLED: 'false'
@@ -105,7 +101,6 @@ data:
   K8S_METRICS_HISTORY_ENABLED: 'false'
   SYSTEM_METRICS_ENABLED: 'false'
   K8S_TERMINAL_ENABLED: 'true'
-
   # ── AI & Logs ──
   AI_PROVIDER: gemini
   LOG_RETENTION_DAYS: '7'
@@ -136,7 +131,7 @@ spec:
       automountServiceAccountToken: true
       containers:
         - name: kubiq
-          image: priyanshumodi22/kubiq:main-8 # {"$imagepolicy": "flux-system:kubiq"}
+          image: priyanshumodi22/kubiq:main-9 # {"$imagepolicy": "flux-system:kubiq"}
           imagePullPolicy: Always
           ports:
             - name: http
