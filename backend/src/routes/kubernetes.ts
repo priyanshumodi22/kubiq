@@ -338,16 +338,22 @@ router.get('/namespaces/:ns/autoscalers/:type/:name', async (req, res) => {
 // GET /api/kubernetes/namespaces/:ns/quotas
 router.get('/namespaces/:ns/quotas', async (req, res) => {
     try {
-        if (!k8sService.available) return res.json({ quotas: [], limitRanges: [] });
+        if (!k8sService.available) return res.json({ quotas: [], limitRanges: [], rbacForbidden: false });
         const ctx = getContext(req);
         const ns = req.params.ns as string;
         const [quotas, limitRanges] = await Promise.all([
             k8sService.getResourceQuotas(ctx, ns),
             k8sService.getLimitRanges(ctx, ns)
         ]);
-        res.json({ quotas, limitRanges });
+        res.json({ quotas, limitRanges, rbacForbidden: false });
     } catch (e: any) {
-        handleK8sError(res, e);
+        // Return 200 with empty arrays + rbacForbidden flag so UI displays clean RBAC banner without breaking
+        res.json({ 
+            quotas: [], 
+            limitRanges: [], 
+            rbacForbidden: true, 
+            message: e.message || 'ServiceAccount forbidden to list resourcequotas' 
+        });
     }
 });
 

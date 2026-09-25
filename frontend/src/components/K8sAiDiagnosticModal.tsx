@@ -3,6 +3,111 @@ import { createPortal } from 'react-dom';
 import { Sparkles, X, Copy, Check, RefreshCw, AlertTriangle } from 'lucide-react';
 import { apiClient } from '../services/api';
 
+
+function renderInlineMarkdown(text: string) {
+    // Replace **bold** with <strong> and `code` with styled <code>
+    const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g);
+    return parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+            return <strong key={i} className="font-bold text-white">{part.slice(2, -2)}</strong>;
+        }
+        if (part.startsWith('`') && part.endsWith('`')) {
+            return <code key={i} className="bg-black/40 text-primary px-1.5 py-0.5 rounded text-[11px] font-mono border border-primary/20">{part.slice(1, -1)}</code>;
+        }
+        return part;
+    });
+}
+
+function parseAndRenderMarkdown(markdownText: string) {
+    if (!markdownText) return null;
+    const lines = markdownText.split('\n');
+    const elements: React.ReactNode[] = [];
+    let inCodeBlock = false;
+    let codeBlockLines: string[] = [];
+
+    lines.forEach((line, idx) => {
+        if (line.trim().startsWith('```')) {
+            if (inCodeBlock) {
+                elements.push(
+                    <pre key={`code-${idx}`} className="bg-black/60 border border-white/10 rounded-lg p-3 text-[11px] font-mono text-emerald-400 overflow-x-auto my-2 whitespace-pre-wrap">
+                        {codeBlockLines.join('\n')}
+                    </pre>
+                );
+                codeBlockLines = [];
+                inCodeBlock = false;
+            } else {
+                inCodeBlock = true;
+            }
+            return;
+        }
+
+        if (inCodeBlock) {
+            codeBlockLines.push(line);
+            return;
+        }
+
+        const trimmed = line.trim();
+        if (!trimmed) {
+            elements.push(<div key={`sp-${idx}`} className="h-1" />);
+            return;
+        }
+
+        if (trimmed.startsWith('### ')) {
+            elements.push(
+                <h4 key={`h3-${idx}`} className="text-sm font-bold text-white pt-3 pb-1 border-b border-white/10 flex items-center gap-2 tracking-wide uppercase">
+                    {renderInlineMarkdown(trimmed.replace('### ', ''))}
+                </h4>
+            );
+            return;
+        }
+
+        if (trimmed.startsWith('#### ')) {
+            elements.push(
+                <h5 key={`h4-${idx}`} className="text-xs font-bold text-primary pt-2">
+                    {renderInlineMarkdown(trimmed.replace('#### ', ''))}
+                </h5>
+            );
+            return;
+        }
+
+        if (trimmed.startsWith('> [!TIP]') || trimmed.startsWith('> [!NOTE]') || trimmed.startsWith('> ')) {
+            elements.push(
+                <div key={`quote-${idx}`} className="bg-primary/10 border-l-2 border-primary px-3 py-2 rounded text-xs text-gray-300 my-2">
+                    {renderInlineMarkdown(trimmed.replace(/^>\s*(\[!.*?\])?\s*/, ''))}
+                </div>
+            );
+            return;
+        }
+
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+            elements.push(
+                <div key={`li-${idx}`} className="flex items-start gap-2 pl-2 text-xs text-gray-300 my-1">
+                    <span className="text-primary mt-1">•</span>
+                    <span>{renderInlineMarkdown(trimmed.replace(/^[-*]\s+/, ''))}</span>
+                </div>
+            );
+            return;
+        }
+
+        elements.push(
+            <p key={`p-${idx}`} className="text-xs text-gray-300 leading-relaxed my-1">
+                {renderInlineMarkdown(line)}
+            </p>
+        );
+    });
+
+    if (inCodeBlock && codeBlockLines.length > 0) {
+        elements.push(
+            <pre key="code-end" className="bg-black/60 border border-white/10 rounded-lg p-3 text-[11px] font-mono text-emerald-400 overflow-x-auto my-2 whitespace-pre-wrap">
+                {codeBlockLines.join('\n')}
+            </pre>
+        );
+    }
+
+    return elements;
+}
+
+
 export interface K8sAiDiagnosticModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -111,38 +216,8 @@ export function K8sAiDiagnosticModal({
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            <div className="bg-[#181818] border border-gray-800 rounded-xl p-5 space-y-3 font-sans leading-normal">
-                                {diagnosis.split('\n').map((line, idx) => {
-                                    if (line.startsWith('### ')) {
-                                        return (
-                                            <h4 key={idx} className="text-sm font-bold text-white pt-2 border-b border-white/5 pb-1 uppercase tracking-wider flex items-center gap-2">
-                                                {line.replace('### ', '')}
-                                            </h4>
-                                        );
-                                    }
-                                    if (line.startsWith('#### ')) {
-                                        return (
-                                            <h5 key={idx} className="text-xs font-semibold text-primary pt-1">
-                                                {line.replace('#### ', '')}
-                                            </h5>
-                                        );
-                                    }
-                                    if (line.startsWith('> ')) {
-                                        return (
-                                            <div key={idx} className="bg-primary/5 border-l-2 border-primary p-3 rounded text-xs text-gray-300 my-2">
-                                                {line.replace('> ', '')}
-                                            </div>
-                                        );
-                                    }
-                                    if (line.startsWith('```')) {
-                                        return null;
-                                    }
-                                    return (
-                                        <p key={idx} className={line.startsWith('- ') ? 'pl-4 text-gray-300 text-xs font-mono' : 'text-xs text-gray-300'}>
-                                            {line}
-                                        </p>
-                                    );
-                                })}
+                            <div className="bg-[#141414] border border-gray-800/80 rounded-xl p-5 space-y-3 font-sans leading-relaxed text-xs text-gray-200 shadow-inner">
+                                {parseAndRenderMarkdown(diagnosis)}
                             </div>
                         </div>
                     )}

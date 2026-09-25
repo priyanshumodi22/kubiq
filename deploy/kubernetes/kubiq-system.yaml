@@ -30,6 +30,8 @@ rules:
       - events
       - persistentvolumes
       - persistentvolumeclaims
+      - resourcequotas
+      - limitranges
     verbs: [get, list, watch]
   - apiGroups: ['']
     resources: [pods/log, pods/exec]

@@ -9,6 +9,7 @@ import AdminUsers from './pages/AdminUsers';
 import LogsPage from './pages/LogsPage';
 import ApmDashboard from './pages/ApmDashboard';
 import KubernetesDashboard from './pages/KubernetesDashboard';
+import { AuditLogViewer } from './components/AuditLogViewer';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, authEnabled, nativeAuthEnabled } = useAuth();
@@ -114,6 +115,16 @@ function App() {
                 <ProtectedRoute>
                   <Layout>
                     <KubernetesDashboard />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/audit-logs"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <AuditLogViewer />
                   </Layout>
                 </ProtectedRoute>
               }

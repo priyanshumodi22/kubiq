@@ -11,6 +11,8 @@ import { DatabaseFactory } from '../database/DatabaseFactory';
 import { IServiceRepository } from '../database/interfaces/IServiceRepository';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { KubernetesService } from './KubernetesService';
+import { NotificationManager } from './NotificationManager';
 
 const execAsync = promisify(exec);
 
@@ -265,7 +267,14 @@ export class ServiceMonitor {
     if (this.isRunning) return;
     this.isRunning = true;
     this.services.forEach(service => this.startPolling(service.name));
-    console.log(`🚀 Service Monitoring Started (max concurrency: ${this.maxConcurrentChecks})`);
+    
+    // Start K8s Cluster Alert Monitor (runs every 60s)
+    const k8sInterval = setInterval(() => {
+      this.checkK8sClusterAlerts().catch(() => {});
+    }, 60000);
+    this.pollIntervals.set('__k8s_alert_monitor__', k8sInterval);
+
+    console.log(`🚀 Service & K8s Cluster Alert Monitoring Started (max concurrency: ${this.maxConcurrentChecks})`);
   }
 
   public stop(): void {
@@ -599,5 +608,52 @@ export class ServiceMonitor {
     }
     const successCount = service.history.filter(c => c.success).length;
     service.uptime = service.history.length ? (successCount / service.history.length) * 100 : 100;
+  }
+
+  private reportedK8sAlerts: Set<string> = new Set();
+
+  public async checkK8sClusterAlerts(): Promise<void> {
+    try {
+      const k8sService = KubernetesService.getInstance();
+      if (!k8sService.available) return;
+
+      const defaultCtx = 'inClusterContext';
+      const namespaces = await k8sService.getNamespaces(defaultCtx);
+
+      for (const ns of namespaces) {
+        const pods = await k8sService.getPods(defaultCtx, ns);
+        for (const pod of pods) {
+          const status = String(pod.status || '').toLowerCase();
+          const restarts = pod.restarts || 0;
+          const isFailing = status.includes('crashloop') || status.includes('error') || status.includes('oomkilled') || status.includes('imagepull');
+          const alertKey = `${ns}/${pod.name}/${status}/${restarts}`;
+
+          if ((isFailing || restarts >= 5) && !this.reportedK8sAlerts.has(alertKey)) {
+            this.reportedK8sAlerts.add(alertKey);
+            const title = `🚨 K8s Pod Alert: ${pod.name} (${ns})`;
+            const message = `Pod Status: ${pod.status}\nTotal Restarts: ${restarts}\nNamespace: ${ns}\nNode: ${pod.nodeName || 'N/A'}`;
+            NotificationManager.getInstance().notifyCustomAlert(title, message);
+          }
+        }
+      }
+
+      const nodes = await k8sService.getNodes(defaultCtx);
+      for (const node of nodes) {
+        const cpuUsed = parseFloat(node.cpuPercent || '0');
+        const memUsed = parseFloat(node.memoryPercent || '0');
+
+        if (cpuUsed > 85 || memUsed > 85) {
+          const alertKey = `node-${node.name}-${cpuUsed.toFixed(0)}-${memUsed.toFixed(0)}`;
+          if (!this.reportedK8sAlerts.has(alertKey)) {
+            this.reportedK8sAlerts.add(alertKey);
+            const title = `⚠️ K8s Node Resource Warning: ${node.name}`;
+            const message = `Node CPU Usage: ${cpuUsed.toFixed(1)}%\nNode Memory Usage: ${memUsed.toFixed(1)}%\nThreshold: 85%`;
+            NotificationManager.getInstance().notifyCustomAlert(title, message);
+          }
+        }
+      }
+    } catch (e: any) {
+      // Keep background monitor resilient
+    }
   }
 }

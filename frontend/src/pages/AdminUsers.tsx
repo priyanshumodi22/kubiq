@@ -12,6 +12,7 @@ interface UserData {
   username: string;
   email?: string;
   role: 'kubiq-admin' | 'kubiq-viewer';
+  allowedNamespaces?: string[];
   lastLogin?: number;
   createdAt?: number;
   enabled?: boolean;
@@ -148,12 +149,12 @@ export default function AdminUsers() {
                 <table className="w-full text-left border-collapse block sm:table">
                     <thead className="hidden sm:table-header-group">
                         <tr className="bg-black/20 border-b border-gray-700/50 block sm:table-row">
-                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider sm:w-[30%] block sm:table-cell">User</th>
+                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider sm:w-[25%] block sm:table-cell">User</th>
                             <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center sm:w-[15%] block sm:table-cell">Role</th>
-                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center sm:w-[20%] block sm:table-cell">Joined</th>
-                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center sm:w-[20%] block sm:table-cell">Last Login</th>
-                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center sm:w-[10%] block sm:table-cell">Status</th>
-                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center sm:w-[5%] block sm:table-cell">Actions</th>
+                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center sm:w-[20%] block sm:table-cell">Allowed Namespaces (RBAC Scope)</th>
+                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center sm:w-[15%] block sm:table-cell">Joined</th>
+                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center sm:w-[15%] block sm:table-cell">Status</th>
+                            <th className="p-4 text-xs font-semibold text-text-dim uppercase tracking-wider text-center sm:w-[10%] block sm:table-cell">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800/50 block sm:table-row-group">
@@ -214,12 +215,22 @@ export default function AdminUsers() {
                                         </div>
                                     </td>
                                     <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 text-sm text-text-dim sm:text-center ${expandedUserId === user.id ? 'flex' : 'hidden sm:table-cell'}`}>
-                                        <span className="sm:hidden text-xs text-text-dim uppercase tracking-wider font-semibold">Joined</span>
-                                        <span>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}</span>
+                                        <span className="sm:hidden text-xs text-text-dim uppercase tracking-wider font-semibold">Allowed Namespaces</span>
+                                        <div className="flex items-center sm:justify-center gap-1">
+                                            {user.role === 'kubiq-admin' ? (
+                                                <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono font-bold rounded-full">
+                                                    * (All Cluster Namespaces)
+                                                </span>
+                                            ) : (
+                                                <span className="px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 text-xs font-mono font-bold rounded-full">
+                                                    {(user.allowedNamespaces && user.allowedNamespaces.length > 0) ? user.allowedNamespaces.join(', ') : 'apps, default'}
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 text-sm text-text-dim sm:text-center ${expandedUserId === user.id ? 'flex' : 'hidden sm:table-cell'}`}>
-                                        <span className="sm:hidden text-xs text-text-dim uppercase tracking-wider font-semibold">Last Login</span>
-                                        <span>{user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}</span>
+                                        <span className="sm:hidden text-xs text-text-dim uppercase tracking-wider font-semibold">Joined</span>
+                                        <span>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}</span>
                                     </td>
                                     <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 sm:text-center ${expandedUserId === user.id ? 'flex' : 'hidden sm:table-cell'}`}>
                                         <span className="sm:hidden text-xs text-text-dim uppercase tracking-wider font-semibold">Status</span>

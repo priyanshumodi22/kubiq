@@ -377,18 +377,59 @@ export function K8sRelationshipMap({
 
                         <button
                             onClick={() => {
-                                if (!containerRef.current) return;
-                                const svgEl = containerRef.current.querySelector('svg');
-                                if (!svgEl) return;
-                                const svgData = new XMLSerializer().serializeToString(svgEl);
-                                const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                                const escapeXml = (str: string) => (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                                const minW = Math.max(width, 1200);
+                                const minH = Math.max(height, 800);
+                                let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${minW}" height="${minH}" viewBox="0 0 ${minW} ${minH}" style="background-color: #0d0d0d; font-family: system-ui, -apple-system, sans-serif;">\n`;
+                                svg += `<rect width="100%" height="100%" fill="#0d0d0d" />\n`;
+                                svg += `<defs><pattern id="gridPattern" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/></pattern></defs>\n`;
+                                svg += `<rect width="100%" height="100%" fill="url(#gridPattern)" />\n`;
+
+                                // Draw Header
+                                svg += `<text x="30" y="35" fill="#3b82f6" font-size="16" font-weight="bold">Kubiq Kubernetes Topology Map</text>\n`;
+                                svg += `<text x="30" y="55" fill="#888888" font-size="11">Namespace: ${escapeXml(namespace || 'default')} | Live Architecture Export</text>\n`;
+
+                                // Draw Edges
+                                edges.forEach(e => {
+                                    const startX = e.source.x + 190;
+                                    const startY = e.source.y + 24;
+                                    const endX = e.target.x;
+                                    const endY = e.target.y + 24;
+                                    const dx = endX - startX;
+                                    const controlX1 = startX + dx * 0.3;
+                                    const controlX2 = endX - dx * 0.3;
+                                    const pathData = `M ${startX} ${startY} C ${controlX1} ${startY}, ${controlX2} ${endY}, ${endX} ${endY}`;
+                                    svg += `<path d="${pathData}" fill="none" stroke="rgba(255, 255, 255, 0.25)" stroke-width="1.5" stroke-dasharray="4 4" />\n`;
+                                });
+
+                                // Draw Nodes
+                                nodes.forEach(n => {
+                                    const isPod = n.type === 'pods';
+                                    const podReady = isPod && n.data?.ready;
+                                    const statusColor = podReady ? '#10b981' : isPod ? '#ef4444' : '#3b82f6';
+                                    const cleanName = escapeXml((n.name || '').slice(0, 18));
+                                    const cleanStatus = escapeXml(isPod ? (n.data?.status || 'Active') : n.type);
+
+                                    svg += `<g transform="translate(${n.x}, ${n.y})">\n`;
+                                    svg += `  <rect width="190" height="48" rx="10" fill="#181818" stroke="#333333" stroke-width="1.2" />\n`;
+                                    svg += `  <rect x="8" y="8" width="32" height="32" rx="6" fill="#222222" />\n`;
+                                    svg += `  <text x="48" y="24" fill="#ffffff" font-size="11" font-weight="bold">${cleanName}</text>\n`;
+                                    svg += `  <circle cx="52" cy="35" r="3.5" fill="${statusColor}" />\n`;
+                                    svg += `  <text x="60" y="38" fill="#888888" font-size="9" font-family="monospace">${cleanStatus}</text>\n`;
+                                    svg += `</g>\n`;
+                                });
+
+                                svg += `</svg>`;
+
+                                const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
                                 const url = URL.createObjectURL(blob);
-                                const link = document.createElement('a');
-                                link.href = url;
-                                link.download = `kubiq-topology-${namespace || 'cluster'}-${Date.now()}.svg`;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `kubiq-topology-${namespace || 'cluster'}-${Date.now()}.svg`;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
                             }}
                             className="flex items-center gap-1 px-2 py-1 bg-white/5 hover:bg-white/10 text-gray-300 rounded text-xs transition-colors border border-white/10"
                             title="Export Cluster Topology as SVG Architecture Diagram"
@@ -403,7 +444,7 @@ export function K8sRelationshipMap({
 
             {/* Layout Column Headers (Synced with Canvas X-Axis) */}
             <div className="border-b border-gray-900 bg-black/25 relative z-10 overflow-hidden shrink-0 h-8 select-none pointer-events-none">
-                <div 
+                <div
                     className="absolute top-0 bottom-0 left-0 text-[10px] uppercase font-bold tracking-wider text-gray-500 whitespace-nowrap"
                     style={{
                         transform: `translateX(${pan.x}px)`,

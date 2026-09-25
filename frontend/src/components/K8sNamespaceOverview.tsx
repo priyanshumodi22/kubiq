@@ -44,7 +44,7 @@ function K8sMiniSparkline({ values, color }: { values: number[]; color: string }
 }
 
 export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNamespaceOverviewProps) {
-    const [quotasData, setQuotasData] = useState<{ quotas: any[]; limitRanges: any[] }>({ quotas: [], limitRanges: [] });
+    const [quotasData, setQuotasData] = useState<{ quotas: any[]; limitRanges: any[]; rbacForbidden?: boolean }>({ quotas: [], limitRanges: [] });
     const [selectedEventForAi, setSelectedEventForAi] = useState<any | null>(null);
 
     const targetNs = data?.pods?.[0]?.namespace || data?.deployments?.[0]?.namespace || 'default';
@@ -268,6 +268,22 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
                     </div>
                 </div>
             </div>
+
+            {/* ── RESOURCE QUOTAS RBAC FORBIDDEN BANNER ───────────────────────────── */}
+            {quotasData.rbacForbidden && (
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-start gap-3 text-amber-400">
+                    <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-amber-400" />
+                    <div className="space-y-1">
+                        <div className="text-xs font-bold uppercase tracking-wider">Cluster RBAC Notice: ResourceQuotas Permission Missing</div>
+                        <div className="text-xs opacity-90 leading-relaxed font-mono">
+                            Kubiq ServiceAccount <code className="bg-black/40 px-1 py-0.5 rounded text-white font-mono">system:serviceaccount:kubiq-system:kubiq</code> lacks ClusterRole permission to list <code className="bg-black/40 px-1 py-0.5 rounded text-white font-mono">resourcequotas</code> in namespace <code className="bg-black/40 px-1 py-0.5 rounded text-white font-mono">{targetNs}</code>.
+                        </div>
+                        <div className="text-[11px] text-amber-300/80 pt-1">
+                            Run: <code className="bg-black/60 px-2 py-0.5 rounded text-white font-mono select-all">kubectl apply -f deploy/kubernetes/kubiq-system.yaml</code> to grant full observability access.
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ── RESOURCE QUOTAS & LIMITRANGES VISUALIZER ──────────────────────── */}
             {quotasData.quotas && quotasData.quotas.length > 0 && (

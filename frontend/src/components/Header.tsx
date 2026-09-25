@@ -93,6 +93,18 @@ export default function Header() {
           <span className="hidden sm:inline">Kubernetes</span><span className="sm:hidden">K8s</span>
         </Link>
       )}
+
+      {isAuthenticated && (
+        <Link
+          to="/audit-logs"
+          className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${location.pathname.startsWith('/audit-logs')
+            ? 'bg-primary text-white shadow-md'
+            : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+        >
+          Audit Logs
+        </Link>
+      )}
     </>
   );
 
