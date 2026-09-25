@@ -140,7 +140,7 @@ if (apmEnabled) {
 }
 app.use(`${BACKEND_CONTEXT_PATH}/api/telemetry`, telemetryRouter); // Agent telemetry ingestion
 if (apmEnabled) {
-  app.use(`${BACKEND_CONTEXT_PATH}/api/apm`, apmAnalyticsRouter);
+  app.use(`${BACKEND_CONTEXT_PATH}/api/apm`, authMiddleware, apmAnalyticsRouter); // Protected analytics routes
 }
 
 // Protected routes (with optional Keycloak auth)
@@ -218,12 +218,14 @@ const startServer = async () => {
       console.log('☸️  Socket.IO Server Initialized for K8s Pod Log Streaming');
 
       // Initialize Kubernetes Terminal Stream Service with Socket.IO
-      if (k8sTerminalEnabled) {
-        const kubeTerminalStreamService = KubeTerminalStreamService.getInstance();
-        kubeTerminalStreamService.initialize(io, k8sService.getKubeConfig());
-        console.log('☸️  Socket.IO Server Initialized for K8s Pod Terminal Execution');
-      }
 
+      const kubeTerminalStreamService = KubeTerminalStreamService.getInstance();
+      kubeTerminalStreamService.initialize(io, k8sService.getKubeConfig(), k8sTerminalEnabled);
+      if (k8sTerminalEnabled) {
+        console.log('☸️  Socket.IO Server Initialized for K8s Pod Terminal Execution');
+      } else {
+        console.log('☸️  K8s Pod Terminal Execution is disabled via feature flag');
+      }
       // Start monitoring services
       serviceMonitor.start();
 

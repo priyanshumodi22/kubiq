@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { apiClient } from '../services/api';
 
 export interface IServiceDependency {
     source: string;
@@ -15,29 +16,18 @@ export function useServiceMap() {
     const fetchServiceMap = useCallback(async (options: { timeRangeMs?: number; fromMs?: number; toMs?: number } = {}) => {
         try {
             const timeRangeMs = options.timeRangeMs || 60 * 60 * 1000;
-            const params = new URLSearchParams();
-            if (options.fromMs) params.append('fromMs', options.fromMs.toString());
-            if (options.toMs) params.append('toMs', options.toMs.toString());
-            params.append('timeRange', timeRangeMs.toString());
+            const params: Record<string, string> = { timeRange: timeRangeMs.toString() };
+            if (options.fromMs) params.fromMs = options.fromMs.toString();
+            if (options.toMs) params.toMs = options.toMs.toString();
+
             setLoading(true);
             setError(null);
 
-            const baseUrl = import.meta.env.VITE_API_URL || '';
-            const BACKEND_CONTEXT_PATH = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
-
-            const response = await fetch(`${baseUrl}${BACKEND_CONTEXT_PATH}/api/apm/service-map?${params.toString()}`, {
-                credentials: 'omit',
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch service map: ${response.statusText}`);
-            }
-
-            const data = await response.json();
+            const data = await apiClient.getApmServiceMap(params);
             setDependencies(data);
         } catch (err: any) {
             console.error('Service Map Fetch Error:', err);
-            setError(err.message || 'An unknown error occurred while fetching service map.');
+            setError(err?.response?.data?.error || err.message || 'An unknown error occurred while fetching service map.');
         } finally {
             setLoading(false);
         }

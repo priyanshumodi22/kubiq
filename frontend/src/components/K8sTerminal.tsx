@@ -243,14 +243,18 @@ export default function K8sTerminal({ namespace, podName, containers }: K8sTermi
                         <AlertTriangle className="w-10 h-10 text-red-400 animate-bounce" />
                         <div className="space-y-1.5 max-w-sm">
                             <p className="text-[10px] text-red-400 font-bold uppercase tracking-wider">TTY Connection Failed</p>
-                            <p className="text-[9px] text-gray-400 leading-relaxed bg-red-950/20 border border-red-500/10 p-3 rounded">{error}</p>
+                            <p className={`text-[10px] font-bold leading-relaxed bg-red-950/20 border border-red-500/10 p-3 rounded ${error.includes('DISABLED') ? 'text-red-500' : 'text-gray-400'}`}>
+                                {error}
+                            </p>
                         </div>
-                        <button 
-                            onClick={reconnect}
-                            className="bg-white/5 hover:bg-white/10 text-white border border-white/10 px-4 py-1.5 rounded text-[10px] font-bold tracking-wide transition-all uppercase"
-                        >
-                            Retry Handshake
-                        </button>
+                        {!error.includes('DISABLED') && (
+                            <button 
+                                onClick={reconnect}
+                                className="bg-white/5 hover:bg-white/10 text-white border border-white/10 px-4 py-1.5 rounded text-[10px] font-bold tracking-wide transition-all uppercase"
+                            >
+                                Retry Handshake
+                            </button>
+                        )}
                     </div>
                 )}
 

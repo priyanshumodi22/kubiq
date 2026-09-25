@@ -35,12 +35,13 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
   }
 
   if (!token) {
-    // If auth is disabled completely? No, logic says skip if not enabled. 
-    // But now we have TWO providers.
-    // If Keycloak disabled AND Native disabled (implied?), then skip?
-    // Let's assume protection is required if middleware is used.
-    if (!keycloakConfig.enabled && process.env.AUTH_PROVIDER !== 'kubiq') {
-        return next();
+    const nativeAuthEnabled = process.env.NATIVE_AUTH_ENABLED !== 'false';
+    // If no auth provider is configured, reject with a configuration error — never bypass
+    if (!keycloakConfig.enabled && !nativeAuthEnabled) {
+        return res.status(503).json({
+          error: 'Auth Not Configured',
+          message: 'No authentication provider is enabled. Set NATIVE_AUTH_ENABLED=true or KEYCLOAK_ENABLED=true and restart.',
+        });
     }
     return res.status(401).json({
       error: 'Unauthorized',
@@ -138,8 +139,12 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
 // Optional: Middleware to check specific roles
 export const requireRole = (...requiredRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!keycloakConfig.enabled) {
-      return next();
+    const nativeAuthEnabled = process.env.NATIVE_AUTH_ENABLED !== 'false';
+    if (!keycloakConfig.enabled && !nativeAuthEnabled) {
+      return res.status(503).json({
+        error: 'Auth Not Configured',
+        message: 'No authentication provider is enabled. Set NATIVE_AUTH_ENABLED=true or KEYCLOAK_ENABLED=true and restart.',
+      });
     }
 
     const user = req.user as any;

@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { apiClient } from '../services/api';
 
 export interface ISpan {
     traceId: string;
@@ -30,25 +31,15 @@ export function useTrace() {
             setLoading(true);
             setError(null);
 
-            const baseUrl = import.meta.env.VITE_API_URL || '';
-            const BACKEND_CONTEXT_PATH = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
-
-            const response = await fetch(`${baseUrl}${BACKEND_CONTEXT_PATH}/api/apm/traces/${traceId}`, {
-                credentials: 'omit',
-            });
-
-            if (!response.ok) {
-                if (response.status === 404) {
-                    throw new Error('Trace not found');
-                }
-                throw new Error(`Failed to fetch trace: ${response.statusText}`);
-            }
-
-            const data = await response.json();
+            const data = await apiClient.getApmTrace(traceId);
             setSpans(data);
         } catch (err: any) {
             console.error('Trace Fetch Error:', err);
-            setError(err.message || 'An unknown error occurred while fetching trace.');
+            if (err?.response?.status === 404) {
+                setError('Trace not found');
+            } else {
+                setError(err?.response?.data?.error || err.message || 'An unknown error occurred while fetching trace.');
+            }
             setSpans([]);
         } finally {
             setLoading(false);

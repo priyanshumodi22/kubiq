@@ -26,7 +26,7 @@ export class KubeTerminalStreamService {
         return KubeTerminalStreamService.instance;
     }
 
-    public initialize(io: Server, kc?: k8s.KubeConfig) {
+    public initialize(io: Server, kc?: k8s.KubeConfig, enabled: boolean = true) {
         this.io = io;
         this.kc = kc || KubernetesService.getInstance().getKubeConfig();
 
@@ -42,6 +42,11 @@ export class KubeTerminalStreamService {
                 console.log(`☸️  [K8sTerminal] Socket ${socket.id} → start terminal in ${namespace}/${podName}`);
 
                 this.cleanupSession(socket.id);
+
+                if (!enabled) {
+                    socket.emit('k8s:terminal:error', { message: 'K8s TERMINAL IS DISABLED' });
+                    return;
+                }
 
                 if (!this.kc) {
                     socket.emit('k8s:terminal:error', { message: 'Kubernetes not connected' });

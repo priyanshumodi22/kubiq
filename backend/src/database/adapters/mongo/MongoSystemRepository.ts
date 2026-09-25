@@ -10,7 +10,7 @@ export class MongoSystemRepository implements ISystemRepository {
 
     async initialize(): Promise<void> {
         if (mongoose.connection.readyState === 0) {
-            const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/kubiq';
+            const uri = process.env.DB_URI || `mongodb://${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 27017}/${process.env.DB_NAME || 'kubiq_db'}`;
             await mongoose.connect(uri);
         }
     }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { apiClient } from '../services/api';
 import { createPortal } from 'react-dom';
 import { Activity, Clock, AlertTriangle, Search, Server, X, ChevronDown, CheckCircle2, Download } from 'lucide-react';
 import { useApm } from '../hooks/useApm';
@@ -75,24 +76,22 @@ export default function ApmDashboard() {
     useEffect(() => {
         async function checkApmStatus() {
             try {
-                const baseUrl = import.meta.env.VITE_API_URL || '';
-                const ctxPath = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
-                const res = await fetch(`${baseUrl}${ctxPath}/api/apm/status`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setStatus(data);
-                } else {
-                    const data = await res.json().catch(() => ({}));
+                const data = await apiClient.getApmStatus();
+                setStatus(data);
+            } catch (e: any) {
+                // If the API returned an error response with JSON body, use it
+                if (e?.response?.data) {
+                    const data = e.response.data;
                     setStatus({
                         supported: false,
                         dbType: data.dbType || 'json',
                         reason: data.reason || 'APM is not supported with the current database adapter.',
                         fix: data.fix || 'Configure MySQL or MongoDB.'
                     });
+                } else {
+                    console.error('Failed to check APM status:', e);
+                    setStatus({ supported: true, dbType: 'unknown' });
                 }
-            } catch (e) {
-                console.error('Failed to check APM status:', e);
-                setStatus({ supported: true, dbType: 'unknown' });
             } finally {
                 setCheckingStatus(false);
             }
@@ -217,45 +216,34 @@ export default function ApmDashboard() {
     const fetchTracesWithFilters = async (serviceName: string, minDur: number, errorOnly: boolean, search: string, autoSelectFirst: boolean = true) => {
         try {
             setIsFetchingTraces(true);
-            const baseUrl = import.meta.env.VITE_API_URL || '';
-            const ctxPath = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
             
-            const params = new URLSearchParams();
-            if (minDur > 0) params.append('minDuration', minDur.toString());
-            if (errorOnly) params.append('errorOnly', 'true');
-            if (search.trim()) params.append('search', search.trim());
+            const params: Record<string, string> = {};
+            if (minDur > 0) params.minDuration = minDur.toString();
+            if (errorOnly) params.errorOnly = 'true';
+            if (search.trim()) params.search = search.trim();
             
             // Apply global time filter to the trace list
             const now = Date.now();
             const from = timeFilter.type === 'relative' ? now - timeFilter.ms : timeFilter.fromMs;
             const to = timeFilter.type === 'relative' ? now : timeFilter.toMs;
-            params.append('fromMs', from.toString());
-            params.append('toMs', to.toString());
+            params.fromMs = from.toString();
+            params.toMs = to.toString();
 
-            const res = await fetch(`${baseUrl}${ctxPath}/api/apm/services/${serviceName}/traces?${params.toString()}`);
-            if (res.ok) {
-                const data = await res.json();
-                setTracesList(data);
-                if (data.length > 0 && autoSelectFirst) {
-                    const recentTraceId = data[0].traceId;
-                    setTraceIdInput(recentTraceId);
-                    fetchTrace(recentTraceId);
-                } else if (data.length === 0 && autoSelectFirst) {
+            const data = await apiClient.getApmServiceTraces(serviceName, params);
+            setTracesList(data);
+            if (data.length > 0 && autoSelectFirst) {
+                const recentTraceId = data[0].traceId;
+                setTraceIdInput(recentTraceId);
+                fetchTrace(recentTraceId);
+            } else if (data.length === 0 && autoSelectFirst) {
+                clearTrace();
+                setTraceIdInput('');
+            } else if (!autoSelectFirst) {
+                // Check if the currently viewed trace still matches the new filters
+                const stillExists = data.some((t: any) => t.traceId === traceIdInput);
+                if (!stillExists) {
                     clearTrace();
                     setTraceIdInput('');
-                } else if (!autoSelectFirst) {
-                    // Check if the currently viewed trace still matches the new filters
-                    const stillExists = data.some((t: any) => t.traceId === traceIdInput);
-                    if (!stillExists) {
-                        clearTrace();
-                        setTraceIdInput('');
-                    }
-                }
-            } else {
-                setTracesList([]);
-                if (autoSelectFirst) {
-                    setTraceIdInput('');
-                    clearTrace();
                 }
             }
         } catch (e) {
@@ -275,23 +263,19 @@ export default function ApmDashboard() {
 
     const handleEdgeClick = async (source: string, target: string) => {
         try {
-            const baseUrl = import.meta.env.VITE_API_URL || '';
-            const ctxPath = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
-            // Fetch the trace ID that specifically spans this edge
-            const res = await fetch(`${baseUrl}${ctxPath}/api/apm/edges/${source}/${target}/recent-trace`);
-            if (res.ok) {
-                const data = await res.json();
-                if (data.traceId) {
-                    setTraceIdInput(data.traceId);
-                    fetchTrace(data.traceId);
-                    // Scroll to the Trace Waterfall view
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-            } else {
-                console.warn('No recent traces found traversing this specific edge.');
+            const data = await apiClient.getApmEdgeRecentTrace(source, target);
+            if (data.traceId) {
+                setTraceIdInput(data.traceId);
+                fetchTrace(data.traceId);
+                // Scroll to the Trace Waterfall view
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
-        } catch (e) {
-            console.error('Failed to quick-fetch trace for edge:', e);
+        } catch (e: any) {
+            if (e?.response?.status === 404) {
+                console.warn('No recent traces found traversing this specific edge.');
+            } else {
+                console.error('Failed to quick-fetch trace for edge:', e);
+            }
         }
     };
 
@@ -1373,8 +1357,6 @@ export default function ApmDashboard() {
                                 try {
                                     setIsExporting(true);
                                     setExportError(null);
-                                    const baseUrl = import.meta.env.VITE_API_URL || '';
-                                    const ctxPath = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
                                     const params = new URLSearchParams();
                                     // todayDate YYYY-MM-DD + HH:MM:SS AM/PM → JS treats as local (IST) → toISOString() = UTC
                                     const todayDate = new Date().toLocaleDateString('en-CA');
@@ -1394,15 +1376,11 @@ export default function ApmDashboard() {
                                     if (exportMinDuration > 0) params.append('minDuration', exportMinDuration.toString());
                                     if (exportErrorOnly) params.append('errorOnly', 'true');
                                     if (exportSpanSearch.trim()) params.append('search', exportSpanSearch.trim());
-                                    const url = `${baseUrl}${ctxPath}/api/apm/export?${params.toString()}`;
-                                    const res = await fetch(url);
-                                    if (!res.ok) {
-                                        const err = await res.json().catch(() => ({ error: 'No data found for these filters.' }));
-                                        setExportError(err.error || 'Export failed.');
-                                        return;
-                                    }
-                                    const blob = await res.blob();
-                                    const disposition = res.headers.get('Content-Disposition') || '';
+                                    const paramsObj: Record<string, string> = {};
+                                    params.forEach((v, k) => { paramsObj[k] = v; });
+                                    const res = await apiClient.exportApmSpans(paramsObj);
+                                    const blob = new Blob([res.data], { type: 'text/csv' });
+                                    const disposition = res.headers['content-disposition'] || '';
                                     const filenameMatch = disposition.match(/filename="(.+?)"/);
                                     const filename = filenameMatch ? filenameMatch[1] : 'slow-queries.csv';
                                     const link = document.createElement('a');

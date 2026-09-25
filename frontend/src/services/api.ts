@@ -484,6 +484,42 @@ class ApiClient {
     return response.data;
   }
 
+  // --- APM ---
+  async getApmStatus() {
+    const response = await this.client.get('/api/apm/status');
+    return response.data;
+  }
+
+  async getApmServices(params: Record<string, string>) {
+    const response = await this.client.get('/api/apm/services', { params });
+    return response.data;
+  }
+
+  async getApmTrace(traceId: string) {
+    const response = await this.client.get(`/api/apm/traces/${traceId}`);
+    return response.data;
+  }
+
+  async getApmServiceTraces(serviceName: string, params: Record<string, string>) {
+    const response = await this.client.get(`/api/apm/services/${encodeURIComponent(serviceName)}/traces`, { params });
+    return response.data;
+  }
+
+  async getApmEdgeRecentTrace(source: string, target: string) {
+    const response = await this.client.get(`/api/apm/edges/${encodeURIComponent(source)}/${encodeURIComponent(target)}/recent-trace`);
+    return response.data;
+  }
+
+  async getApmServiceMap(params: Record<string, string>) {
+    const response = await this.client.get('/api/apm/service-map', { params });
+    return response.data;
+  }
+
+  async exportApmSpans(params: Record<string, string>) {
+    const response = await this.client.get('/api/apm/export', { params, responseType: 'blob' });
+    return response;
+  }
+
 }
 
 export const apiClient = new ApiClient();
