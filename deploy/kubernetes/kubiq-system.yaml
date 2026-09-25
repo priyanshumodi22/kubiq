@@ -32,16 +32,16 @@ rules:
       - persistentvolumeclaims
       - resourcequotas
       - limitranges
-    verbs: [get, list, watch]
+    verbs: [get, list, watch, create, update, patch, delete]
   - apiGroups: ['']
     resources: [pods/log, pods/exec]
     verbs: [get, create]
   - apiGroups: ['apps']
     resources: [deployments, daemonsets, statefulsets, replicasets]
-    verbs: [get, list, watch]
+    verbs: [get, list, watch, create, update, patch, delete]
   - apiGroups: ['networking.k8s.io']
     resources: [ingresses]
-    verbs: [get, list, watch]
+    verbs: [get, list, watch, create, update, patch, delete]
   - apiGroups: ['storage.k8s.io']
     resources: [storageclasses]
     verbs: [get, list, watch]

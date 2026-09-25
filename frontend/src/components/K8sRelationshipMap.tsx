@@ -410,9 +410,21 @@ export function K8sRelationshipMap({
                                     const cleanName = escapeXml((n.name || '').slice(0, 18));
                                     const cleanStatus = escapeXml(isPod ? (n.data?.status || 'Active') : n.type);
 
+                                    let iconSvg = `<circle cx="24" cy="24" r="7" fill="none" stroke="#3b82f6" stroke-width="1.2"/><path d="M17 24h14M24 17a10 10 0 0 0 0 14" fill="none" stroke="#3b82f6" stroke-width="1.2"/>`;
+                                    if (n.type === 'services') {
+                                        iconSvg = `<rect x="18" y="19" width="12" height="4" rx="1" fill="none" stroke="#10b981" stroke-width="1.2"/><rect x="18" y="25" width="12" height="4" rx="1" fill="none" stroke="#10b981" stroke-width="1.2"/>`;
+                                    } else if (n.type === 'pods') {
+                                        iconSvg = `<path d="M24 17l6 3.5v7L24 31l-6-3.5v-7zM18 20.5l6 3.5 6-3.5M24 24v7" fill="none" stroke="#00f0ff" stroke-width="1.2"/>`;
+                                    } else if (n.type === 'configmaps') {
+                                        iconSvg = `<circle cx="24" cy="24" r="3" fill="none" stroke="#eab308" stroke-width="1.2"/><path d="M24 18v2M24 28v2M18 24h2M28 24h2" fill="none" stroke="#eab308" stroke-width="1.2"/>`;
+                                    } else if (n.type === 'secrets') {
+                                        iconSvg = `<path d="M24 17l6 3v5c0 4-3 7-6 8-3-1-6-4-6-8v-5z" fill="none" stroke="#ec4899" stroke-width="1.2"/>`;
+                                    }
+
                                     svg += `<g transform="translate(${n.x}, ${n.y})">\n`;
                                     svg += `  <rect width="190" height="48" rx="10" fill="#181818" stroke="#333333" stroke-width="1.2" />\n`;
                                     svg += `  <rect x="8" y="8" width="32" height="32" rx="6" fill="#222222" />\n`;
+                                    svg += `  ${iconSvg}\n`;
                                     svg += `  <text x="48" y="24" fill="#ffffff" font-size="11" font-weight="bold">${cleanName}</text>\n`;
                                     svg += `  <circle cx="52" cy="35" r="3.5" fill="${statusColor}" />\n`;
                                     svg += `  <text x="60" y="38" fill="#888888" font-size="9" font-family="monospace">${cleanStatus}</text>\n`;

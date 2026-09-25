@@ -54,7 +54,8 @@ export function AuditLogViewer() {
     };
 
     return (
-        <div className="bg-[#14161b] border border-gray-800 rounded-2xl overflow-hidden shadow-2xl p-6 space-y-6">
+        <div className="min-h-screen bg-bg text-text container mx-auto px-4 py-8 space-y-6">
+            <div className="bg-bg-surface border border-gray-800 rounded-2xl overflow-hidden shadow-2xl p-6 space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-primary/10 border border-primary/20 rounded-xl text-primary">
@@ -137,5 +138,6 @@ export function AuditLogViewer() {
                 </div>
             )}
         </div>
+    </div>
     );
 }

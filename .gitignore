@@ -57,3 +57,11 @@ auth-service/
 # Dummy stripe payment gateway
 stripe-payment-gateway/
 deploy/kubernetes/kubiq-runtime.secret.yaml
+
+# Local Plan & Architecture Markdown Documents
+ai_cache_implementation_plan.md
+clickhouse_log_management_plan.md
+kubiq_pricing_and_architecture_tiers.md
+master_implementation_plan.md
+new_plan.md
+signoz_vs_kubiq_logging_architecture.md

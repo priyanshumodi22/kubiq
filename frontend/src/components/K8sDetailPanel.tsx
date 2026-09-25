@@ -172,7 +172,8 @@ export function K8sDetailPanel({
             setIsEditing(false);
             addToast('Manifest applied successfully', 'success');
         } catch (err: any) {
-            addToast(`Apply failed: ${err.message}`, 'error');
+            const msg = err.response?.data?.message || err.message || 'Apply failed';
+            addToast(`Apply failed: ${msg}`, 'error');
         } finally {
             setApplyingYaml(false);
         }
