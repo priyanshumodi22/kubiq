@@ -12,6 +12,7 @@ const UserSchema: Schema = new Schema({
     firstName: { type: String },
     lastName: { type: String },
     role: { type: String, enum: ['kubiq-admin', 'kubiq-viewer'], default: 'kubiq-viewer' },
+    allowedNamespaces: [{ type: String }],
     createdAt: { type: Date, default: Date.now },
     lastLogin: { type: Number },
     enabled: { type: Boolean, default: true }

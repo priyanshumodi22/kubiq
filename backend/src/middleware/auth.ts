@@ -179,7 +179,8 @@ export const requireRole = (...requiredRoles: string[]) => {
 
 export const checkNamespaceAccess = async (req: Request, res: Response, next: NextFunction) => {
     const user = req.user as any;
-    const requestedNs = req.params.ns;
+    const rawNs = req.params.ns;
+    const requestedNs = Array.isArray(rawNs) ? rawNs[0] : rawNs;
 
     if (!requestedNs || requestedNs === 'all' || requestedNs === '*') {
       return next();
@@ -207,8 +208,8 @@ export const checkNamespaceAccess = async (req: Request, res: Response, next: Ne
     }
 
     if (allowed && Array.isArray(allowed) && allowed.length > 0) {
-        const lowerNs = requestedNs.toLowerCase().trim();
-        if (!allowed.map(s => s.toLowerCase().trim()).includes(lowerNs)) {
+        const lowerNs = String(requestedNs).toLowerCase().trim();
+        if (!allowed.map(s => String(s).toLowerCase().trim()).includes(lowerNs)) {
             return res.status(403).json({
                 error: 'RBAC_FORBIDDEN',
                 message: `Access denied to namespace '${requestedNs}'. Restricted by your user RBAC scope policy.`

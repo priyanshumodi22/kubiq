@@ -102,6 +102,7 @@ export interface User {
   firstName?: string;
   lastName?: string;
   role: UserRole;
+  allowedNamespaces?: string[];
   createdAt?: number;
   lastLogin?: number;
   enabled?: boolean;

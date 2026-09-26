@@ -120,6 +120,7 @@ export class JsonUserRepository implements IUserRepository {
       
       if (user.username) existing.username = user.username;
       if (user.email) existing.email = user.email;
+      if (user.allowedNamespaces !== undefined) existing.allowedNamespaces = user.allowedNamespaces;
       
       this.users.set(id, existing);
       this.saveUsers();

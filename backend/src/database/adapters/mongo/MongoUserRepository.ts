@@ -71,6 +71,7 @@ export class MongoUserRepository implements IUserRepository {
           firstName: doc.firstName,
           lastName: doc.lastName,
           role: doc.role,
+          allowedNamespaces: doc.allowedNamespaces,
           createdAt: doc.createdAt,
           lastLogin: doc.lastLogin,
           enabled: doc.enabled !== false
@@ -80,6 +81,7 @@ export class MongoUserRepository implements IUserRepository {
     const updateQuery: any = {};
     if (user.username) updateQuery.username = user.username;
     if (user.email) updateQuery.email = user.email;
+    if (user.allowedNamespaces !== undefined) updateQuery.allowedNamespaces = user.allowedNamespaces;
     
     const updated = await UserModel.findByIdAndUpdate(
         id,

@@ -30,6 +30,7 @@ export class MysqlUserRepository implements IUserRepository {
             email VARCHAR(255) UNIQUE,
             password_hash VARCHAR(255) NOT NULL,
             role VARCHAR(50) DEFAULT 'kubiq-viewer',
+            allowed_namespaces TEXT NULL,
             enabled BOOLEAN DEFAULT TRUE,
             last_login TIMESTAMP NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -37,8 +38,12 @@ export class MysqlUserRepository implements IUserRepository {
         ) ENGINE=InnoDB;
       `);
 
-      // Migration: Check for columns if needed (simplified for now)
-      // We can add specific migrations here if schema evolves
+      // Migration: Add allowed_namespaces column if upgrading existing database
+      try {
+        await connection.query('ALTER TABLE users ADD COLUMN allowed_namespaces TEXT NULL');
+      } catch {
+        // Column already exists, ignore
+      }
 
     } catch (e) {
       console.error('❌ MySQL User Schema Migration Failed:', e);
@@ -63,9 +68,10 @@ export class MysqlUserRepository implements IUserRepository {
   async createUser(user: Omit<User, 'id' | 'createdAt' | 'lastLogin'>): Promise<User> {
     const connection = await this.pool.getConnection();
     try {
+      const nsJson = user.allowedNamespaces ? JSON.stringify(user.allowedNamespaces) : null;
       const [result] = await connection.execute<ResultSetHeader>(
-        'INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)',
-        [user.username, user.email || null, user.passwordHash || '', user.role]
+        'INSERT INTO users (username, email, password_hash, role, allowed_namespaces) VALUES (?, ?, ?, ?, ?)',
+        [user.username, user.email || null, user.passwordHash || '', user.role, nsJson]
       );
 
       const newId = result.insertId.toString();
@@ -75,6 +81,7 @@ export class MysqlUserRepository implements IUserRepository {
         email: user.email,
         passwordHash: user.passwordHash,
         role: user.role,
+        allowedNamespaces: user.allowedNamespaces,
         createdAt: Date.now(),
         lastLogin: undefined,
         enabled: true
@@ -113,12 +120,22 @@ export class MysqlUserRepository implements IUserRepository {
   }
 
   private mapRowToUser(row: any): User {
+    let allowedNamespaces: string[] | undefined;
+    if (row.allowed_namespaces) {
+      try {
+        allowedNamespaces = typeof row.allowed_namespaces === 'string' ? JSON.parse(row.allowed_namespaces) : row.allowed_namespaces;
+      } catch {
+        allowedNamespaces = undefined;
+      }
+    }
+
     return {
       id: row.id.toString(),
       username: row.username,
       email: row.email,
       passwordHash: row.password_hash,
       role: row.role as UserRole,
+      allowedNamespaces,
       createdAt: row.created_at ? new Date(row.created_at).getTime() : undefined,
       lastLogin: row.last_login ? new Date(row.last_login).getTime() : undefined,
       enabled: row.enabled !== 0 // MySQL stores boolean as tinyint
@@ -135,6 +152,10 @@ export class MysqlUserRepository implements IUserRepository {
     if (user.email !== undefined) {
       updates.push('email = ?');
       values.push(user.email);
+    }
+    if (user.allowedNamespaces !== undefined) {
+      updates.push('allowed_namespaces = ?');
+      values.push(user.allowedNamespaces ? JSON.stringify(user.allowedNamespaces) : null);
     }
 
     if (updates.length > 0) {

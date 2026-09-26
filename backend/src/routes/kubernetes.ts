@@ -188,8 +188,8 @@ router.get('/namespaces/:ns/pods/:podName/metrics/history', async (req, res) => 
         
         const history = await clickhouseService.getPodMetricsHistory(
             getContext(req),
-            req.params.ns,
-            req.params.podName,
+            req.params.ns as string,
+            req.params.podName as string,
             since
         );
         
@@ -361,7 +361,8 @@ router.get('/namespaces/:ns/quotas', checkNamespaceAccess, async (req, res) => {
 router.post('/namespaces/:ns/pods/:name/ai-diagnose', checkNamespaceAccess, async (req, res) => {
     try {
         if (!k8sService.available) return res.status(503).json({ message: 'K8s service not available' });
-        const { ns, name } = req.params;
+        const ns = String(req.params.ns);
+        const name = String(req.params.name);
         const ctx = getContext(req);
 
         const pods = await k8sService.getPods(ctx, ns);
