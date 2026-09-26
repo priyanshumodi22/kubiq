@@ -134,6 +134,12 @@ import { DatabaseFactory } from './database/DatabaseFactory';
 
 // Public routes
 app.use(`${BACKEND_CONTEXT_PATH}/api/health`, healthRouter);
+app.use('/health', healthRouter);
+app.use('/healthz', healthRouter);
+if (FRONTEND_CONTEXT_PATH && FRONTEND_CONTEXT_PATH !== '') {
+  app.use(`${FRONTEND_CONTEXT_PATH}/healthz`, healthRouter);
+  app.use(`${FRONTEND_CONTEXT_PATH}/health`, healthRouter);
+}
 app.use(`${BACKEND_CONTEXT_PATH}/api/auth`, authRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/auth/webauthn`, authWebAuthnRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/public`, publicStatusRouter);
