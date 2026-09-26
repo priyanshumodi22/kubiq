@@ -494,7 +494,7 @@ export default function ApmDashboard() {
                     <p className="text-gray-400 mt-1">Monitor application performance and distributed traces</p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto mt-4 sm:mt-0">
+                <div className="flex flex-wrap lg:flex-nowrap items-center gap-1.5 sm:gap-2 w-full sm:w-auto mt-4 sm:mt-0">
                     {/* Time Range — Custom Portal Dropdown */}
                     <div className="relative">
                         <button
@@ -512,26 +512,26 @@ export default function ApmDashboard() {
                                 }
                                 setIsTimeRangeOpen(o => !o);
                             }}
-                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2.5 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-[180px]"
+                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text text-xs sm:text-sm rounded-lg flex items-center justify-between gap-1.5 px-2.5 h-[40px] transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-[130px] sm:min-w-[145px]"
                         >
-                            <div className="flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-primary shrink-0" />
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
                                 {timeFilter.type === 'absolute' && timeFilter.label.includes(' to ') && timeFilter.label.split(' ').length === 5 ? (
-                                    <div className="flex flex-col items-start text-left min-w-[150px]">
+                                    <div className="flex flex-col items-start text-left min-w-[120px]">
                                         <span className="text-[10px] text-gray-400 leading-tight">
                                             {timeFilter.label.split(' ')[0]} to {timeFilter.label.split(' ')[3]}
                                         </span>
-                                        <span className="text-sm leading-tight text-white">
+                                        <span className="text-xs leading-tight text-white">
                                             {timeFilter.label.split(' ')[1]} to {timeFilter.label.split(' ')[4]}
                                         </span>
                                     </div>
                                 ) : (
-                                    <span className="truncate max-w-[200px]">
+                                    <span className="truncate max-w-[160px]">
                                         {timeFilter.label}
                                     </span>
                                 )}
                             </div>
-                            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isTimeRangeOpen ? 'rotate-180' : ''}`} />
+                            <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isTimeRangeOpen ? 'rotate-180' : ''}`} />
                         </button>
                     </div>
 
@@ -665,9 +665,9 @@ export default function ApmDashboard() {
                     <button
                         onClick={handleRefresh}
                         disabled={apmLoading || mapLoading}
-                        className="px-4 h-[40px] bg-bg-elevated border border-gray-700 hover:border-blue-500 text-text rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 text-sm"
+                        className="px-3 h-[40px] bg-bg-elevated border border-gray-700 hover:border-blue-500 text-text rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50 text-xs sm:text-sm"
                     >
-                        <Activity className={`w-4 h-4 ${apmLoading ? 'animate-spin' : ''}`} />
+                        <Activity className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${apmLoading ? 'animate-spin' : ''}`} />
                         Refresh
                     </button>
 
@@ -692,10 +692,10 @@ export default function ApmDashboard() {
                             setExportService(selectedInspectorService || '');
                             setIsExportModalOpen(true);
                         }}
-                        className="px-4 h-[40px] bg-bg-elevated border border-gray-700 hover:border-green-500/70 text-text rounded-lg flex items-center gap-2 transition-colors text-sm"
+                        className="px-3 h-[40px] bg-bg-elevated border border-gray-700 hover:border-green-500/70 text-text rounded-lg flex items-center gap-1.5 transition-colors text-xs sm:text-sm"
                         title="Export Slow Queries as CSV"
                     >
-                        <Download className="w-4 h-4 text-green-400" />
+                        <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-400" />
                         Export
                     </button>
 
@@ -707,15 +707,15 @@ export default function ApmDashboard() {
                             onClick={() => {
                                 if (!isLatencyOpen && latencyTriggerRef.current) {
                                     const r = latencyTriggerRef.current.getBoundingClientRect();
-                                    setLatencyRect({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 210) });
+                                    setLatencyRect({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 180) });
                                 }
                                 setIsLatencyOpen(o => !o);
                             }}
-                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text text-sm rounded-lg flex items-center justify-between gap-2 px-3 h-[40px] transition-colors focus:outline-none min-w-[200px]"
+                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text text-xs sm:text-sm rounded-lg flex items-center justify-between gap-1.5 px-2.5 h-[40px] transition-colors focus:outline-none min-w-[155px] sm:min-w-[175px]"
                             title="Latency Percentile Metric"
                         >
-                            <div className="flex items-center gap-2 min-w-0">
-                                <Clock className="w-4 h-4 text-yellow-400 shrink-0" />
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400 shrink-0" />
                                 <span className="truncate text-xs font-medium text-gray-200">
                                     {percentileFilter === 'p50' ? 'P50 Latency (Median)' :
                                      percentileFilter === 'p90' ? 'P90 Latency' :
@@ -723,7 +723,7 @@ export default function ApmDashboard() {
                                      percentileFilter === 'p99' ? 'P99 Latency (Tail SRE)' : 'P95 Latency'}
                                 </span>
                             </div>
-                            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isLatencyOpen ? 'rotate-180' : ''}`} />
+                            <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isLatencyOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {isLatencyOpen && latencyRect && createPortal(
@@ -736,10 +736,10 @@ export default function ApmDashboard() {
                                     Latency Percentiles
                                 </div>
                                 {[
-                                    { value: 'p50', label: 'P50 Latency (Median)', desc: '50th Percentile' },
-                                    { value: 'p90', label: 'P90 Latency', desc: '90th Percentile' },
-                                    { value: 'p95', label: 'P95 Latency (Standard)', desc: '95th Percentile' },
-                                    { value: 'p99', label: 'P99 Latency (Tail SRE)', desc: '99th Percentile' },
+                                    { value: 'p50', label: 'P50 Latency (Median)' },
+                                    { value: 'p90', label: 'P90 Latency' },
+                                    { value: 'p95', label: 'P95 Latency (Standard)' },
+                                    { value: 'p99', label: 'P99 Latency (Tail SRE)' },
                                 ].map(opt => (
                                     <button
                                         key={opt.value}
@@ -748,10 +748,9 @@ export default function ApmDashboard() {
                                             setPercentileFilter(opt.value as any);
                                             setIsLatencyOpen(false);
                                         }}
-                                        className={`w-full text-left px-4 py-2.5 text-xs transition-colors hover:bg-primary/20 flex items-center justify-between border-b border-gray-800/40 last:border-0 ${percentileFilter === opt.value ? 'text-primary font-bold bg-primary/5' : 'text-gray-300'}`}
+                                        className={`w-full text-left px-4 py-2.5 text-xs transition-colors hover:bg-primary/20 block border-b border-gray-800/40 last:border-0 ${percentileFilter === opt.value ? 'text-primary font-bold bg-primary/5' : 'text-gray-300'}`}
                                     >
                                         <span>{opt.label}</span>
-                                        <span className="text-[10px] text-gray-500 font-mono">{opt.desc}</span>
                                     </button>
                                 ))}
                             </div>,
@@ -761,7 +760,7 @@ export default function ApmDashboard() {
 
                     <button
                         onClick={() => setIsInstrumentationModalOpen(true)}
-                        className="px-3.5 h-[40px] bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-colors"
+                        className="px-3 h-[40px] bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-colors whitespace-nowrap"
                         title="Auto-Instrumentation SDK Snippets Generator"
                     >
                         <Code2 className="w-4 h-4" />

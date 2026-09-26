@@ -54,7 +54,16 @@ export function AuditLogViewer() {
     };
 
     return (
-        <div className="min-h-screen bg-bg text-text container mx-auto px-4 py-8 space-y-6">
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full animate-fade-in relative z-10 space-y-6">
+            {/* Background Effects (Matched to Dashboard, APM, and Logs) */}
+            <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+                <div className="absolute inset-0 bg-gradient-to-br from-bg via-bg to-bg-surface"></div>
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
+                <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
+                <div className="absolute top-1/3 -right-20 w-80 h-80 bg-primary/3 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-20 left-1/4 w-72 h-72 bg-primary/4 rounded-full blur-3xl"></div>
+            </div>
+
             <div className="bg-bg-surface border border-gray-800 rounded-2xl overflow-hidden shadow-2xl p-6 space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
                 <div className="flex items-center gap-3">
