@@ -191,20 +191,24 @@ export const checkNamespaceAccess = async (req: Request, res: Response, next: Ne
       return next();
     }
 
-    let allowed: string[] | undefined = user?.allowedNamespaces;
+    const userId = user?.sub || user?.id;
+    let allowed: string[] | undefined = undefined;
 
-    // Fetch fresh from User repository if allowedNamespaces isn't in token payload
-    if (!allowed && user?.sub) {
+    // Fetch fresh from User repository if userId is available
+    if (userId) {
       try {
         const repo = await DatabaseFactory.getUserRepository();
-        const dbUser = await repo.findById(user.sub);
-        if (dbUser) {
-          allowed = dbUser.allowedNamespaces || (dbUser.role === 'kubiq-viewer' ? ['apps', 'default'] : undefined);
-          if (user) user.allowedNamespaces = allowed;
+        const dbUser = await repo.findById(userId);
+        if (dbUser && dbUser.allowedNamespaces) {
+          allowed = dbUser.allowedNamespaces;
         }
       } catch {
         // Fallback
       }
+    }
+
+    if (!allowed) {
+      allowed = user?.allowedNamespaces || (user?.role === 'kubiq-viewer' || user?.roles?.includes('kubiq-viewer') ? ['apps', 'default'] : undefined);
     }
 
     if (allowed && Array.isArray(allowed) && allowed.length > 0) {

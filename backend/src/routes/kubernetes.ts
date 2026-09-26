@@ -56,20 +56,28 @@ router.get('/namespaces', async (req, res) => {
         if (!k8sService.available) return res.json([]);
         const clusterNamespaces = await k8sService.getNamespaces(getContext(req));
         
-        const user = getUserFromReq(req) as any;
+        const user = req.user as any;
         // Admins see all cluster namespaces
         if (!user || user.role === 'kubiq-admin' || user.roles?.includes('kubiq-admin')) {
             return res.json(clusterNamespaces);
         }
 
         // Viewers are scoped to allowedNamespaces
-        let allowed: string[] | undefined = user.allowedNamespaces;
-        if (!allowed && user.sub) {
+        const userId = user.sub || user.id;
+        let allowed: string[] | undefined = undefined;
+
+        if (userId) {
             try {
                 const repo = await DatabaseFactory.getUserRepository();
-                const dbUser = await repo.findById(user.sub);
-                allowed = dbUser?.allowedNamespaces;
+                const dbUser = await repo.findById(userId);
+                if (dbUser && dbUser.allowedNamespaces) {
+                    allowed = dbUser.allowedNamespaces;
+                }
             } catch {}
+        }
+
+        if (!allowed) {
+            allowed = user.allowedNamespaces || (user.role === 'kubiq-viewer' || user.roles?.includes('kubiq-viewer') ? ['apps', 'default'] : undefined);
         }
 
         if (allowed && Array.isArray(allowed) && allowed.length > 0) {
@@ -195,7 +203,7 @@ router.get('/namespaces/:ns/secrets', checkNamespaceAccess, async (req, res) => 
 
 // GET /api/kubernetes/namespaces/:ns/pods/:podName/metrics/history
 
-router.get('/namespaces/:ns/pods/:podName/metrics/history', async (req, res) => {
+router.get('/namespaces/:ns/pods/:podName/metrics/history', checkNamespaceAccess, async (req, res) => {
     try {
         if (!clickhouseService.isConfigured()) {
             return res.status(404).json({ message: 'Clickhouse not configured for APM storage' });
@@ -326,7 +334,7 @@ router.post('/apply', requireRole('kubiq-admin'), async (req, res) => {
 });
 
 
-router.get('/namespaces/:ns/yaml/:type/:name', async (req, res) => {
+router.get('/namespaces/:ns/yaml/:type/:name', checkNamespaceAccess, async (req, res) => {
     try {
         if (!k8sService.available) return res.status(503).json({ message: 'K8s not available' });
         const raw = await k8sService.getResourceRaw(getContext(req), (req.params.ns as string), (req.params.type as string), (req.params.name as string));
@@ -350,7 +358,7 @@ router.get('/yaml/:type/:name', async (req, res) => {
 });
 
 // GET /api/kubernetes/namespaces/:ns/autoscalers/:type/:name
-router.get('/namespaces/:ns/autoscalers/:type/:name', async (req, res) => {
+router.get('/namespaces/:ns/autoscalers/:type/:name', checkNamespaceAccess, async (req, res) => {
     try {
         if (!k8sService.available) return res.json({ hpa: [], vpa: [] });
         res.json(await k8sService.getAutoscalersForResource(getContext(req), (req.params.ns as string), (req.params.type as string), (req.params.name as string)));
@@ -499,7 +507,7 @@ Provide a concise markdown response:
 });
 
 // POST /api/kubernetes/namespaces/:ns/events/ai-diagnose
-router.post('/namespaces/:ns/events/ai-diagnose', async (req, res) => {
+router.post('/namespaces/:ns/events/ai-diagnose', checkNamespaceAccess, async (req, res) => {
     try {
         const { event } = req.body;
         const ns = req.params.ns as string;
