@@ -89,7 +89,7 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
     // 3. Resource Metric parsing and summing
     let totalCpuM = 0;
     let totalMemMi = 0;
-    
+
     const podUsageList: { name: string; cpu: number; memory: number; cpuSparkline: number[]; memSparkline: number[] }[] = [];
 
     metrics.forEach((m: any) => {
@@ -100,7 +100,7 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
             if (cpu.endsWith('n')) podCpu += parseInt(cpu) / 1_000_000;
             else if (cpu.endsWith('m')) podCpu += parseInt(cpu);
             else if (!isNaN(parseInt(cpu))) podCpu += parseInt(cpu);
-            
+
             const mem = c.memory || '0';
             if (mem.endsWith('Ki')) podMem += parseInt(mem) / 1024;
             else if (mem.endsWith('Mi')) podMem += parseFloat(mem);
@@ -132,7 +132,7 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
             {/* ── GRID 1: WORKLOAD HEALTH ────────────────────────────────────────── */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Pod Health Card */}
-                <div 
+                <div
                     onClick={() => onSwitchTab('pods')}
                     className="bg-[#1a1a1a]/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:border-primary/30 hover:bg-[#1a1a1a]/60 cursor-pointer transition-all duration-300 group relative overflow-hidden"
                 >
@@ -197,7 +197,7 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
                 </div>
 
                 {/* Deployments Health Card */}
-                <div 
+                <div
                     onClick={() => onSwitchTab('deployments')}
                     className="bg-[#1a1a1a]/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:border-blue-500/30 hover:bg-[#1a1a1a]/60 cursor-pointer transition-all duration-300 group relative overflow-hidden"
                 >
@@ -276,7 +276,7 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
                     <div className="space-y-1">
                         <div className="text-xs font-bold uppercase tracking-wider">Cluster RBAC Notice: ResourceQuotas Permission Missing</div>
                         <div className="text-xs opacity-90 leading-relaxed font-mono">
-                            Kubiq ServiceAccount <code className="bg-black/40 px-1 py-0.5 rounded text-white font-mono">system:serviceaccount:kubiq-system:kubiq</code> lacks ClusterRole permission to list <code className="bg-black/40 px-1 py-0.5 rounded text-white font-mono">resourcequotas</code> in namespace <code className="bg-black/40 px-1 py-0.5 rounded text-white font-mono">{targetNs}</code>.
+                            kubiq ServiceAccount <code className="bg-black/40 px-1 py-0.5 rounded text-white font-mono">system:serviceaccount:kubiq-system:kubiq</code> lacks ClusterRole permission to list <code className="bg-black/40 px-1 py-0.5 rounded text-white font-mono">resourcequotas</code> in namespace <code className="bg-black/40 px-1 py-0.5 rounded text-white font-mono">{targetNs}</code>.
                         </div>
                         <div className="text-[11px] text-amber-300/80 pt-1">
                             Run: <code className="bg-black/60 px-2 py-0.5 rounded text-white font-mono select-all">kubectl apply -f deploy/kubernetes/kubiq-system.yaml</code> to grant full observability access.
@@ -354,8 +354,8 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
 
                         {/* Progress bar */}
                         <div className="w-full bg-gray-800/50 rounded-full h-2.5 mb-4 overflow-hidden border border-white/[0.05]">
-                            <div 
-                                className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]" 
+                            <div
+                                className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]"
                                 style={{ width: `${Math.min(100, (totalCpuM / 2000) * 100)}%` }}
                             />
                         </div>
@@ -385,8 +385,8 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
 
                         {/* Progress bar */}
                         <div className="w-full bg-gray-800/50 rounded-full h-2.5 mb-4 overflow-hidden border border-white/[0.05]">
-                            <div 
-                                className="bg-gradient-to-r from-fuchsia-500 to-pink-500 h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(217,70,239,0.5)]" 
+                            <div
+                                className="bg-gradient-to-r from-fuchsia-500 to-pink-500 h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(217,70,239,0.5)]"
                                 style={{ width: `${Math.min(100, (totalMemMi / 4096) * 100)}%` }}
                             />
                         </div>
@@ -423,8 +423,8 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
                         <AlertTriangle className="w-4 h-4 text-yellow-400 animate-pulse" />
                         <h3 className="font-semibold text-sm text-gray-200">Namespace Alarm & Event Stream</h3>
                     </div>
-                    <button 
-                        onClick={() => onSwitchTab('events')} 
+                    <button
+                        onClick={() => onSwitchTab('events')}
                         className="text-xs text-primary hover:text-blue-300 transition-colors uppercase tracking-wider font-bold"
                     >
                         View All Events →
@@ -439,11 +439,11 @@ export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNam
                         </div>
                     ) : (
                         warningEvents.slice(0, 6).map((ev: any, i: number) => (
-                            <div 
-                                key={i} 
+                            <div
+                                key={i}
                                 className="px-5 py-3 flex items-start gap-3 hover:bg-white/[0.02] transition-colors group justify-between"
                             >
-                                <div 
+                                <div
                                     onClick={() => onSelectItem({ type: 'events', data: ev })}
                                     className="flex-1 min-w-0 overflow-hidden cursor-pointer"
                                 >

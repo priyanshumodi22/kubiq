@@ -5,16 +5,16 @@ import { startRegistration } from '@simplewebauthn/browser';
 import { apiClient } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { 
-  User, 
-  Shield, 
-  Key, 
-  Smartphone, 
-  Mail, 
-  Lock, 
-  Fingerprint, 
-  Trash2, 
-  Plus, 
+import {
+  User,
+  Shield,
+  Key,
+  Smartphone,
+  Mail,
+  Lock,
+  Fingerprint,
+  Trash2,
+  Plus,
   X,
   CheckCircle2,
   Laptop,
@@ -45,10 +45,10 @@ const SectionHeader = ({ title, description }: { title: string; description: str
   </div>
 );
 
-const InputGroup = ({ 
-  label, 
-  icon: Icon, 
-  ...props 
+const InputGroup = ({
+  label,
+  icon: Icon,
+  ...props
 }: React.InputHTMLAttributes<HTMLInputElement> & { label: string; icon: React.ElementType }) => (
   <div className="space-y-2">
     <label className="text-sm font-medium text-text-dim ml-1">{label}</label>
@@ -56,24 +56,24 @@ const InputGroup = ({
       <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dim group-focus-within:text-primary transition-colors">
         <Icon className="w-5 h-5" />
       </div>
-      <input 
+      <input
         className={cn(
           "w-full bg-bg-surface/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-text placeholder:text-neutral-600",
           "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all",
           "disabled:opacity-50 disabled:cursor-not-allowed"
-        )} 
-        {...props} 
+        )}
+        {...props}
       />
     </div>
   </div>
 );
 
-const Button = ({ 
-  children, 
-  variant = 'primary', 
-  isLoading, 
+const Button = ({
+  children,
+  variant = 'primary',
+  isLoading,
   className,
-  ...props 
+  ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'danger' | 'outline', isLoading?: boolean }) => {
   const variants = {
     primary: "bg-primary hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20",
@@ -82,7 +82,7 @@ const Button = ({
   };
 
   return (
-    <button 
+    <button
       className={cn(
         "px-6 py-2.5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2",
         "active:scale-95 disabled:opacity-50 disabled:pointer-events-none",
@@ -110,7 +110,7 @@ const Profile: React.FC = () => {
   const [profile, setProfile] = useState({ username: '', email: '' });
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
   const [passkeys, setPasskeys] = useState<any[]>([]);
-  
+
   // Loading States
   const [loading, setLoading] = useState({
     profile: false,
@@ -131,13 +131,13 @@ const Profile: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) apiClient.setToken(token);
-      
+
       setLoading(p => ({ ...p, passkeys: true }));
       const [user, pkList] = await Promise.all([
         apiClient.getCurrentUser(),
         apiClient.getPasskeys()
       ]);
-      
+
       setProfile({
         username: user.username,
         email: user.email || ''
@@ -167,7 +167,7 @@ const Profile: React.FC = () => {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwords.new !== passwords.confirm) return error('Passwords do not match');
-    
+
     setLoading(p => ({ ...p, password: true }));
     try {
       await apiClient.changePassword({
@@ -185,7 +185,7 @@ const Profile: React.FC = () => {
 
   const handleRegisterPasskey = async () => {
     if (!newPasskeyName.trim()) return error('Please name your device');
-    
+
     setLoading(p => ({ ...p, register: true }));
     try {
       const options = await apiClient.registerPasskeyOptions();
@@ -217,27 +217,27 @@ const Profile: React.FC = () => {
   const [renameName, setRenameName] = useState('');
 
   const confirmDeletePasskey = (id: string) => {
-      setPasskeyToDelete(id);
+    setPasskeyToDelete(id);
   };
 
   const startRenamePasskey = (id: string, currentName: string) => {
-      setPasskeyToRename({ id, name: currentName });
-      setRenameName(currentName);
+    setPasskeyToRename({ id, name: currentName });
+    setRenameName(currentName);
   };
 
   const handleRenamePasskey = async () => {
     if (!passkeyToRename || !renameName.trim()) return;
-    
+
     setLoading(p => ({ ...p, passkeys: true }));
     try {
-        await apiClient.renamePasskey(passkeyToRename.id, renameName);
-        success('Passkey renamed');
-        setPasskeys(passkeys.map(pk => pk.id === passkeyToRename.id ? { ...pk, name: renameName } : pk));
-        setPasskeyToRename(null);
+      await apiClient.renamePasskey(passkeyToRename.id, renameName);
+      success('Passkey renamed');
+      setPasskeys(passkeys.map(pk => pk.id === passkeyToRename.id ? { ...pk, name: renameName } : pk));
+      setPasskeyToRename(null);
     } catch (err) {
-        error('Failed to rename passkey');
+      error('Failed to rename passkey');
     } finally {
-        setLoading(p => ({ ...p, passkeys: false }));
+      setLoading(p => ({ ...p, passkeys: false }));
     }
   };
 
@@ -251,7 +251,7 @@ const Profile: React.FC = () => {
     } catch (err) {
       error('Failed to delete');
     } finally {
-      setPasskeyToDelete(null); 
+      setPasskeyToDelete(null);
     }
   };
 
@@ -281,274 +281,274 @@ const Profile: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-        
-        {/* Sidebar Nav */}
-        <div className="md:col-span-3 flex flex-row md:flex-col gap-4 md:gap-6">
-          <div className="flex-1 bg-bg-surface/30 backdrop-blur-md border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center">
-            <div className="w-16 h-16 md:w-24 md:h-24 bg-gradient-to-br from-primary to-blue-600 rounded-full flex items-center justify-center mb-2 md:mb-4 shadow-xl shadow-blue-500/20 shrink-0">
-               <span className="text-xl md:text-3xl font-bold text-white">{profile.username.substring(0, 2).toUpperCase()}</span>
-            </div>
-            <h2 className="text-lg md:text-xl font-bold truncate w-full">{profile.username}</h2>
-            <div className="flex flex-col gap-1 md:gap-2 mt-1 items-center">
+
+          {/* Sidebar Nav */}
+          <div className="md:col-span-3 flex flex-row md:flex-col gap-4 md:gap-6">
+            <div className="flex-1 bg-bg-surface/30 backdrop-blur-md border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center">
+              <div className="w-16 h-16 md:w-24 md:h-24 bg-gradient-to-br from-primary to-blue-600 rounded-full flex items-center justify-center mb-2 md:mb-4 shadow-xl shadow-blue-500/20 shrink-0">
+                <span className="text-xl md:text-3xl font-bold text-white">{profile.username.substring(0, 2).toUpperCase()}</span>
+              </div>
+              <h2 className="text-lg md:text-xl font-bold truncate w-full">{profile.username}</h2>
+              <div className="flex flex-col gap-1 md:gap-2 mt-1 items-center">
                 <span className="px-3 py-1 bg-white/5 rounded-full text-[10px] md:text-xs text-text-dim capitalize">
-                   Kubiq User
+                  kubiq User
                 </span>
                 {!isNative && (
-                    <span className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-[10px] md:text-xs">
-                        <ExternalLink className="w-3 h-3 md:w-3 md:h-3" /> <span className="hidden sm:inline">Managed by SSO</span><span className="sm:hidden">SSO</span>
-                    </span>
+                  <span className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-[10px] md:text-xs">
+                    <ExternalLink className="w-3 h-3 md:w-3 md:h-3" /> <span className="hidden sm:inline">Managed by SSO</span><span className="sm:hidden">SSO</span>
+                  </span>
                 )}
+              </div>
             </div>
+
+            <nav className="flex-[1.2] flex flex-col justify-center space-y-2">
+              {[
+                { id: 'details', label: 'Personal Details', icon: User },
+                { id: 'security', label: 'Login & Security', icon: Shield },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={cn(
+                    "w-full flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl transition-all duration-200 text-sm md:text-base",
+                    activeTab === tab.id
+                      ? "bg-primary text-white shadow-lg shadow-blue-500/20 font-medium"
+                      : "text-text-dim hover:bg-white/5 hover:text-text"
+                  )}
+                >
+                  <tab.icon className="w-4 h-4 md:w-5 md:h-5 shrink-0" />
+                  <span className="truncate">{tab.label}</span>
+                </button>
+              ))}
+            </nav>
           </div>
 
-          <nav className="flex-[1.2] flex flex-col justify-center space-y-2">
-            {[
-              { id: 'details', label: 'Personal Details', icon: User },
-              { id: 'security', label: 'Login & Security', icon: Shield },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={cn(
-                  "w-full flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl transition-all duration-200 text-sm md:text-base",
-                  activeTab === tab.id 
-                    ? "bg-primary text-white shadow-lg shadow-blue-500/20 font-medium" 
-                    : "text-text-dim hover:bg-white/5 hover:text-text"
-                )}
-              >
-                <tab.icon className="w-4 h-4 md:w-5 md:h-5 shrink-0" />
-                <span className="truncate">{tab.label}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Main Content */}
-        <div className="md:col-span-9">
-           <div className="bg-bg-surface/30 backdrop-blur-md border border-white/5 rounded-3xl p-8 relative overflow-hidden min-h-[600px]">
+          {/* Main Content */}
+          <div className="md:col-span-9">
+            <div className="bg-bg-surface/30 backdrop-blur-md border border-white/5 rounded-3xl p-8 relative overflow-hidden min-h-[600px]">
               {/* Background Glow */}
               <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/20 rounded-full blur-[100px] pointer-events-none" />
-              
+
               {activeTab === 'details' && (
                 <div className="animate-scale-up space-y-8 max-w-2xl">
-                   <SectionHeader 
-                     title="Personal Information" 
-                     description="Manage your public profile and contact info."
-                   />
-                   
-                   <form onSubmit={handleUpdateProfile} className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <InputGroup 
-                          label="Username" 
-                          icon={User} 
-                          value={profile.username}
-                          onChange={e => setProfile({...profile, username: e.target.value})}
-                          disabled={!isNative}
-                        />
-                        <InputGroup 
-                          label="Email Address" 
-                          icon={Mail} 
-                          type="email"
-                          value={profile.email}
-                          onChange={e => setProfile({...profile, email: e.target.value})}
-                          disabled={!isNative}
-                        />
-                      </div>
-                      
-                      <div className="pt-4 border-t border-white/5 flex justify-end">
-                        <Button type="submit" isLoading={loading.profile} disabled={!isNative}>
-                           {isNative ? 'Save Changes' : 'Managed externally'}
-                        </Button>
-                      </div>
-                   </form>
+                  <SectionHeader
+                    title="Personal Information"
+                    description="Manage your public profile and contact info."
+                  />
+
+                  <form onSubmit={handleUpdateProfile} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <InputGroup
+                        label="Username"
+                        icon={User}
+                        value={profile.username}
+                        onChange={e => setProfile({ ...profile, username: e.target.value })}
+                        disabled={!isNative}
+                      />
+                      <InputGroup
+                        label="Email Address"
+                        icon={Mail}
+                        type="email"
+                        value={profile.email}
+                        onChange={e => setProfile({ ...profile, email: e.target.value })}
+                        disabled={!isNative}
+                      />
+                    </div>
+
+                    <div className="pt-4 border-t border-white/5 flex justify-end">
+                      <Button type="submit" isLoading={loading.profile} disabled={!isNative}>
+                        {isNative ? 'Save Changes' : 'Managed externally'}
+                      </Button>
+                    </div>
+                  </form>
                 </div>
               )}
 
               {activeTab === 'security' && (
                 <div className="animate-scale-up space-y-12">
-                   
-                   {/* Password Section */}
-                   <section className="max-w-2xl">
-                      <SectionHeader 
-                         title="Password Settings" 
-                         description="Ensure your account is secure with a strong password."
+
+                  {/* Password Section */}
+                  <section className="max-w-2xl">
+                    <SectionHeader
+                      title="Password Settings"
+                      description="Ensure your account is secure with a strong password."
+                    />
+                    <form onSubmit={handleChangePassword} className="bg-black/20 rounded-2xl p-6 border border-white/5 space-y-5">
+                      <InputGroup
+                        label="Current Password"
+                        icon={Lock}
+                        type="password"
+                        value={passwords.current}
+                        onChange={e => setPasswords({ ...passwords, current: e.target.value })}
+                        disabled={!isNative}
                       />
-                      <form onSubmit={handleChangePassword} className="bg-black/20 rounded-2xl p-6 border border-white/5 space-y-5">
-                         <InputGroup 
-                            label="Current Password" 
-                            icon={Lock} 
-                            type="password"
-                            value={passwords.current}
-                            onChange={e => setPasswords({...passwords, current: e.target.value})}
-                            disabled={!isNative}
-                         />
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                           <InputGroup 
-                              label="New Password" 
-                              icon={Key} 
-                              type="password"
-                              value={passwords.new}
-                              onChange={e => setPasswords({...passwords, new: e.target.value})}
-                              disabled={!isNative}
-                           />
-                           <InputGroup 
-                              label="Confirm New Password" 
-                              icon={CheckCircle2} 
-                              type="password"
-                              value={passwords.confirm}
-                              onChange={e => setPasswords({...passwords, confirm: e.target.value})}
-                              disabled={!isNative}
-                           />
-                         </div>
-                         <div className="flex justify-end pt-2">
-                           <Button type="submit" isLoading={loading.password} disabled={!isNative}>
-                               {isNative ? 'Update Password' : 'Managed externally'}
-                           </Button>
-                         </div>
-                      </form>
-                   </section>
-
-                   {/* Passkeys Section */}
-                   <section>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                         <div className="flex items-center gap-3">
-                           <div className="p-2 bg-primary/10 rounded-lg shrink-0">
-                             <Fingerprint className="w-6 h-6 text-primary" />
-                           </div>
-                           <div>
-                             <h3 className="text-lg font-bold">Biometric Passkeys</h3>
-                             <p className="text-text-dim text-sm">Login passwordless with your devices.</p>
-                           </div>
-                         </div>
-                         <Button variant="outline" onClick={() => setShowPasskeyModal(true)} disabled={!isNative} className="w-full sm:w-auto">
-                            <Plus className="w-4 h-4 shrink-0" /> Add Passkey
-                         </Button>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <InputGroup
+                          label="New Password"
+                          icon={Key}
+                          type="password"
+                          value={passwords.new}
+                          onChange={e => setPasswords({ ...passwords, new: e.target.value })}
+                          disabled={!isNative}
+                        />
+                        <InputGroup
+                          label="Confirm New Password"
+                          icon={CheckCircle2}
+                          type="password"
+                          value={passwords.confirm}
+                          onChange={e => setPasswords({ ...passwords, confirm: e.target.value })}
+                          disabled={!isNative}
+                        />
                       </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {loading.passkeys ? (
-                           <div className="col-span-2 text-center py-12 text-text-dim">Loading devices...</div>
-                        ) : passkeys.length === 0 ? (
-                           <div className="col-span-2 text-center py-8 border border-dashed border-white/10 rounded-xl text-text-dim">
-                              No passkeys configured. Add one to login faster!
-                           </div>
-                        ) : (
-                           passkeys.map(pk => (
-                             <div key={pk.id} className="group bg-bg-surface/40 hover:bg-bg-surface/60 border border-white/5 rounded-xl p-4 flex items-center justify-between transition-all duration-200">
-                                <div className="flex items-center gap-4">
-                                   <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
-                                      {pk.deviceType === 'singleDevice' ? <Smartphone className="w-5 h-5" /> : <Laptop className="w-5 h-5" />}
-                                   </div>
-                                   <div>
-                                      <h4 className="font-semibold text-text group-hover:text-primary transition-colors">{pk.name}</h4>
-                                      <p className="text-xs text-text-dim">Added {new Date(pk.createdAt).toLocaleDateString()}</p>
-                                   </div>
-                                </div>
-                                <div className="flex items-center">
-                                    {isNative && (
-                                     <>
-                                      <button 
-                                        onClick={() => startRenamePasskey(pk.id, pk.name)}
-                                        className="p-2 text-text-dim hover:text-white hover:bg-white/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100 mr-1"
-                                      >
-                                         <Edit2 className="w-4 h-4" />
-                                      </button>
-                                      <button 
-                                        onClick={() => confirmDeletePasskey(pk.id)}
-                                        className="p-2 text-text-dim hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                                      >
-                                         <Trash2 className="w-4 h-4" />
-                                      </button>
-                                     </>
-                                    )}
-                                 </div>
-                             </div>
-                           ))
-                        )}
+                      <div className="flex justify-end pt-2">
+                        <Button type="submit" isLoading={loading.password} disabled={!isNative}>
+                          {isNative ? 'Update Password' : 'Managed externally'}
+                        </Button>
                       </div>
-                   </section>
+                    </form>
+                  </section>
+
+                  {/* Passkeys Section */}
+                  <section>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-lg shrink-0">
+                          <Fingerprint className="w-6 h-6 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold">Biometric Passkeys</h3>
+                          <p className="text-text-dim text-sm">Login passwordless with your devices.</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" onClick={() => setShowPasskeyModal(true)} disabled={!isNative} className="w-full sm:w-auto">
+                        <Plus className="w-4 h-4 shrink-0" /> Add Passkey
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {loading.passkeys ? (
+                        <div className="col-span-2 text-center py-12 text-text-dim">Loading devices...</div>
+                      ) : passkeys.length === 0 ? (
+                        <div className="col-span-2 text-center py-8 border border-dashed border-white/10 rounded-xl text-text-dim">
+                          No passkeys configured. Add one to login faster!
+                        </div>
+                      ) : (
+                        passkeys.map(pk => (
+                          <div key={pk.id} className="group bg-bg-surface/40 hover:bg-bg-surface/60 border border-white/5 rounded-xl p-4 flex items-center justify-between transition-all duration-200">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
+                                {pk.deviceType === 'singleDevice' ? <Smartphone className="w-5 h-5" /> : <Laptop className="w-5 h-5" />}
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-text group-hover:text-primary transition-colors">{pk.name}</h4>
+                                <p className="text-xs text-text-dim">Added {new Date(pk.createdAt).toLocaleDateString()}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center">
+                              {isNative && (
+                                <>
+                                  <button
+                                    onClick={() => startRenamePasskey(pk.id, pk.name)}
+                                    className="p-2 text-text-dim hover:text-white hover:bg-white/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100 mr-1"
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => confirmDeletePasskey(pk.id)}
+                                    className="p-2 text-text-dim hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </section>
 
                 </div>
               )}
-           </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Passkey Modal */}
-      {showPasskeyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-           <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
+        {/* Passkey Modal */}
+        {showPasskeyModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold flex items-center gap-2">
-                  <Fingerprint className="w-5 h-5 text-primary" /> 
+                  <Fingerprint className="w-5 h-5 text-primary" />
                   Name your Passkey
                 </h3>
                 <button onClick={() => setShowPasskeyModal(false)} className="text-text-dim hover:text-text">
-                   <X className="w-5 h-5" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-              
-              <InputGroup 
-                 label="Device Name" 
-                 icon={Smartphone}
-                 placeholder="e.g. Personal MacBook"
-                 value={newPasskeyName}
-                 onChange={e => setNewPasskeyName(e.target.value)}
-                 autoFocus
+
+              <InputGroup
+                label="Device Name"
+                icon={Smartphone}
+                placeholder="e.g. Personal MacBook"
+                value={newPasskeyName}
+                onChange={e => setNewPasskeyName(e.target.value)}
+                autoFocus
               />
 
               <div className="flex gap-3 mt-8">
-                 <Button variant="outline" className="flex-1" onClick={() => setShowPasskeyModal(false)}>Cancel</Button>
-                 <Button className="flex-1" onClick={handleRegisterPasskey} isLoading={loading.register}>
-                    Continue
-                 </Button>
+                <Button variant="outline" className="flex-1" onClick={() => setShowPasskeyModal(false)}>Cancel</Button>
+                <Button className="flex-1" onClick={handleRegisterPasskey} isLoading={loading.register}>
+                  Continue
+                </Button>
               </div>
-           </div>
-        </div>
-      )}
+            </div>
+          </div>
+        )}
 
-      <ConfirmDialog 
-        isOpen={!!passkeyToDelete}
-        onClose={() => setPasskeyToDelete(null)}
-        onConfirm={handleDeletePasskey}
-        title="Remove Passkey?"
-        message="This will remove the passkey from your account. You won't be able to use it to login anymore."
-        confirmText="Remove"
-        type="danger"
-      />
+        <ConfirmDialog
+          isOpen={!!passkeyToDelete}
+          onClose={() => setPasskeyToDelete(null)}
+          onConfirm={handleDeletePasskey}
+          title="Remove Passkey?"
+          message="This will remove the passkey from your account. You won't be able to use it to login anymore."
+          confirmText="Remove"
+          type="danger"
+        />
 
-      {/* Rename Passkey Modal */}
-      {passkeyToRename && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-           <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
+        {/* Rename Passkey Modal */}
+        {passkeyToRename && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold flex items-center gap-2">
-                  <Edit2 className="w-5 h-5 text-primary" /> 
+                  <Edit2 className="w-5 h-5 text-primary" />
                   Rename Passkey
                 </h3>
                 <button onClick={() => setPasskeyToRename(null)} className="text-text-dim hover:text-text">
-                   <X className="w-5 h-5" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-              
-              <InputGroup 
-                 label="Device Name" 
-                 icon={Smartphone}
-                 placeholder="e.g. Personal MacBook"
-                 value={renameName}
-                 onChange={e => setRenameName(e.target.value)}
-                 autoFocus
+
+              <InputGroup
+                label="Device Name"
+                icon={Smartphone}
+                placeholder="e.g. Personal MacBook"
+                value={renameName}
+                onChange={e => setRenameName(e.target.value)}
+                autoFocus
               />
 
               <div className="flex gap-3 mt-8">
-                 <Button variant="outline" className="flex-1" onClick={() => setPasskeyToRename(null)}>Cancel</Button>
-                 <Button className="flex-1" onClick={handleRenamePasskey} isLoading={loading.passkeys}>
-                    Save Changes
-                 </Button>
+                <Button variant="outline" className="flex-1" onClick={() => setPasskeyToRename(null)}>Cancel</Button>
+                <Button className="flex-1" onClick={handleRenamePasskey} isLoading={loading.passkeys}>
+                  Save Changes
+                </Button>
               </div>
-           </div>
-        </div>
-      )}
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

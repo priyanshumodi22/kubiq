@@ -116,7 +116,7 @@ java -javaagent:opentelemetry-javaagent.jar \\
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity" onClick={onClose} />
             <div className="relative w-full max-w-3xl bg-[#111111] border border-gray-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-                
+
                 {/* Header */}
                 <div className="flex items-center justify-between p-5 border-b border-gray-800 bg-[#161616]">
                     <div className="flex items-center gap-3">
@@ -128,7 +128,7 @@ java -javaagent:opentelemetry-javaagent.jar \\
                                 Instrument New Service
                             </h3>
                             <p className="text-xs text-gray-400 font-mono">
-                                Copy OpenTelemetry SDK snippets to start sending trace spans to Kubiq APM
+                                Copy OpenTelemetry SDK snippets to start sending trace spans to kubiq APM
                             </p>
                         </div>
                     </div>

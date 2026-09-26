@@ -7,11 +7,11 @@ export interface ISystemConfigDocument extends SystemConfig, Document {
 
 const SystemConfigSchema: Schema = new Schema({
     key: { type: String, default: 'main', unique: true }, // Singleton pattern using a known key
-    dashboardTitle: { type: String, default: 'Kubiq Dashboard' },
+    dashboardTitle: { type: String, default: 'kubiq Dashboard' },
     slug: { type: String, default: 'status' }
 });
 
-SystemConfigSchema.virtual('id').get(function(this: ISystemConfigDocument) {
+SystemConfigSchema.virtual('id').get(function (this: ISystemConfigDocument) {
     // SystemConfig doesn't really use ID in logic but good for consistency
     return this._id.toHexString();
 });

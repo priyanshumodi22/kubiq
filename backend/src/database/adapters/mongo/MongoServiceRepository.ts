@@ -9,19 +9,19 @@ export class MongoServiceRepository implements IServiceRepository {
 
   async initialize(): Promise<void> {
     if (this.isInitialized || mongoose.connection.readyState === 1) {
-        this.isInitialized = true;
-        return;
+      this.isInitialized = true;
+      return;
     }
 
     const uri = process.env.DB_URI || `mongodb://${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 27017}/${process.env.DB_NAME || 'kubiq_db'}`;
-    
+
     try {
-        await mongoose.connect(uri);
-        console.log('✅ Connected to MongoDB');
-        this.isInitialized = true;
+      await mongoose.connect(uri);
+      console.log('✅ Connected to MongoDB');
+      this.isInitialized = true;
     } catch (error) {
-        console.error('❌ MongoDB Connection Error:', error);
-        throw error;
+      console.error('❌ MongoDB Connection Error:', error);
+      throw error;
     }
   }
 
@@ -43,13 +43,13 @@ export class MongoServiceRepository implements IServiceRepository {
 
   async updateService(name: string, service: Partial<ServiceConfig>): Promise<ServiceStatus> {
     const updated = await ServiceModel.findOneAndUpdate(
-        { name }, 
-        { $set: service },
-        { new: true }
+      { name },
+      { $set: service },
+      { new: true }
     ).lean();
-    
+
     if (!updated) {
-        throw new Error(`Service ${name} not found`);
+      throw new Error(`Service ${name} not found`);
     }
     return this.mapToServiceStatus(updated);
   }
@@ -61,30 +61,30 @@ export class MongoServiceRepository implements IServiceRepository {
   async saveCheckResult(serviceName: string, result: HealthCheck, extraData?: { sslExpiry?: Date | null }): Promise<void> {
     // 1. Update latest status fields
     // 2. Push to history array (capped via slice if needed, but let's just push for now)
-    
+
     // Construct update object
     const update: any = {
-        $set: {
-            status: result.status,
-            lastCheck: result.timestamp,
-            responseTime: result.responseTime
-        },
-        $push: {
-            history: {
-                $each: [result],
-                $sort: { timestamp: -1 },
-                $slice: -100 // Keep last 100 records (as per MAX_HISTORY_SIZE default)
-            }
+      $set: {
+        status: result.status,
+        lastCheck: result.timestamp,
+        responseTime: result.responseTime
+      },
+      $push: {
+        history: {
+          $each: [result],
+          $sort: { timestamp: -1 },
+          $slice: -100 // Keep last 100 records (as per MAX_HISTORY_SIZE default)
         }
+      }
     };
 
     if (extraData && extraData.sslExpiry !== undefined) {
-        update.$set.sslExpiry = extraData.sslExpiry;
+      update.$set.sslExpiry = extraData.sslExpiry;
     }
 
     await ServiceModel.updateOne(
-        { name: serviceName },
-        update
+      { name: serviceName },
+      update
     );
   }
 
@@ -96,23 +96,23 @@ export class MongoServiceRepository implements IServiceRepository {
   async getSystemConfig(): Promise<SystemConfig> {
     const config = await SystemConfigModel.findOne({ key: 'main' }).lean();
     if (config) {
-        return {
-            dashboardTitle: config.dashboardTitle,
-            slug: config.slug
-        };
+      return {
+        dashboardTitle: config.dashboardTitle,
+        slug: config.slug
+      };
     }
     // Default config
     return {
-        dashboardTitle: 'Kubiq Dashboard',
-        slug: 'status'
+      dashboardTitle: 'kubiq Dashboard',
+      slug: 'status'
     };
   }
 
   async saveSystemConfig(config: SystemConfig): Promise<void> {
     await SystemConfigModel.updateOne(
-        { key: 'main' },
-        { $set: config },
-        { upsert: true }
+      { key: 'main' },
+      { $set: config },
+      { upsert: true }
     );
   }
 
@@ -121,25 +121,25 @@ export class MongoServiceRepository implements IServiceRepository {
   }
 
   private mapToServiceStatus(doc: any): ServiceStatus {
-      const history = doc.history || [];
-      const lastCheck = history.length > 0 ? history[0] : undefined;
+    const history = doc.history || [];
+    const lastCheck = history.length > 0 ? history[0] : undefined;
 
-      return {
-          id: doc._id.toString(),
-          name: doc.name,
-          endpoint: doc.endpoint,
-          type: doc.type,
-          interval: doc.interval,
-          retries: doc.retries,
-          timeout: doc.timeout,
-          headers: doc.headers,
-          currentStatus: doc.status || 'unknown',
-          lastCheck: lastCheck,
-          history: history,
-          ignoreSSL: doc.ignoreSSL,
-          sslExpiry: doc.sslExpiry,
-          // logPath is deprecated
-          logSources: doc.logSources // Map logSources
-      };
+    return {
+      id: doc._id.toString(),
+      name: doc.name,
+      endpoint: doc.endpoint,
+      type: doc.type,
+      interval: doc.interval,
+      retries: doc.retries,
+      timeout: doc.timeout,
+      headers: doc.headers,
+      currentStatus: doc.status || 'unknown',
+      lastCheck: lastCheck,
+      history: history,
+      ignoreSSL: doc.ignoreSSL,
+      sslExpiry: doc.sslExpiry,
+      // logPath is deprecated
+      logSources: doc.logSources // Map logSources
+    };
   }
 }

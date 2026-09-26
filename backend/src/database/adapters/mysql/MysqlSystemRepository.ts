@@ -43,7 +43,7 @@ export class MysqlSystemRepository implements ISystemRepository {
 
     // Seed Initial System Config
     await this.pool.execute(
-      "INSERT IGNORE INTO system_config (`key`, `value`) VALUES ('status_page', '{\"title\": \"Kubiq Status\", \"refreshInterval\": 60000, \"slug\": null}')"
+      "INSERT IGNORE INTO system_config (`key`, `value`) VALUES ('status_page', '{\"title\": \"kubiq Status\", \"refreshInterval\": 60000, \"slug\": null}')"
     );
   }
 

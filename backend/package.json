@@ -1,7 +1,7 @@
 {
   "name": "kubiq-backend",
   "version": "1.0.1",
-  "description": "Kubiq Dashboard Backend API",
+  "description": "kubiq Dashboard Backend API",
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon --watch src --exec ts-node src/server.ts",

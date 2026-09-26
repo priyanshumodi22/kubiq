@@ -57,7 +57,7 @@ export function K8sRbacPermissionBanner({ resource, namespace = 'cluster', messa
             </h3>
 
             <p className="text-xs text-gray-400 max-w-lg mb-6 leading-relaxed">
-                The Kubiq ServiceAccount <code className="text-red-300 font-mono bg-red-950/30 px-1.5 py-0.5 rounded border border-red-500/20">system:serviceaccount:kubiq-system:kubiq</code> does not have permission to access resource <code className="text-white font-bold font-mono">{resource}</code> in namespace <code className="text-primary font-bold font-mono">{namespace}</code>.
+                The kubiq ServiceAccount <code className="text-red-300 font-mono bg-red-950/30 px-1.5 py-0.5 rounded border border-red-500/20">system:serviceaccount:kubiq-system:kubiq</code> does not have permission to access resource <code className="text-white font-bold font-mono">{resource}</code> in namespace <code className="text-primary font-bold font-mono">{namespace}</code>.
             </p>
 
             {message && (
@@ -74,7 +74,7 @@ export function K8sRbacPermissionBanner({ resource, namespace = 'cluster', messa
                         <Terminal className="w-3.5 h-3.5 text-primary" />
                         <span>Fix in ClusterRole (deploy/kubernetes/kubiq-system.yaml)</span>
                     </div>
-                    <button 
+                    <button
                         onClick={handleCopy}
                         className="flex items-center gap-1 text-primary hover:text-white transition-colors bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded border border-primary/20"
                     >
@@ -83,7 +83,7 @@ export function K8sRbacPermissionBanner({ resource, namespace = 'cluster', messa
                     </button>
                 </div>
                 <pre className="text-emerald-400 font-mono text-[11px] leading-relaxed overflow-x-auto custom-scrollbar p-1">
-{yamlSnippet}
+                    {yamlSnippet}
                 </pre>
             </div>
 

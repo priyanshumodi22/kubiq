@@ -5,6 +5,7 @@ import { IPasskeyRepository } from './interfaces/IPasskeyRepository';
 import { ISystemRepository } from './interfaces/ISystemRepository';
 import { ITraceRepository } from './interfaces/ITraceRepository';
 import { ILogRepository } from './interfaces/ILogRepository';
+import { IAuditLogRepository } from './interfaces/IAuditLogRepository';
 import { clickhouseService } from '../services/ClickhouseService';
 
 export class DatabaseFactory {
@@ -15,6 +16,8 @@ export class DatabaseFactory {
   private static systemRepository: ISystemRepository;
   private static traceRepository: ITraceRepository;
   private static logRepository: ILogRepository;
+  private static auditLogRepository: IAuditLogRepository;
+  private static auditLogRepoPromise: Promise<IAuditLogRepository> | null = null;
 
   // False when DB_TYPE=json — APM requires MySQL or MongoDB
   private static _apmSupported: boolean | null = null;
@@ -252,5 +255,44 @@ export class DatabaseFactory {
 
     await this.logRepository.initialize();
     return this.logRepository;
+  }
+
+  public static async getAuditLogRepository(): Promise<IAuditLogRepository> {
+    if (this.auditLogRepository) {
+      return this.auditLogRepository;
+    }
+    if (this.auditLogRepoPromise) {
+      return this.auditLogRepoPromise;
+    }
+
+    this.auditLogRepoPromise = (async () => {
+      const startArgs = process.env.DB_TYPE || 'json';
+      console.log(`🔌 Initializing Audit Log Repository: ${startArgs}`);
+      let repo: IAuditLogRepository;
+
+      switch (startArgs.toLowerCase()) {
+        case 'mysql':
+        case 'mariadb':
+          const { MysqlAuditLogRepository } = await import('./adapters/mysql/MysqlAuditLogRepository');
+          repo = new MysqlAuditLogRepository();
+          break;
+        case 'mongo':
+        case 'mongodb':
+          const { MongoAuditLogRepository } = await import('./adapters/mongo/MongoAuditLogRepository');
+          repo = new MongoAuditLogRepository();
+          break;
+        case 'json':
+        default:
+          const { JsonAuditLogRepository } = await import('./adapters/json/JsonAuditLogRepository');
+          repo = new JsonAuditLogRepository();
+          break;
+      }
+
+      await repo.initialize();
+      this.auditLogRepository = repo;
+      return repo;
+    })();
+
+    return this.auditLogRepoPromise;
   }
 }

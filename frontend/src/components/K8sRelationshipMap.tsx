@@ -386,7 +386,7 @@ export function K8sRelationshipMap({
                                 svg += `<rect width="100%" height="100%" fill="url(#gridPattern)" />\n`;
 
                                 // Draw Header
-                                svg += `<text x="30" y="35" fill="#3b82f6" font-size="16" font-weight="bold">Kubiq Kubernetes Topology Map</text>\n`;
+                                svg += `<text x="30" y="35" fill="#3b82f6" font-size="16" font-weight="bold">kubiq Kubernetes Topology Map</text>\n`;
                                 svg += `<text x="30" y="52" fill="#888888" font-size="11">Namespace: ${escapeXml(namespace || 'default')} | Live Architecture Export</text>\n`;
 
                                 // Draw Column Headers

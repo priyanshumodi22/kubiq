@@ -10,7 +10,7 @@ import { DatabaseFactory } from '../database/DatabaseFactory';
 import jwt from 'jsonwebtoken';
 
 // RP = Relying Party (Your App)
-const rpName = 'Kubiq Dashboard';
+const rpName = 'kubiq Dashboard';
 const rpID = process.env.RP_ID || 'localhost';
 const origin = process.env.ORIGIN || 'http://localhost:5173'; // Frontend URL
 

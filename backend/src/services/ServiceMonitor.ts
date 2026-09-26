@@ -252,7 +252,12 @@ export class ServiceMonitor {
       NotificationManager.getInstance().notifyStatusChange(
         serviceName,
         newStatus,
-        check.success ? undefined : (check.error || `Status Code: ${check.status}`)
+        check.success ? undefined : (check.error || `Status Code: ${check.status}`),
+        {
+          endpoint: service.endpoint,
+          responseTime: check.responseTime,
+          statusCode: check.status
+        }
       );
     }
 

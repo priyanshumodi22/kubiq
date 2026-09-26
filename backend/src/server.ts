@@ -53,7 +53,7 @@ const io = new Server(httpServer, {
 });
 
 // Extract Origin (Domain) from KEYCLOAK_URL for CSP
-// We want to allow the whole domain (e.g. https://demo.cloud-tcshobs.com), not just /auth path
+// We want to allow the whole domain (e.g. https://priyanshumodi.in), not just /auth path
 let KEYCLOAK_ORIGIN = '';
 if (process.env.KEYCLOAK_URL) {
   try {
@@ -203,11 +203,12 @@ const startServer = async () => {
     // Ensure ALL tables are created on startup
     await DatabaseFactory.getPasskeyRepository();
     await DatabaseFactory.getSystemRepository();
+    await DatabaseFactory.getAuditLogRepository();
 
     // Start server
     // app.listen Replaced by httpServer.listen for Socket.IO support
     httpServer.listen(PORT, () => {
-      console.log(`🚀 Kubiq Backend running on port ${PORT}`);
+      console.log(`🚀 kubiq Backend running on port ${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
 
       // Initialize Log Stream Service with Socket.IO

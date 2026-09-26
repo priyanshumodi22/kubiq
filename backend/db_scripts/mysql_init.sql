@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- Seed Initial System Config
-INSERT IGNORE INTO system_config (`key`, `value`) VALUES ('status_page', '{"title": "Kubiq Status", "refreshInterval": 60000, "slug": null}');
+INSERT IGNORE INTO system_config (`key`, `value`) VALUES ('status_page', '{"title": "kubiq Status", "refreshInterval": 60000, "slug": null}');
 
 CREATE TABLE IF NOT EXISTS passkeys (
     id VARCHAR(255) PRIMARY KEY, -- Credential ID

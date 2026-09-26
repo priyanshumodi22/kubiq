@@ -13,7 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { TimeRangeSlider } from '../components/TimeRangeSlider';
 
 
-export type TimeFilter = 
+export type TimeFilter =
     | { type: 'relative', ms: number, label: string }
     | { type: 'absolute', fromMs: number, toMs: number, label: string };
 
@@ -37,33 +37,33 @@ const getPresets = () => {
         { label: 'Last 6 hours', ms: 6 * 60 * 60 * 1000, type: 'relative' as const },
         { label: 'Last 12 hours', ms: 12 * 60 * 60 * 1000, type: 'relative' as const },
         { label: 'Last 24 hours', ms: 24 * 60 * 60 * 1000, type: 'relative' as const },
-        { 
-            label: 'Yesterday', 
+        {
+            label: 'Yesterday',
             subLabel: formatShortDate(yesterday),
-            type: 'absolute' as const, 
-            fromMs: yesterday.getTime(), 
-            toMs: yesterday.getTime() + 24 * 60 * 60 * 1000 - 1 
+            type: 'absolute' as const,
+            fromMs: yesterday.getTime(),
+            toMs: yesterday.getTime() + 24 * 60 * 60 * 1000 - 1
         },
-        { 
-            label: 'Two days ago', 
+        {
+            label: 'Two days ago',
             subLabel: formatShortDate(twoDaysAgo),
-            type: 'absolute' as const, 
-            fromMs: twoDaysAgo.getTime(), 
-            toMs: twoDaysAgo.getTime() + 24 * 60 * 60 * 1000 - 1 
+            type: 'absolute' as const,
+            fromMs: twoDaysAgo.getTime(),
+            toMs: twoDaysAgo.getTime() + 24 * 60 * 60 * 1000 - 1
         },
-        { 
-            label: 'Last seven days', 
+        {
+            label: 'Last seven days',
             subLabel: `${formatShortDate(sevenDaysAgo)} - ${formatShortDate(today)}`,
-            type: 'absolute' as const, 
-            fromMs: sevenDaysAgo.getTime(), 
-            toMs: now.getTime() 
+            type: 'absolute' as const,
+            fromMs: sevenDaysAgo.getTime(),
+            toMs: now.getTime()
         },
-        { 
-            label: 'Previous week', 
+        {
+            label: 'Previous week',
             subLabel: `${formatShortDate(prevWeekStart)} - ${formatShortDate(prevWeekEnd)}`,
-            type: 'absolute' as const, 
-            fromMs: prevWeekStart.getTime(), 
-            toMs: prevWeekEnd.getTime() + 24 * 60 * 60 * 1000 - 1 
+            type: 'absolute' as const,
+            fromMs: prevWeekStart.getTime(),
+            toMs: prevWeekEnd.getTime() + 24 * 60 * 60 * 1000 - 1
         },
     ];
 };
@@ -109,7 +109,7 @@ export default function ApmDashboard() {
     const [customFromTime, setCustomFromTime] = useState('');
     const [customToDate, setCustomToDate] = useState('');
     const [customToTime, setCustomToTime] = useState('');
-    
+
     const [traceIdInput, setTraceIdInput] = useState('');
     const [isTraceDropdownOpen, setIsTraceDropdownOpen] = useState(false);
     const [serviceFilter, setServiceFilter] = useState('');
@@ -120,12 +120,12 @@ export default function ApmDashboard() {
     const [selectedInspectorService, setSelectedInspectorService] = useState<string | null>(null);
     const [tracesList, setTracesList] = useState<any[]>([]);
     const [isFetchingTraces, setIsFetchingTraces] = useState(false);
-    
+
     // Trace Filters
     const [minDurationFilter, setMinDurationFilter] = useState<number>(0);
     const [errorOnlyFilter, setErrorOnlyFilter] = useState<boolean>(false);
     const [routeSearch, setRouteSearch] = useState<string>('');
-    
+
     // Config Modal
     const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
     const [isInstrumentationModalOpen, setIsInstrumentationModalOpen] = useState(false);
@@ -147,7 +147,7 @@ export default function ApmDashboard() {
 
     const sidebarRef = useRef<HTMLDivElement>(null);
     const timeRangeTriggerRef = useRef<HTMLButtonElement>(null);
-    const timeRangePanelRef  = useRef<HTMLDivElement>(null);
+    const timeRangePanelRef = useRef<HTMLDivElement>(null);
     const [isTimeRangeOpen, setIsTimeRangeOpen] = useState(false);
     const [timeRangeRect, setTimeRangeRect] = useState<{ top: number; left: number; width: number } | null>(null);
 
@@ -194,7 +194,7 @@ export default function ApmDashboard() {
     // Fetch map data when switching to map view
     useEffect(() => {
         if (activeView === 'map') {
-            const opts = timeFilter.type === 'relative' 
+            const opts = timeFilter.type === 'relative'
                 ? { timeRangeMs: timeFilter.ms }
                 : { fromMs: timeFilter.fromMs, toMs: timeFilter.toMs, timeRangeMs: timeFilter.toMs - timeFilter.fromMs };
             fetchServiceMap(opts);
@@ -202,7 +202,7 @@ export default function ApmDashboard() {
     }, [activeView, timeFilter, fetchServiceMap]);
 
     const handleRefresh = () => {
-        const opts = timeFilter.type === 'relative' 
+        const opts = timeFilter.type === 'relative'
             ? { timeRangeMs: timeFilter.ms }
             : { fromMs: timeFilter.fromMs, toMs: timeFilter.toMs, timeRangeMs: timeFilter.toMs - timeFilter.fromMs };
         refresh(opts);
@@ -220,12 +220,12 @@ export default function ApmDashboard() {
     const fetchTracesWithFilters = async (serviceName: string, minDur: number, errorOnly: boolean, search: string, autoSelectFirst: boolean = true) => {
         try {
             setIsFetchingTraces(true);
-            
+
             const params: Record<string, string> = {};
             if (minDur > 0) params.minDuration = minDur.toString();
             if (errorOnly) params.errorOnly = 'true';
             if (search.trim()) params.search = search.trim();
-            
+
             // Apply global time filter to the trace list
             const now = Date.now();
             const from = timeFilter.type === 'relative' ? now - timeFilter.ms : timeFilter.fromMs;
@@ -287,24 +287,24 @@ export default function ApmDashboard() {
 
     const applyCustomTime = () => {
         if (!customFromDate || !customFromTime || !customToDate || !customToTime) return;
-        
+
         const from = new Date(`${customFromDate}T${customFromTime}`).getTime();
         const to = new Date(`${customToDate}T${customToTime}`).getTime();
-        
+
         const now = Date.now();
         if (from > now || to > now) {
             alert('Cannot select a time in the future.');
             return;
         }
-        
+
         if (from >= to) {
             alert('Start time must be before end time.');
             return;
         }
-        
+
         const newFilter: TimeFilter = { type: 'absolute', fromMs: from, toMs: to, label: `${customFromDate} ${customFromTime} to ${customToDate} ${customToTime}` };
         setTimeFilter(newFilter);
-        
+
         const opts = { fromMs: from, toMs: to, timeRangeMs: to - from };
         refresh(opts);
         if (activeView === 'map') fetchServiceMap(opts);
@@ -318,13 +318,13 @@ export default function ApmDashboard() {
             const now = Date.now();
             const from = timeFilter.type === 'relative' ? now - timeFilter.ms : timeFilter.fromMs;
             const to = timeFilter.type === 'relative' ? now : timeFilter.toMs;
-            
+
             const fromDate = new Date(from);
-            setCustomFromDate(`${fromDate.getFullYear()}-${pad(fromDate.getMonth()+1)}-${pad(fromDate.getDate())}`);
+            setCustomFromDate(`${fromDate.getFullYear()}-${pad(fromDate.getMonth() + 1)}-${pad(fromDate.getDate())}`);
             setCustomFromTime(`${pad(fromDate.getHours())}:${pad(fromDate.getMinutes())}`);
-            
+
             const toDate = new Date(to);
-            setCustomToDate(`${toDate.getFullYear()}-${pad(toDate.getMonth()+1)}-${pad(toDate.getDate())}`);
+            setCustomToDate(`${toDate.getFullYear()}-${pad(toDate.getMonth() + 1)}-${pad(toDate.getDate())}`);
             setCustomToTime(`${pad(toDate.getHours())}:${pad(toDate.getMinutes())}`);
         }
     }, [isTimeRangeOpen, timeFilter]);
@@ -332,34 +332,34 @@ export default function ApmDashboard() {
     const handleSliderChange = (val: [number, number]) => {
         const pad = (n: number) => String(n).padStart(2, '0');
         const fromDate = new Date(val[0]);
-        setCustomFromDate(`${fromDate.getFullYear()}-${pad(fromDate.getMonth()+1)}-${pad(fromDate.getDate())}`);
+        setCustomFromDate(`${fromDate.getFullYear()}-${pad(fromDate.getMonth() + 1)}-${pad(fromDate.getDate())}`);
         setCustomFromTime(`${pad(fromDate.getHours())}:${pad(fromDate.getMinutes())}`);
-        
+
         const toDate = new Date(val[1]);
-        setCustomToDate(`${toDate.getFullYear()}-${pad(toDate.getMonth()+1)}-${pad(toDate.getDate())}`);
+        setCustomToDate(`${toDate.getFullYear()}-${pad(toDate.getMonth() + 1)}-${pad(toDate.getDate())}`);
         setCustomToTime(`${pad(toDate.getHours())}:${pad(toDate.getMinutes())}`);
     };
 
     const sliderMaxMs = Date.now();
     const sliderMinMs = sliderMaxMs - 7 * 24 * 60 * 60 * 1000;
-    
+
     let sliderFromMs = sliderMaxMs - 60 * 60 * 1000;
     if (customFromDate && customFromTime) {
         sliderFromMs = new Date(`${customFromDate}T${customFromTime}`).getTime();
     }
-    
+
     let sliderToMs = sliderMaxMs;
     if (customToDate && customToTime) {
         sliderToMs = new Date(`${customToDate}T${customToTime}`).getTime();
     }
-    
+
     // Clamp to slider bounds
     sliderFromMs = Math.max(sliderMinMs, Math.min(sliderFromMs, sliderMaxMs));
     sliderToMs = Math.max(sliderMinMs, Math.min(sliderToMs, sliderMaxMs));
 
     const todayObj = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
-    const todayString = `${todayObj.getFullYear()}-${pad(todayObj.getMonth()+1)}-${pad(todayObj.getDate())}`;
+    const todayString = `${todayObj.getFullYear()}-${pad(todayObj.getMonth() + 1)}-${pad(todayObj.getDate())}`;
 
     if (checkingStatus) {
         return (
@@ -407,11 +407,11 @@ export default function ApmDashboard() {
                         <div className="p-4 rounded-xl bg-error/10 border border-error/20 text-error animate-pulse-slow">
                             <AlertTriangle className="w-8 h-8" />
                         </div>
-                        
+
                         <div className="flex-1 text-center sm:text-left">
                             <h2 className="text-xl font-semibold text-white mb-2">APM is Disabled (json mode)</h2>
                             <p className="text-text-dim text-sm sm:text-base leading-relaxed mb-6">
-                                Kubiq is currently configured with <code className="px-1.5 py-0.5 rounded bg-bg-elevated border border-gray-700 text-error font-mono text-xs font-bold font-semibold">DB_TYPE=json</code>. 
+                                kubiq is currently configured with <code className="px-1.5 py-0.5 rounded bg-bg-elevated border border-gray-700 text-error font-mono text-xs font-bold font-semibold">DB_TYPE=json</code>.
                                 APM, distributed trace collection, metrics, and service maps require a persistent database backend with advanced indexing capabilities.
                             </p>
 
@@ -433,7 +433,7 @@ export default function ApmDashboard() {
                             <div className="border-t border-gray-800/80 pt-6">
                                 <h3 className="text-sm font-semibold text-white mb-3 text-left">How to Enable APM</h3>
                                 <p className="text-xs text-text-dim text-left mb-3">
-                                    Edit your environment configuration <code className="px-1 py-0.5 rounded bg-bg-elevated text-white font-mono text-xs">.env</code> in the backend root directory, set <code className="text-primary font-mono font-semibold">DB_TYPE</code>, and restart your Kubiq backend process.
+                                    Edit your environment configuration <code className="px-1 py-0.5 rounded bg-bg-elevated text-white font-mono text-xs">.env</code> in the backend root directory, set <code className="text-primary font-mono font-semibold">DB_TYPE</code>, and restart your kubiq backend process.
                                 </p>
 
                                 <div className="bg-black/40 border border-gray-800 rounded-lg p-4 font-mono text-xs text-left relative overflow-hidden select-all group">
@@ -467,7 +467,7 @@ export default function ApmDashboard() {
                     <div className="p-5 bg-bg-surface/40 border border-gray-800 hover:border-gray-700 rounded-xl transition-all">
                         <h4 className="text-sm font-medium text-white mb-1">Local Testing Tip</h4>
                         <p className="text-xs text-text-dim leading-relaxed">
-                            For quick testing, spin up a lightweight MySQL or MongoDB container using Docker, update your configuration, and restart Kubiq.
+                            For quick testing, spin up a lightweight MySQL or MongoDB container using Docker, update your configuration, and restart kubiq.
                         </p>
                     </div>
                 </div>
@@ -538,13 +538,13 @@ export default function ApmDashboard() {
                     {isTimeRangeOpen && timeRangeRect && createPortal(
                         <div
                             ref={timeRangePanelRef}
-                            style={{ 
-                                position: 'fixed', 
-                                top: timeRangeRect.top, 
-                                left: window.innerWidth < 640 ? '16px' : timeRangeRect.left, 
+                            style={{
+                                position: 'fixed',
+                                top: timeRangeRect.top,
+                                left: window.innerWidth < 640 ? '16px' : timeRangeRect.left,
                                 right: window.innerWidth < 640 ? '16px' : 'auto',
-                                width: window.innerWidth < 640 ? 'auto' : timeRangeRect.width, 
-                                zIndex: 9999 
+                                width: window.innerWidth < 640 ? 'auto' : timeRangeRect.width,
+                                zIndex: 9999
                             }}
                             className="bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col"
                         >
@@ -561,10 +561,10 @@ export default function ApmDashboard() {
                                     <h3 className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-2 sm:mb-3">Presets</h3>
                                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                                         {getPresets().map(preset => {
-                                            const isActive = preset.type === 'relative' 
+                                            const isActive = preset.type === 'relative'
                                                 ? timeFilter.type === 'relative' && timeFilter.ms === preset.ms
                                                 : timeFilter.type === 'absolute' && timeFilter.fromMs === preset.fromMs && timeFilter.toMs === preset.toMs;
-                                            
+
                                             const hideOnMobile = ['Last 12 hours', 'Last 24 hours', 'Yesterday', 'Two days ago', 'Last seven days', 'Previous week'].includes(preset.label);
 
                                             return (
@@ -572,24 +572,23 @@ export default function ApmDashboard() {
                                                     key={preset.label}
                                                     type="button"
                                                     onClick={() => {
-                                                        const newFilter: TimeFilter = preset.type === 'relative' 
+                                                        const newFilter: TimeFilter = preset.type === 'relative'
                                                             ? { type: 'relative', ms: preset.ms, label: preset.label }
                                                             : { type: 'absolute', fromMs: preset.fromMs, toMs: preset.toMs, label: preset.label };
-                                                            
+
                                                         setTimeFilter(newFilter);
-                                                        const opts = preset.type === 'relative' 
+                                                        const opts = preset.type === 'relative'
                                                             ? { timeRangeMs: preset.ms }
                                                             : { fromMs: preset.fromMs, toMs: preset.toMs, timeRangeMs: preset.toMs - preset.fromMs };
-                                                            
+
                                                         refresh(opts);
                                                         if (activeView === 'map') fetchServiceMap(opts);
                                                         setIsTimeRangeOpen(false);
                                                     }}
-                                                    className={`px-2 py-1.5 sm:py-3 text-xs border rounded-md transition-all text-left flex-col justify-center h-full min-h-[36px] sm:min-h-[50px] ${hideOnMobile ? 'hidden sm:flex' : 'flex'} ${
-                                                        isActive 
-                                                            ? 'border-primary bg-primary/10 text-white font-medium shadow-sm' 
+                                                    className={`px-2 py-1.5 sm:py-3 text-xs border rounded-md transition-all text-left flex-col justify-center h-full min-h-[36px] sm:min-h-[50px] ${hideOnMobile ? 'hidden sm:flex' : 'flex'} ${isActive
+                                                            ? 'border-primary bg-primary/10 text-white font-medium shadow-sm'
                                                             : 'border-gray-700 bg-bg-elevated text-gray-300 hover:border-gray-500 hover:bg-gray-800'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {preset.subLabel && <span className="text-[10px] opacity-70 mb-0.5 font-normal truncate w-full">{preset.subLabel}</span>}
                                                     <span className="truncate w-full">{preset.label}</span>
@@ -602,28 +601,28 @@ export default function ApmDashboard() {
                                 {/* Custom Time Range Section */}
                                 <div>
                                     <h3 className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-2 sm:mb-3">Custom Range</h3>
-                                    
+
                                     <div className="mb-2 sm:mb-4">
-                                        <TimeRangeSlider 
-                                            minMs={sliderMinMs} 
-                                            maxMs={sliderMaxMs} 
-                                            value={[sliderFromMs, sliderToMs]} 
-                                            onChange={handleSliderChange} 
+                                        <TimeRangeSlider
+                                            minMs={sliderMinMs}
+                                            maxMs={sliderMaxMs}
+                                            value={[sliderFromMs, sliderToMs]}
+                                            onChange={handleSliderChange}
                                         />
                                     </div>
 
                                     {/* Inputs */}
                                     <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 bg-black/20 p-2 sm:p-3 rounded-lg border border-gray-800">
                                         <div className="flex gap-2 flex-1 w-full">
-                                            <input 
-                                                type="date" 
+                                            <input
+                                                type="date"
                                                 max={todayString}
                                                 className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none w-full"
                                                 value={customFromDate}
                                                 onChange={e => setCustomFromDate(e.target.value)}
                                             />
-                                            <input 
-                                                type="time" 
+                                            <input
+                                                type="time"
                                                 className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none"
                                                 value={customFromTime}
                                                 onChange={e => setCustomFromTime(e.target.value)}
@@ -631,15 +630,15 @@ export default function ApmDashboard() {
                                         </div>
                                         <div className="text-gray-500 text-sm font-medium px-1">to</div>
                                         <div className="flex gap-2 flex-1 w-full">
-                                            <input 
-                                                type="date" 
+                                            <input
+                                                type="date"
                                                 max={todayString}
                                                 className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none w-full"
                                                 value={customToDate}
                                                 onChange={e => setCustomToDate(e.target.value)}
                                             />
-                                            <input 
-                                                type="time" 
+                                            <input
+                                                type="time"
                                                 className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none"
                                                 value={customToTime}
                                                 onChange={e => setCustomToTime(e.target.value)}
@@ -718,9 +717,9 @@ export default function ApmDashboard() {
                                 <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400 shrink-0" />
                                 <span className="truncate text-xs font-medium text-gray-200">
                                     {percentileFilter === 'p50' ? 'P50 Latency (Median)' :
-                                     percentileFilter === 'p90' ? 'P90 Latency' :
-                                     percentileFilter === 'p95' ? 'P95 Latency (Standard)' :
-                                     percentileFilter === 'p99' ? 'P99 Latency (Tail SRE)' : 'P95 Latency'}
+                                        percentileFilter === 'p90' ? 'P90 Latency' :
+                                            percentileFilter === 'p95' ? 'P95 Latency (Standard)' :
+                                                percentileFilter === 'p99' ? 'P99 Latency (Tail SRE)' : 'P95 Latency'}
                                 </span>
                             </div>
                             <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isLatencyOpen ? 'rotate-180' : ''}`} />
@@ -866,9 +865,9 @@ export default function ApmDashboard() {
                             }
 
                             const durationMetric = percentileFilter === 'p50' ? (service.p50DurationMs || service.avgDurationMs) :
-                                                   percentileFilter === 'p90' ? (service.p90DurationMs || service.p95DurationMs * 0.9) :
-                                                   percentileFilter === 'p99' ? (service.p99DurationMs || service.p95DurationMs * 1.2) :
-                                                   service.p95DurationMs;
+                                percentileFilter === 'p90' ? (service.p90DurationMs || service.p95DurationMs * 0.9) :
+                                    percentileFilter === 'p99' ? (service.p99DurationMs || service.p95DurationMs * 1.2) :
+                                        service.p95DurationMs;
 
                             return (
                                 <div
@@ -894,10 +893,10 @@ export default function ApmDashboard() {
                     <div className="flex-1 flex flex-col gap-4">
                         <div className="bg-bg-surface border border-gray-800 rounded-xl p-4 shadow-sm flex flex-col gap-4">
                             <h2 className="text-xl font-bold text-white flex items-start sm:items-center gap-2 mb-2">
-                                <Search className="w-5 h-5 text-primary shrink-0 mt-1 sm:mt-0" /> 
+                                <Search className="w-5 h-5 text-primary shrink-0 mt-1 sm:mt-0" />
                                 <span className="break-words">Trace Inspector ({selectedInspectorService})</span>
                             </h2>
-                            
+
                             {/* Filter Bar */}
                             <div className="flex flex-wrap gap-2 mb-2 bg-black/20 p-2 rounded-lg border border-gray-800/50">
                                 {/* Custom Latency Dropdown */}
@@ -916,9 +915,9 @@ export default function ApmDashboard() {
                                     >
                                         <span>
                                             {[
-                                                { value: 0,    label: 'Any Latency' },
-                                                { value: 100,  label: '> 100ms' },
-                                                { value: 500,  label: '> 500ms' },
+                                                { value: 0, label: 'Any Latency' },
+                                                { value: 100, label: '> 100ms' },
+                                                { value: 500, label: '> 500ms' },
                                                 { value: 2000, label: '> 2s' },
                                             ].find(o => o.value === minDurationFilter)?.label ?? 'Any Latency'}
                                         </span>
@@ -932,9 +931,9 @@ export default function ApmDashboard() {
                                             className="bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl overflow-hidden"
                                         >
                                             {[
-                                                { value: 0,    label: 'Any Latency' },
-                                                { value: 100,  label: '> 100ms' },
-                                                { value: 500,  label: '> 500ms' },
+                                                { value: 0, label: 'Any Latency' },
+                                                { value: 100, label: '> 100ms' },
+                                                { value: 500, label: '> 500ms' },
                                                 { value: 2000, label: '> 2s' },
                                             ].map(opt => (
                                                 <button
@@ -945,9 +944,8 @@ export default function ApmDashboard() {
                                                         setMinDurationFilter(opt.value);
                                                         setIsLatencyOpen(false);
                                                     }}
-                                                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-primary/20 ${
-                                                        minDurationFilter === opt.value ? 'text-primary font-medium' : 'text-gray-300'
-                                                    }`}
+                                                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-primary/20 ${minDurationFilter === opt.value ? 'text-primary font-medium' : 'text-gray-300'
+                                                        }`}
                                                 >
                                                     {opt.label}
                                                 </button>
@@ -984,7 +982,7 @@ export default function ApmDashboard() {
                                     </div>
                                 ) : (
                                     <div className="relative w-full">
-                                        <div 
+                                        <div
                                             onClick={() => setIsTraceDropdownOpen(!isTraceDropdownOpen)}
                                             className="bg-[#1f2937] p-3 rounded-lg border border-gray-700 flex justify-between items-center group overflow-hidden gap-2 cursor-pointer hover:border-gray-500 transition-colors"
                                         >
@@ -993,7 +991,7 @@ export default function ApmDashboard() {
                                                     <>
                                                         <Activity className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${selectedTraceObj.statusCode === 2 ? 'text-red-500' : 'text-green-500'}`} />
                                                         <span className="text-xs sm:text-sm text-gray-300 font-mono whitespace-nowrap">
-                                                            {new Date(selectedTraceObj.startTimeUnixNano / 1000000).toLocaleTimeString()} | {selectedTraceObj.name} | {selectedTraceObj.durationMs.toFixed(2)}ms 
+                                                            {new Date(selectedTraceObj.startTimeUnixNano / 1000000).toLocaleTimeString()} | {selectedTraceObj.name} | {selectedTraceObj.durationMs.toFixed(2)}ms
                                                             {selectedTraceObj.statusCode === 2 ? (
                                                                 <span className="text-red-500 inline-flex items-center ml-1 align-text-bottom gap-1"><X className="w-3.5 h-3.5" /> Error</span>
                                                             ) : (
@@ -1021,15 +1019,14 @@ export default function ApmDashboard() {
                                                                     fetchTrace(t.traceId);
                                                                     setIsTraceDropdownOpen(false);
                                                                 }}
-                                                                className={`trace-option flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${
-                                                                    selectedTraceObj?.traceId === t.traceId 
-                                                                        ? 'bg-[#3b82f6]/20 border border-[#3b82f6]/50 text-white' 
+                                                                className={`trace-option flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${selectedTraceObj?.traceId === t.traceId
+                                                                        ? 'bg-[#3b82f6]/20 border border-[#3b82f6]/50 text-white'
                                                                         : 'hover:bg-[#1f2937] text-gray-300 hover:text-white border border-transparent'
-                                                                }`}
+                                                                    }`}
                                                             >
                                                                 <Activity className={`w-3.5 h-3.5 shrink-0 ${t.statusCode === 2 ? 'text-red-500' : 'text-green-500'}`} />
                                                                 <span className="text-xs font-mono whitespace-nowrap">
-                                                                    {new Date(t.startTimeUnixNano / 1000000).toLocaleTimeString()} | {t.name} | {t.durationMs.toFixed(2)}ms 
+                                                                    {new Date(t.startTimeUnixNano / 1000000).toLocaleTimeString()} | {t.name} | {t.durationMs.toFixed(2)}ms
                                                                     {t.statusCode === 2 ? (
                                                                         <span className="text-red-500 inline-flex items-center ml-1 align-text-bottom gap-1"><X className="w-3.5 h-3.5" /> Error</span>
                                                                     ) : (
@@ -1336,7 +1333,7 @@ export default function ApmDashboard() {
                                     <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                                         <Server className="w-3.5 h-3.5 text-purple-400" /> Service
                                     </label>
-                                    <button 
+                                    <button
                                         type="button"
                                         onClick={() => { setIsExportServiceOpen(!isExportServiceOpen); setIsExportDurationOpen(false); }}
                                         className="w-full bg-[#1A1C23] border border-gray-700/60 hover:border-purple-500/50 text-white text-sm rounded-xl px-4 py-2.5 transition-all flex items-center justify-between shadow-inner focus:outline-none focus:ring-2 focus:ring-purple-500/20"
@@ -1344,10 +1341,10 @@ export default function ApmDashboard() {
                                         <span className="truncate">{exportService || 'All Services'}</span>
                                         <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isExportServiceOpen ? 'rotate-180' : ''}`} />
                                     </button>
-                                    
+
                                     {isExportServiceOpen && (
                                         <div className="absolute z-20 w-full mt-2 bg-[#1A1C23] border border-gray-700/80 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.6)] max-h-52 overflow-y-auto overflow-hidden animate-fade-in ring-1 ring-white/5 py-1 custom-scrollbar">
-                                            <button 
+                                            <button
                                                 type="button"
                                                 onClick={() => { setExportService(''); setIsExportServiceOpen(false); }}
                                                 className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-purple-500/15 ${exportService === '' ? 'text-purple-400 font-medium bg-purple-500/5' : 'text-gray-300'}`}
@@ -1355,7 +1352,7 @@ export default function ApmDashboard() {
                                                 All Services
                                             </button>
                                             {metrics.map(m => (
-                                                <button 
+                                                <button
                                                     type="button"
                                                     key={m.serviceName}
                                                     onClick={() => { setExportService(m.serviceName); setIsExportServiceOpen(false); }}
@@ -1371,17 +1368,17 @@ export default function ApmDashboard() {
                                     <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                                         <Activity className="w-3.5 h-3.5 text-orange-400" /> Min Duration
                                     </label>
-                                    <button 
+                                    <button
                                         type="button"
                                         onClick={() => { setIsExportDurationOpen(!isExportDurationOpen); setIsExportServiceOpen(false); }}
                                         className="w-full bg-[#1A1C23] border border-gray-700/60 hover:border-orange-500/50 text-white text-sm rounded-xl px-4 py-2.5 transition-all flex items-center justify-between shadow-inner focus:outline-none focus:ring-2 focus:ring-orange-500/20"
                                     >
                                         <span>
-                                            {exportMinDuration === 0 ? 'Any Duration' : 
-                                             exportMinDuration === 100 ? '> 100ms' : 
-                                             exportMinDuration === 500 ? '> 500ms' : 
-                                             exportMinDuration === 1000 ? '> 1s' : 
-                                             exportMinDuration === 2000 ? '> 2s' : '> 5s'}
+                                            {exportMinDuration === 0 ? 'Any Duration' :
+                                                exportMinDuration === 100 ? '> 100ms' :
+                                                    exportMinDuration === 500 ? '> 500ms' :
+                                                        exportMinDuration === 1000 ? '> 1s' :
+                                                            exportMinDuration === 2000 ? '> 2s' : '> 5s'}
                                         </span>
                                         <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isExportDurationOpen ? 'rotate-180' : ''}`} />
                                     </button>
@@ -1396,7 +1393,7 @@ export default function ApmDashboard() {
                                                 { v: 2000, l: '> 2s' },
                                                 { v: 5000, l: '> 5s' }
                                             ].map(opt => (
-                                                <button 
+                                                <button
                                                     type="button"
                                                     key={opt.v}
                                                     onClick={() => { setExportMinDuration(opt.v); setIsExportDurationOpen(false); }}
@@ -1453,7 +1450,7 @@ export default function ApmDashboard() {
                                     const params = new URLSearchParams();
                                     // todayDate YYYY-MM-DD + HH:MM:SS AM/PM → JS treats as local (IST) → toISOString() = UTC
                                     const todayDate = new Date().toLocaleDateString('en-CA');
-                                    
+
                                     const parseUserTime = (timeStr: string) => {
                                         const cleanTimeStr = timeStr.trim().replace(/([ap]m)/i, ' $1').toUpperCase();
                                         const d = new Date(`${todayDate} ${cleanTimeStr}`);

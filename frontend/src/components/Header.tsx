@@ -127,7 +127,7 @@ export default function Header() {
                   ? import.meta.env.BASE_URL
                   : import.meta.env.BASE_URL + '/'
                   }logo/kubiq_logo.png`}
-                alt="Kubiq Logo"
+                alt="kubiq Logo"
                 className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
               />
             </div>

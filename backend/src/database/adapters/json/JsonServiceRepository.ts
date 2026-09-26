@@ -95,9 +95,9 @@ export class JsonServiceRepository implements IServiceRepository {
     if (config.logSources !== undefined) service.logSources = config.logSources;
     if (config.interval !== undefined) service.interval = config.interval;
     if (config.retries !== undefined) service.retries = config.retries;
-    
+
     // Note: We deliberately do NOT reset status/history here to preserve state (as fixed previously)
-    
+
     this.services.set(name, service);
     this.saveServicesConfig();
     return service;
@@ -117,9 +117,9 @@ export class JsonServiceRepository implements IServiceRepository {
     service.lastCheck = result;
     service.currentStatus = result.success ? 'healthy' : 'unhealthy';
     if (extraData && extraData.sslExpiry !== undefined) {
-        service.sslExpiry = extraData.sslExpiry;
+      service.sslExpiry = extraData.sslExpiry;
     }
-    
+
     // Add to history
     service.history.push(result);
     const maxHistory = parseInt(process.env.MAX_HISTORY_SIZE || '100', 10);
@@ -129,9 +129,9 @@ export class JsonServiceRepository implements IServiceRepository {
 
     // Update stats
     this.updateStats(service);
-    
+
     // Persist to disk (maybe debounce this in prod, but simple here)
-    this.saveHistory(); 
+    this.saveHistory();
   }
 
   async getServiceHistory(serviceName: string, limit: number = 20): Promise<HealthCheck[]> {
@@ -156,27 +156,27 @@ export class JsonServiceRepository implements IServiceRepository {
         if (namePart === -1) return;
         const name = line.substring(0, namePart).trim();
         const val = line.substring(namePart + 1).trim();
-        
+
         if (name && val && !name.startsWith('#')) {
-             // Basic parse (simplified for brevity, assumes standard format)
-             const parts = val.split('|');
-             this.services.set(name, {
-                 id: crypto.createHash('md5').update(name).digest('hex'), // Generate stable ID
-                 name, 
-                 endpoint: parts[0],
-                 // parts[1] is headers (JSON string) usually, let's assume standard format is: endpoint|headers|type
-                  headers: parts[1] && parts[1] !== 'undefined' ? JSON.parse(parts[1]) : undefined,
-                  type: (parts[2] as any) || 'http',
-                  ignoreSSL: parts[3] === 'true', // ignoreSSL
-                  // logPath: parts[4], // Deprecated
-                  logSources: parts[5] && parts[5] !== 'undefined' 
-                        ? JSON.parse(Buffer.from(parts[5], 'base64').toString('utf-8')) 
-                        : undefined,
-                  interval: parts[6] && parts[6] !== 'undefined' ? parseInt(parts[6]) : undefined,
-                  retries: parts[7] && parts[7] !== 'undefined' ? parseInt(parts[7]) : undefined,
-                  currentStatus: 'unknown',
-                  history: []
-             });
+          // Basic parse (simplified for brevity, assumes standard format)
+          const parts = val.split('|');
+          this.services.set(name, {
+            id: crypto.createHash('md5').update(name).digest('hex'), // Generate stable ID
+            name,
+            endpoint: parts[0],
+            // parts[1] is headers (JSON string) usually, let's assume standard format is: endpoint|headers|type
+            headers: parts[1] && parts[1] !== 'undefined' ? JSON.parse(parts[1]) : undefined,
+            type: (parts[2] as any) || 'http',
+            ignoreSSL: parts[3] === 'true', // ignoreSSL
+            // logPath: parts[4], // Deprecated
+            logSources: parts[5] && parts[5] !== 'undefined'
+              ? JSON.parse(Buffer.from(parts[5], 'base64').toString('utf-8'))
+              : undefined,
+            interval: parts[6] && parts[6] !== 'undefined' ? parseInt(parts[6]) : undefined,
+            retries: parts[7] && parts[7] !== 'undefined' ? parseInt(parts[7]) : undefined,
+            currentStatus: 'unknown',
+            history: []
+          });
         }
       });
     } catch (e) { console.error('Error loading config', e); }
@@ -186,56 +186,56 @@ export class JsonServiceRepository implements IServiceRepository {
     const file = path.join(this.dataDir, 'kubiq-history.json');
     if (!fs.existsSync(file)) return;
     try {
-        const data = JSON.parse(fs.readFileSync(file, 'utf-8'));
-        data.forEach(([name, status]: any) => {
-            if (this.services.has(name)) {
-                const s = this.services.get(name)!;
-                s.history = status.history || [];
-                s.currentStatus = status.currentStatus;
-                this.services.set(name, s);
-            }
-        });
+      const data = JSON.parse(fs.readFileSync(file, 'utf-8'));
+      data.forEach(([name, status]: any) => {
+        if (this.services.has(name)) {
+          const s = this.services.get(name)!;
+          s.history = status.history || [];
+          s.currentStatus = status.currentStatus;
+          this.services.set(name, s);
+        }
+      });
     } catch (e) { console.error('Error loading history', e); }
   }
 
   private saveServicesConfig(): void {
-     const lines = ['# Kubiq Services'];
-     this.services.forEach(s => {
-         let headers = s.headers ? JSON.stringify(s.headers) : 'undefined';
-         let type = s.type || 'http';
-         let ignoreSSL = s.ignoreSSL || false;
-         let logPath = 'undefined'; // Deprecated, always write undefined
-         // Use Base64 for logSources to avoid delimiter collision with pipe '|'
-         let logSources = s.logSources ? Buffer.from(JSON.stringify(s.logSources)).toString('base64') : 'undefined';
-         let interval = s.interval !== undefined ? s.interval : 'undefined';
-         let retries = s.retries !== undefined ? s.retries : 'undefined';
-         // Format: name=endpoint|headers|type|ignoreSSL|logPath|logSources|interval|retries
-         let line = `${s.name}=${s.endpoint}|${headers}|${type}|${ignoreSSL}|${logPath}|${logSources}|${interval}|${retries}`;
-         lines.push(line);
-     });
-     try {
-        const dir = path.dirname(this.servicesConfigPath);
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(this.servicesConfigPath, lines.join('\n'));
-     } catch (e) {
-         console.error('Failed to save config', e);
-     }
+    const lines = ['# kubiq Services'];
+    this.services.forEach(s => {
+      let headers = s.headers ? JSON.stringify(s.headers) : 'undefined';
+      let type = s.type || 'http';
+      let ignoreSSL = s.ignoreSSL || false;
+      let logPath = 'undefined'; // Deprecated, always write undefined
+      // Use Base64 for logSources to avoid delimiter collision with pipe '|'
+      let logSources = s.logSources ? Buffer.from(JSON.stringify(s.logSources)).toString('base64') : 'undefined';
+      let interval = s.interval !== undefined ? s.interval : 'undefined';
+      let retries = s.retries !== undefined ? s.retries : 'undefined';
+      // Format: name=endpoint|headers|type|ignoreSSL|logPath|logSources|interval|retries
+      let line = `${s.name}=${s.endpoint}|${headers}|${type}|${ignoreSSL}|${logPath}|${logSources}|${interval}|${retries}`;
+      lines.push(line);
+    });
+    try {
+      const dir = path.dirname(this.servicesConfigPath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(this.servicesConfigPath, lines.join('\n'));
+    } catch (e) {
+      console.error('Failed to save config', e);
+    }
   }
 
   private saveHistory(): void {
-      const file = path.join(this.dataDir, 'kubiq-history.json');
-      const data = Array.from(this.services.entries());
-      fs.writeFileSync(file, JSON.stringify(data, null, 2));
+    const file = path.join(this.dataDir, 'kubiq-history.json');
+    const data = Array.from(this.services.entries());
+    fs.writeFileSync(file, JSON.stringify(data, null, 2));
   }
 
   private updateStats(service: ServiceStatus): void {
-      // Recalc average response time and uptime
-      const recent = service.history.slice(-20);
-      const valid = recent.filter(c => c.success);
-      if (valid.length) {
-          service.averageResponseTime = valid.reduce((sum, c) => sum + c.responseTime, 0) / valid.length;
-      }
-      const successCount = service.history.filter(c => c.success).length;
-      service.uptime = service.history.length ? (successCount / service.history.length) * 100 : 100;
+    // Recalc average response time and uptime
+    const recent = service.history.slice(-20);
+    const valid = recent.filter(c => c.success);
+    if (valid.length) {
+      service.averageResponseTime = valid.reduce((sum, c) => sum + c.responseTime, 0) / valid.length;
+    }
+    const successCount = service.history.filter(c => c.success).length;
+    service.uptime = service.history.length ? (successCount / service.history.length) * 100 : 100;
   }
 }
