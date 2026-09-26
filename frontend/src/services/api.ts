@@ -299,6 +299,11 @@ class ApiClient {
       return response.data;
   }
 
+  async updateUserAllowedNamespaces(userId: string, allowedNamespaces: string[]) {
+      const response = await this.client.put(`/api/users/${userId}/namespaces`, { allowedNamespaces });
+      return response.data;
+  }
+
   async updateUserStatus(userId: string, enabled: boolean) {
       const response = await this.client.put(`/api/users/${userId}/status`, { enabled });
       return response.data;

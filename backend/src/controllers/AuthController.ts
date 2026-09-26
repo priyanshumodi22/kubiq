@@ -38,6 +38,7 @@ export class AuthController {
             username: user.username,
             preferred_username: user.username, 
             roles: [user.role],
+            allowedNamespaces: user.allowedNamespaces || (user.role === 'kubiq-viewer' ? ['apps', 'default'] : undefined),
             type: 'native'
         }, 
         secret, 

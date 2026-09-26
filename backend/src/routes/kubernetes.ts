@@ -2,7 +2,7 @@ import express from 'express';
 import yaml from 'js-yaml';
 import axios from 'axios';
 import { KubernetesService } from '../services/KubernetesService';
-import { requireRole, getUserFromReq } from '../middleware/auth';
+import { requireRole, getUserFromReq, checkNamespaceAccess } from '../middleware/auth';
 import { clickhouseService } from '../services/ClickhouseService';
 import { AuditLogService } from '../services/AuditLogService';
 
@@ -61,7 +61,7 @@ router.get('/namespaces', async (req, res) => {
 });
 
 // GET /api/kubernetes/namespaces/:ns/pods
-router.get('/namespaces/:ns/pods', async (req, res) => {
+router.get('/namespaces/:ns/pods', checkNamespaceAccess, async (req, res) => {
     try {
         if (!k8sService.available) return res.json([]);
         const pods = await k8sService.getPods(getContext(req), (req.params.ns as string));
@@ -72,7 +72,7 @@ router.get('/namespaces/:ns/pods', async (req, res) => {
 });
 
 // GET /api/kubernetes/namespaces/:ns/metrics
-router.get('/namespaces/:ns/metrics', async (req, res) => {
+router.get('/namespaces/:ns/metrics', checkNamespaceAccess, async (req, res) => {
     try {
         if (!k8sService.available) return res.json([]);
         const metrics = await k8sService.getPodMetrics(getContext(req), (req.params.ns as string));
@@ -83,7 +83,7 @@ router.get('/namespaces/:ns/metrics', async (req, res) => {
 });
 
 // GET /api/kubernetes/namespaces/:ns/events
-router.get('/namespaces/:ns/events', async (req, res) => {
+router.get('/namespaces/:ns/events', checkNamespaceAccess, async (req, res) => {
     try {
         if (!k8sService.available) return res.json([]);
         const events = await k8sService.getEvents(getContext(req), (req.params.ns as string));
@@ -94,7 +94,7 @@ router.get('/namespaces/:ns/events', async (req, res) => {
 });
 
 // GET /api/kubernetes/namespaces/:ns/deployments
-router.get('/namespaces/:ns/deployments', async (req, res) => {
+router.get('/namespaces/:ns/deployments', checkNamespaceAccess, async (req, res) => {
     try {
         if (!k8sService.available) return res.json([]);
         const deployments = await k8sService.getDeployments(getContext(req), (req.params.ns as string));
@@ -113,21 +113,21 @@ router.get('/nodes', async (req, res) => {
     } catch (e: any) { handleK8sError(res, e); }
 });
 
-router.get('/namespaces/:ns/services', async (req, res) => {
+router.get('/namespaces/:ns/services', checkNamespaceAccess, async (req, res) => {
     try {
         if (!k8sService.available) return res.json([]);
         res.json(await k8sService.getServices(getContext(req), (req.params.ns as string)));
     } catch (e: any) { handleK8sError(res, e); }
 });
 
-router.get('/namespaces/:ns/endpoints', async (req, res) => {
+router.get('/namespaces/:ns/endpoints', checkNamespaceAccess, async (req, res) => {
     try {
         if (!k8sService.available) return res.json([]);
         res.json(await k8sService.getEndpoints(getContext(req), (req.params.ns as string)));
     } catch (e: any) { handleK8sError(res, e); }
 });
 
-router.get('/namespaces/:ns/ingresses', async (req, res) => {
+router.get('/namespaces/:ns/ingresses', checkNamespaceAccess, async (req, res) => {
     try {
         if (!k8sService.available) return res.json([]);
         res.json(await k8sService.getIngresses(getContext(req), (req.params.ns as string)));
@@ -141,7 +141,7 @@ router.get('/persistentvolumes', async (req, res) => {
     } catch (e: any) { handleK8sError(res, e); }
 });
 
-router.get('/namespaces/:ns/persistentvolumeclaims', async (req, res) => {
+router.get('/namespaces/:ns/persistentvolumeclaims', checkNamespaceAccess, async (req, res) => {
     try {
         if (!k8sService.available) return res.json([]);
         res.json(await k8sService.getPersistentVolumeClaims(getContext(req), (req.params.ns as string)));
@@ -155,14 +155,14 @@ router.get('/storageclasses', async (req, res) => {
     } catch (e: any) { handleK8sError(res, e); }
 });
 
-router.get('/namespaces/:ns/configmaps', async (req, res) => {
+router.get('/namespaces/:ns/configmaps', checkNamespaceAccess, async (req, res) => {
     try {
         if (!k8sService.available) return res.json([]);
         res.json(await k8sService.getConfigMaps(getContext(req), (req.params.ns as string)));
     } catch (e: any) { handleK8sError(res, e); }
 });
 
-router.get('/namespaces/:ns/secrets', async (req, res) => {
+router.get('/namespaces/:ns/secrets', checkNamespaceAccess, async (req, res) => {
     try {
         if (!k8sService.available) return res.json([]);
         res.json(await k8sService.getSecrets(getContext(req), (req.params.ns as string)));
@@ -336,7 +336,7 @@ router.get('/namespaces/:ns/autoscalers/:type/:name', async (req, res) => {
 });
 
 // GET /api/kubernetes/namespaces/:ns/quotas
-router.get('/namespaces/:ns/quotas', async (req, res) => {
+router.get('/namespaces/:ns/quotas', checkNamespaceAccess, async (req, res) => {
     try {
         if (!k8sService.available) return res.json({ quotas: [], limitRanges: [], rbacForbidden: false });
         const ctx = getContext(req);
@@ -358,7 +358,7 @@ router.get('/namespaces/:ns/quotas', async (req, res) => {
 });
 
 // POST /api/kubernetes/namespaces/:ns/pods/:name/ai-diagnose
-router.post('/namespaces/:ns/pods/:name/ai-diagnose', async (req, res) => {
+router.post('/namespaces/:ns/pods/:name/ai-diagnose', checkNamespaceAccess, async (req, res) => {
     try {
         if (!k8sService.available) return res.status(503).json({ message: 'K8s service not available' });
         const { ns, name } = req.params;

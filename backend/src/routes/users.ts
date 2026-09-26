@@ -117,4 +117,35 @@ router.put('/:id/status', authMiddleware, requireRole('kubiq-admin'), async (req
     }
 });
 
+// PUT /api/users/:id/namespaces - Update user allowed namespaces (Admin only)
+router.put('/:id/namespaces', authMiddleware, requireRole('kubiq-admin'), async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { allowedNamespaces } = req.body;
+        
+        if (!Array.isArray(allowedNamespaces)) {
+            return res.status(400).json({ message: 'allowedNamespaces must be an array of strings' });
+        }
+
+        const repo = await DatabaseFactory.getUserRepository();
+        const updated = await repo.updateUser(id as string, {
+            allowedNamespaces: allowedNamespaces.map((ns: string) => String(ns).trim().toLowerCase()).filter(Boolean)
+        });
+        
+        AuditLogService.getInstance().log({
+            user: getUserFromReq(req),
+            action: 'AUTH_ROLE_CHANGE',
+            target: `user/${updated.username}`,
+            details: `Updated allowed namespaces to: ${updated.allowedNamespaces?.join(', ') || '*'}`
+        });
+
+        res.json({
+            ...updated,
+            passwordHash: undefined
+        });
+    } catch (error: any) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 export { router as usersRouter };

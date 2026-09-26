@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { DatabaseFactory } from '../database/DatabaseFactory';
 
 interface KeycloakConfig {
   realm: string;
@@ -176,15 +177,41 @@ export const requireRole = (...requiredRoles: string[]) => {
   };
 };
 
-export const checkNamespaceAccess = (req: Request, res: Response, next: NextFunction) => {
+export const checkNamespaceAccess = async (req: Request, res: Response, next: NextFunction) => {
     const user = req.user as any;
     const requestedNs = req.params.ns;
 
-    if (user && Array.isArray(user.allowedNamespaces) && user.allowedNamespaces.length > 0 && requestedNs) {
-        if (!user.allowedNamespaces.includes(requestedNs)) {
+    if (!requestedNs || requestedNs === 'all' || requestedNs === '*') {
+      return next();
+    }
+
+    // Admins have access to all cluster namespaces
+    if (user && (user.roles?.includes('kubiq-admin') || user.role === 'kubiq-admin')) {
+      return next();
+    }
+
+    let allowed: string[] | undefined = user?.allowedNamespaces;
+
+    // Fetch fresh from User repository if allowedNamespaces isn't in token payload
+    if (!allowed && user?.sub) {
+      try {
+        const repo = await DatabaseFactory.getUserRepository();
+        const dbUser = await repo.findById(user.sub);
+        if (dbUser) {
+          allowed = dbUser.allowedNamespaces || (dbUser.role === 'kubiq-viewer' ? ['apps', 'default'] : undefined);
+          if (user) user.allowedNamespaces = allowed;
+        }
+      } catch {
+        // Fallback
+      }
+    }
+
+    if (allowed && Array.isArray(allowed) && allowed.length > 0) {
+        const lowerNs = requestedNs.toLowerCase().trim();
+        if (!allowed.map(s => s.toLowerCase().trim()).includes(lowerNs)) {
             return res.status(403).json({
                 error: 'RBAC_FORBIDDEN',
-                message: `Access to namespace '${requestedNs}' is restricted by your user RBAC policy. Allowed: ${user.allowedNamespaces.join(', ')}`
+                message: `Access denied to namespace '${requestedNs}'. Restricted by your user RBAC scope policy.`
             });
         }
     }
