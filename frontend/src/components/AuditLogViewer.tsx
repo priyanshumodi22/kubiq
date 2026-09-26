@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, Search, RefreshCw } from 'lucide-react';
+import { Shield, Search, RefreshCw, Download } from 'lucide-react';
 import { apiClient } from '../services/api';
 
 export interface AuditLogItem {
@@ -27,6 +27,22 @@ export function AuditLogViewer() {
             setLogs([]);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleExportCsv = async () => {
+        try {
+            const blob = await apiClient.exportAuditLogsCsv(search);
+            const url = window.URL.createObjectURL(new Blob([blob], { type: 'text/csv' }));
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `kubiq-audit-logs-${Date.now()}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } catch (e) {
+            console.error('Failed to export audit logs CSV:', e);
         }
     };
 
@@ -87,6 +103,14 @@ export function AuditLogViewer() {
                             className="bg-black/30 border border-gray-700 text-xs text-white rounded-xl pl-9 pr-3 py-2 w-full focus:outline-none focus:border-primary/50"
                         />
                     </div>
+                    <button
+                        onClick={handleExportCsv}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-xl text-xs font-medium transition-colors"
+                        title="Download audit logs as CSV"
+                    >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Export CSV</span>
+                    </button>
                     <button
                         onClick={fetchLogs}
                         className="p-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl border border-white/10 transition-colors"

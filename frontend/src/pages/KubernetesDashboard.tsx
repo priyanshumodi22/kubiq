@@ -82,6 +82,13 @@ export default function KubernetesDashboard() {
 
     const formatContextName = (name: string) => {
         if (!name) return '';
+        if (name === 'inClusterContext' || name === 'inCluster') {
+            const matchingCtx = contexts.find(c => c.name === name);
+            if (matchingCtx && matchingCtx.cluster && matchingCtx.cluster !== 'inClusterContext') {
+                return matchingCtx.cluster;
+            }
+            return 'In-Cluster Kubernetes';
+        }
         if (name.startsWith('arn:aws:eks:')) {
             const parts = name.split('/');
             const clusterName = parts[parts.length - 1];

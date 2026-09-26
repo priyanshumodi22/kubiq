@@ -69,6 +69,7 @@ export class KubernetesService {
 
     public available: boolean = false;
     public defaultContext: string = '';
+    private detectedClusterName: string = '';
 
     private constructor() {
         this.kc = new k8s.KubeConfig();
@@ -87,18 +88,12 @@ export class KubernetesService {
 
     public async initialize(): Promise<void> {
         try {
-            // A deployment inside Kubernetes should use its projected service
-            // account token. Falling back to a mounted developer kubeconfig is
-            // only for local Docker/VM installs.
             if (process.env.KUBERNETES_SERVICE_HOST) {
                 this.kc.loadFromCluster();
-                // `loadFromCluster()` creates its own context name (currently
-                // `inCluster`).  A display label such as "in-cluster" is not a
-                // valid KubeConfig context, and setting it later leaves the API
-                // client with no active cluster.
                 this.defaultContext = this.kc.getCurrentContext();
                 this.available = true;
                 console.log('☸️  Kubernetes connected — in-cluster service account');
+                this.autoDetectClusterName().catch(() => {});
                 return;
             }
 
@@ -114,9 +109,34 @@ export class KubernetesService {
             this.defaultContext = this.kc.getCurrentContext() || 'default';
             this.available = true;
             console.log(`☸️  Kubernetes connected — default context: ${this.defaultContext}`);
+            this.autoDetectClusterName().catch(() => {});
         } catch {
             this.available = false;
             console.log('☸️  Kubernetes not configured or unreachable — K8s monitoring disabled');
+        }
+    }
+
+    private async autoDetectClusterName(): Promise<void> {
+        try {
+            const { coreApi } = this.getClients(this.defaultContext);
+            const res = await coreApi.listNode(undefined, undefined, undefined, undefined, undefined, 5);
+            const items = res.items || [];
+            if (items.length > 0) {
+                const controlNode = items.find((n: any) => {
+                    const labels = n.metadata?.labels || {};
+                    return labels['node-role.kubernetes.io/control-plane'] !== undefined ||
+                           labels['node-role.kubernetes.io/master'] !== undefined;
+                }) || items[0];
+
+                const rawName = controlNode.metadata?.name || '';
+                const cleanName = rawName.split('.')[0];
+                if (cleanName) {
+                    this.detectedClusterName = cleanName;
+                    console.log(`☸️  Auto-detected Cluster Name: ${this.detectedClusterName}`);
+                }
+            }
+        } catch {
+            // Background detection fails gracefully if RBAC blocks node listing
         }
     }
 
@@ -144,11 +164,22 @@ export class KubernetesService {
     }
 
     public getContexts(): { name: string; cluster: string; user: string }[] {
-        return this.kc.contexts.map((c: any) => ({
-            name: c.name,
-            cluster: c.cluster ?? '',
-            user: c.user ?? ''
-        }));
+        const customClusterName = process.env.CLUSTER_NAME || process.env.K8S_CLUSTER_NAME || this.detectedClusterName;
+        return this.kc.contexts.map((c: any) => {
+            const isGenericInCluster = c.name === 'inClusterContext' || c.name === 'inCluster' || c.cluster === 'inCluster' || c.cluster === 'default';
+            const clusterName = isGenericInCluster
+                ? (customClusterName || 'In-Cluster Kubernetes')
+                : (c.cluster || c.name);
+            const userName = isGenericInCluster && (c.name === 'inClusterContext' || c.name === 'inCluster')
+                ? 'inClusterServiceAccount'
+                : (c.user ?? '');
+
+            return {
+                name: c.name,
+                cluster: clusterName,
+                user: userName
+            };
+        });
     }
 
     public async getNamespaces(ctx: string): Promise<string[]> {

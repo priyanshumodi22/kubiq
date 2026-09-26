@@ -12,6 +12,26 @@ export interface AlertPayload {
   error?: string;
   details?: Record<string, string | number | undefined>;
   timestamp?: Date;
+  isTest?: boolean;
+}
+
+export interface AlertHistoryEntry {
+  id: string;
+  timestamp: string;
+  title: string;
+  status: 'healthy' | 'unhealthy' | 'warning' | 'info';
+  channelId: string;
+  channelName: string;
+  channelType: string;
+  delivered: boolean;
+  error?: string;
+  target?: string;
+}
+
+export interface MaintenanceConfig {
+  maintenanceMode: boolean;
+  mutedNamespaces: string[];
+  mutedServices: string[];
 }
 
 interface FormattedCard {
@@ -32,6 +52,12 @@ export class NotificationManager {
   private persistenceEnabled: boolean;
   public throttleMap = new Map<string, number>();
   private transporters = new Map<string, nodemailer.Transporter>();
+
+  // Alert History & Maintenance Silence Mode
+  private history: AlertHistoryEntry[] = [];
+  private maintenanceMode: boolean = false;
+  private mutedNamespaces: Set<string> = new Set();
+  private mutedServices: Set<string> = new Set();
 
   private constructor() {
     this.persistenceEnabled = process.env.ENABLE_PERSISTENCE === 'true';
@@ -113,13 +139,15 @@ export class NotificationManager {
 
     console.log(`🔔 Sending TEST card notification to ${channel.name}`);
     await this.sendAlertCard(channel, {
-      title: 'Deployment recovered: flux-system/kubiq-web',
+      title: `🔬 Test Alert: ${channel.name}`,
       status: 'healthy',
-      serviceName: 'flux-system/kubiq-web',
-      target: 'flux-system/kubiq-web',
+      serviceName: channel.name,
+      target: channel.name,
+      isTest: true,
       details: {
-        'State': 'Flux and Kubernetes rollout are healthy',
-        'Flux revision': 'main@sha1:6f39934ea52d5956d247292233c98367b8c76357'
+        'State': 'Notification Channel configuration verified successfully',
+        'Channel Type': channel.type.toUpperCase(),
+        'Detail': 'Your webhook integration is active and passing test payload delivery! ✅'
       }
     });
   }
@@ -137,7 +165,8 @@ export class NotificationManager {
 
     const details: Record<string, string> = {
       'State': isHealthy ? 'Flux and Kubernetes rollout are healthy' : 'Service health check degraded or failing',
-      'Target': serviceName
+      'Target': serviceName,
+      ...(extraDetails || {})
     };
 
     if (!isHealthy && error) {
@@ -231,8 +260,72 @@ export class NotificationManager {
     });
   }
 
+  public getMaintenanceConfig(): MaintenanceConfig {
+    return {
+      maintenanceMode: this.maintenanceMode,
+      mutedNamespaces: Array.from(this.mutedNamespaces),
+      mutedServices: Array.from(this.mutedServices)
+    };
+  }
+
+  public setMaintenanceConfig(config: Partial<MaintenanceConfig>): MaintenanceConfig {
+    if (typeof config.maintenanceMode === 'boolean') {
+      this.maintenanceMode = config.maintenanceMode;
+    }
+    if (Array.isArray(config.mutedNamespaces)) {
+      this.mutedNamespaces = new Set(config.mutedNamespaces.map(s => s.toLowerCase().trim()));
+    }
+    if (Array.isArray(config.mutedServices)) {
+      this.mutedServices = new Set(config.mutedServices.map(s => s.toLowerCase().trim()));
+    }
+    return this.getMaintenanceConfig();
+  }
+
+  public isMuted(targetName?: string, namespace?: string): boolean {
+    if (this.maintenanceMode) return true;
+    if (namespace && this.mutedNamespaces.has(namespace.toLowerCase().trim())) return true;
+    if (targetName && this.mutedServices.has(targetName.toLowerCase().trim())) return true;
+    return false;
+  }
+
+  public getHistory(limit: number = 50): AlertHistoryEntry[] {
+    return this.history.slice(0, limit);
+  }
+
+  public clearHistory(): void {
+    this.history = [];
+  }
+
+  private recordHistory(entry: AlertHistoryEntry): void {
+    this.history.unshift(entry);
+    if (this.history.length > 100) {
+      this.history = this.history.slice(0, 100);
+    }
+  }
+
   private async sendAlertCard(channel: NotificationChannel, payload: AlertPayload): Promise<void> {
     const formattedCard = this.formatCard(payload);
+    const targetName = payload.target || payload.serviceName || '';
+    const namespace = payload.details?.['Namespace'] ? String(payload.details['Namespace']) : '';
+
+    const isTestCall = payload.isTest === true || payload.title.toLowerCase().includes('test alert');
+    if (!isTestCall && this.isMuted(targetName, namespace)) {
+      console.log(`🔇 Alert suppressed by Maintenance Silence Mode for channel ${channel.name}`);
+      this.recordHistory({
+        id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
+        timestamp: new Date().toISOString(),
+        title: payload.title,
+        status: payload.status,
+        channelId: channel.id,
+        channelName: channel.name,
+        channelType: channel.type,
+        delivered: false,
+        error: 'Suppressed by Maintenance Silence Mode',
+        target: targetName || namespace || undefined
+      });
+      return;
+    }
+
     try {
       await this.withRetry(async () => {
         if (channel.type === 'webhook') {
@@ -241,8 +334,32 @@ export class NotificationManager {
           await this.sendEmailCard(channel, formattedCard);
         }
       }, 3);
+
+      this.recordHistory({
+        id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
+        timestamp: new Date().toISOString(),
+        title: payload.title,
+        status: payload.status,
+        channelId: channel.id,
+        channelName: channel.name,
+        channelType: channel.type,
+        delivered: true,
+        target: targetName || namespace || undefined
+      });
     } catch (error: any) {
       console.error(`❌ Failed to send card notification to ${channel.name}:`, error.message);
+      this.recordHistory({
+        id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
+        timestamp: new Date().toISOString(),
+        title: payload.title,
+        status: payload.status,
+        channelId: channel.id,
+        channelName: channel.name,
+        channelType: channel.type,
+        delivered: false,
+        error: error.message || 'Delivery failed',
+        target: targetName || namespace || undefined
+      });
     }
   }
 
@@ -270,9 +387,20 @@ export class NotificationManager {
     if (payload.details) {
       Object.entries(payload.details).forEach(([k, v]) => {
         if (v !== undefined && v !== null && String(v).trim() !== '') {
+          const strVal = String(v).trim();
+          const lowerKey = k.toLowerCase();
+
+          // Security check: Never expose DB connection URIs or credentials in alert cards
+          const isDbUri = /^(mongodb|mongodb\+srv|mysql|mariadb|postgres|postgresql|redis|amqp):\/\//i.test(strVal) ||
+                          (strVal.includes('@') && /:\/\/[^:]+:[^@]+@/.test(strVal));
+
+          if (lowerKey === 'endpoint' && isDbUri) {
+            return; // Completely omit Endpoint field for Database connection URIs
+          }
+
           fields.push({
             name: k,
-            value: String(v),
+            value: isDbUri ? strVal.replace(/:\/\/[^:]+:[^@]+@/, '://***:***@') : strVal,
             inline: k.length < 15
           });
         }

@@ -302,9 +302,18 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
     const [channels, setChannels] = useState<NotificationChannel[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const [activeTab, setActiveTab] = useState<'list' | 'add'>('list');
+    const [activeTab, setActiveTab] = useState<'list' | 'add' | 'history' | 'maintenance'>('list');
     const [editingChannelId, setEditingChannelId] = useState<string | null>(null);
     const [deleteChannel, setDeleteChannel] = useState<{ id: string, name: string } | null>(null);
+
+    // Alert History & Maintenance Silence State
+    const [historyLogs, setHistoryLogs] = useState<any[]>([]);
+    const [maintenanceConfig, setMaintenanceConfig] = useState<{ maintenanceMode: boolean; mutedNamespaces: string[]; mutedServices: string[] }>({
+        maintenanceMode: false,
+        mutedNamespaces: [],
+        mutedServices: []
+    });
+    const [newMutedNs, setNewMutedNs] = useState('');
 
     const { hasRole } = useAuth();
     const { addToast } = useToast();
@@ -322,9 +331,29 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
         }
     };
 
+    const fetchHistory = async () => {
+        try {
+            const data = await apiClient.getNotificationHistory();
+            setHistoryLogs(data || []);
+        } catch {
+            setHistoryLogs([]);
+        }
+    };
+
+    const fetchMaintenance = async () => {
+        try {
+            const data = await apiClient.getMaintenanceConfig();
+            setMaintenanceConfig(data || { maintenanceMode: false, mutedNamespaces: [], mutedServices: [] });
+        } catch {
+            // fallback
+        }
+    };
+
     useEffect(() => {
         if (isOpen) {
             fetchChannels();
+            fetchHistory();
+            fetchMaintenance();
         }
     }, [isOpen]);
 
@@ -412,6 +441,7 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
         try {
             await apiClient.testNotificationChannel(id);
             addToast('Test notification sent! 🚀', 'success');
+            fetchHistory();
         } catch (err: any) {
             addToast(`Test failed: ${err.response?.data?.message}`, 'error');
         }
@@ -425,16 +455,65 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
         setEditingChannelId(id);
     }
 
+    const handleToggleMaintenance = async () => {
+        if (!isAdmin) return;
+        try {
+            const updated = await apiClient.updateMaintenanceConfig({
+                maintenanceMode: !maintenanceConfig.maintenanceMode
+            });
+            setMaintenanceConfig(updated);
+            addToast(`Global maintenance silence mode ${!maintenanceConfig.maintenanceMode ? 'ENABLED 🔇' : 'DISABLED 🔔'}`, 'success');
+        } catch {
+            addToast('Failed to toggle maintenance mode', 'error');
+        }
+    };
+
+    const handleAddMutedNs = async () => {
+        if (!newMutedNs.trim() || !isAdmin) return;
+        const nsList = Array.from(new Set([...maintenanceConfig.mutedNamespaces, newMutedNs.trim()]));
+        try {
+            const updated = await apiClient.updateMaintenanceConfig({ mutedNamespaces: nsList });
+            setMaintenanceConfig(updated);
+            setNewMutedNs('');
+            addToast(`Muted namespace: ${newMutedNs.trim()}`, 'success');
+        } catch {
+            addToast('Failed to mute namespace', 'error');
+        }
+    };
+
+    const handleRemoveMutedNs = async (ns: string) => {
+        if (!isAdmin) return;
+        const nsList = maintenanceConfig.mutedNamespaces.filter(x => x !== ns);
+        try {
+            const updated = await apiClient.updateMaintenanceConfig({ mutedNamespaces: nsList });
+            setMaintenanceConfig(updated);
+            addToast(`Unmuted namespace: ${ns}`, 'success');
+        } catch {
+            addToast('Failed to unmute namespace', 'error');
+        }
+    };
+
+    const handleClearHistory = async () => {
+        if (!isAdmin) return;
+        try {
+            await apiClient.clearNotificationHistory();
+            setHistoryLogs([]);
+            addToast('Alert history cleared', 'success');
+        } catch {
+            addToast('Failed to clear alert history', 'error');
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="bg-bg-surface rounded-xl border border-gray-800 shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
+            <div className="bg-bg-surface rounded-xl border border-gray-800 shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto scrollbar-hide">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-800 sticky top-0 bg-bg-surface z-10">
                     <div className="flex items-center gap-2">
                         <Bell className="w-5 h-5 text-blue-500" />
-                        <h2 className="text-xl font-bold text-white">Notification Channels</h2>
+                        <h2 className="text-xl font-bold text-white">Notification Center</h2>
                     </div>
                     <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
                         <X className="w-5 h-5" />
@@ -443,29 +522,34 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
 
                 <div className="p-4">
                     {/* Tabs */}
-                    <div className="flex gap-4 mb-6 border-b border-gray-800">
+                    <div className="flex gap-4 mb-6 border-b border-gray-800 text-xs sm:text-sm overflow-x-auto">
                         <button
                             onClick={() => setActiveTab('list')}
-                            className={`pb-2 px-1 ${activeTab === 'list' ? 'text-blue-500 border-b-2 border-blue-500 font-medium' : 'text-gray-400 hover:text-white'}`}
+                            className={`pb-2 px-1 shrink-0 ${activeTab === 'list' ? 'text-blue-500 border-b-2 border-blue-500 font-medium' : 'text-gray-400 hover:text-white'}`}
                         >
-                            Active Channels
+                            Active Channels ({channels.length})
                         </button>
                         {isAdmin && (
                             <button
                                 onClick={() => setActiveTab('add')}
-                                className={`pb-2 px-1 ${activeTab === 'add' ? 'text-blue-500 border-b-2 border-blue-500 font-medium' : 'text-gray-400 hover:text-white'}`}
+                                className={`pb-2 px-1 shrink-0 ${activeTab === 'add' ? 'text-blue-500 border-b-2 border-blue-500 font-medium' : 'text-gray-400 hover:text-white'}`}
                             >
-                                Add New Channel
+                                Add Channel
                             </button>
                         )}
-                        {!isAdmin && (
-                            <button
-                                disabled
-                                className="pb-2 px-1 text-gray-600 cursor-not-allowed hidden sm:block"
-                            >
-                                Add New Channel (Locked)
-                            </button>
-                        )}
+                        <button
+                            onClick={() => { setActiveTab('history'); fetchHistory(); }}
+                            className={`pb-2 px-1 shrink-0 flex items-center gap-1.5 ${activeTab === 'history' ? 'text-blue-500 border-b-2 border-blue-500 font-medium' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            <span>Alert History</span>
+                        </button>
+                        <button
+                            onClick={() => { setActiveTab('maintenance'); fetchMaintenance(); }}
+                            className={`pb-2 px-1 shrink-0 flex items-center gap-1.5 ${activeTab === 'maintenance' ? 'text-amber-500 border-b-2 border-amber-500 font-medium' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            <span>Silence & Maintenance</span>
+                            {maintenanceConfig.maintenanceMode && <span className="bg-amber-500/20 text-amber-400 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase">Muted</span>}
+                        </button>
                     </div>
 
                     {error && (
@@ -551,6 +635,131 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
 
                     {activeTab === 'add' && isAdmin && (
                         <ChannelForm onSubmit={handleCreate} isLoading={isLoading} />
+                    )}
+
+                    {activeTab === 'history' && (
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between pb-2 border-b border-gray-800">
+                                <span className="text-xs text-gray-400">Recent alert dispatches across all channels</span>
+                                {isAdmin && historyLogs.length > 0 && (
+                                    <button
+                                        onClick={handleClearHistory}
+                                        className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                                    >
+                                        Clear History
+                                    </button>
+                                )}
+                            </div>
+                            {historyLogs.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500 text-sm">
+                                    No alert history logged yet. Dispatched alerts will show up here!
+                                </div>
+                            ) : (
+                                <div className="space-y-2 max-h-96 overflow-y-auto">
+                                    {historyLogs.map(item => (
+                                        <div key={item.id} className="bg-bg-elevated border border-gray-800 rounded-lg p-3 text-xs space-y-1">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`px-2 py-0.5 rounded font-mono font-bold text-[10px] ${
+                                                        item.delivered ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                                    }`}>
+                                                        {item.delivered ? 'DELIVERED' : 'SUPPRESSED / FAILED'}
+                                                    </span>
+                                                    <span className="font-semibold text-white">{item.title}</span>
+                                                </div>
+                                                <span className="text-gray-500 text-[10px]">
+                                                    {new Date(item.timestamp).toLocaleString()}
+                                                </span>
+                                            </div>
+                                            <div className="text-gray-400 flex items-center justify-between">
+                                                <span>Channel: <strong className="text-gray-300">{item.channelName}</strong> ({item.channelType})</span>
+                                                {item.target && <span className="font-mono text-gray-400">Target: {item.target}</span>}
+                                            </div>
+                                            {item.error && (
+                                                <div className="text-amber-400 text-[11px] bg-amber-500/10 p-1.5 rounded border border-amber-500/20">
+                                                    Reason: {item.error}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'maintenance' && (
+                        <div className="space-y-6">
+                            {/* Global Maintenance Toggle */}
+                            <div className="bg-bg-elevated border border-gray-800 rounded-xl p-4 flex items-center justify-between">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="font-bold text-white text-sm">Global Maintenance Mode</h3>
+                                        {maintenanceConfig.maintenanceMode ? (
+                                            <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] px-2 py-0.5 rounded font-bold uppercase">Active</span>
+                                        ) : (
+                                            <span className="bg-green-500/20 text-green-400 border border-green-500/30 text-[10px] px-2 py-0.5 rounded font-bold uppercase">Disabled</span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        When active, all alert dispatches across all webhooks and email channels are silenced.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleToggleMaintenance}
+                                    disabled={!isAdmin}
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                                        maintenanceConfig.maintenanceMode
+                                            ? 'bg-amber-500 text-black hover:bg-amber-400'
+                                            : 'bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10'
+                                    } ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    {maintenanceConfig.maintenanceMode ? 'Disable Maintenance Mode' : 'Enable Maintenance Silence'}
+                                </button>
+                            </div>
+
+                            {/* Namespace Muting */}
+                            <div className="bg-bg-elevated border border-gray-800 rounded-xl p-4 space-y-3">
+                                <div>
+                                    <h3 className="font-bold text-white text-sm">Muted Kubernetes Namespaces</h3>
+                                    <p className="text-xs text-gray-400 mt-0.5">Silence alerts for specific namespaces (e.g. <code className="text-primary font-mono">staging</code>, <code className="text-primary font-mono">dev</code>)</p>
+                                </div>
+
+                                {isAdmin && (
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Enter namespace to mute..."
+                                            value={newMutedNs}
+                                            onChange={e => setNewMutedNs(e.target.value)}
+                                            className="bg-black/30 border border-gray-700 text-xs text-white rounded-xl px-3 py-2 flex-1 focus:outline-none focus:border-primary"
+                                        />
+                                        <button
+                                            onClick={handleAddMutedNs}
+                                            className="px-3 py-2 bg-primary/20 text-primary border border-primary/30 rounded-xl text-xs font-semibold hover:bg-primary/30 transition-colors"
+                                        >
+                                            Mute Namespace
+                                        </button>
+                                    </div>
+                                )}
+
+                                <div className="flex flex-wrap gap-2 pt-1">
+                                    {maintenanceConfig.mutedNamespaces.length === 0 ? (
+                                        <span className="text-xs text-gray-500 italic">No namespaces currently muted.</span>
+                                    ) : (
+                                        maintenanceConfig.mutedNamespaces.map(ns => (
+                                            <span key={ns} className="inline-flex items-center gap-1.5 bg-gray-800 border border-gray-700 text-gray-200 text-xs px-2.5 py-1 rounded-lg font-mono">
+                                                <span>{ns}</span>
+                                                {isAdmin && (
+                                                    <button onClick={() => handleRemoveMutedNs(ns)} className="text-gray-400 hover:text-red-400 transition-colors">
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
+                                            </span>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     )}
                 </div>
                 {/* Delete Confirmation Dialog */}

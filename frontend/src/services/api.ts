@@ -260,6 +260,34 @@ class ApiClient {
     return response.data;
   }
 
+  async getNotificationHistory() {
+    const response = await this.client.get('/api/notifications/history');
+    return response.data;
+  }
+
+  async clearNotificationHistory() {
+    const response = await this.client.delete('/api/notifications/history');
+    return response.data;
+  }
+
+  async getMaintenanceConfig() {
+    const response = await this.client.get('/api/notifications/maintenance');
+    return response.data;
+  }
+
+  async updateMaintenanceConfig(data: { maintenanceMode?: boolean; mutedNamespaces?: string[]; mutedServices?: string[] }) {
+    const response = await this.client.post('/api/notifications/maintenance', data);
+    return response.data;
+  }
+
+  async exportAuditLogsCsv(search?: string) {
+    const response = await this.client.get('/api/audit-logs/export', {
+      params: { search },
+      responseType: 'blob'
+    });
+    return response.data;
+  }
+
   // Admin User Management
   async getUsers() {
       const response = await this.client.get('/api/users');

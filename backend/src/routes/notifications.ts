@@ -116,4 +116,45 @@ router.post('/:id/test', async (req, res) => {
   }
 });
 
+// GET /api/notifications/history - View alert dispatch history
+router.get('/history', (req, res) => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
+    const history = notificationManager.getHistory(limit);
+    res.json(history);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// DELETE /api/notifications/history - Clear alert dispatch history
+router.delete('/history', requireRole('kubiq-admin'), (req, res) => {
+  try {
+    notificationManager.clearHistory();
+    res.json({ message: 'Alert history cleared' });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// GET /api/notifications/maintenance - Get maintenance & mute configuration
+router.get('/maintenance', (req, res) => {
+  try {
+    const config = notificationManager.getMaintenanceConfig();
+    res.json(config);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST /api/notifications/maintenance - Update maintenance & mute configuration
+router.post('/maintenance', requireRole('kubiq-admin'), (req, res) => {
+  try {
+    const updatedConfig = notificationManager.setMaintenanceConfig(req.body);
+    res.json(updatedConfig);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export const notificationsRouter = router;

@@ -249,12 +249,13 @@ export class ServiceMonitor {
 
     if (oldStatus !== 'unknown' && oldStatus !== newStatus) {
       const NotificationManager = require('../services/NotificationManager').NotificationManager;
+      const isDbService = service.type === 'mysql' || service.type === 'mongodb' || service.type === 'tcp' || /^(mongodb|mysql|postgres|redis|amqp)/i.test(service.endpoint || '');
       NotificationManager.getInstance().notifyStatusChange(
         serviceName,
         newStatus,
         check.success ? undefined : (check.error || `Status Code: ${check.status}`),
         {
-          endpoint: service.endpoint,
+          endpoint: isDbService ? undefined : service.endpoint,
           responseTime: check.responseTime,
           statusCode: check.status
         }
@@ -615,6 +616,7 @@ export class ServiceMonitor {
     service.uptime = service.history.length ? (successCount / service.history.length) * 100 : 100;
   }
 
+  private failingK8sPods: Map<string, { lastStatus: string; lastRestarts: number }> = new Map();
   private reportedK8sAlerts: Set<string> = new Set();
 
   public async checkK8sClusterAlerts(): Promise<void> {
@@ -622,27 +624,53 @@ export class ServiceMonitor {
       const k8sService = KubernetesService.getInstance();
       if (!k8sService.available) return;
 
-      const defaultCtx = 'inClusterContext';
-      const namespaces = await k8sService.getNamespaces(defaultCtx);
+      const activeCtx = k8sService.defaultContext || (k8sService.getKubeConfig()?.getCurrentContext()) || '';
+      const namespaces = await k8sService.getNamespaces(activeCtx);
 
       for (const ns of namespaces) {
-        const pods = await k8sService.getPods(defaultCtx, ns);
+        const pods = await k8sService.getPods(activeCtx, ns);
         for (const pod of pods) {
+          const podKey = `${ns}/${pod.name}`;
           const status = String(pod.status || '').toLowerCase();
           const restarts = pod.restarts || 0;
-          const isFailing = status.includes('crashloop') || status.includes('error') || status.includes('oomkilled') || status.includes('imagepull');
-          const alertKey = `${ns}/${pod.name}/${status}/${restarts}`;
+          const isFailing = status.includes('crashloop') || 
+                            status.includes('error') || 
+                            status.includes('oomkilled') || 
+                            status.includes('imagepull') || 
+                            status.includes('backoff') ||
+                            status.includes('evicted') ||
+                            status.includes('failed');
 
-          if ((isFailing || restarts >= 5) && !this.reportedK8sAlerts.has(alertKey)) {
-            this.reportedK8sAlerts.add(alertKey);
-            const title = `🚨 K8s Pod Alert: ${pod.name} (${ns})`;
-            const message = `Pod Status: ${pod.status}\nTotal Restarts: ${restarts}\nNamespace: ${ns}\nNode: ${pod.nodeName || 'N/A'}`;
-            NotificationManager.getInstance().notifyCustomAlert(title, message);
+          const previousState = this.failingK8sPods.get(podKey);
+          const isNewRestart = previousState ? restarts > previousState.lastRestarts : restarts > 0;
+          const isCurrentlyDegraded = isFailing || isNewRestart;
+
+          if (isCurrentlyDegraded) {
+            if (!previousState || previousState.lastStatus !== pod.status || previousState.lastRestarts !== restarts) {
+              this.failingK8sPods.set(podKey, { lastStatus: pod.status, lastRestarts: restarts });
+              const title = `Deployment degraded: ${ns}/${pod.name}`;
+              const message = `State: Pod ${pod.status} (Restarts: ${restarts})\nTarget: ${ns}/${pod.name}\nNamespace: ${ns}\nNode: ${pod.nodeName || 'N/A'}`;
+              NotificationManager.getInstance().notifyCustomAlert(title, message, {
+                'State': `Pod status is ${pod.status}`,
+                'Target': `${ns}/${pod.name}`,
+                'Restarts': `${restarts}`,
+                'Namespace': ns,
+                'Node': pod.nodeName || 'N/A'
+              });
+            }
+          } else if (this.failingK8sPods.has(podKey)) {
+            // Pod was failing previously, but has now returned to clean Running state!
+            this.failingK8sPods.delete(podKey);
+            NotificationManager.getInstance().notifyStatusChange(`${ns}/${pod.name}`, 'healthy', undefined, {
+              'State': `Pod returned to healthy Running state (Restarts: ${restarts})`,
+              'Namespace': ns,
+              'Node': pod.nodeName || 'N/A'
+            });
           }
         }
       }
 
-      const nodes = await k8sService.getNodes(defaultCtx);
+      const nodes = await k8sService.getNodes(activeCtx);
       for (const node of nodes) {
         const cpuUsed = parseFloat(node.cpuPercent || '0');
         const memUsed = parseFloat(node.memoryPercent || '0');
@@ -651,9 +679,15 @@ export class ServiceMonitor {
           const alertKey = `node-${node.name}-${cpuUsed.toFixed(0)}-${memUsed.toFixed(0)}`;
           if (!this.reportedK8sAlerts.has(alertKey)) {
             this.reportedK8sAlerts.add(alertKey);
-            const title = `⚠️ K8s Node Resource Warning: ${node.name}`;
-            const message = `Node CPU Usage: ${cpuUsed.toFixed(1)}%\nNode Memory Usage: ${memUsed.toFixed(1)}%\nThreshold: 85%`;
-            NotificationManager.getInstance().notifyCustomAlert(title, message);
+            const title = `K8s Node Resource Warning: ${node.name}`;
+            const message = `State: High Resource Utilization\nNode CPU Usage: ${cpuUsed.toFixed(1)}%\nNode Memory Usage: ${memUsed.toFixed(1)}%\nThreshold: 85%`;
+            NotificationManager.getInstance().notifyCustomAlert(title, message, {
+              'State': `High Resource Utilization (CPU: ${cpuUsed.toFixed(1)}%, Mem: ${memUsed.toFixed(1)}%)`,
+              'Target': node.name,
+              'CPU Usage': `${cpuUsed.toFixed(1)}%`,
+              'Memory Usage': `${memUsed.toFixed(1)}%`,
+              'Threshold': '85%'
+            });
           }
         }
       }
