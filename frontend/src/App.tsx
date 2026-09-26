@@ -49,6 +49,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { hasRole } = useAuth();
+  if (!hasRole('kubiq-admin')) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <>{children}</>;
+}
+
 import { ToastProvider } from './contexts/ToastContext';
 
 import Profile from './pages/Profile';
@@ -123,9 +131,11 @@ function App() {
               path="/audit-logs"
               element={
                 <ProtectedRoute>
-                  <Layout>
-                    <AuditLogViewer />
-                  </Layout>
+                  <AdminRoute>
+                    <Layout>
+                      <AuditLogViewer />
+                    </Layout>
+                  </AdminRoute>
                 </ProtectedRoute>
               }
             />

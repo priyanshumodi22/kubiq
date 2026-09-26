@@ -1,10 +1,12 @@
 import express from 'express';
 import { NotificationManager } from '../services/NotificationManager';
 import { NotificationChannel } from '../types';
-import { requireRole, hasRole } from '../middleware/auth';
+import { requireRole, hasRole, getUserFromReq } from '../middleware/auth';
+import { AuditLogService } from '../services/AuditLogService';
 
 const router = express.Router();
 const notificationManager = NotificationManager.getInstance();
+const auditService = AuditLogService.getInstance();
 
 // GET /api/notifications - List all channels
 router.get('/', (req, res) => {
@@ -72,6 +74,14 @@ router.post('/', requireRole('kubiq-admin'), async (req, res) => {
       events: channelEvents
     });
 
+    auditService.log({
+      user: getUserFromReq(req),
+      action: 'NOTIFICATION_CHANNEL_CREATE',
+      target: `channel/${newChannel.name}`,
+      details: `Created notification channel '${newChannel.name}' (${newChannel.type})`,
+      ip: req.ip
+    });
+
     res.status(201).json(newChannel);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -84,6 +94,15 @@ router.put('/:id', requireRole('kubiq-admin'), async (req, res) => {
     const { id } = req.params;
     const updates = req.body;
     const updatedChannel = await notificationManager.updateChannel(id as string, updates);
+
+    auditService.log({
+      user: getUserFromReq(req),
+      action: 'NOTIFICATION_CHANNEL_UPDATE',
+      target: `channel/${updatedChannel.name}`,
+      details: `Updated configuration for channel '${updatedChannel.name}'`,
+      ip: req.ip
+    });
+
     res.json(updatedChannel);
   } catch (error: any) {
     if (error.message === 'Channel not found') {
@@ -99,6 +118,15 @@ router.delete('/:id', requireRole('kubiq-admin'), async (req, res) => {
   try {
     const { id } = req.params;
     await notificationManager.deleteChannel(id as string);
+
+    auditService.log({
+      user: getUserFromReq(req),
+      action: 'NOTIFICATION_CHANNEL_DELETE',
+      target: `channel/${id}`,
+      details: `Deleted notification channel`,
+      ip: req.ip
+    });
+
     res.json({ message: 'Channel deleted' });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -110,6 +138,15 @@ router.post('/:id/test', async (req, res) => {
   try {
     const { id } = req.params;
     await notificationManager.sendTest(id);
+
+    auditService.log({
+      user: getUserFromReq(req),
+      action: 'NOTIFICATION_CHANNEL_TEST',
+      target: `channel/${id}`,
+      details: `Dispatched test alert notification`,
+      ip: req.ip
+    });
+
     res.json({ message: 'Test notification sent' });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -131,6 +168,15 @@ router.get('/history', (req, res) => {
 router.delete('/history', requireRole('kubiq-admin'), (req, res) => {
   try {
     notificationManager.clearHistory();
+
+    auditService.log({
+      user: getUserFromReq(req),
+      action: 'ALERT_HISTORY_CLEAR',
+      target: `notification/history`,
+      details: `Cleared notification alert dispatch history`,
+      ip: req.ip
+    });
+
     res.json({ message: 'Alert history cleared' });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -151,6 +197,15 @@ router.get('/maintenance', (req, res) => {
 router.post('/maintenance', requireRole('kubiq-admin'), (req, res) => {
   try {
     const updatedConfig = notificationManager.setMaintenanceConfig(req.body);
+
+    auditService.log({
+      user: getUserFromReq(req),
+      action: 'MAINTENANCE_MODE_UPDATE',
+      target: `notification/maintenance`,
+      details: `Updated maintenance silence mode & namespace muting rules`,
+      ip: req.ip
+    });
+
     res.json(updatedConfig);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

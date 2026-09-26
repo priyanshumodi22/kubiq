@@ -5,7 +5,7 @@ export interface AuditLogEntry {
   id: string;
   timestamp: string;
   user: string;
-  action: 'TTY_EXEC' | 'MANIFEST_APPLY' | 'DEPLOYMENT_SCALE' | 'DEPLOYMENT_RESTART' | 'RESOURCE_DELETE' | 'AUTH_LOGIN' | 'AUTH_ROLE_CHANGE';
+  action: string;
   target: string;
   details?: string;
   ip?: string;

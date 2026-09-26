@@ -369,7 +369,7 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
             await apiClient.createNotificationChannel(data);
             await fetchChannels();
             setActiveTab('list');
-            addToast('Channel created successfully! 🎉', 'success');
+            addToast('Channel created successfully!', 'success');
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to create channel');
         } finally {
@@ -388,7 +388,7 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
             await apiClient.updateNotificationChannel(id, data);
             await fetchChannels();
             setEditingChannelId(null);
-            addToast('Channel updated successfully! ✨', 'success');
+            addToast('Channel updated successfully!', 'success');
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to update channel');
         } finally {
@@ -660,9 +660,8 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
                                         <div key={item.id} className="bg-bg-elevated border border-gray-800 rounded-lg p-3 text-xs space-y-1">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
-                                                    <span className={`px-2 py-0.5 rounded font-mono font-bold text-[10px] ${
-                                                        item.delivered ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                                                    }`}>
+                                                    <span className={`px-2 py-0.5 rounded font-mono font-bold text-[10px] ${item.delivered ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                                        }`}>
                                                         {item.delivered ? 'DELIVERED' : 'SUPPRESSED / FAILED'}
                                                     </span>
                                                     <span className="font-semibold text-white">{item.title}</span>
@@ -707,11 +706,10 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
                                 <button
                                     onClick={handleToggleMaintenance}
                                     disabled={!isAdmin}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                                        maintenanceConfig.maintenanceMode
-                                            ? 'bg-amber-500 text-black hover:bg-amber-400'
-                                            : 'bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10'
-                                    } ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${maintenanceConfig.maintenanceMode
+                                        ? 'bg-amber-500 text-black hover:bg-amber-400'
+                                        : 'bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10'
+                                        } ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     {maintenanceConfig.maintenanceMode ? 'Disable Maintenance Mode' : 'Enable Maintenance Silence'}
                                 </button>

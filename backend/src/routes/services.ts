@@ -1,9 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { ServiceMonitor } from '../services/ServiceMonitor';
-import { requireRole, hasRole } from '../middleware/auth';
+import { requireRole, hasRole, getUserFromReq } from '../middleware/auth';
+import { AuditLogService } from '../services/AuditLogService';
 
 const router = Router();
 const monitor = ServiceMonitor.getInstance();
+const auditLog = AuditLogService.getInstance();
 
 // Helper to mask sensitive connection strings for viewers
 const maskServiceEndpoint = (service: any, user: any) => {
@@ -246,6 +248,13 @@ router.post(
       }
 
       const newService = await monitor.addService({ name, endpoint, headers, type, ignoreSSL, logPath, logSources, interval, retries });
+      auditLog.log({
+        user: getUserFromReq(req),
+        action: 'SERVICE_CREATE',
+        target: `service/${newService.name}`,
+        details: `Created service '${newService.name}' (${newService.type})`,
+        ip: req.ip
+      });
       res.status(201).json({
         message: 'Service created successfully',
         service: newService,
@@ -279,6 +288,13 @@ router.put(
       }
 
       const updatedService = await monitor.updateService(name as string, { endpoint, headers, type, ignoreSSL, logPath, logSources, interval, retries });
+      auditLog.log({
+        user: getUserFromReq(req),
+        action: 'SERVICE_UPDATE',
+        target: `service/${name}`,
+        details: `Updated parameters for service '${name}'`,
+        ip: req.ip
+      });
       res.json({
         message: 'Service updated successfully',
         service: updatedService,
@@ -304,6 +320,13 @@ router.delete(
       const { name } = req.params;
 
       await monitor.deleteService(name as string);
+      auditLog.log({
+        user: getUserFromReq(req),
+        action: 'SERVICE_DELETE',
+        target: `service/${name}`,
+        details: `Deleted monitored service '${name}'`,
+        ip: req.ip
+      });
       res.json({
         message: `Service '${name}' deleted successfully`,
       });

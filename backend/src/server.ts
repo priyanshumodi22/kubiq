@@ -22,7 +22,7 @@ import { healthRouter } from './routes/health';
 import { authRouter } from './routes/auth';
 import authWebAuthnRouter from './routes/auth-webauthn';
 import { errorHandler } from './middleware/errorHandler';
-import { authMiddleware } from './middleware/auth';
+import { authMiddleware, requireRole } from './middleware/auth';
 import { ServiceMonitor } from './services/ServiceMonitor';
 import { NotificationManager } from './services/NotificationManager';
 
@@ -70,10 +70,11 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'sha256-Ufh4gFF+3wijVQyJo86U1jiXhiwxTNfKBjPqBWLdvEY='"], // Allow inline scripts for Keycloak
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://static.cloudflareinsights.com", "'sha256-Ufh4gFF+3wijVQyJo86U1jiXhiwxTNfKBjPqBWLdvEY='"], // Allow inline scripts for Keycloak and Cloudflare Insights
+        scriptSrcElem: ["'self'", "'unsafe-inline'", "https://static.cloudflareinsights.com", "'sha256-Ufh4gFF+3wijVQyJo86U1jiXhiwxTNfKBjPqBWLdvEY='"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: ["'self'", ...(KEYCLOAK_ORIGIN ? [KEYCLOAK_ORIGIN] : [])],
+        connectSrc: ["'self'", "https://cloudflareinsights.com", "https://static.cloudflareinsights.com", ...(KEYCLOAK_ORIGIN ? [KEYCLOAK_ORIGIN] : [])],
         fontSrc: ["'self'"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
@@ -158,7 +159,7 @@ app.use(`${BACKEND_CONTEXT_PATH}/api/users`, authMiddleware, usersRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/system`, authMiddleware, systemRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/logs`, authMiddleware, logRouter); // Log Management
 app.use(`${BACKEND_CONTEXT_PATH}/api/kubernetes`, authMiddleware, kubernetesRouter); // Kubernetes Monitoring
-app.use(`${BACKEND_CONTEXT_PATH}/api/audit-logs`, authMiddleware, auditLogRouter); // Audit Logging
+app.use(`${BACKEND_CONTEXT_PATH}/api/audit-logs`, authMiddleware, requireRole('kubiq-admin'), auditLogRouter); // Audit Logging (Admin only)
 
 
 // Serve frontend static files

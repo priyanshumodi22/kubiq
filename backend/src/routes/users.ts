@@ -75,7 +75,17 @@ router.delete('/:id', authMiddleware, requireRole('kubiq-admin'), async (req: Re
         }
 
         const repo = await DatabaseFactory.getUserRepository();
+        const userToDeleteObj = await repo.findById(id as string);
         await repo.deleteUser(id as string);
+
+        AuditLogService.getInstance().log({
+            user: getUserFromReq(req),
+            action: 'USER_DELETE',
+            target: `user/${userToDeleteObj?.username || id}`,
+            details: `Deleted user account '${userToDeleteObj?.username || id}'`,
+            ip: req.ip
+        });
+
         res.json({ message: 'User deleted successfully' });
     } catch (error: any) {
         if (error.message.includes('not found')) {
@@ -103,6 +113,14 @@ router.put('/:id/status', authMiddleware, requireRole('kubiq-admin'), async (req
 
         const repo = await DatabaseFactory.getUserRepository();
         const updated = await repo.updateUserStatus(id as string, enabled);
+
+        AuditLogService.getInstance().log({
+            user: getUserFromReq(req),
+            action: 'USER_STATUS_TOGGLE',
+            target: `user/${updated.username}`,
+            details: `Updated account status to ${enabled ? 'ENABLED' : 'DISABLED'}`,
+            ip: req.ip
+        });
         
         res.json({
             ...updated,

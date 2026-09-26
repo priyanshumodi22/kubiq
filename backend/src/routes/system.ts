@@ -2,10 +2,12 @@
 import express from 'express';
 import { SystemMonitorService } from '../services/SystemMonitorService';
 import { DatabaseFactory } from '../database/DatabaseFactory';
-import { requireRole } from '../middleware/auth';
+import { requireRole, getUserFromReq } from '../middleware/auth';
+import { AuditLogService } from '../services/AuditLogService';
 
 const router = express.Router();
 const systemMonitor = SystemMonitorService.getInstance();
+const auditService = AuditLogService.getInstance();
 
 // GET /api/system/stats - Live data
 router.get('/stats', async (req, res) => {
@@ -46,6 +48,15 @@ router.put('/disks/config', requireRole('kubiq-admin'), async (req, res) => {
         return;
     }
     await systemMonitor.updateMonitoredDisks(mounts);
+
+    auditService.log({
+      user: getUserFromReq(req),
+      action: 'SYSTEM_DISKS_UPDATE',
+      target: `system/disks`,
+      details: `Updated monitored disk mounts: ${mounts.join(', ')}`,
+      ip: req.ip
+    });
+
     res.json({ success: true, mounts });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -83,6 +94,15 @@ router.put('/apm-config', requireRole('kubiq-admin'), async (req, res) => {
     }
     const systemRepo = await DatabaseFactory.getSystemRepository();
     await systemRepo.updateApmConfig({ ignoredRoutes });
+
+    auditService.log({
+      user: getUserFromReq(req),
+      action: 'APM_CONFIG_UPDATE',
+      target: `apm/config`,
+      details: `Updated APM ignored routes configuration`,
+      ip: req.ip
+    });
+
     res.json({ success: true, ignoredRoutes });
   } catch (error: any) {
     res.status(500).json({ message: error.message });

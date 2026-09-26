@@ -5,6 +5,7 @@ import { KubernetesService } from '../services/KubernetesService';
 import { requireRole, getUserFromReq, checkNamespaceAccess } from '../middleware/auth';
 import { clickhouseService } from '../services/ClickhouseService';
 import { AuditLogService } from '../services/AuditLogService';
+import { DatabaseFactory } from '../database/DatabaseFactory';
 
 const router = express.Router();
 const k8sService = KubernetesService.getInstance();
@@ -53,8 +54,31 @@ const handleK8sError = (res: express.Response, e: any) => {
 router.get('/namespaces', async (req, res) => {
     try {
         if (!k8sService.available) return res.json([]);
-        const namespaces = await k8sService.getNamespaces(getContext(req));
-        res.json(namespaces);
+        const clusterNamespaces = await k8sService.getNamespaces(getContext(req));
+        
+        const user = getUserFromReq(req) as any;
+        // Admins see all cluster namespaces
+        if (!user || user.role === 'kubiq-admin' || user.roles?.includes('kubiq-admin')) {
+            return res.json(clusterNamespaces);
+        }
+
+        // Viewers are scoped to allowedNamespaces
+        let allowed: string[] | undefined = user.allowedNamespaces;
+        if (!allowed && user.sub) {
+            try {
+                const repo = await DatabaseFactory.getUserRepository();
+                const dbUser = await repo.findById(user.sub);
+                allowed = dbUser?.allowedNamespaces;
+            } catch {}
+        }
+
+        if (allowed && Array.isArray(allowed) && allowed.length > 0) {
+            const allowedLower = allowed.map((s: string) => String(s).toLowerCase().trim());
+            const filtered = clusterNamespaces.filter(ns => allowedLower.includes(ns.toLowerCase().trim()));
+            return res.json(filtered.length > 0 ? filtered : allowed);
+        }
+
+        res.json(clusterNamespaces);
     } catch (e: any) {
         handleK8sError(res, e);
     }
@@ -365,6 +389,14 @@ router.post('/namespaces/:ns/pods/:name/ai-diagnose', checkNamespaceAccess, asyn
         const name = String(req.params.name);
         const ctx = getContext(req);
 
+        auditLogService.log({
+            user: getUserFromReq(req),
+            action: 'AI_POD_DIAGNOSE',
+            target: `pod/${ns}/${name}`,
+            details: `Triggered SRE AI pod diagnosis for pod '${name}' in namespace '${ns}'`,
+            ip: req.ip
+        });
+
         const pods = await k8sService.getPods(ctx, ns);
         const pod = pods.find(p => p.name === name);
 
@@ -472,6 +504,14 @@ router.post('/namespaces/:ns/events/ai-diagnose', async (req, res) => {
         const { event } = req.body;
         const ns = req.params.ns as string;
         if (!event) return res.status(400).json({ message: 'Event details required' });
+
+        auditLogService.log({
+            user: getUserFromReq(req),
+            action: 'AI_EVENT_DIAGNOSE',
+            target: `event/${ns}/${event.involvedObject || event.reason}`,
+            details: `Triggered SRE AI diagnosis for warning event '${event.reason}' in namespace '${ns}'`,
+            ip: req.ip
+        });
 
         const apiKey = process.env.AI_API_KEY;
         const aiProvider = (process.env.AI_PROVIDER || 'gemini').toLowerCase();

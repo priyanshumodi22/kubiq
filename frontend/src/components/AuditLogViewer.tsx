@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Shield, Search, RefreshCw, Download } from 'lucide-react';
 import { apiClient } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import { Navigate } from 'react-router-dom';
 
 export interface AuditLogItem {
     id: string;
@@ -13,9 +15,14 @@ export interface AuditLogItem {
 }
 
 export function AuditLogViewer() {
+    const { hasRole } = useAuth();
     const [logs, setLogs] = useState<AuditLogItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+
+    if (!hasRole('kubiq-admin')) {
+        return <Navigate to="/dashboard" replace />;
+    }
 
     const fetchLogs = async () => {
         setLoading(true);

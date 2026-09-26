@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { NotificationConfigModal } from './NotificationConfigModal';
 
 export default function Header() {
-  const { isAuthenticated, user, roles, logout } = useAuth();
+  const { isAuthenticated, user, roles, logout, hasRole } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -94,7 +94,7 @@ export default function Header() {
         </Link>
       )}
 
-      {isAuthenticated && (
+      {isAuthenticated && hasRole('kubiq-admin') && (
         <Link
           to="/audit-logs"
           className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${location.pathname.startsWith('/audit-logs')

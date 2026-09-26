@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { User, AuthResponse } from '../types';
+import { AuditLogService } from '../services/AuditLogService';
+import { getUserFromReq } from '../middleware/auth';
 
 export class AuthController {
   
@@ -47,6 +49,14 @@ export class AuthController {
 
       // Update last login
       await repo.updateLastLogin(user.id);
+
+      AuditLogService.getInstance().log({
+          user: user.username,
+          action: 'AUTH_LOGIN_SUCCESS',
+          target: `user/${user.username}`,
+          details: `User logged in successfully`,
+          ip: req.ip
+      });
       
       const response: AuthResponse = {
           token,
@@ -182,6 +192,14 @@ export class AuthController {
 
           const updated = await repo.updateUser(userId, { username, email });
           
+          AuditLogService.getInstance().log({
+              user: getUserFromReq(req),
+              action: 'AUTH_PROFILE_UPDATE',
+              target: `user/${updated.username}`,
+              details: `Updated user profile details`,
+              ip: req.ip
+          });
+
           res.json({
               ...updated,
               passwordHash: undefined
@@ -209,7 +227,7 @@ export class AuthController {
           const repo = await DatabaseFactory.getUserRepository();
           const user = await repo.findById(userId);
 
-          if (!user ||!user.passwordHash) {
+          if (!user || !user.passwordHash) {
               return res.status(404).json({ message: 'User not found' });
           }
 
@@ -222,6 +240,14 @@ export class AuthController {
           // Hash new
           const hash = await bcrypt.hash(newPassword, 10);
           await repo.updatePassword(userId, hash);
+
+          AuditLogService.getInstance().log({
+              user: getUserFromReq(req),
+              action: 'AUTH_PASSWORD_CHANGE',
+              target: `user/${user.username}`,
+              details: `Changed account password`,
+              ip: req.ip
+          });
 
           res.json({ message: 'Password updated successfully' });
 
