@@ -387,7 +387,14 @@ export function K8sRelationshipMap({
 
                                 // Draw Header
                                 svg += `<text x="30" y="35" fill="#3b82f6" font-size="16" font-weight="bold">Kubiq Kubernetes Topology Map</text>\n`;
-                                svg += `<text x="30" y="55" fill="#888888" font-size="11">Namespace: ${escapeXml(namespace || 'default')} | Live Architecture Export</text>\n`;
+                                svg += `<text x="30" y="52" fill="#888888" font-size="11">Namespace: ${escapeXml(namespace || 'default')} | Live Architecture Export</text>\n`;
+
+                                // Draw Column Headers
+                                svg += `<text x="${xIngresses}" y="75" fill="#6b7280" font-size="9" font-weight="bold" letter-spacing="1">HOSTS &amp; INGRESSES</text>\n`;
+                                svg += `<text x="${xServices}" y="75" fill="#6b7280" font-size="9" font-weight="bold" letter-spacing="1">SERVICES</text>\n`;
+                                svg += `<text x="${xPods}" y="75" fill="#6b7280" font-size="9" font-weight="bold" letter-spacing="1">PODS REPLICAS</text>\n`;
+                                svg += `<text x="${xConfigs}" y="75" fill="#6b7280" font-size="9" font-weight="bold" letter-spacing="1">CONFIGURATIONS</text>\n`;
+                                svg += `<line x1="30" y1="84" x2="${minW - 30}" y2="84" stroke="rgba(255,255,255,0.06)" stroke-width="1" />\n`;
 
                                 // Draw Edges
                                 edges.forEach(e => {
@@ -406,28 +413,74 @@ export function K8sRelationshipMap({
                                 nodes.forEach(n => {
                                     const isPod = n.type === 'pods';
                                     const podReady = isPod && n.data?.ready;
-                                    const statusColor = podReady ? '#10b981' : isPod ? '#ef4444' : '#3b82f6';
-                                    const cleanName = escapeXml((n.name || '').slice(0, 18));
-                                    const cleanStatus = escapeXml(isPod ? (n.data?.status || 'Active') : n.type);
 
-                                    let iconSvg = `<circle cx="24" cy="24" r="7" fill="none" stroke="#3b82f6" stroke-width="1.2"/><path d="M17 24h14M24 17a10 10 0 0 0 0 14" fill="none" stroke="#3b82f6" stroke-width="1.2"/>`;
-                                    if (n.type === 'services') {
-                                        iconSvg = `<rect x="18" y="19" width="12" height="4" rx="1" fill="none" stroke="#10b981" stroke-width="1.2"/><rect x="18" y="25" width="12" height="4" rx="1" fill="none" stroke="#10b981" stroke-width="1.2"/>`;
+                                    const rawStatus = isPod
+                                        ? (typeof n.data?.status === 'string'
+                                            ? n.data.status
+                                            : typeof n.data?.status?.phase === 'string'
+                                                ? n.data.status.phase
+                                                : podReady ? 'Running' : 'Active')
+                                        : n.type === 'ingresses'
+                                            ? (n.data?.spec?.rules?.[0]?.host || 'Local Route')
+                                            : (n.type.charAt(0).toUpperCase() + n.type.slice(1));
+
+                                    let cardBg = '#161616';
+                                    let cardStroke = '#262626';
+                                    let statusDotColor = '#3b82f6';
+
+                                    if (isPod) {
+                                        if (rawStatus.toLowerCase().includes('running') || podReady) {
+                                            cardBg = '#091b12';
+                                            cardStroke = 'rgba(16, 185, 129, 0.4)';
+                                            statusDotColor = '#4ade80';
+                                        } else if (rawStatus.toLowerCase().includes('pending')) {
+                                            cardBg = '#1f1609';
+                                            cardStroke = 'rgba(245, 158, 11, 0.4)';
+                                            statusDotColor = '#fbbf24';
+                                        } else {
+                                            cardBg = '#220b0b';
+                                            cardStroke = 'rgba(239, 68, 68, 0.4)';
+                                            statusDotColor = '#f87171';
+                                        }
+                                    } else {
+                                        if (n.type === 'ingresses') statusDotColor = '#22d3ee';
+                                        else if (n.type === 'services') statusDotColor = '#34d399';
+                                        else if (n.type === 'configmaps') statusDotColor = '#fbbf24';
+                                        else if (n.type === 'secrets') statusDotColor = '#f87171';
+                                    }
+
+                                    const cleanName = escapeXml((n.name || '').toUpperCase().slice(0, 18));
+                                    const cleanStatus = escapeXml(rawStatus);
+
+                                    // Exact Lucide SVG vector paths matching live UI icons
+                                    let iconSvg = '';
+                                    if (n.type === 'ingresses') {
+                                        // Globe (cyan-400)
+                                        iconSvg = `<svg x="16" y="16" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`;
+                                    } else if (n.type === 'services') {
+                                        // Server (emerald-400)
+                                        iconSvg = `<svg x="16" y="16" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>`;
                                     } else if (n.type === 'pods') {
-                                        iconSvg = `<path d="M24 17l6 3.5v7L24 31l-6-3.5v-7zM18 20.5l6 3.5 6-3.5M24 24v7" fill="none" stroke="#00f0ff" stroke-width="1.2"/>`;
+                                        // Box (sky-400 / primary)
+                                        iconSvg = `<svg x="16" y="16" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>`;
                                     } else if (n.type === 'configmaps') {
-                                        iconSvg = `<circle cx="24" cy="24" r="3" fill="none" stroke="#eab308" stroke-width="1.2"/><path d="M24 18v2M24 28v2M18 24h2M28 24h2" fill="none" stroke="#eab308" stroke-width="1.2"/>`;
+                                        // Settings (amber-400)
+                                        iconSvg = `<svg x="16" y="16" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>`;
                                     } else if (n.type === 'secrets') {
-                                        iconSvg = `<path d="M24 17l6 3v5c0 4-3 7-6 8-3-1-6-4-6-8v-5z" fill="none" stroke="#ec4899" stroke-width="1.2"/>`;
+                                        // Shield (red-400)
+                                        iconSvg = `<svg x="16" y="16" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>`;
+                                    } else {
+                                        // HelpCircle
+                                        iconSvg = `<svg x="16" y="16" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>`;
                                     }
 
                                     svg += `<g transform="translate(${n.x}, ${n.y})">\n`;
-                                    svg += `  <rect width="190" height="48" rx="10" fill="#181818" stroke="#333333" stroke-width="1.2" />\n`;
-                                    svg += `  <rect x="8" y="8" width="32" height="32" rx="6" fill="#222222" />\n`;
+                                    svg += `  <rect width="190" height="48" rx="12" fill="${cardBg}" stroke="${cardStroke}" stroke-width="1.2" />\n`;
+                                    svg += `  <rect x="8" y="8" width="32" height="32" rx="8" fill="#000000" fill-opacity="0.35" stroke="#ffffff" stroke-opacity="0.05" />\n`;
                                     svg += `  ${iconSvg}\n`;
-                                    svg += `  <text x="48" y="24" fill="#ffffff" font-size="11" font-weight="bold">${cleanName}</text>\n`;
-                                    svg += `  <circle cx="52" cy="35" r="3.5" fill="${statusColor}" />\n`;
-                                    svg += `  <text x="60" y="38" fill="#888888" font-size="9" font-family="monospace">${cleanStatus}</text>\n`;
+                                    svg += `  <text x="48" y="22" fill="#ffffff" font-size="10" font-weight="bold" letter-spacing="0.5">${cleanName}</text>\n`;
+                                    svg += `  <circle cx="52" cy="34" r="3" fill="${statusDotColor}" />\n`;
+                                    svg += `  <text x="60" y="37" fill="#9ca3af" font-size="9" font-family="monospace">${cleanStatus}</text>\n`;
                                     svg += `</g>\n`;
                                 });
 
