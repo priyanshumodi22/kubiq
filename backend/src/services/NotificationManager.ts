@@ -165,18 +165,28 @@ export class NotificationManager {
 
     const details: Record<string, string> = {
       'State': isHealthy ? 'Flux and Kubernetes rollout are healthy' : 'Service health check degraded or failing',
-      'Target': serviceName,
-      ...(extraDetails || {})
+      'Target': serviceName
     };
+
+    if (extraDetails) {
+      Object.entries(extraDetails).forEach(([k, v]) => {
+        if (v === undefined || v === null || String(v).trim() === '') return;
+        const lower = k.toLowerCase();
+        if (lower === 'endpoint') {
+          details['Endpoint'] = String(v);
+        } else if (lower === 'responsetime' || lower === 'latency') {
+          details['Latency'] = typeof v === 'number' || !String(v).includes('ms') ? `${v}ms` : String(v);
+        } else if (lower === 'statuscode') {
+          details['Status Code'] = String(v);
+        } else {
+          const formattedKey = k.charAt(0).toUpperCase() + k.slice(1);
+          details[formattedKey] = String(v);
+        }
+      });
+    }
 
     if (!isHealthy && error) {
       details['Detail'] = error;
-    }
-    if (extraDetails?.endpoint) {
-      details['Endpoint'] = String(extraDetails.endpoint);
-    }
-    if (extraDetails?.responseTime) {
-      details['Latency'] = `${extraDetails.responseTime}ms`;
     }
 
     const payload: AlertPayload = {

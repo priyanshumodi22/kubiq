@@ -617,6 +617,7 @@ export class ServiceMonitor {
   }
 
   private failingK8sPods: Map<string, { lastStatus: string; lastRestarts: number }> = new Map();
+  private monitoredPodStates: Map<string, { lastStatus: string; lastRestarts: number }> = new Map();
   private reportedK8sAlerts: Set<string> = new Set();
 
   public async checkK8sClusterAlerts(): Promise<void> {
@@ -633,6 +634,17 @@ export class ServiceMonitor {
           const podKey = `${ns}/${pod.name}`;
           const status = String(pod.status || '').toLowerCase();
           const restarts = pod.restarts || 0;
+
+          // Exclude completed jobs/hook pods (e.g., helm-install-traefik, batch jobs)
+          const isCompleted = status.includes('completed') || status.includes('succeeded');
+          if (isCompleted) {
+            if (this.failingK8sPods.has(podKey)) {
+              this.failingK8sPods.delete(podKey);
+            }
+            this.monitoredPodStates.set(podKey, { lastStatus: pod.status, lastRestarts: restarts });
+            continue;
+          }
+
           const isFailing = status.includes('crashloop') || 
                             status.includes('error') || 
                             status.includes('oomkilled') || 
@@ -641,12 +653,17 @@ export class ServiceMonitor {
                             status.includes('evicted') ||
                             status.includes('failed');
 
-          const previousState = this.failingK8sPods.get(podKey);
-          const isNewRestart = previousState ? restarts > previousState.lastRestarts : restarts > 0;
+          const previousMonitored = this.monitoredPodStates.get(podKey);
+          // Restart increased ONLY if we have seen this pod in a previous poll and restarts count went up
+          const isNewRestart = previousMonitored ? restarts > previousMonitored.lastRestarts : false;
           const isCurrentlyDegraded = isFailing || isNewRestart;
 
+          // Update baseline state for future poll comparisons
+          this.monitoredPodStates.set(podKey, { lastStatus: pod.status, lastRestarts: restarts });
+
           if (isCurrentlyDegraded) {
-            if (!previousState || previousState.lastStatus !== pod.status || previousState.lastRestarts !== restarts) {
+            const activeAlert = this.failingK8sPods.get(podKey);
+            if (!activeAlert || activeAlert.lastStatus !== pod.status || activeAlert.lastRestarts !== restarts) {
               this.failingK8sPods.set(podKey, { lastStatus: pod.status, lastRestarts: restarts });
               const title = `Deployment degraded: ${ns}/${pod.name}`;
               const message = `State: Pod ${pod.status} (Restarts: ${restarts})\nTarget: ${ns}/${pod.name}\nNamespace: ${ns}\nNode: ${pod.nodeName || 'N/A'}`;
