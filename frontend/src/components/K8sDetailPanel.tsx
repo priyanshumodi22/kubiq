@@ -200,26 +200,26 @@ export function K8sDetailPanel({
         <div className="fixed inset-0 z-50 flex justify-end">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={onClose} />
             <div className="relative w-full max-w-2xl bg-[#111111] border-l border-gray-800 shadow-2xl flex flex-col h-full overflow-hidden animate-slide-in-right">
-                <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-[#1a1a1a]">
-                    <div className="flex items-center gap-3 overflow-hidden">
+                <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-[#1a1a1a] gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <FileJson className="w-5 h-5 text-primary shrink-0" />
-                        <h2 className="text-lg font-semibold text-white truncate" title={resName}>
+                        <h2 className="text-base font-semibold text-white truncate" title={resName}>
                             {resName}
                         </h2>
-                        <span className="text-xs bg-white/10 text-gray-400 px-2 py-0.5 rounded capitalize shrink-0">{item.type}</span>
+                        <span className="text-[11px] bg-white/10 text-gray-400 px-2 py-0.5 rounded capitalize shrink-0 font-medium">{item.type}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                         {(item.type === 'pods' || item.type === 'events') && (
                             <button
                                 onClick={() => setShowAiModal(true)}
-                                className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-semibold transition-all"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-semibold whitespace-nowrap transition-all shadow-sm shrink-0"
                                 title="Run 1-Click AI SRE Diagnostic"
                             >
-                                <Sparkles className="w-3.5 h-3.5" />
+                                <Sparkles className="w-3.5 h-3.5 text-primary" />
                                 <span>AI Diagnose</span>
                             </button>
                         )}
-                        <button onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
+                        <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors shrink-0">
                             <X className="w-5 h-5" />
                         </button>
                     </div>

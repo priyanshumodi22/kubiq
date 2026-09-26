@@ -35,6 +35,7 @@ export class AuthController {
       const token = jwt.sign(
         { 
             sub: user.id, 
+            username: user.username,
             preferred_username: user.username, 
             roles: [user.role],
             type: 'native'
@@ -127,6 +128,7 @@ export class AuthController {
           const token = jwt.sign(
             { 
                 sub: freshUser.id, 
+                username: freshUser.username,
                 preferred_username: freshUser.username, 
                 roles: [freshUser.role],
                 type: 'native'

@@ -51,11 +51,16 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
 
   // 1. Try Native Auth (JWT Verify)
   try {
-      const secret = process.env.JWT_SECRET;
+      const secret = process.env.JWT_SECRET || 'dev-secret-do-not-use-in-prod';
       if (secret) {
           const decoded = jwt.verify(token, secret) as any;
           if (decoded && decoded.type === 'native') {
-              req.user = decoded; // { sub, preferred_username, roles, type }
+              const username = decoded.username || decoded.preferred_username || decoded.sub || 'admin';
+              req.user = {
+                  ...decoded,
+                  username,
+                  preferred_username: username
+              };
               return next();
           }
       }
@@ -106,11 +111,13 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
       }
 
       // Create user object from token
+      const username = payload.preferred_username || payload.username || payload.name || payload.sub || 'admin';
       const enrichedUser = {
         sub: payload.sub,
         email: payload.email,
         name: payload.name,
-        preferred_username: payload.preferred_username,
+        username,
+        preferred_username: username,
         given_name: payload.given_name,
         family_name: payload.family_name,
         roles: [...new Set(roles)], // Remove duplicates
@@ -197,6 +204,11 @@ declare global {
     }
   }
 }
+
+export const getUserFromReq = (req: any): string => {
+  if (!req || !req.user) return 'admin';
+  return req.user.username || req.user.preferred_username || req.user.name || req.user.email || req.user.sub || 'admin';
+};
 
 export const requireAuth = authMiddleware;
 

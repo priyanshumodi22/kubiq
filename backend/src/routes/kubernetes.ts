@@ -2,7 +2,7 @@ import express from 'express';
 import yaml from 'js-yaml';
 import axios from 'axios';
 import { KubernetesService } from '../services/KubernetesService';
-import { requireRole } from '../middleware/auth';
+import { requireRole, getUserFromReq } from '../middleware/auth';
 import { clickhouseService } from '../services/ClickhouseService';
 import { AuditLogService } from '../services/AuditLogService';
 
@@ -212,7 +212,7 @@ router.post('/namespaces/:ns/deployments/:name/scale', requireRole('kubiq-admin'
         const name = req.params.name as string;
         await k8sService.scaleDeployment(getContext(req), ns, name, replicas);
 
-        const user = (req as any).user?.username || 'admin';
+        const user = getUserFromReq(req);
         auditLogService.log({
             user,
             action: 'DEPLOYMENT_SCALE',
@@ -232,7 +232,7 @@ router.post('/namespaces/:ns/deployments/:name/restart', requireRole('kubiq-admi
         const name = req.params.name as string;
         await k8sService.restartDeployment(getContext(req), ns, name);
 
-        const user = (req as any).user?.username || 'admin';
+        const user = getUserFromReq(req);
         auditLogService.log({
             user,
             action: 'DEPLOYMENT_RESTART',
@@ -253,7 +253,7 @@ router.delete('/namespaces/:ns/:type/:name', requireRole('kubiq-admin'), async (
         const name = req.params.name as string;
         await k8sService.deleteResource(getContext(req), ns, type, name);
 
-        const user = (req as any).user?.username || 'admin';
+        const user = getUserFromReq(req);
         auditLogService.log({
             user,
             action: 'RESOURCE_DELETE',
@@ -282,7 +282,7 @@ router.post('/apply', requireRole('kubiq-admin'), async (req, res) => {
 
         const result = await k8sService.applyResource(getContext(req), manifest);
 
-        const user = (req as any).user?.username || 'admin';
+        const user = getUserFromReq(req);
         const targetKind = manifest?.kind || 'Resource';
         const targetName = manifest?.metadata?.name || 'unknown';
         const targetNs = manifest?.metadata?.namespace || 'default';

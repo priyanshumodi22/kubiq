@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { DatabaseFactory } from '../database/DatabaseFactory';
-import { authMiddleware, requireRole } from '../middleware/auth';
+import { authMiddleware, requireRole, getUserFromReq } from '../middleware/auth';
 import { UserRole } from '../types';
+import { AuditLogService } from '../services/AuditLogService';
 
 const router = Router();
 
@@ -41,6 +42,14 @@ router.put('/:id/role', authMiddleware, requireRole('kubiq-admin'), async (req: 
     const repo = await DatabaseFactory.getUserRepository();
     const updated = await repo.updateUserRole(id as string, role as UserRole);
     
+    AuditLogService.getInstance().log({
+        user: getUserFromReq(req),
+        action: 'AUTH_ROLE_CHANGE',
+        target: `user/${updated.username}`,
+        details: `Updated role to ${role}`,
+        ip: req.ip
+    });
+
     res.json({
         ...updated,
         passwordHash: undefined

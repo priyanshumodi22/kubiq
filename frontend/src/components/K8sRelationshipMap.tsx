@@ -687,7 +687,13 @@ export function K8sRelationshipMap({
                                         {isPod ? (
                                             <div className="text-[9px] font-mono text-gray-400 mt-0.5 truncate flex items-center gap-1">
                                                 <span className={`w-1.5 h-1.5 rounded-full ${podReady ? 'bg-green-400' : 'bg-red-400 animate-pulse'}`} />
-                                                <span>{node.data.status}</span>
+                                                <span>
+                                                    {typeof node.data.status === 'string'
+                                                        ? node.data.status
+                                                        : typeof node.data.status?.phase === 'string'
+                                                            ? node.data.status.phase
+                                                            : podReady ? 'Running' : 'Active'}
+                                                </span>
                                             </div>
                                         ) : node.type === 'ingresses' ? (
                                             <div className="text-[9px] font-mono text-gray-400 mt-0.5 truncate">

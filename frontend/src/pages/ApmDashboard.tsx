@@ -665,7 +665,7 @@ export default function ApmDashboard() {
                     <button
                         onClick={handleRefresh}
                         disabled={apmLoading || mapLoading}
-                        className="px-4 py-2 bg-bg-elevated border border-gray-700 hover:border-blue-500 text-text rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+                        className="px-4 h-[40px] bg-bg-elevated border border-gray-700 hover:border-blue-500 text-text rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 text-sm"
                     >
                         <Activity className={`w-4 h-4 ${apmLoading ? 'animate-spin' : ''}`} />
                         Refresh
@@ -692,28 +692,76 @@ export default function ApmDashboard() {
                             setExportService(selectedInspectorService || '');
                             setIsExportModalOpen(true);
                         }}
-                        className="px-4 py-2 bg-bg-elevated border border-gray-700 hover:border-green-500/70 text-text rounded-lg flex items-center gap-2 transition-colors"
+                        className="px-4 h-[40px] bg-bg-elevated border border-gray-700 hover:border-green-500/70 text-text rounded-lg flex items-center gap-2 transition-colors text-sm"
                         title="Export Slow Queries as CSV"
                     >
                         <Download className="w-4 h-4 text-green-400" />
                         Export
                     </button>
 
-                    <select
-                        value={percentileFilter}
-                        onChange={(e) => setPercentileFilter(e.target.value as any)}
-                        className="bg-bg-elevated border border-gray-700 text-gray-300 text-xs rounded-lg px-2.5 py-2 outline-none focus:border-primary cursor-pointer"
-                        title="Latency Percentile Metric"
-                    >
-                        <option value="p50">P50 Latency (Median)</option>
-                        <option value="p90">P90 Latency</option>
-                        <option value="p95">P95 Latency (Standard)</option>
-                        <option value="p99">P99 Latency (Tail SRE)</option>
-                    </select>
+                    {/* Custom Latency Percentile Dropdown */}
+                    <div className="relative">
+                        <button
+                            ref={latencyTriggerRef}
+                            type="button"
+                            onClick={() => {
+                                if (!isLatencyOpen && latencyTriggerRef.current) {
+                                    const r = latencyTriggerRef.current.getBoundingClientRect();
+                                    setLatencyRect({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 210) });
+                                }
+                                setIsLatencyOpen(o => !o);
+                            }}
+                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text text-sm rounded-lg flex items-center justify-between gap-2 px-3 h-[40px] transition-colors focus:outline-none min-w-[200px]"
+                            title="Latency Percentile Metric"
+                        >
+                            <div className="flex items-center gap-2 min-w-0">
+                                <Clock className="w-4 h-4 text-yellow-400 shrink-0" />
+                                <span className="truncate text-xs font-medium text-gray-200">
+                                    {percentileFilter === 'p50' ? 'P50 Latency (Median)' :
+                                     percentileFilter === 'p90' ? 'P90 Latency' :
+                                     percentileFilter === 'p95' ? 'P95 Latency (Standard)' :
+                                     percentileFilter === 'p99' ? 'P99 Latency (Tail SRE)' : 'P95 Latency'}
+                                </span>
+                            </div>
+                            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isLatencyOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {isLatencyOpen && latencyRect && createPortal(
+                            <div
+                                ref={latencyPanelRef}
+                                style={{ position: 'fixed', top: latencyRect.top, left: latencyRect.left, width: latencyRect.width, zIndex: 9999 }}
+                                className="bg-[#1e1e1e] border border-gray-700 rounded-xl shadow-2xl overflow-hidden py-1 animate-fade-in"
+                            >
+                                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-500 border-b border-gray-800 uppercase tracking-wider bg-[#151515]">
+                                    Latency Percentiles
+                                </div>
+                                {[
+                                    { value: 'p50', label: 'P50 Latency (Median)', desc: '50th Percentile' },
+                                    { value: 'p90', label: 'P90 Latency', desc: '90th Percentile' },
+                                    { value: 'p95', label: 'P95 Latency (Standard)', desc: '95th Percentile' },
+                                    { value: 'p99', label: 'P99 Latency (Tail SRE)', desc: '99th Percentile' },
+                                ].map(opt => (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        onClick={() => {
+                                            setPercentileFilter(opt.value as any);
+                                            setIsLatencyOpen(false);
+                                        }}
+                                        className={`w-full text-left px-4 py-2.5 text-xs transition-colors hover:bg-primary/20 flex items-center justify-between border-b border-gray-800/40 last:border-0 ${percentileFilter === opt.value ? 'text-primary font-bold bg-primary/5' : 'text-gray-300'}`}
+                                    >
+                                        <span>{opt.label}</span>
+                                        <span className="text-[10px] text-gray-500 font-mono">{opt.desc}</span>
+                                    </button>
+                                ))}
+                            </div>,
+                            document.body
+                        )}
+                    </div>
 
                     <button
                         onClick={() => setIsInstrumentationModalOpen(true)}
-                        className="px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-colors"
+                        className="px-3.5 h-[40px] bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-colors"
                         title="Auto-Instrumentation SDK Snippets Generator"
                     >
                         <Code2 className="w-4 h-4" />
@@ -723,7 +771,7 @@ export default function ApmDashboard() {
                     {isAdmin && (
                         <button
                             onClick={() => setIsConfigModalOpen(true)}
-                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text rounded-lg flex items-center justify-center transition-colors w-[42px] h-[42px]"
+                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text rounded-lg flex items-center justify-center transition-colors w-[40px] h-[40px] shrink-0"
                             title="APM Configuration"
                         >
                             <Settings className="w-5 h-5 text-gray-400" />
