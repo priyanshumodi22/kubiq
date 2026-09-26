@@ -5,6 +5,7 @@ import { apiClient } from '../services/api';
 import { K8sAiDiagnosticModal } from './K8sAiDiagnosticModal';
 
 export interface K8sNamespaceOverviewProps {
+    selectedNamespace?: string;
     data: {
         pods: any[];
         deployments: any[];
@@ -43,11 +44,11 @@ function K8sMiniSparkline({ values, color }: { values: number[]; color: string }
     );
 }
 
-export function K8sNamespaceOverview({ data, onSwitchTab, onSelectItem }: K8sNamespaceOverviewProps) {
+export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onSelectItem }: K8sNamespaceOverviewProps) {
     const [quotasData, setQuotasData] = useState<{ quotas: any[]; limitRanges: any[]; rbacForbidden?: boolean }>({ quotas: [], limitRanges: [] });
     const [selectedEventForAi, setSelectedEventForAi] = useState<any | null>(null);
 
-    const targetNs = data?.pods?.[0]?.namespace || data?.deployments?.[0]?.namespace || 'default';
+    const targetNs = selectedNamespace || data?.pods?.[0]?.namespace || data?.deployments?.[0]?.namespace;
 
     useEffect(() => {
         if (targetNs) {

@@ -724,6 +724,7 @@ export default function KubernetesDashboard() {
                             />
                         ) : activeResource === 'overview' ? (
                             <K8sNamespaceOverview 
+                                selectedNamespace={selectedNamespace}
                                 data={overviewData} 
                                 onSwitchTab={(tab) => { setActiveResource(tab); setSearchQuery(''); }}
                                 onSelectItem={setSelectedItem}
