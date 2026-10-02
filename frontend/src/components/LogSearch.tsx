@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Virtuoso } from 'react-virtuoso';
-import { Search, Clock, Filter, Sparkles, RefreshCw, AlertCircle, X, Lock, CheckCircle2, Zap, ChevronDown, Copy } from 'lucide-react';
+import { Search, Clock, Filter, Sparkles, RefreshCw, AlertCircle, X, ChevronDown, Copy } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiClient } from '../services/api';
+import { ProUpgradeModal } from './ProUpgradeModal';
+import { ThinkingOrb } from 'thinking-orbs';
 
 interface LogSearchProps {
     serviceName: string;
@@ -294,7 +296,7 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
                             {summarizing ? (
                                 <RefreshCw className="w-4 h-4 animate-spin" />
                             ) : (
-                                <Sparkles className="w-4 h-4 group-hover:animate-pulse text-yellow-300" />
+                                <ThinkingOrb state="working" size={20} theme="dark" color="#f0abfc" />
                             )}
                             <span className="font-sans font-medium text-sm">Summarize with AI</span>
                         </button>
@@ -382,70 +384,7 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
                 document.body
             )}
 
-            {/* Upgrade Modal — portal to body */}
-            {createPortal(
-                <AnimatePresence>
-                    {showUpgradeModal && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4"
-                            onClick={() => setShowUpgradeModal(false)}
-                        >
-                            <motion.div
-                                initial={{ scale: 0.9, y: 20 }}
-                                animate={{ scale: 1, y: 0 }}
-                                exit={{ scale: 0.9, y: 20 }}
-                                className="bg-[#0a0a0a] border border-gray-800/80 rounded-2xl shadow-[0_0_50px_rgba(147,51,234,0.15)] w-full max-w-lg overflow-hidden relative"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <div className="absolute -top-32 -left-32 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl"></div>
-                                <div className="absolute -bottom-32 -right-32 w-64 h-64 bg-blue-600/20 rounded-full blur-3xl"></div>
-                                <div className="relative z-10 p-8 flex flex-col items-center text-center">
-                                    <button
-                                        onClick={() => setShowUpgradeModal(false)}
-                                        className="absolute top-4 right-4 text-gray-500 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 p-1.5 rounded-full transition-colors"
-                                    >
-                                        <X className="w-5 h-5" />
-                                    </button>
-                                    <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg mb-6 transform rotate-3">
-                                        <Lock className="w-8 h-8 text-white" />
-                                    </div>
-                                    <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 mb-2 font-sans">Unlock kubiq Pro</h2>
-                                    <p className="text-gray-400 text-sm mb-8 max-w-sm">Get instant AI-driven root cause analysis for your logs. Troubleshoot issues 10x faster.</p>
-                                    <div className="w-full space-y-4 mb-8 text-left bg-gray-900/50 p-5 rounded-xl border border-gray-800/50">
-                                        <div className="flex items-center gap-3 text-sm text-gray-300">
-                                            <CheckCircle2 className="w-5 h-5 text-purple-400 shrink-0" />
-                                            <span>Instant AI Root Cause Analysis</span>
-                                        </div>
-                                        <div className="flex items-center gap-3 text-sm text-gray-300">
-                                            <CheckCircle2 className="w-5 h-5 text-blue-400 shrink-0" />
-                                            <span>Anomaly &amp; Pattern Detection</span>
-                                        </div>
-                                        <div className="flex items-center gap-3 text-sm text-gray-300">
-                                            <Zap className="w-5 h-5 text-yellow-400 shrink-0" />
-                                            <span><strong>BYOK:</strong> Support for OpenAI, Anthropic, &amp; Gemini</span>
-                                        </div>
-                                    </div>
-                                    <a
-                                        href="https://polar.sh/kubiq"
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium py-3 px-6 rounded-xl transition-all shadow-[0_0_20px_rgba(147,51,234,0.3)] hover:shadow-[0_0_30px_rgba(147,51,234,0.5)] transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
-                                    >
-                                        Get Pro License (One-Time Fee)
-                                    </a>
-                                    <p className="text-xs text-gray-400 mt-5 font-medium bg-gray-800/30 px-3 py-1.5 rounded-md border border-gray-700/50 inline-block">
-                                        Already have a license? Add it to your .env file as <code className="text-purple-400">KUBIQ_LICENSE_KEY</code>
-                                    </p>
-                                </div>
-                            </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>,
-                document.body
-            )}
+            <ProUpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
         </div>
     );
 };

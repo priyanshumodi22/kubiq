@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Sparkles, X, Copy, Check, RefreshCw, AlertTriangle } from 'lucide-react';
+import { X, Copy, Check, RefreshCw, AlertTriangle } from 'lucide-react';
 import { apiClient } from '../services/api';
+import { ProUpgradeModal } from './ProUpgradeModal';
+import { ThinkingOrb } from 'thinking-orbs';
 
 
 function renderInlineMarkdown(text: string) {
@@ -129,6 +131,7 @@ export function K8sAiDiagnosticModal({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
     const fetchDiagnosis = async () => {
         setLoading(true);
@@ -144,6 +147,10 @@ export function K8sAiDiagnosticModal({
                 setError('No target pod or event specified for diagnosis.');
             }
         } catch (err: any) {
+            if (err.response?.status === 402 || err.response?.data?.error === 'NO_LICENSE' || err.response?.data?.error === 'INVALID_LICENSE') {
+                setShowUpgradeModal(true);
+                return;
+            }
             setError(err.message || 'Failed to generate AI diagnosis.');
         } finally {
             setLoading(false);
@@ -172,8 +179,8 @@ export function K8sAiDiagnosticModal({
                 {/* Header */}
                 <div className="flex items-center justify-between p-5 border-b border-gray-800 bg-[#161616]">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-primary/10 border border-primary/20 text-primary">
-                            <Sparkles className="w-5 h-5 animate-pulse" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10">
+                            <ThinkingOrb state="solving" size={20} theme="dark" color="#3b82f6" />
                         </div>
                         <div>
                             <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -197,10 +204,7 @@ export function K8sAiDiagnosticModal({
                 <div className="flex-1 overflow-y-auto p-6 space-y-4 font-sans text-sm text-gray-200 leading-relaxed custom-scrollbar">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
-                            <div className="relative">
-                                <div className="w-12 h-12 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-                                <Sparkles className="w-5 h-5 text-primary absolute inset-0 m-auto animate-pulse" />
-                            </div>
+                            <ThinkingOrb state="searching" size={64} theme="dark" color="#3b82f6" />
                             <div>
                                 <p className="text-sm font-semibold text-gray-200">Generating Root Cause Diagnosis...</p>
                                 <p className="text-xs text-gray-500 font-mono mt-1">Analyzing log streams, exit codes, and container spec limits</p>
@@ -252,6 +256,13 @@ export function K8sAiDiagnosticModal({
                     </div>
                 </div>
             </div>
+            <ProUpgradeModal
+                isOpen={showUpgradeModal}
+                onClose={() => {
+                    setShowUpgradeModal(false);
+                    onClose();
+                }}
+            />
         </div>,
         document.body
     );

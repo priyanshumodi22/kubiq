@@ -6,10 +6,26 @@ import { requireRole, getUserFromReq, checkNamespaceAccess } from '../middleware
 import { clickhouseService } from '../services/ClickhouseService';
 import { AuditLogService } from '../services/AuditLogService';
 import { DatabaseFactory } from '../database/DatabaseFactory';
+import { validateLicenseKey } from '../utils/licenseValidator';
 
 const router = express.Router();
 const k8sService = KubernetesService.getInstance();
 const auditLogService = AuditLogService.getInstance();
+
+const requireProLicense = async (res: express.Response): Promise<boolean> => {
+    const licenseKey = process.env.KUBIQ_LICENSE_KEY || '';
+    if (!licenseKey) {
+        res.status(402).json({ error: 'NO_LICENSE', message: 'kubiq Pro License required for AI features.' });
+        return false;
+    }
+
+    if (!(await validateLicenseKey(licenseKey))) {
+        res.status(402).json({ error: 'INVALID_LICENSE', message: 'The provided kubiq Pro License is invalid or expired.' });
+        return false;
+    }
+
+    return true;
+};
 
 
 const getContext = (req: express.Request) => { const ctx = req.headers['x-kubernetes-context']; const parsed = (Array.isArray(ctx) ? ctx[0] : ctx) || ''; return parsed || k8sService.defaultContext; };
@@ -392,6 +408,7 @@ router.get('/namespaces/:ns/quotas', checkNamespaceAccess, async (req, res) => {
 // POST /api/kubernetes/namespaces/:ns/pods/:name/ai-diagnose
 router.post('/namespaces/:ns/pods/:name/ai-diagnose', checkNamespaceAccess, async (req, res) => {
     try {
+        if (!(await requireProLicense(res))) return;
         if (!k8sService.available) return res.status(503).json({ message: 'K8s service not available' });
         const ns = String(req.params.ns);
         const name = String(req.params.name);
@@ -509,6 +526,7 @@ Provide a concise markdown response:
 // POST /api/kubernetes/namespaces/:ns/events/ai-diagnose
 router.post('/namespaces/:ns/events/ai-diagnose', checkNamespaceAccess, async (req, res) => {
     try {
+        if (!(await requireProLicense(res))) return;
         const { event } = req.body;
         const ns = req.params.ns as string;
         if (!event) return res.status(400).json({ message: 'Event details required' });

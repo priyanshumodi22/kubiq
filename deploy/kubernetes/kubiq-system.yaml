@@ -107,6 +107,13 @@ data:
   AI_PROVIDER: gemini
   LOG_RETENTION_DAYS: '7'
   # AI_API_KEY goes in kubiq-runtime Secret
+
+  # ── kubiq Pro licensing (Polar sandbox while testing) ──
+  # Switch these public identifiers to the Polar production values before
+  # enabling paid production licenses.
+  POLAR_ENVIRONMENT: sandbox
+  POLAR_ORGANIZATION_ID: 6fa2ccc0-0387-4a91-9ee3-662704639ee1
+  POLAR_LICENSE_BENEFIT_ID: aadc9755-77a1-4633-a218-0f1ea3d939d4
 ---
 apiVersion: apps/v1
 kind: Deployment

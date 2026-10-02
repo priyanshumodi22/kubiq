@@ -4,7 +4,7 @@ import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import {
-    RefreshCw, Activity, X, FileJson, Copy, Save, Terminal, ChevronRight, ShieldCheck, Sparkles, GitCompare
+    RefreshCw, Activity, X, FileJson, Copy, Save, Terminal, ChevronRight, ShieldCheck, GitCompare
 } from 'lucide-react';
 import { Editor, DiffEditor, loader } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
@@ -18,6 +18,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import { K8sLogViewer } from './K8sLogViewer';
 import K8sTerminal from './K8sTerminal';
+import { ThinkingOrb } from 'thinking-orbs';
 import { K8sAutoscalerPanel } from './K8sAutoscalerPanel';
 import { K8sQuickActions } from './K8sQuickActions';
 import { K8sAiDiagnosticModal } from './K8sAiDiagnosticModal';
@@ -215,7 +216,7 @@ export function K8sDetailPanel({
                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-semibold whitespace-nowrap transition-all shadow-sm shrink-0"
                                 title="Run 1-Click AI SRE Diagnostic"
                             >
-                                <Sparkles className="w-3.5 h-3.5 text-primary" />
+                                <ThinkingOrb state="working" size={20} theme="dark" color="#3b82f6" />
                                 <span>AI Diagnose</span>
                             </button>
                         )}
