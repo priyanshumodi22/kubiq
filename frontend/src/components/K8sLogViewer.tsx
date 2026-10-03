@@ -491,7 +491,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                             {summarizing ? (
                                 <RefreshCw className="w-4 h-4 animate-spin" />
                             ) : (
-                                <ThinkingOrb state="working" size={20} theme="dark" color="#f0abfc" />
+                                <ThinkingOrb state="solving" size={20} theme="dark" color="#f0abfc" />
                             )}
                             <span className="font-sans font-medium text-sm">Summarize with AI</span>
                         </button>
