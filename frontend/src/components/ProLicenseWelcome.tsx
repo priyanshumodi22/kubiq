@@ -17,6 +17,7 @@ export default function ProLicenseWelcome() {
   const { isAuthenticated, user } = useAuth();
   const [status, setStatus] = useState<ProStatus | null>(null);
   const [isManuallyOpened, setIsManuallyOpened] = useState(false);
+  const [hasSeenWelcome, setHasSeenWelcome] = useState(true);
 
   const userIdentity = user?.id || user?.username || user?.email;
   const storageKey = status?.licenseFingerprint && userIdentity
@@ -25,8 +26,12 @@ export default function ProLicenseWelcome() {
   const isOpen = Boolean(
     status?.active
     && storageKey
-    && (isManuallyOpened || !localStorage.getItem(storageKey)),
+    && (isManuallyOpened || !hasSeenWelcome),
   );
+
+  useEffect(() => {
+    setHasSeenWelcome(Boolean(storageKey && localStorage.getItem(storageKey)));
+  }, [storageKey]);
 
   useEffect(() => {
     if (!isAuthenticated || !userIdentity) return;
@@ -48,6 +53,7 @@ export default function ProLicenseWelcome() {
   const dismiss = useCallback(() => {
     if (storageKey) localStorage.setItem(storageKey, new Date().toISOString());
     setIsManuallyOpened(false);
+    setHasSeenWelcome(true);
   }, [storageKey]);
 
   useEffect(() => {
