@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, X, Zap } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { ThinkingOrb } from 'thinking-orbs';
+import { AiStatusOrb } from './AiStatusOrb';
 
 interface ProUpgradeModalProps {
     isOpen: boolean;
@@ -45,7 +45,7 @@ export function ProUpgradeModal({ isOpen, onClose }: ProUpgradeModalProps) {
                             </button>
 
                             <div className="mb-5" aria-hidden="true">
-                                <ThinkingOrb state="solving" size={64} theme="dark" color="#60a5fa" />
+                                <AiStatusOrb activity="pro" size={64} paused />
                             </div>
 
                             <h2 id="kubiq-pro-title" className="mb-2 text-3xl font-bold text-white">

@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import io from 'socket.io-client';
-import { Play, Pause, Trash2, ArrowDown, ChevronDown, Check, Search, X, Activity, Sparkles, Copy } from 'lucide-react';
+import { Play, Pause, Trash2, ArrowDown, ChevronDown, Check, Search, X, Activity, Copy } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogSearch } from './LogSearch';
 import { apiClient } from '../services/api';
 import { ProUpgradeModal } from './ProUpgradeModal';
-import { ThinkingOrb } from 'thinking-orbs';
+import { AiStatusOrb } from './AiStatusOrb';
 
 interface K8sLogViewerProps {
     namespace: string;
@@ -240,7 +240,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                                     <div>
                                         <p className="mb-1 text-[10px] font-semibold tracking-[0.16em] text-primary">kubiq Pro</p>
                                         <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
-                                            <Sparkles className="w-5 h-5 text-primary" />
+                                            <AiStatusOrb activity={summarizing ? 'thinking' : 'pro'} paused={!summarizing} />
                                             AI Log Analysis
                                         </h3>
                                     </div>
@@ -265,7 +265,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                                 <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar font-sans text-gray-300 text-sm leading-relaxed bg-[#0b0d12]">
                                     {summarizing ? (
                                         <div className="flex flex-col items-center justify-center py-12">
-                                            <ThinkingOrb state="breathing" size={64} theme="dark" aria-hidden="true" />
+                                            <AiStatusOrb activity="thinking" size={64} />
                                             <p className="mt-4 text-sm font-medium text-white">Thinking through your logs…</p>
                                             <p className="mt-1 text-xs text-gray-500">Building a concise incident summary.</p>
                                         </div>
@@ -495,13 +495,8 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                             disabled={summarizing}
                             className="group flex items-center gap-2 rounded-full border border-blue-300/15 bg-primary px-5 py-2.5 text-white shadow-[0_10px_28px_rgba(37,99,235,0.24)] transition-all hover:-translate-y-0.5 hover:bg-blue-500 disabled:cursor-wait disabled:opacity-70"
                         >
-                            <ThinkingOrb
-                                state={summarizing ? 'breathing' : 'solving'}
-                                size={20}
-                                theme="dark"
-                                aria-hidden="true"
-                            />
-                            <span className="font-sans font-medium text-sm">Summarize with AI</span>
+                            <AiStatusOrb activity={summarizing ? 'thinking' : 'searching'} />
+                            <span className="font-sans font-medium text-sm">{summarizing ? 'Thinking through logs…' : 'Summarize with AI'}</span>
                         </button>
                         
                         {recentSummaryData && !summarizing && (
@@ -511,11 +506,11 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                                         setSummary(recentSummaryData.summary);
                                         setShowSummaryModal(true);
                                     }}
-                                    className="w-full bg-[#161920]/90 backdrop-blur border border-purple-500/30 hover:border-purple-500/60 rounded-xl p-3 shadow-lg hover:shadow-[0_0_15px_rgba(147,51,234,0.2)] transition-all text-left group/banner"
+                                    className="w-full rounded-xl border border-blue-300/20 bg-[#111822]/95 p-3 text-left shadow-[0_12px_32px_rgba(0,0,0,0.3)] transition-colors hover:border-blue-300/40 hover:bg-[#162235]"
                                 >
                                     <div className="flex items-center gap-2 mb-1">
-                                        <Sparkles className="w-3.5 h-3.5 text-purple-400 group-hover/banner:animate-pulse" />
-                                        <span className="text-xs font-semibold text-purple-300">AI Insight Available</span>
+                                        <AiStatusOrb activity="pro" paused />
+                                        <span className="text-xs font-semibold text-blue-100">AI insight available</span>
                                     </div>
                                     <div className="text-[10px] text-gray-400">
                                         Analyzed {Math.floor((Date.now() - recentSummaryData.timestamp) / 60000)} mins ago

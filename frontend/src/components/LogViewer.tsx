@@ -2,14 +2,14 @@ import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Virtuoso } from 'react-virtuoso';
 import io from 'socket.io-client';
-import { Play, Pause, Trash2, ArrowDown, FileText, ChevronDown, Check, Activity, Search, Sparkles, Copy, X, RefreshCw } from 'lucide-react';
+import { Play, Pause, Trash2, ArrowDown, FileText, ChevronDown, Check, Activity, Search, Copy, X } from 'lucide-react';
 import { LogSource } from '../types';
 import { LogSearch } from './LogSearch';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiClient } from '../services/api';
 import { ProUpgradeModal } from './ProUpgradeModal';
-import { ThinkingOrb } from 'thinking-orbs';
+import { AiStatusOrb } from './AiStatusOrb';
 
 interface LogViewerProps {
     logPath: string; // Legacy fallback
@@ -376,14 +376,17 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                                 initial={{ scale: 0.95, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 exit={{ scale: 0.95, opacity: 0 }}
-                                className="bg-[#161920] border border-gray-700/50 rounded-xl shadow-2xl w-full max-w-3xl flex flex-col max-h-[85vh] overflow-hidden"
+                                className="w-full max-w-3xl max-h-[85vh] overflow-hidden rounded-2xl border border-primary/25 bg-[#0b0d12] shadow-[0_24px_80px_rgba(0,0,0,0.55)] flex flex-col"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <div className="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-gradient-to-r from-purple-900/20 to-blue-900/20">
-                                    <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
-                                        <Sparkles className="w-5 h-5 text-purple-400" />
-                                        AI Log Analysis
-                                    </h3>
+                                <div className="px-6 py-5 border-b border-white/10 flex justify-between items-center bg-[linear-gradient(135deg,#101827_0%,#0b0d12_72%)]">
+                                    <div>
+                                        <p className="mb-1 text-[10px] font-semibold tracking-[0.16em] text-primary">kubiq Pro</p>
+                                        <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
+                                            <AiStatusOrb activity={summarizing ? 'thinking' : 'pro'} paused={!summarizing} />
+                                            AI log analysis
+                                        </h3>
+                                    </div>
                                     <div className="flex items-center gap-2">
                                         {summary && !summarizing && (
                                             <button 
@@ -402,14 +405,15 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                                         </button>
                                     </div>
                                 </div>
-                                <div className="p-6 overflow-y-auto custom-scrollbar font-sans text-gray-300 text-sm leading-relaxed prose prose-invert max-w-none">
+                                <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar font-sans text-gray-300 text-sm leading-relaxed bg-[#0b0d12]">
                                     {summarizing ? (
                                         <div className="flex flex-col items-center justify-center py-12">
-                                            <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                                            <p className="text-purple-400 animate-pulse">Analyzing logs with AI...</p>
+                                            <AiStatusOrb activity="thinking" size={64} />
+                                            <p className="mt-4 text-sm font-medium text-white">Thinking through your logs…</p>
+                                            <p className="mt-1 text-xs text-gray-500">Building a concise incident summary.</p>
                                         </div>
                                     ) : summary ? (
-                                        <ReactMarkdown>{summary}</ReactMarkdown>
+                                        <div className="rounded-xl border border-white/10 bg-white/[0.025] p-5 prose prose-invert max-w-none"><ReactMarkdown>{summary}</ReactMarkdown></div>
                                     ) : (
                                         <p className="text-red-400">Failed to generate summary.</p>
                                     )}
@@ -648,14 +652,10 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                                 <button
                                     onClick={handleSummarize}
                                     disabled={summarizing}
-                                    className="group flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white px-5 py-2.5 rounded-full shadow-[0_0_20px_rgba(147,51,234,0.3)] transition-all transform hover:scale-105"
+                                    className="group flex items-center gap-2 rounded-full border border-blue-300/15 bg-primary px-5 py-2.5 text-white shadow-[0_10px_28px_rgba(37,99,235,0.24)] transition-all hover:-translate-y-0.5 hover:bg-blue-500 disabled:cursor-wait disabled:opacity-70"
                                 >
-                                    {summarizing ? (
-                                        <RefreshCw className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                        <ThinkingOrb state="working" size={20} theme="dark" color="#f0abfc" />
-                                    )}
-                                    <span className="font-sans font-medium text-sm">Summarize with AI</span>
+                                    <AiStatusOrb activity={summarizing ? 'thinking' : 'searching'} />
+                                    <span className="font-sans font-medium text-sm">{summarizing ? 'Thinking through logs…' : 'Summarize with AI'}</span>
                                 </button>
                                 
                                 {recentSummaryData && !summarizing && (
@@ -665,11 +665,11 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                                                 setSummary(recentSummaryData.summary);
                                                 setShowSummaryModal(true);
                                             }}
-                                            className="w-full bg-[#161920]/90 backdrop-blur border border-purple-500/30 hover:border-purple-500/60 rounded-xl p-3 shadow-lg hover:shadow-[0_0_15px_rgba(147,51,234,0.2)] transition-all text-left group/banner"
+                                            className="w-full rounded-xl border border-blue-300/20 bg-[#111822]/95 p-3 text-left shadow-[0_12px_32px_rgba(0,0,0,0.3)] transition-colors hover:border-blue-300/40 hover:bg-[#162235]"
                                         >
                                             <div className="flex items-center gap-2 mb-1">
-                                                <Sparkles className="w-3.5 h-3.5 text-purple-400 group-hover/banner:animate-pulse" />
-                                                <span className="text-xs font-semibold text-purple-300">AI Insight Available</span>
+                                                <AiStatusOrb activity="pro" paused />
+                                                <span className="text-xs font-semibold text-blue-100">AI insight available</span>
                                             </div>
                                             <div className="text-[10px] text-gray-400">
                                                 Analyzed {Math.floor((Date.now() - recentSummaryData.timestamp) / 60000)} mins ago

@@ -3,15 +3,19 @@ import { createPortal } from 'react-dom';
 import { X, Copy, Check, RefreshCw, AlertTriangle } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { ProUpgradeModal } from './ProUpgradeModal';
-import { ThinkingOrb } from 'thinking-orbs';
+import { AiStatusOrb } from './AiStatusOrb';
 
 
 function renderInlineMarkdown(text: string) {
-    // Replace **bold** with <strong> and `code` with styled <code>
-    const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g);
+    // Preserve the compact markdown the diagnostics API returns, including
+    // the italic setup note shown when an AI provider key is missing.
+    const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g);
     return parts.map((part, i) => {
         if (part.startsWith('**') && part.endsWith('**')) {
             return <strong key={i} className="font-bold text-white">{part.slice(2, -2)}</strong>;
+        }
+        if (part.startsWith('*') && part.endsWith('*')) {
+            return <em key={i} className="text-gray-300">{part.slice(1, -1)}</em>;
         }
         if (part.startsWith('`') && part.endsWith('`')) {
             return <code key={i} className="bg-black/40 text-primary px-1.5 py-0.5 rounded text-[11px] font-mono border border-primary/20">{part.slice(1, -1)}</code>;
@@ -180,7 +184,7 @@ export function K8sAiDiagnosticModal({
                 <div className="flex items-center justify-between p-5 border-b border-gray-800 bg-[#161616]">
                     <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10">
-                            <ThinkingOrb state="solving" size={20} theme="dark" color="#3b82f6" />
+                            <AiStatusOrb activity="diagnosing" />
                         </div>
                         <div>
                             <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -204,7 +208,7 @@ export function K8sAiDiagnosticModal({
                 <div className="flex-1 overflow-y-auto p-6 space-y-4 font-sans text-sm text-gray-200 leading-relaxed custom-scrollbar">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
-                            <ThinkingOrb state="searching" size={64} theme="dark" color="#3b82f6" />
+                            <AiStatusOrb activity="diagnosing" size={64} />
                             <div>
                                 <p className="text-sm font-semibold text-gray-200">Generating Root Cause Diagnosis...</p>
                                 <p className="text-xs text-gray-500 font-mono mt-1">Analyzing log streams, exit codes, and container spec limits</p>

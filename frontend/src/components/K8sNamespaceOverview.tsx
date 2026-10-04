@@ -3,7 +3,7 @@ import { AlertTriangle, PieChart } from 'lucide-react';
 import { timeAgo } from '../utils/k8sHelpers';
 import { apiClient } from '../services/api';
 import { K8sAiDiagnosticModal } from './K8sAiDiagnosticModal';
-import { ThinkingOrb } from 'thinking-orbs';
+import { AiStatusOrb } from './AiStatusOrb';
 
 export interface K8sNamespaceOverviewProps {
     selectedNamespace?: string;
@@ -473,7 +473,7 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
                                     className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-[11px] font-semibold transition-all shrink-0 mt-1"
                                     title="AI SRE Warning Event Diagnosis"
                                 >
-                                    <ThinkingOrb state="working" size={20} theme="dark" color="#3b82f6" />
+                                    <AiStatusOrb activity="diagnosing" />
                                     <span>AI Diagnose</span>
                                 </button>
                             </div>

@@ -18,7 +18,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import { K8sLogViewer } from './K8sLogViewer';
 import K8sTerminal from './K8sTerminal';
-import { ThinkingOrb } from 'thinking-orbs';
+import { AiStatusOrb } from './AiStatusOrb';
 import { K8sAutoscalerPanel } from './K8sAutoscalerPanel';
 import { K8sQuickActions } from './K8sQuickActions';
 import { K8sAiDiagnosticModal } from './K8sAiDiagnosticModal';
@@ -216,7 +216,7 @@ export function K8sDetailPanel({
                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-semibold whitespace-nowrap transition-all shadow-sm shrink-0"
                                 title="Run 1-Click AI SRE Diagnostic"
                             >
-                                <ThinkingOrb state="solving" size={20} theme="dark" color="#3b82f6" />
+                                <AiStatusOrb activity="diagnosing" />
                                 <span>AI Diagnose</span>
                             </button>
                         )}
