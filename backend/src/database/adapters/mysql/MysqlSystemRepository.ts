@@ -1,12 +1,13 @@
 
 import mysql from 'mysql2/promise';
-import { ISystemRepository } from '../../interfaces/ISystemRepository';
+import { ISystemRepository, LicenseActivation } from '../../interfaces/ISystemRepository';
 import { SystemMetrics } from '../../../types';
 
 export class MysqlSystemRepository implements ISystemRepository {
   private pool: mysql.Pool | null = null;
   private readonly configKey = 'storage_prefs';
   private readonly apmConfigKey = 'apm_prefs';
+  private readonly licenseActivationKey = 'polar_license_activation';
 
   async initialize(): Promise<void> {
     this.pool = mysql.createPool({
@@ -137,6 +138,28 @@ export class MysqlSystemRepository implements ISystemRepository {
     await this.pool!.execute(
       'INSERT INTO system_config (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?',
       [this.apmConfigKey, JSON.stringify(config), JSON.stringify(config)]
+    );
+  }
+
+  async getLicenseActivation(): Promise<LicenseActivation | null> {
+    if (!this.pool) await this.initialize();
+    const [rows]: any = await this.pool!.query(
+      'SELECT value FROM system_config WHERE `key` = ?',
+      [this.licenseActivationKey]
+    );
+    if (rows.length === 0) return null;
+    const value = typeof rows[0].value === 'string' ? JSON.parse(rows[0].value) : rows[0].value;
+    return value?.keyFingerprint && value.activationId
+      ? { keyFingerprint: value.keyFingerprint, activationId: value.activationId }
+      : null;
+  }
+
+  async saveLicenseActivation(activation: LicenseActivation): Promise<void> {
+    if (!this.pool) await this.initialize();
+    const value = JSON.stringify(activation);
+    await this.pool!.execute(
+      'INSERT INTO system_config (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?',
+      [this.licenseActivationKey, value, value]
     );
   }
 }

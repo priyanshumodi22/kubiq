@@ -1,10 +1,16 @@
 import axios from 'axios';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { DatabaseFactory } from '../database/DatabaseFactory';
 import { validateLicenseKey } from './licenseValidator';
 
 jest.mock('axios');
+jest.mock('../database/DatabaseFactory', () => ({
+    DatabaseFactory: { getSystemRepository: jest.fn() }
+}));
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
+const mockedDatabaseFactory = DatabaseFactory as jest.Mocked<typeof DatabaseFactory>;
+const storedActivations = new Map<string, string>();
 
 describe('validateLicenseKey', () => {
     beforeEach(() => {
@@ -12,6 +18,16 @@ describe('validateLicenseKey', () => {
         process.env.POLAR_ENVIRONMENT = 'sandbox';
         process.env.POLAR_ORGANIZATION_ID = 'org-kubiq';
         process.env.POLAR_LICENSE_BENEFIT_ID = 'benefit-pro';
+        storedActivations.clear();
+        mockedDatabaseFactory.getSystemRepository.mockResolvedValue({
+            getLicenseActivation: jest.fn(async () => {
+                const [keyFingerprint, activationId] = [...storedActivations.entries()][0] || [];
+                return keyFingerprint && activationId ? { keyFingerprint, activationId } : null;
+            }),
+            saveLicenseActivation: jest.fn(async ({ keyFingerprint, activationId }) => {
+                storedActivations.set(keyFingerprint, activationId);
+            })
+        } as never);
     });
 
     afterEach(() => {
@@ -24,6 +40,9 @@ describe('validateLicenseKey', () => {
     it('accepts an active kubiq Pro key from Polar sandbox', async () => {
         mockedAxios.post.mockResolvedValueOnce({
             status: 200,
+            data: { id: 'activation-1' }
+        } as never).mockResolvedValueOnce({
+            status: 200,
             data: {
                 organization_id: 'org-kubiq',
                 benefit_id: 'benefit-pro',
@@ -35,13 +54,21 @@ describe('validateLicenseKey', () => {
         await expect(validateLicenseKey('KUBIQ_PRO_TEST')).resolves.toBe(true);
         expect(mockedAxios.post).toHaveBeenCalledWith(
             'https://sandbox-api.polar.sh/v1/customer-portal/license-keys/validate',
-            { key: 'KUBIQ_PRO_TEST', organization_id: 'org-kubiq' },
+            expect.objectContaining({
+                key: 'KUBIQ_PRO_TEST',
+                organization_id: 'org-kubiq',
+                activation_id: 'activation-1',
+                benefit_id: 'benefit-pro'
+            }),
             expect.objectContaining({ timeout: 5_000 })
         );
     });
 
     it('rejects keys issued for another benefit', async () => {
         mockedAxios.post.mockResolvedValueOnce({
+            status: 200,
+            data: { id: 'activation-wrong-benefit' }
+        } as never).mockResolvedValueOnce({
             status: 200,
             data: {
                 organization_id: 'org-kubiq',
@@ -58,12 +85,20 @@ describe('validateLicenseKey', () => {
         mockedAxios.post
             .mockResolvedValueOnce({
                 status: 200,
+                data: { id: 'activation-revoked' }
+            } as never)
+            .mockResolvedValueOnce({
+                status: 200,
                 data: {
                     organization_id: 'org-kubiq',
                     benefit_id: 'benefit-pro',
                     status: 'revoked',
                     expires_at: null
                 }
+            } as never)
+            .mockResolvedValueOnce({
+                status: 200,
+                data: { id: 'activation-expired' }
             } as never)
             .mockResolvedValueOnce({
                 status: 200,

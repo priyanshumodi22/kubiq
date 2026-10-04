@@ -1,6 +1,11 @@
 
 import { SystemMetrics } from '../../types';
 
+export type LicenseActivation = {
+  keyFingerprint: string;
+  activationId: string;
+};
+
 export interface ISystemRepository {
   initialize(): Promise<void>;
   saveMetrics(metrics: SystemMetrics): Promise<void>;
@@ -9,4 +14,6 @@ export interface ISystemRepository {
   updateStorageConfig(config: { allowedMounts: string[] }): Promise<void>;
   getApmConfig(): Promise<{ ignoredRoutes: string[] }>;
   updateApmConfig(config: { ignoredRoutes: string[] }): Promise<void>;
+  getLicenseActivation(): Promise<LicenseActivation | null>;
+  saveLicenseActivation(activation: LicenseActivation): Promise<void>;
 }

@@ -1,7 +1,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { ISystemRepository } from '../../interfaces/ISystemRepository';
+import { ISystemRepository, LicenseActivation } from '../../interfaces/ISystemRepository';
 import { SystemMetrics } from '../../../types';
 
 export class JsonSystemRepository implements ISystemRepository {
@@ -9,12 +9,14 @@ export class JsonSystemRepository implements ISystemRepository {
   private metricsPath: string;
   private configPath: string;
   private apmConfigPath: string;
+  private licenseActivationPath: string;
 
   constructor() {
     this.dataDir = process.env.DATA_DIR || './data';
     this.metricsPath = path.join(this.dataDir, 'system-metrics.json');
     this.configPath = path.join(this.dataDir, 'system-config.json');
     this.apmConfigPath = path.join(this.dataDir, 'apm-config.json');
+    this.licenseActivationPath = path.join(this.dataDir, 'polar-license-activation.json');
   }
 
   async initialize(): Promise<void> {
@@ -71,5 +73,22 @@ export class JsonSystemRepository implements ISystemRepository {
   async updateApmConfig(config: { ignoredRoutes: string[] }): Promise<void> {
     if (!fs.existsSync(this.dataDir)) await this.initialize();
     fs.writeFileSync(this.apmConfigPath, JSON.stringify(config, null, 2));
+  }
+
+  async getLicenseActivation(): Promise<LicenseActivation | null> {
+    if (!fs.existsSync(this.licenseActivationPath)) return null;
+    try {
+      const value = JSON.parse(fs.readFileSync(this.licenseActivationPath, 'utf-8')) as Partial<LicenseActivation>;
+      return value.keyFingerprint && value.activationId
+        ? { keyFingerprint: value.keyFingerprint, activationId: value.activationId }
+        : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async saveLicenseActivation(activation: LicenseActivation): Promise<void> {
+    if (!fs.existsSync(this.dataDir)) await this.initialize();
+    fs.writeFileSync(this.licenseActivationPath, JSON.stringify(activation, null, 2));
   }
 }

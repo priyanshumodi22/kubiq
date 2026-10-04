@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { ISystemRepository } from '../../interfaces/ISystemRepository';
+import { ISystemRepository, LicenseActivation } from '../../interfaces/ISystemRepository';
 import { SystemMetrics } from '../../../types';
 import { SystemMetricsModel } from '../../schemas/SystemMetricsSchema';
 import { SystemPreferencesModel } from '../../schemas/SystemPreferencesSchema';
@@ -7,6 +7,7 @@ import { SystemPreferencesModel } from '../../schemas/SystemPreferencesSchema';
 export class MongoSystemRepository implements ISystemRepository {
     private readonly configKey = 'storage_prefs';
     private readonly apmConfigKey = 'apm_prefs';
+    private readonly licenseActivationKey = 'polar_license_activation';
 
     async initialize(): Promise<void> {
         if (mongoose.connection.readyState === 0) {
@@ -78,6 +79,24 @@ export class MongoSystemRepository implements ISystemRepository {
         await SystemPreferencesModel.findOneAndUpdate(
             { key: this.apmConfigKey },
             { key: this.apmConfigKey, value: config },
+            { upsert: true, new: true }
+        );
+    }
+
+    async getLicenseActivation(): Promise<LicenseActivation | null> {
+        await this.initialize();
+        const doc = await SystemPreferencesModel.findOne({ key: this.licenseActivationKey }).lean();
+        const value = doc?.value as Partial<LicenseActivation> | undefined;
+        return value?.keyFingerprint && value.activationId
+            ? { keyFingerprint: value.keyFingerprint, activationId: value.activationId }
+            : null;
+    }
+
+    async saveLicenseActivation(activation: LicenseActivation): Promise<void> {
+        await this.initialize();
+        await SystemPreferencesModel.findOneAndUpdate(
+            { key: this.licenseActivationKey },
+            { key: this.licenseActivationKey, value: activation },
             { upsert: true, new: true }
         );
     }
