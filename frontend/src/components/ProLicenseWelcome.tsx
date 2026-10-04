@@ -17,12 +17,17 @@ const WELCOME_VERSION = 'v2';
 export default function ProLicenseWelcome() {
   const { isAuthenticated, user } = useAuth();
   const [status, setStatus] = useState<ProStatus | null>(null);
+  const [isManuallyOpened, setIsManuallyOpened] = useState(false);
 
   const userIdentity = user?.id || user?.username || user?.email;
   const storageKey = status?.licenseFingerprint && userIdentity
     ? `kubiq_pro_welcome_seen:${WELCOME_VERSION}:${userIdentity}:${status.licenseFingerprint}`
     : null;
-  const isOpen = Boolean(status?.active && storageKey && !localStorage.getItem(storageKey));
+  const isOpen = Boolean(
+    status?.active
+    && storageKey
+    && (isManuallyOpened || !localStorage.getItem(storageKey)),
+  );
 
   useEffect(() => {
     if (!isAuthenticated || !userIdentity) return;
@@ -43,8 +48,17 @@ export default function ProLicenseWelcome() {
 
   const dismiss = useCallback(() => {
     if (storageKey) localStorage.setItem(storageKey, new Date().toISOString());
-    setStatus(null);
+    setIsManuallyOpened(false);
   }, [storageKey]);
+
+  useEffect(() => {
+    const reopen = () => {
+      if (status?.active) setIsManuallyOpened(true);
+    };
+
+    window.addEventListener('kubiq-pro-card:open', reopen);
+    return () => window.removeEventListener('kubiq-pro-card:open', reopen);
+  }, [status?.active]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -92,7 +106,7 @@ export default function ProLicenseWelcome() {
               <ThinkingOrb state="solving" size={64} theme="dark" />
             </div>
             <div className="relative max-w-md pr-10 sm:pr-16">
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">kubiq Pro</p>
+              <p className="mb-3 text-[11px] font-semibold tracking-[0.12em] text-primary">kubiq Pro</p>
               <h2 id="kubiq-pro-welcome-title" className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
                 AI features are ready.
               </h2>

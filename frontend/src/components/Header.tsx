@@ -142,27 +142,34 @@ export default function Header() {
 
       <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 relative z-10 flex flex-col md:block">
         <div className="flex items-center justify-between gap-2 sm:gap-4 w-full">
-          <Link to="/dashboard" className="flex items-center gap-2 sm:gap-3 min-w-0 hover:opacity-90 transition-opacity">
-            <div className="inline-flex items-center justify-center w-12 h-12 sm:w-12 sm:h-12 bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl shadow-lg shadow-primary/10">
-              <img
-                src={`${import.meta.env.BASE_URL.endsWith('/')
-                  ? import.meta.env.BASE_URL
-                  : import.meta.env.BASE_URL + '/'
-                  }logo/kubiq_logo.png`}
-                alt="kubiq Logo"
-                className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
-              />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl font-bold text-text leading-tight">kubiq</h1>
-              <p className="text-[12px] sm:text-xs text-text-dim mt-0.5">Uptime Radar</p>
-            </div>
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Link to="/dashboard" className="flex items-center gap-2 sm:gap-3 min-w-0 hover:opacity-90 transition-opacity">
+              <div className="inline-flex items-center justify-center w-12 h-12 sm:w-12 sm:h-12 bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl shadow-lg shadow-primary/10">
+                <img
+                  src={`${import.meta.env.BASE_URL.endsWith('/')
+                    ? import.meta.env.BASE_URL
+                    : import.meta.env.BASE_URL + '/'
+                    }logo/kubiq_logo.png`}
+                  alt="kubiq Logo"
+                  className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
+                />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-xl font-bold text-text leading-tight">kubiq</h1>
+                <p className="text-[12px] sm:text-xs text-text-dim mt-0.5">Uptime Radar</p>
+              </div>
+            </Link>
             {isProActive && (
-              <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold tracking-[0.12em] text-primary">
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new Event('kubiq-pro-card:open'))}
+                className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold tracking-[0.12em] text-primary transition-colors hover:border-primary/60 hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                aria-label="Open kubiq Pro details"
+              >
                 Pro
-              </span>
+              </button>
             )}
-          </Link>
+          </div>
 
           <nav className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
             <div className="bg-bg-card border border-gray-700/50 p-1 rounded-xl flex space-x-1 shadow-lg backdrop-blur-md">
