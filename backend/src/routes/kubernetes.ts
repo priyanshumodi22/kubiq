@@ -460,7 +460,7 @@ ${logs.split('\n').slice(-15).join('\n') || 'No logs recorded.'}
 \`\`\`
 
 > [!TIP]
-> *Configure \`AI_API_KEY\` in your \`.env\` file for full LLM generative SRE analysis.*`;
+> Configure \`AI_API_KEY\` in your environment to enable full LLM-powered SRE analysis.`;
             return res.json({ diagnosis: fallbackMarkdown });
         }
 
@@ -555,7 +555,7 @@ ${event.message}
 \`\`\`
 
 > [!TIP]
-> *Configure \`AI_API_KEY\` in your \`.env\` file for full LLM generative SRE analysis.*`;
+> Configure \`AI_API_KEY\` in your environment to enable full LLM-powered SRE analysis.`;
             return res.json({ diagnosis: fallbackMarkdown });
         }
 

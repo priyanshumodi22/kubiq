@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import io from 'socket.io-client';
-import { Play, Pause, Trash2, ArrowDown, ChevronDown, Check, Search, X, Activity, Sparkles, Copy, RefreshCw } from 'lucide-react';
+import { Play, Pause, Trash2, ArrowDown, ChevronDown, Check, Search, X, Activity, Sparkles, Copy } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -225,21 +225,25 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-8"
+                            className="fixed inset-0 bg-black/75 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-8"
                             onClick={() => setShowSummaryModal(false)}
                         >
                             <motion.div
                                 initial={{ scale: 0.95, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 exit={{ scale: 0.95, opacity: 0 }}
-                                className="bg-[#161920] border border-gray-700/50 rounded-xl shadow-2xl w-full max-w-3xl flex flex-col max-h-[85vh] overflow-hidden"
+                                className="relative w-full max-w-3xl max-h-[85vh] overflow-hidden rounded-2xl border border-primary/25 bg-[#0b0d12] shadow-[0_24px_80px_rgba(0,0,0,0.55)] flex flex-col"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <div className="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-primary/[0.06]">
-                                    <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
-                                        <Sparkles className="w-5 h-5 text-primary" />
-                                        AI Log Analysis
-                                    </h3>
+                                <div className="absolute inset-x-0 top-0 h-px bg-primary/70" />
+                                <div className="px-6 py-5 border-b border-white/10 flex justify-between items-center bg-[linear-gradient(135deg,#101827_0%,#0b0d12_72%)]">
+                                    <div>
+                                        <p className="mb-1 text-[10px] font-semibold tracking-[0.16em] text-primary">kubiq Pro</p>
+                                        <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
+                                            <Sparkles className="w-5 h-5 text-primary" />
+                                            AI Log Analysis
+                                        </h3>
+                                    </div>
                                     <div className="flex items-center gap-2">
                                         {summary && !summarizing && (
                                             <button 
@@ -258,14 +262,17 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                                         </button>
                                     </div>
                                 </div>
-                                <div className="p-6 overflow-y-auto custom-scrollbar font-sans text-gray-300 text-sm leading-relaxed prose prose-invert max-w-none">
+                                <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar font-sans text-gray-300 text-sm leading-relaxed bg-[#0b0d12]">
                                     {summarizing ? (
                                         <div className="flex flex-col items-center justify-center py-12">
-                                            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-                                            <p className="text-primary animate-pulse">Analyzing logs with AI...</p>
+                                            <ThinkingOrb state="breathing" size={64} theme="dark" aria-hidden="true" />
+                                            <p className="mt-4 text-sm font-medium text-white">Thinking through your logs…</p>
+                                            <p className="mt-1 text-xs text-gray-500">Building a concise incident summary.</p>
                                         </div>
                                     ) : summary ? (
-                                        <ReactMarkdown>{summary}</ReactMarkdown>
+                                        <div className="rounded-xl border border-white/10 bg-white/[0.025] p-5 prose prose-invert max-w-none">
+                                            <ReactMarkdown>{summary}</ReactMarkdown>
+                                        </div>
                                     ) : (
                                         <p className="text-red-400">Failed to generate summary.</p>
                                     )}
@@ -488,11 +495,12 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                             disabled={summarizing}
                             className="group flex items-center gap-2 rounded-full border border-blue-300/15 bg-primary px-5 py-2.5 text-white shadow-[0_10px_28px_rgba(37,99,235,0.24)] transition-all hover:-translate-y-0.5 hover:bg-blue-500 disabled:cursor-wait disabled:opacity-70"
                         >
-                            {summarizing ? (
-                                <RefreshCw className="w-4 h-4 animate-spin" />
-                            ) : (
-                                <ThinkingOrb state="solving" size={20} theme="dark" color="#dbeafe" />
-                            )}
+                            <ThinkingOrb
+                                state={summarizing ? 'breathing' : 'solving'}
+                                size={20}
+                                theme="dark"
+                                aria-hidden="true"
+                            />
                             <span className="font-sans font-medium text-sm">Summarize with AI</span>
                         </button>
                         
