@@ -108,12 +108,11 @@ data:
   LOG_RETENTION_DAYS: '7'
   # AI_API_KEY goes in kubiq-runtime Secret
 
-  # ── kubiq Pro licensing (Polar sandbox while testing) ──
-  # Switch these public identifiers to the Polar production values before
-  # enabling paid production licenses.
-  POLAR_ENVIRONMENT: sandbox
-  POLAR_ORGANIZATION_ID: 6fa2ccc0-0387-4a91-9ee3-662704639ee1
-  POLAR_LICENSE_BENEFIT_ID: aadc9755-77a1-4633-a218-0f1ea3d939d4
+  # ── kubiq Pro licensing (Polar production) ──
+  # The private KUBIQ_LICENSE_KEY remains in the kubiq-runtime Secret.
+  POLAR_ENVIRONMENT: production
+  POLAR_ORGANIZATION_ID: e306617c-5cf4-42cb-88e3-cf93859f4a9d
+  POLAR_LICENSE_BENEFIT_ID: e89b3456-08c4-4742-8c8b-57e112c7c0c6
 ---
 apiVersion: apps/v1
 kind: Deployment
