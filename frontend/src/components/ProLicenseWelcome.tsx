@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { ThinkingOrb } from 'thinking-orbs';
 import { useAuth } from '../contexts/AuthContext';
@@ -93,22 +92,13 @@ export default function ProLicenseWelcome() {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="absolute inset-x-0 top-0 h-px bg-primary/70" />
-            <button
-              type="button"
-              onClick={dismiss}
-              className="absolute right-5 top-5 rounded-full border border-white/10 bg-white/5 p-1.5 text-gray-500 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              aria-label="Close kubiq Pro welcome"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <div className="absolute right-14 top-5 sm:right-16 sm:top-7" aria-hidden="true">
+            <div className="absolute right-5 top-5 sm:right-7 sm:top-7" aria-hidden="true">
               <ThinkingOrb state="solving" size={64} theme="dark" />
             </div>
-            <div className="relative max-w-md pr-10 sm:pr-16">
+            <div className="relative max-w-md pr-12 sm:pr-16">
               <p className="mb-3 text-[11px] font-semibold tracking-[0.12em] text-primary">kubiq Pro</p>
               <h2 id="kubiq-pro-welcome-title" className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                AI features are ready.
+                Welcome to kubiq Pro.
               </h2>
               <p id="kubiq-pro-welcome-description" className="mt-3 text-sm leading-6 text-gray-400">
                 Your license is active. AI diagnostics and log summaries are now available in kubiq.
@@ -132,7 +122,7 @@ export default function ProLicenseWelcome() {
                 onClick={dismiss}
                 className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0d12]"
               >
-                Got it
+                Continue
               </button>
             </div>
           </motion.section>
