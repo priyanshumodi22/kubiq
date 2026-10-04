@@ -3,11 +3,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { NotificationConfigModal } from './NotificationConfigModal';
+import { apiClient } from '../services/api';
 
 export default function Header() {
   const { isAuthenticated, user, roles, logout, hasRole } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [isProActive, setIsProActive] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
@@ -22,6 +24,26 @@ export default function Header() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setIsProActive(false);
+      return;
+    }
+
+    let cancelled = false;
+    apiClient.getProStatus()
+      .then((status) => {
+        if (!cancelled) setIsProActive(status.active);
+      })
+      .catch(() => {
+        if (!cancelled) setIsProActive(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
 
   const userDisplayName =
     user?.name ||
@@ -135,6 +157,11 @@ export default function Header() {
               <h1 className="text-lg sm:text-xl font-bold text-text leading-tight">kubiq</h1>
               <p className="text-[12px] sm:text-xs text-text-dim mt-0.5">Uptime Radar</p>
             </div>
+            {isProActive && (
+              <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold tracking-[0.12em] text-primary">
+                Pro
+              </span>
+            )}
           </Link>
 
           <nav className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
