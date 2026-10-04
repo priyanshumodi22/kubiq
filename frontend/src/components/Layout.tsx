@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import Header from './Header';
 import Footer from './Footer';
+import ProLicenseWelcome from './ProLicenseWelcome';
 
 interface LayoutProps {
   children: ReactNode;
@@ -17,6 +18,7 @@ export default function Layout({ children }: LayoutProps) {
       <div className="absolute bottom-1/4 left-1/2 w-[30rem] h-[30rem] bg-primary/2 rounded-full blur-3xl"></div>
 
       <div className="relative z-10">
+        <ProLicenseWelcome />
         <div className="fixed top-0 left-0 right-0 z-50">
           <Header />
         </div>

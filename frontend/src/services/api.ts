@@ -86,6 +86,11 @@ class ApiClient {
     return response.data;
   }
 
+  async getProStatus(): Promise<{ active: boolean; licenseFingerprint: string | null }> {
+    const response = await this.client.get('/api/system/pro-status');
+    return response.data;
+  }
+
   // WebAuthn / Biometrics
   async registerPasskeyOptions() {
     const response = await this.client.get('/api/auth/webauthn/register/options');

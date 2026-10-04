@@ -235,9 +235,9 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                                 className="bg-[#161920] border border-gray-700/50 rounded-xl shadow-2xl w-full max-w-3xl flex flex-col max-h-[85vh] overflow-hidden"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <div className="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-gradient-to-r from-purple-900/20 to-blue-900/20">
+                                <div className="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-primary/[0.06]">
                                     <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
-                                        <Sparkles className="w-5 h-5 text-purple-400" />
+                                        <Sparkles className="w-5 h-5 text-primary" />
                                         AI Log Analysis
                                     </h3>
                                     <div className="flex items-center gap-2">
@@ -261,8 +261,8 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                                 <div className="p-6 overflow-y-auto custom-scrollbar font-sans text-gray-300 text-sm leading-relaxed prose prose-invert max-w-none">
                                     {summarizing ? (
                                         <div className="flex flex-col items-center justify-center py-12">
-                                            <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                                            <p className="text-purple-400 animate-pulse">Analyzing logs with AI...</p>
+                                            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+                                            <p className="text-primary animate-pulse">Analyzing logs with AI...</p>
                                         </div>
                                     ) : summary ? (
                                         <ReactMarkdown>{summary}</ReactMarkdown>
@@ -486,12 +486,12 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                         <button
                             onClick={handleSummarize}
                             disabled={summarizing}
-                            className="group flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white px-5 py-2.5 rounded-full shadow-[0_0_20px_rgba(147,51,234,0.3)] transition-all transform hover:scale-105"
+                            className="group flex items-center gap-2 rounded-full border border-blue-300/15 bg-primary px-5 py-2.5 text-white shadow-[0_10px_28px_rgba(37,99,235,0.24)] transition-all hover:-translate-y-0.5 hover:bg-blue-500 disabled:cursor-wait disabled:opacity-70"
                         >
                             {summarizing ? (
                                 <RefreshCw className="w-4 h-4 animate-spin" />
                             ) : (
-                                <ThinkingOrb state="solving" size={20} theme="dark" color="#f0abfc" />
+                                <ThinkingOrb state="solving" size={20} theme="dark" color="#dbeafe" />
                             )}
                             <span className="font-sans font-medium text-sm">Summarize with AI</span>
                         </button>

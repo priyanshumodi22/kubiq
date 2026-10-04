@@ -151,6 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(true);
       setProvider('native');
       setUser({
+          id: userData.id,
           username: userData.username,
           email: userData.email,
           name: userData.name

@@ -4,10 +4,29 @@ import { SystemMonitorService } from '../services/SystemMonitorService';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { requireRole, getUserFromReq } from '../middleware/auth';
 import { AuditLogService } from '../services/AuditLogService';
+import { createHash } from 'crypto';
+import { validateLicenseKey } from '../utils/licenseValidator';
 
 const router = express.Router();
 const systemMonitor = SystemMonitorService.getInstance();
 const auditService = AuditLogService.getInstance();
+
+// GET /api/system/pro-status - Authenticated, non-secret license state for the UI
+router.get('/pro-status', async (_req, res) => {
+  try {
+    const licenseKey = process.env.KUBIQ_LICENSE_KEY?.trim() || '';
+    const active = licenseKey ? await validateLicenseKey(licenseKey) : false;
+
+    res.json({
+      active,
+      licenseFingerprint: active
+        ? createHash('sha256').update(licenseKey).digest('hex').slice(0, 16)
+        : null,
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 // GET /api/system/stats - Live data
 router.get('/stats', async (req, res) => {
