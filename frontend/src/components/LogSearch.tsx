@@ -293,7 +293,7 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
                             disabled={summarizing}
                             className="group flex items-center gap-2 rounded-full border border-blue-300/15 bg-primary px-5 py-2.5 text-white shadow-[0_10px_28px_rgba(37,99,235,0.24)] transition-all hover:-translate-y-0.5 hover:bg-blue-500 disabled:cursor-wait disabled:opacity-70"
                         >
-                            <AiStatusOrb activity={summarizing ? 'thinking' : 'searching'} />
+                            <AiStatusOrb activity={summarizing ? 'searching' : 'thinking'} />
                             <span className="font-sans font-medium text-sm">{summarizing ? 'Thinking through logs…' : 'Summarize with AI'}</span>
                         </button>
                         
@@ -307,7 +307,7 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
                                     className="w-full rounded-xl border border-blue-300/20 bg-[#111822]/95 p-3 text-left shadow-[0_12px_32px_rgba(0,0,0,0.3)] transition-colors hover:border-blue-300/40 hover:bg-[#162235]"
                                 >
                                     <div className="flex items-center gap-2 mb-1">
-                                        <AiStatusOrb activity="complete" />
+                                        <AiStatusOrb activity="thinking" />
                                         <span className="text-xs font-semibold text-blue-100">AI insight available</span>
                                     </div>
                                     <div className="text-[10px] text-gray-400">
@@ -342,7 +342,7 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
                                     <div>
                                         <p className="mb-1 text-[10px] font-semibold tracking-[0.16em] text-primary">kubiq Pro</p>
                                         <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
-                                            <AiStatusOrb activity={summarizing ? 'thinking' : 'complete'} />
+                                            <AiStatusOrb activity={summarizing ? 'searching' : 'thinking'} />
                                             AI log analysis
                                         </h3>
                                     </div>
@@ -367,7 +367,7 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
                                 <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar font-sans text-gray-300 text-sm leading-relaxed bg-[#0b0d12]">
                                     {summarizing ? (
                                         <div className="flex flex-col items-center justify-center py-12">
-                                            <AiStatusOrb activity="thinking" size={64} />
+                                            <AiStatusOrb activity="searching" size={64} />
                                             <p className="mt-4 text-sm font-medium text-white">Thinking through your logs…</p>
                                             <p className="mt-1 text-xs text-gray-500">Building a concise incident summary.</p>
                                         </div>

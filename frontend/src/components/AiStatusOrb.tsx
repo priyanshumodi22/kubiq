@@ -1,6 +1,6 @@
 import { Orb } from '@yogesharc/thinking-orbs';
 
-type AiActivity = 'diagnosing' | 'searching' | 'thinking' | 'pro' | 'complete';
+type AiActivity = 'diagnosing' | 'searching' | 'thinking' | 'pro';
 
 type AiStatusOrbProps = {
     activity: AiActivity;
@@ -10,8 +10,8 @@ type AiStatusOrbProps = {
 
 /**
  * The product's single semantic bridge to the official Thinking Orbs package.
- * Reasoning owns diagnostics and live model work; searching is used only for
- * log discovery. Variants deliberately keep Pro intelligence visually distinct.
+ * This follows the approved visual mapping exactly: waiting for Pro, reasoning
+ * for idle analysis/diagnostics, and searching-lighthouse only while work runs.
  */
 export function AiStatusOrb({ activity, size = 20, className }: AiStatusOrbProps) {
     const sharedProps = {
@@ -25,21 +25,16 @@ export function AiStatusOrb({ activity, size = 20, className }: AiStatusOrbProps
     }
 
     if (activity === 'thinking') {
-        return <Orb state="working" variant="gyro" className={`text-cyan-100${className ? ` ${className}` : ''}`} {...sharedProps} />;
+        return <Orb state="reasoning" className={`text-cyan-100${className ? ` ${className}` : ''}`} {...sharedProps} />;
     }
 
     if (activity === 'pro') {
-        return <Orb state="background" variant="spiral" className={`text-blue-100${className ? ` ${className}` : ''}`} {...sharedProps} />;
-    }
-
-    if (activity === 'complete') {
-        return <Orb state="compacting" variant="fuse" className={`text-emerald-100${className ? ` ${className}` : ''}`} {...sharedProps} />;
+        return <Orb state="waiting" className={`text-blue-100${className ? ` ${className}` : ''}`} {...sharedProps} />;
     }
 
     return (
         <Orb
             state="reasoning"
-            variant="twins"
             className={`text-sky-200${className ? ` ${className}` : ''}`}
             {...sharedProps}
         />

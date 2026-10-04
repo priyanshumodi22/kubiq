@@ -184,7 +184,7 @@ export function K8sAiDiagnosticModal({
                 <div className="flex items-center justify-between p-5 border-b border-gray-800 bg-[#161616]">
                     <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10">
-                            <AiStatusOrb activity="diagnosing" />
+                            <AiStatusOrb activity={loading ? "searching" : "diagnosing"} />
                         </div>
                         <div>
                             <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -208,7 +208,7 @@ export function K8sAiDiagnosticModal({
                 <div className="flex-1 overflow-y-auto p-6 space-y-4 font-sans text-sm text-gray-200 leading-relaxed custom-scrollbar">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
-                            <AiStatusOrb activity="diagnosing" size={64} />
+                            <AiStatusOrb activity="searching" size={64} />
                             <div>
                                 <p className="text-sm font-semibold text-gray-200">Generating Root Cause Diagnosis...</p>
                                 <p className="text-xs text-gray-500 font-mono mt-1">Analyzing log streams, exit codes, and container spec limits</p>
