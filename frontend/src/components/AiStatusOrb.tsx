@@ -1,4 +1,4 @@
-import { ThinkingOrb } from 'thinking-orbs';
+import { Orb } from '@yogesharc/thinking-orbs';
 
 type AiActivity = 'diagnosing' | 'searching' | 'thinking' | 'pro';
 
@@ -9,30 +9,35 @@ type AiStatusOrbProps = {
     className?: string;
 };
 
-const ORB_BY_ACTIVITY = {
-    diagnosing: { state: 'solving', color: '#7dd3fc' },
-    searching: { state: 'searching', color: '#93c5fd' },
-    thinking: { state: 'breathing', color: '#bfdbfe' },
-    pro: { state: 'solving', color: '#dbeafe' },
-} as const;
-
 /**
- * The product's single semantic bridge to Thinking Orbs.
- * Keep the animation tied to real AI work: diagnostics solve, retrieval
- * searches, and an in-flight summary thinks.
+ * The product's single semantic bridge to the official Thinking Orbs package.
+ * Reasoning owns diagnostics and live model work; searching is used only for
+ * log discovery. Variants deliberately keep Pro intelligence visually distinct.
  */
 export function AiStatusOrb({ activity, size = 20, paused = false, className }: AiStatusOrbProps) {
-    const orb = ORB_BY_ACTIVITY[activity];
+    const sharedProps = {
+        size,
+        density: size >= 64 ? 1.35 : 1.1,
+        dotSize: size >= 64 ? 0.9 : 1,
+        paused,
+    };
+
+    if (activity === 'searching') {
+        return <Orb state="searching" variant="lighthouse" className={`text-blue-200${className ? ` ${className}` : ''}`} {...sharedProps} />;
+    }
+
+    if (activity === 'thinking') {
+        return <Orb state="reasoning" className={`text-cyan-100${className ? ` ${className}` : ''}`} {...sharedProps} />;
+    }
+
+    const tone = activity === 'diagnosing' ? 'text-sky-200' : 'text-blue-100';
 
     return (
-        <ThinkingOrb
-            state={orb.state}
-            size={size}
-            theme="dark"
-            color={orb.color}
-            paused={paused}
-            className={className}
-            aria-hidden="true"
+        <Orb
+            state="reasoning"
+            variant="twins"
+            className={`${tone}${className ? ` ${className}` : ''}`}
+            {...sharedProps}
         />
     );
 }
