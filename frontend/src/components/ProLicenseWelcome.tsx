@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BrainCircuit, CheckCircle2, FileSearch, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { ThinkingOrb } from 'thinking-orbs';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,13 +11,16 @@ type ProStatus = {
   licenseFingerprint: string | null;
 };
 
+// Increment only when a materially revised welcome message should be shown once more.
+const WELCOME_VERSION = 'v2';
+
 export default function ProLicenseWelcome() {
   const { isAuthenticated, user } = useAuth();
   const [status, setStatus] = useState<ProStatus | null>(null);
 
   const userIdentity = user?.id || user?.username || user?.email;
   const storageKey = status?.licenseFingerprint && userIdentity
-    ? `kubiq_pro_welcome_seen:${userIdentity}:${status.licenseFingerprint}`
+    ? `kubiq_pro_welcome_seen:${WELCOME_VERSION}:${userIdentity}:${status.licenseFingerprint}`
     : null;
   const isOpen = Boolean(status?.active && storageKey && !localStorage.getItem(storageKey));
 
@@ -59,7 +62,7 @@ export default function ProLicenseWelcome() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
           role="presentation"
           onClick={dismiss}
         >
@@ -68,54 +71,56 @@ export default function ProLicenseWelcome() {
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.95, y: 18, opacity: 0 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-white/10 bg-[#090b0f] p-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
+            className="relative w-full max-w-xl overflow-hidden rounded-2xl border border-primary/35 bg-[linear-gradient(135deg,#101827_0%,#0b0d12_62%,#090b0f_100%)] p-7 shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:p-8"
             role="dialog"
             aria-modal="true"
             aria-labelledby="kubiq-pro-welcome-title"
+            aria-describedby="kubiq-pro-welcome-description"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent" />
-            <div className="absolute left-1/2 top-0 h-56 w-80 -translate-x-1/2 rounded-full bg-emerald-400/8 blur-3xl" />
+            <div className="absolute inset-x-0 top-0 h-px bg-primary/70" />
             <button
               type="button"
               onClick={dismiss}
-              className="absolute right-4 top-4 rounded-full border border-white/5 bg-white/5 p-1.5 text-gray-500 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+              className="absolute right-5 top-5 rounded-full border border-white/10 bg-white/5 p-1.5 text-gray-500 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label="Close kubiq Pro welcome"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <div className="relative mb-4 flex justify-center" aria-hidden="true">
-              <ThinkingOrb state="solving" size={64} theme="dark" color="#34d399" />
+            <div className="absolute right-14 top-5 sm:right-16 sm:top-7" aria-hidden="true">
+              <ThinkingOrb state="solving" size={64} theme="dark" />
             </div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-400">kubiq Pro is active</p>
-            <h2 id="kubiq-pro-welcome-title" className="text-3xl font-bold text-white">Your AI workspace is ready.</h2>
-            <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-gray-400">
-              Your license is verified. You can now use kubiq Pro AI features across logs and Kubernetes diagnostics.
-            </p>
-
-            <div className="my-7 grid gap-3 text-left sm:grid-cols-3">
-              <div className="rounded-xl border border-white/8 bg-white/[0.035] p-4">
-                <FileSearch className="mb-3 h-5 w-5 text-primary" />
-                <p className="text-sm font-medium text-gray-200">Log summaries</p>
-              </div>
-              <div className="rounded-xl border border-white/8 bg-white/[0.035] p-4">
-                <BrainCircuit className="mb-3 h-5 w-5 text-primary" />
-                <p className="text-sm font-medium text-gray-200">AI diagnostics</p>
-              </div>
-              <div className="rounded-xl border border-white/8 bg-white/[0.035] p-4">
-                <CheckCircle2 className="mb-3 h-5 w-5 text-emerald-400" />
-                <p className="text-sm font-medium text-gray-200">License verified</p>
-              </div>
+            <div className="relative max-w-md pr-10 sm:pr-16">
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">kubiq Pro</p>
+              <h2 id="kubiq-pro-welcome-title" className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                AI features are ready.
+              </h2>
+              <p id="kubiq-pro-welcome-description" className="mt-3 text-sm leading-6 text-gray-400">
+                Your license is active. AI diagnostics and log summaries are now available in kubiq.
+              </p>
             </div>
 
-            <button
-              type="button"
-              onClick={dismiss}
-              className="w-full rounded-xl border border-emerald-300/15 bg-emerald-500 px-6 py-3 font-semibold text-[#04110d] shadow-[0_12px_30px_rgba(16,185,129,0.18)] transition-all hover:-translate-y-0.5 hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-            >
-              Start using kubiq Pro
-            </button>
+            <div className="mt-7 flex flex-wrap gap-x-10 gap-y-3 border-t border-white/10 pt-5">
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-gray-500">Status</p>
+                <p className="mt-1 text-sm font-medium text-white">License active</p>
+              </div>
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-gray-500">Access</p>
+                <p className="mt-1 text-sm font-medium text-white">AI diagnostics enabled</p>
+              </div>
+            </div>
+
+            <div className="mt-7 flex justify-end">
+              <button
+                type="button"
+                onClick={dismiss}
+                className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0d12]"
+              >
+                Got it
+              </button>
+            </div>
           </motion.section>
         </motion.div>
       )}
