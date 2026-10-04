@@ -45,7 +45,7 @@ export function ProUpgradeModal({ isOpen, onClose }: ProUpgradeModalProps) {
                             </button>
 
                             <div className="mb-5" aria-hidden="true">
-                                <AiStatusOrb activity="pro" size={64} paused />
+                                <AiStatusOrb activity="pro" size={64} />
                             </div>
 
                             <h2 id="kubiq-pro-title" className="mb-2 text-3xl font-bold text-white">

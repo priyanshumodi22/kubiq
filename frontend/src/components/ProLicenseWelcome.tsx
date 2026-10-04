@@ -99,7 +99,7 @@ export default function ProLicenseWelcome() {
           >
             <div className="absolute inset-x-0 top-0 h-px bg-primary/70" />
             <div className="absolute right-5 top-5 sm:right-7 sm:top-7" aria-hidden="true">
-              <AiStatusOrb activity="pro" size={64} paused />
+              <AiStatusOrb activity="pro" size={64} />
             </div>
             <div className="relative max-w-md pr-12 sm:pr-16">
               <p className="mb-3 text-[11px] font-semibold tracking-[0.12em] text-primary">kubiq Pro</p>

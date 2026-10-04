@@ -307,7 +307,7 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
                                     className="w-full rounded-xl border border-blue-300/20 bg-[#111822]/95 p-3 text-left shadow-[0_12px_32px_rgba(0,0,0,0.3)] transition-colors hover:border-blue-300/40 hover:bg-[#162235]"
                                 >
                                     <div className="flex items-center gap-2 mb-1">
-                                        <AiStatusOrb activity="pro" paused />
+                                        <AiStatusOrb activity="complete" />
                                         <span className="text-xs font-semibold text-blue-100">AI insight available</span>
                                     </div>
                                     <div className="text-[10px] text-gray-400">
@@ -342,7 +342,7 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
                                     <div>
                                         <p className="mb-1 text-[10px] font-semibold tracking-[0.16em] text-primary">kubiq Pro</p>
                                         <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
-                                            <AiStatusOrb activity={summarizing ? 'thinking' : 'pro'} paused={!summarizing} />
+                                            <AiStatusOrb activity={summarizing ? 'thinking' : 'complete'} />
                                             AI log analysis
                                         </h3>
                                     </div>
