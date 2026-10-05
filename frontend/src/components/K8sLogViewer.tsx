@@ -493,7 +493,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                         <button
                             onClick={handleSummarize}
                             disabled={summarizing}
-                            className="group flex items-center gap-2 rounded-full border border-blue-300/15 bg-primary px-5 py-2.5 text-white shadow-[0_10px_28px_rgba(37,99,235,0.24)] transition-all hover:-translate-y-0.5 hover:bg-blue-500 disabled:cursor-wait disabled:opacity-70"
+                            className="group flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-5 py-2.5 text-primary shadow-sm transition-all hover:-translate-y-0.5 hover:bg-primary/20 disabled:cursor-wait disabled:opacity-70"
                         >
                             <AiStatusOrb activity={summarizing ? 'searching' : 'thinking'} />
                             <span className="font-sans font-medium text-sm">{summarizing ? 'Thinking through logs…' : 'Summarize with AI'}</span>
