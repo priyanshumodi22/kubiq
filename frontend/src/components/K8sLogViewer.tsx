@@ -3,12 +3,12 @@ import { Virtuoso } from 'react-virtuoso';
 import io from 'socket.io-client';
 import { Play, Pause, Trash2, ArrowDown, ChevronDown, Check, Search, X, Activity, Copy } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogSearch } from './LogSearch';
 import { apiClient } from '../services/api';
 import { ProUpgradeModal } from './ProUpgradeModal';
 import { AiStatusOrb } from './AiStatusOrb';
+import { AiSummaryContent } from './AiSummaryContent';
 
 interface K8sLogViewerProps {
     namespace: string;
@@ -270,9 +270,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                                             <p className="mt-1 text-xs text-gray-500">Building a concise incident summary.</p>
                                         </div>
                                     ) : summary ? (
-                                        <div className="rounded-xl border border-white/10 bg-white/[0.025] p-5 prose prose-invert max-w-none">
-                                            <ReactMarkdown>{summary}</ReactMarkdown>
-                                        </div>
+                                        <AiSummaryContent summary={summary} />
                                     ) : (
                                         <p className="text-red-400">Failed to generate summary.</p>
                                     )}

@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Virtuoso } from 'react-virtuoso';
 import { Search, Clock, Filter, RefreshCw, AlertCircle, X, ChevronDown, Copy } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiClient } from '../services/api';
 import { ProUpgradeModal } from './ProUpgradeModal';
 import { AiStatusOrb } from './AiStatusOrb';
+import { AiSummaryContent } from './AiSummaryContent';
 
 interface LogSearchProps {
     serviceName: string;
@@ -372,7 +372,7 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
                                             <p className="mt-1 text-xs text-gray-500">Building a concise incident summary.</p>
                                         </div>
                                     ) : summary ? (
-                                        <div className="rounded-xl border border-white/10 bg-white/[0.025] p-5 prose prose-invert max-w-none"><ReactMarkdown>{summary}</ReactMarkdown></div>
+                                        <AiSummaryContent summary={summary} />
                                     ) : (
                                         <p className="text-red-400">Failed to generate summary.</p>
                                     )}

@@ -5,11 +5,11 @@ import io from 'socket.io-client';
 import { Play, Pause, Trash2, ArrowDown, FileText, ChevronDown, Check, Activity, Search, Copy, X } from 'lucide-react';
 import { LogSource } from '../types';
 import { LogSearch } from './LogSearch';
-import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiClient } from '../services/api';
 import { ProUpgradeModal } from './ProUpgradeModal';
 import { AiStatusOrb } from './AiStatusOrb';
+import { AiSummaryContent } from './AiSummaryContent';
 
 interface LogViewerProps {
     logPath: string; // Legacy fallback
@@ -413,7 +413,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                                             <p className="mt-1 text-xs text-gray-500">Building a concise incident summary.</p>
                                         </div>
                                     ) : summary ? (
-                                        <div className="rounded-xl border border-white/10 bg-white/[0.025] p-5 prose prose-invert max-w-none"><ReactMarkdown>{summary}</ReactMarkdown></div>
+                                        <AiSummaryContent summary={summary} />
                                     ) : (
                                         <p className="text-red-400">Failed to generate summary.</p>
                                     )}
