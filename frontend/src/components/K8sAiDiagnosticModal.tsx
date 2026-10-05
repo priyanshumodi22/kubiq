@@ -179,9 +179,9 @@ export function K8sAiDiagnosticModal({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity" onClick={onClose} />
             
-            <div className="relative w-full max-w-2xl bg-[#111111] border border-gray-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-scale-in">
+            <div className="relative w-full max-w-2xl rounded-2xl border border-white/15 bg-[#101116] shadow-[0_24px_80px_rgba(0,0,0,0.55)] overflow-hidden flex flex-col max-h-[85vh] animate-scale-in">
                 {/* Header */}
-                <div className="flex items-center justify-between p-5 border-b border-gray-800 bg-[#161616]">
+                <div className="flex items-center justify-between border-b border-white/10 bg-[#15161b] p-5">
                     <div className="flex items-center gap-3">
                         <AiStatusOrb activity="working" size={32} />
                         <div>
@@ -203,7 +203,7 @@ export function K8sAiDiagnosticModal({
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-4 font-sans text-sm text-gray-200 leading-relaxed custom-scrollbar">
+                <div className="flex-1 overflow-y-auto bg-[#0c0d11] p-6 space-y-4 font-sans text-sm text-gray-200 leading-relaxed custom-scrollbar">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
                             <AiStatusOrb activity="searching" size={64} />

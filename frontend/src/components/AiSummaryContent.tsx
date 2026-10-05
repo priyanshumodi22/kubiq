@@ -23,18 +23,18 @@ const markdownComponents: Components = {
     strong: ({ children }) => <strong className="font-semibold text-slate-100">{children}</strong>,
     em: ({ children }) => <em className="text-slate-300">{children}</em>,
     code: ({ children, className }) => (
-        <code className={className ? "block my-3 overflow-x-auto rounded-lg border border-slate-700/80 bg-[#090c12] px-3 py-2 font-mono text-xs leading-6 text-sky-200" : "rounded border border-sky-400/20 bg-sky-400/[0.08] px-1.5 py-0.5 font-mono text-[0.85em] text-sky-200"}>
+        <code className={className ? "block my-3 overflow-x-auto rounded-lg border border-white/10 bg-[#090a0e] px-3 py-2 font-mono text-xs leading-6 text-sky-200" : "rounded border border-white/10 bg-black/20 px-1.5 py-0.5 font-mono text-[0.85em] text-sky-200"}>
             {children}
         </code>
     ),
-    pre: ({ children }) => <pre className="my-4 overflow-x-auto rounded-lg border border-slate-700/80 bg-[#090c12] p-3">{children}</pre>,
+    pre: ({ children }) => <pre className="my-4 overflow-x-auto rounded-lg border border-white/10 bg-[#090a0e] p-3">{children}</pre>,
     blockquote: ({ children }) => <blockquote className="my-4 border-l border-sky-300/60 pl-3 text-slate-300">{children}</blockquote>,
     hr: () => <hr className="my-5 border-slate-700/80" />,
 };
 
 export function AiSummaryContent({ summary }: { summary: string }) {
     return (
-        <section className="rounded-2xl border border-slate-700/80 bg-[#11151d] px-5 py-5 shadow-[0_18px_42px_rgba(0,0,0,0.2)] sm:px-6">
+        <section className="rounded-2xl border border-white/15 bg-[#14151b] px-5 py-5 shadow-[0_18px_42px_rgba(0,0,0,0.2)] sm:px-6">
             <ReactMarkdown components={markdownComponents}>{summary}</ReactMarkdown>
         </section>
     );

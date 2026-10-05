@@ -376,10 +376,10 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                                 initial={{ scale: 0.95, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 exit={{ scale: 0.95, opacity: 0 }}
-                                className="w-full max-w-3xl max-h-[85vh] overflow-hidden rounded-2xl border border-primary/25 bg-[#0b0d12] shadow-[0_24px_80px_rgba(0,0,0,0.55)] flex flex-col"
+                                className="flex w-full max-w-3xl max-h-[85vh] flex-col overflow-hidden rounded-2xl border border-white/15 bg-[#101116] shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <div className="px-6 py-5 border-b border-white/10 flex justify-between items-center bg-[linear-gradient(135deg,#101827_0%,#0b0d12_72%)]">
+                                <div className="flex items-center justify-between border-b border-white/10 bg-[#15161b] px-6 py-5">
                                     <div>
                                         <p className="mb-1 text-[10px] font-semibold tracking-[0.16em] text-primary">kubiq Pro</p>
                                         <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
@@ -405,7 +405,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                                         </button>
                                     </div>
                                 </div>
-                                <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar font-sans text-gray-300 text-sm leading-relaxed bg-[#0b0d12]">
+                                <div className="overflow-y-auto bg-[#0c0d11] p-5 font-sans text-sm leading-relaxed text-gray-300 custom-scrollbar sm:p-6">
                                     {summarizing ? (
                                         <div className="flex flex-col items-center justify-center py-12">
                                             <AiStatusOrb activity="searching" size={64} />
