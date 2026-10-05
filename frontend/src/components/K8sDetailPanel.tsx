@@ -216,7 +216,7 @@ export function K8sDetailPanel({
                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-semibold whitespace-nowrap transition-all shadow-sm shrink-0"
                                 title="Run 1-Click AI SRE Diagnostic"
                             >
-                                <AiStatusOrb activity="diagnosing" />
+                                <AiStatusOrb activity="diagnosing" size={24} />
                                 <span>AI Diagnose</span>
                             </button>
                         )}

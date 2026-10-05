@@ -183,11 +183,11 @@ export function K8sAiDiagnosticModal({
                 {/* Header */}
                 <div className="flex items-center justify-between p-5 border-b border-gray-800 bg-[#161616]">
                     <div className="flex items-center gap-3">
-                        <AiStatusOrb activity={loading ? "searching" : "diagnosing"} size={32} />
+                        <AiStatusOrb activity="working" size={32} />
                         <div>
                             <h3 className="text-base font-bold text-white flex items-center gap-2">
                                 {title}
-                                <span className="text-[10px] font-mono font-normal bg-white/10 text-gray-300 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                <span className="rounded-full border border-zinc-600/70 bg-zinc-700/50 px-1.5 py-px text-[9px] font-medium uppercase tracking-wide text-zinc-300">
                                     Gemini SRE
                                 </span>
                             </h3>

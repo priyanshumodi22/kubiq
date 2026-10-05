@@ -1,17 +1,17 @@
 import { Orb } from '@yogesharc/thinking-orbs';
 
-type AiActivity = 'diagnosing' | 'searching' | 'thinking' | 'pro';
+type AiActivity = 'diagnosing' | 'searching' | 'thinking' | 'working' | 'pro';
 
 type AiStatusOrbProps = {
     activity: AiActivity;
-    size?: 20 | 32 | 64;
+    size?: number;
     className?: string;
 };
 
 /**
  * The product's single semantic bridge to the official Thinking Orbs package.
- * This follows the approved visual mapping exactly: waiting for Pro, reasoning
- * for idle analysis/diagnostics, and searching-lighthouse only while work runs.
+ * This keeps each visible AI state intentional: waiting for Pro, working for
+ * modal headers, reasoning for analysis context, and lighthouse for search.
  */
 export function AiStatusOrb({ activity, size = 20, className }: AiStatusOrbProps) {
     const sharedProps = {
@@ -26,6 +26,10 @@ export function AiStatusOrb({ activity, size = 20, className }: AiStatusOrbProps
 
     if (activity === 'thinking') {
         return <Orb state="reasoning" className={`text-cyan-100${className ? ` ${className}` : ''}`} {...sharedProps} />;
+    }
+
+    if (activity === 'working') {
+        return <Orb state="working" className={`text-sky-100${className ? ` ${className}` : ''}`} {...sharedProps} />;
     }
 
     if (activity === 'pro') {

@@ -383,7 +383,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                                     <div>
                                         <p className="mb-1 text-[10px] font-semibold tracking-[0.16em] text-primary">kubiq Pro</p>
                                         <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
-                                            <AiStatusOrb activity={summarizing ? 'searching' : 'thinking'} />
+                                            <AiStatusOrb activity="working" size={32} />
                                             AI log analysis
                                         </h3>
                                     </div>
@@ -654,7 +654,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                                     disabled={summarizing}
                                     className="group flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-5 py-2.5 text-primary shadow-sm transition-all hover:-translate-y-0.5 hover:bg-primary/20 disabled:cursor-wait disabled:opacity-70"
                                 >
-                                    <AiStatusOrb activity={summarizing ? 'searching' : 'thinking'} />
+                                    <AiStatusOrb activity="searching" size={24} />
                                     <span className="font-sans font-medium text-sm">{summarizing ? 'Thinking through logs…' : 'Summarize with AI'}</span>
                                 </button>
                                 

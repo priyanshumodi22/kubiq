@@ -473,7 +473,7 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
                                     className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-[11px] font-semibold transition-all shrink-0 mt-1"
                                     title="AI SRE Warning Event Diagnosis"
                                 >
-                                    <AiStatusOrb activity="diagnosing" />
+                                    <AiStatusOrb activity="diagnosing" size={24} />
                                     <span>AI Diagnose</span>
                                 </button>
                             </div>
