@@ -18,7 +18,7 @@ function renderInlineMarkdown(text: string) {
             return <em key={i} className="text-gray-300">{part.slice(1, -1)}</em>;
         }
         if (part.startsWith('`') && part.endsWith('`')) {
-            return <code key={i} className="bg-black/40 text-primary px-1.5 py-0.5 rounded text-[11px] font-mono border border-primary/20">{part.slice(1, -1)}</code>;
+            return <code key={i} className="rounded border border-white/10 bg-black/20 px-1.5 py-0.5 font-mono text-[11px] text-sky-200">{part.slice(1, -1)}</code>;
         }
         return part;
     });
@@ -69,16 +69,20 @@ function parseAndRenderMarkdown(markdownText: string) {
 
         if (trimmed.startsWith('#### ')) {
             elements.push(
-                <h5 key={`h4-${idx}`} className="text-xs font-bold text-primary pt-2">
+                <h5 key={`h4-${idx}`} className="pt-2 text-xs font-semibold text-slate-200">
                     {renderInlineMarkdown(trimmed.replace('#### ', ''))}
                 </h5>
             );
             return;
         }
 
-        if (trimmed.startsWith('> [!TIP]') || trimmed.startsWith('> [!NOTE]') || trimmed.startsWith('> ')) {
+        if (trimmed.startsWith('> [!TIP]') || trimmed.startsWith('> [!NOTE]')) {
+            return;
+        }
+
+        if (trimmed.startsWith('> ')) {
             elements.push(
-                <div key={`quote-${idx}`} className="bg-primary/10 border-l-2 border-primary px-3 py-2 rounded text-xs text-gray-300 my-2">
+                <div key={`quote-${idx}`} className="my-3 rounded-lg border border-white/10 bg-[#101116] px-3 py-2 text-xs text-slate-300">
                     {renderInlineMarkdown(trimmed.replace(/^>\s*(\[!.*?\])?\s*/, ''))}
                 </div>
             );
@@ -88,7 +92,7 @@ function parseAndRenderMarkdown(markdownText: string) {
         if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
             elements.push(
                 <div key={`li-${idx}`} className="flex items-start gap-2 pl-2 text-xs text-gray-300 my-1">
-                    <span className="text-primary mt-1">•</span>
+                    <span className="mt-1 text-slate-400">•</span>
                     <span>{renderInlineMarkdown(trimmed.replace(/^[-*]\s+/, ''))}</span>
                 </div>
             );
@@ -222,7 +226,7 @@ export function K8sAiDiagnosticModal({
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            <div className="bg-[#141414] border border-gray-800/80 rounded-xl p-5 space-y-3 font-sans leading-relaxed text-xs text-gray-200 shadow-inner">
+                            <div className="space-y-3 rounded-2xl border border-white/15 bg-[#14151b] p-5 font-sans text-xs leading-relaxed text-gray-200 shadow-[0_18px_42px_rgba(0,0,0,0.2)]">
                                 {parseAndRenderMarkdown(diagnosis)}
                             </div>
                         </div>
