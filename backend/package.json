@@ -15,7 +15,7 @@
   },
   "keywords": [],
   "author": "Priyanshu Modi",
-  "license": "MIT",
+  "license": "Elastic-2.0",
   "bin": "dist/server.js",
   "pkg": {
     "assets": [
