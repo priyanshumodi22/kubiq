@@ -1,11 +1,11 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/priyanshumodi22/kubiq/main/frontend/public/logo/kubiq_logo.png" alt="Kubiq Logo" width="120" height="120">
+  <img src="https://raw.githubusercontent.com/priyanshumodi22/kubiq/main/frontend/public/logo/kubiq_logo.png" alt="kubiq logo" width="120" height="120">
 
   # kubiq
 
   **Server & Infrastructure Monitoring, Reimagined.**
 
-  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+  [![License: ELv2](https://img.shields.io/badge/License-ELv2-blue.svg)](LICENSE)
   [![Docker Pulls](https://img.shields.io/docker/pulls/priyanshumodi22/kubiq)](https://hub.docker.com/r/priyanshumodi22/kubiq)
   [![Platform](https://img.shields.io/badge/Platform-linux%2Famd64%20%7C%20linux%2Farm64-lightgrey)](https://hub.docker.com/r/priyanshumodi22/kubiq/tags)
   <br>
@@ -219,7 +219,9 @@ kubiq is configured via Environment Variables.
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [Elastic License 2.0 (ELv2)](LICENSE). See
+[TRADEMARKS.md](TRADEMARKS.md) for the kubiq brand-use policy and
+[CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
 
 <p align="center">
   Built with ❤️ by <a href="https://github.com/priyanshumodi22">Priyanshu Modi</a>
