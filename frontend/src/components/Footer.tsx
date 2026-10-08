@@ -1,38 +1,15 @@
-import { ExternalLink, Loader2, X } from 'lucide-react';
+import { ExternalLink, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import licenseText from '../../../LICENSE?raw';
 
-const LICENSE_URL = 'https://raw.githubusercontent.com/priyanshumodi22/kubiq/main/LICENSE';
 const LICENSE_SOURCE_URL = 'https://github.com/priyanshumodi22/kubiq/blob/main/LICENSE';
+const [LICENSE_TITLE = 'Elastic License 2.0', ...LICENSE_BODY] = licenseText.split(/\r?\n/);
 
 export default function Footer() {
   const [isLicenseOpen, setIsLicenseOpen] = useState(false);
-  const [licenseContent, setLicenseContent] = useState<string | null>(null);
-  const [licenseTitle, setLicenseTitle] = useState('Elastic License 2.0');
-  const [isLoadingLicense, setIsLoadingLicense] = useState(false);
 
   const closeLicense = () => setIsLicenseOpen(false);
-
-  const openLicense = async () => {
-    setIsLicenseOpen(true);
-    if (licenseContent || isLoadingLicense) return;
-
-    setIsLoadingLicense(true);
-    try {
-      const response = await fetch(LICENSE_URL);
-      if (!response.ok) throw new Error(`Unable to load license (${response.status})`);
-
-      const text = await response.text();
-      const [title = 'Elastic License 2.0', ...body] = text.split(/\r?\n/);
-      setLicenseTitle(title.trim() || 'Elastic License 2.0');
-      setLicenseContent(body.join('\n').trimStart());
-    } catch (error) {
-      console.error('Unable to load kubiq license', error);
-      setLicenseContent('Unable to load the license text right now. Use the GitHub source link below to read it.');
-    } finally {
-      setIsLoadingLicense(false);
-    }
-  };
 
   useEffect(() => {
     if (!isLicenseOpen) return;
@@ -56,7 +33,7 @@ export default function Footer() {
                 <a className="transition-colors hover:text-primary" href="https://kubiq.priyanshumodi.in/privacy">Privacy</a>
                 <a className="transition-colors hover:text-primary" href="https://kubiq.priyanshumodi.in/terms">Terms</a>
                 <a className="transition-colors hover:text-primary" href="https://kubiq.priyanshumodi.in/trademarks">Trademark Notice</a>
-                <button type="button" onClick={openLicense} className="transition-colors hover:text-primary">License</button>
+                <button type="button" onClick={() => setIsLicenseOpen(true)} className="transition-colors hover:text-primary">License</button>
               </nav>
             </div>
             <p>Built with ❤️ for Reliability Engineers. Downtime is Not an Option.</p>
@@ -74,23 +51,16 @@ export default function Footer() {
             onMouseDown={(event) => event.stopPropagation()}
           >
             <header className="flex items-center justify-between border-b border-white/10 bg-white/5 px-6 py-4">
-              <h2 id="license-dialog-title" className="text-lg font-bold text-white">{licenseTitle}</h2>
+              <h2 id="license-dialog-title" className="text-lg font-bold text-white">{LICENSE_TITLE.trim()}</h2>
               <button type="button" onClick={closeLicense} aria-label="Close license" className="rounded-lg p-1 text-text-dim transition-colors hover:bg-white/10 hover:text-white">
                 <X className="size-5" />
               </button>
             </header>
 
             <div className="custom-scrollbar overflow-y-auto px-6 py-5">
-              {isLoadingLicense ? (
-                <div className="flex flex-col items-center justify-center gap-3 py-12 text-text-dim">
-                  <Loader2 className="size-8 animate-spin text-primary" />
-                  <p className="text-sm">Loading license text…</p>
-                </div>
-              ) : (
-                <div className="space-y-4 text-sm leading-7 text-text-dim [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 [&_h2]:mt-7 [&_h2]:border-b [&_h2]:border-white/10 [&_h2]:pb-3 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:leading-tight [&_h2]:text-white [&_p]:mt-4">
-                  <ReactMarkdown>{licenseContent ?? ''}</ReactMarkdown>
-                </div>
-              )}
+              <div className="space-y-4 text-sm leading-7 text-text-dim [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 [&_h2]:mt-7 [&_h2]:border-b [&_h2]:border-white/10 [&_h2]:pb-3 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:leading-tight [&_h2]:text-white [&_p]:mt-4">
+                <ReactMarkdown>{LICENSE_BODY.join('\n').trimStart()}</ReactMarkdown>
+              </div>
             </div>
 
             <footer className="flex justify-end border-t border-white/10 bg-white/5 px-6 py-4">
