@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { startRegistration } from '@simplewebauthn/browser';
-import { apiClient } from '../services/api';
+import { apiClient, type PasskeyAuthenticatorAttachment } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import {
@@ -183,13 +183,13 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleRegisterPasskey = async () => {
+  const handleRegisterPasskey = async (authenticatorAttachment: PasskeyAuthenticatorAttachment) => {
     if (!newPasskeyName.trim()) return error('Please name your device');
 
     setLoading(p => ({ ...p, register: true }));
     try {
-      const options = await apiClient.registerPasskeyOptions();
-      const attResp = await startRegistration(options);
+      const options = await apiClient.registerPasskeyOptions(authenticatorAttachment);
+      const attResp = await startRegistration({ optionsJSON: options });
       const verificationResp = await apiClient.registerPasskeyVerify({
         ...attResp,
         passkeyName: newPasskeyName
@@ -416,8 +416,8 @@ const Profile: React.FC = () => {
                           <Fingerprint className="w-6 h-6 text-primary" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-bold">Biometric Passkeys</h3>
-                          <p className="text-text-dim text-sm">Login passwordless with your devices.</p>
+                          <h3 className="text-lg font-bold">Passkeys</h3>
+                          <p className="text-text-dim text-sm">Use Face ID, fingerprint, Windows Hello, or a security key.</p>
                         </div>
                       </div>
                       <Button variant="outline" onClick={() => setShowPasskeyModal(true)} disabled={!isNative} className="w-full sm:w-auto">
@@ -481,7 +481,7 @@ const Profile: React.FC = () => {
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold flex items-center gap-2">
                   <Fingerprint className="w-5 h-5 text-primary" />
-                  Name your Passkey
+                  Name your passkey
                 </h3>
                 <button onClick={() => setShowPasskeyModal(false)} className="text-text-dim hover:text-text">
                   <X className="w-5 h-5" />
@@ -497,10 +497,15 @@ const Profile: React.FC = () => {
                 autoFocus
               />
 
-              <div className="flex gap-3 mt-8">
-                <Button variant="outline" className="flex-1" onClick={() => setShowPasskeyModal(false)}>Cancel</Button>
-                <Button className="flex-1" onClick={handleRegisterPasskey} isLoading={loading.register}>
-                  Continue
+              <p className="mt-5 text-sm leading-6 text-text-dim">Use this device for Face ID, fingerprint, Windows Hello, or your device unlock. Choose another device for a USB, NFC, or nearby-device passkey.</p>
+
+              <div className="grid grid-cols-2 gap-3 mt-8">
+                <Button variant="outline" className="w-full" onClick={() => setShowPasskeyModal(false)}>Cancel</Button>
+                <Button variant="outline" className="w-full" onClick={() => handleRegisterPasskey('cross-platform')} isLoading={loading.register}>
+                  Another device
+                </Button>
+                <Button className="col-span-2 w-full" onClick={() => handleRegisterPasskey('platform')} isLoading={loading.register}>
+                  Use this device
                 </Button>
               </div>
             </div>

@@ -13,6 +13,7 @@ import jwt from 'jsonwebtoken';
 const rpName = 'kubiq Dashboard';
 const rpID = process.env.RP_ID || 'localhost';
 const origin = process.env.ORIGIN || 'http://localhost:5173'; // Frontend URL
+type PasskeyAuthenticatorAttachment = 'platform' | 'cross-platform';
 
 // Storage for challenges (In production, use Redis. For now: Memory)
 const challenges = new Map<string, string>(); // userId -> challenge
@@ -34,12 +35,24 @@ export class WebAuthnController {
 
       const passkeyRepo = await DatabaseFactory.getPasskeyRepository();
       const userPasskeys = await passkeyRepo.findByUserId(userId);
+      const requestedAttachment = typeof req.query.authenticatorAttachment === 'string'
+        ? req.query.authenticatorAttachment
+        : undefined;
+
+      if (req.query.authenticatorAttachment !== undefined && requestedAttachment !== 'platform' && requestedAttachment !== 'cross-platform') {
+        return res.status(400).json({ error: 'Unsupported passkey authenticator type' });
+      }
+
+      const authenticatorAttachment: PasskeyAuthenticatorAttachment = requestedAttachment === 'cross-platform'
+        ? 'cross-platform'
+        : 'platform';
 
       const options = await generateRegistrationOptions({
         rpName,
         rpID,
         userID: new Uint8Array(Buffer.from(userId)),
         userName: username,
+        attestationType: 'none',
         // Don't allow re-registering the same authenticator
         excludeCredentials: userPasskeys.map(passkey => ({
           id: passkey.id,
@@ -47,8 +60,8 @@ export class WebAuthnController {
         })),
         authenticatorSelection: {
           residentKey: 'preferred',
-          userVerification: 'preferred',
-          authenticatorAttachment: 'cross-platform', // Allow iCloud/TouchID/USB
+          userVerification: 'required',
+          authenticatorAttachment,
         },
       });
 
@@ -150,7 +163,7 @@ export class WebAuthnController {
           id: passkey.id,
           transports: passkey.transports as any,
         })),
-        userVerification: 'preferred',
+        userVerification: 'required',
       });
 
       // Save challenge (mapped to User ID temporarily to verify next step)

@@ -50,7 +50,7 @@ export default function Login() {
             const options = await apiClient.loginPasskeyOptions(username);
 
             // 2. Browser Prompt
-            const authResp = await startAuthentication(options);
+            const authResp = await startAuthentication({ optionsJSON: options });
 
             // 3. Verify
             const result = await apiClient.loginPasskeyVerify(username, authResp);
@@ -162,9 +162,9 @@ export default function Login() {
                                             ? 'bg-gray-800/50 text-gray-500 border-gray-700 cursor-not-allowed'
                                             : 'bg-bg-surface hover:bg-gray-800 text-text border-primary/50 hover:border-primary'
                                         }`}
-                                    title={!username ? "Enter username first" : "Login with Fingerprint"}
+                                    title={!username ? "Enter username first" : "Use your passkey"}
                                 >
-                                    {biometricLoading ? 'Scanning...' : <><Fingerprint className="w-5 h-5" /> Bio Login</>}
+                                    {biometricLoading ? 'Verifying...' : <><Fingerprint className="w-5 h-5" /> Use passkey</>}
                                 </button>
                             </div>
                         </form>

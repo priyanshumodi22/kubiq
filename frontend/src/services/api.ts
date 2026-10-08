@@ -1,5 +1,7 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
+export type PasskeyAuthenticatorAttachment = 'platform' | 'cross-platform';
+
 // Automatically detect backend DNS - use window.location.origin if not specified
 const getBackendDNS = () => {
   const configuredDNS = import.meta.env.VITE_BACKEND_DNS || import.meta.env.VITE_API_BASE_URL;
@@ -92,8 +94,10 @@ class ApiClient {
   }
 
   // WebAuthn / Biometrics
-  async registerPasskeyOptions() {
-    const response = await this.client.get('/api/auth/webauthn/register/options');
+  async registerPasskeyOptions(authenticatorAttachment: PasskeyAuthenticatorAttachment = 'platform') {
+    const response = await this.client.get('/api/auth/webauthn/register/options', {
+      params: { authenticatorAttachment },
+    });
     return response.data;
   }
 
