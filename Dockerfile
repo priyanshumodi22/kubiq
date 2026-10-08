@@ -4,6 +4,9 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./
+# The License modal embeds the repository license at build time, so include it
+# alongside the frontend source in this otherwise frontend-only build stage.
+COPY LICENSE /app/LICENSE
 # Kubiq is served beneath /kubiq while its API stays at /kubiq-api. Vite bakes
 # both values into the frontend bundle, so they must exist before npm run build.
 ARG VITE_FRONTEND_BASE_PATH=/kubiq/
