@@ -11,7 +11,81 @@ metadata:
   name: kubiq
   namespace: kubiq-system
 ---
-# Kubiq can observe the cluster, read Secret metadata (redacted),
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubi-readonly
+  namespace: kubiq-system
+---
+# kubi receives this separate identity only for its read-only evidence tools.
+# It intentionally has no exec, create, update, patch, delete, scale, or apply permission.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubi-readonly
+rules:
+  - apiGroups: ['']
+    resources: [namespaces, nodes, pods, services, endpoints, configmaps, events, persistentvolumes, persistentvolumeclaims, resourcequotas, limitranges]
+    verbs: [get, list, watch]
+  - apiGroups: ['']
+    resources: [pods/log]
+    verbs: [get]
+  - apiGroups: ['apps']
+    resources: [deployments, daemonsets, statefulsets, replicasets]
+    verbs: [get, list, watch]
+  - apiGroups: ['networking.k8s.io']
+    resources: [ingresses]
+    verbs: [get, list, watch]
+  - apiGroups: ['storage.k8s.io']
+    resources: [storageclasses]
+    verbs: [get, list, watch]
+  - apiGroups: ['metrics.k8s.io']
+    resources: [pods]
+    verbs: [get, list]
+  - apiGroups: ['autoscaling']
+    resources: [horizontalpodautoscalers]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubi-readonly
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubi-readonly
+subjects:
+  - kind: ServiceAccount
+    name: kubi-readonly
+    namespace: kubiq-system
+---
+# The host may request short-lived credentials only for the dedicated reader.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kubi-reader-token
+  namespace: kubiq-system
+rules:
+  - apiGroups: ['']
+    resources: [serviceaccounts/token]
+    resourceNames: [kubi-readonly]
+    verbs: [create]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kubi-reader-token
+  namespace: kubiq-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kubi-reader-token
+subjects:
+  - kind: ServiceAccount
+    name: kubiq
+    namespace: kubiq-system
+---
+# kubiq can observe the cluster, read Secret metadata (redacted),
 # stream pod logs, and exec into pods for interactive container debugging.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -105,6 +179,14 @@ data:
   K8S_TERMINAL_ENABLED: 'true'
   # ── AI & Logs ──
   AI_PROVIDER: gemini
+  AI_KUBI_ENABLED: 'true'
+  AI_KUBI_HISTORY_RETENTION_DAYS: '90'
+  AI_KUBI_MAX_TOOL_CALLS: '6'
+  AI_KUBI_MAX_RESULTS_PER_TOOL: '50'
+  AI_KUBI_MAX_CONTEXT_CHARS: '48000'
+  AI_KUBI_TIMEOUT_MS: '60000'
+  AI_KUBI_MAX_REQUESTS_PER_HOUR: '30'
+  KUBI_KUBERNETES_NAMESPACE: kubiq-system
   LOG_RETENTION_DAYS: '7'
   # AI_API_KEY goes in kubiq-runtime Secret
 

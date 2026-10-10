@@ -6,6 +6,7 @@ import { ISystemRepository } from './interfaces/ISystemRepository';
 import { ITraceRepository } from './interfaces/ITraceRepository';
 import { ILogRepository } from './interfaces/ILogRepository';
 import { IAuditLogRepository } from './interfaces/IAuditLogRepository';
+import { IKubiConversationRepository } from './interfaces/IKubiConversationRepository';
 import { clickhouseService } from '../services/ClickhouseService';
 
 export class DatabaseFactory {
@@ -18,6 +19,8 @@ export class DatabaseFactory {
   private static logRepository: ILogRepository;
   private static auditLogRepository: IAuditLogRepository;
   private static auditLogRepoPromise: Promise<IAuditLogRepository> | null = null;
+  private static kubiConversationRepository: IKubiConversationRepository;
+  private static kubiConversationRepoPromise: Promise<IKubiConversationRepository> | null = null;
 
   // False when DB_TYPE=json — APM requires MySQL or MongoDB
   private static _apmSupported: boolean | null = null;
@@ -294,5 +297,37 @@ export class DatabaseFactory {
     })();
 
     return this.auditLogRepoPromise;
+  }
+
+  public static async getKubiConversationRepository(): Promise<IKubiConversationRepository> {
+    if (this.kubiConversationRepository) return this.kubiConversationRepository;
+    if (this.kubiConversationRepoPromise) return this.kubiConversationRepoPromise;
+
+    this.kubiConversationRepoPromise = (async () => {
+      const dbType = (process.env.DB_TYPE || 'json').toLowerCase();
+      let repository: IKubiConversationRepository;
+      switch (dbType) {
+        case 'mysql':
+        case 'mariadb': {
+          const { MysqlKubiConversationRepository } = await import('./adapters/mysql/MysqlKubiConversationRepository');
+          repository = new MysqlKubiConversationRepository();
+          break;
+        }
+        case 'mongo':
+        case 'mongodb': {
+          const { MongoKubiConversationRepository } = await import('./adapters/mongo/MongoKubiConversationRepository');
+          repository = new MongoKubiConversationRepository();
+          break;
+        }
+        default: {
+          const { JsonKubiConversationRepository } = await import('./adapters/json/JsonKubiConversationRepository');
+          repository = new JsonKubiConversationRepository();
+        }
+      }
+      await repository.initialize();
+      this.kubiConversationRepository = repository;
+      return repository;
+    })();
+    return this.kubiConversationRepoPromise;
   }
 }

@@ -8,7 +8,11 @@ import path from 'path';
 const envFile = process.env.NODE_ENV === 'production' ? '.env' : '.env.local';
 const envPath = path.resolve(process.cwd(), envFile);
 
-dotenv.config({ path: envPath, override: true });
+// Production loads its mounted .env as before. Local production-equivalent tests can
+// supply the effective k3s environment in memory without writing live secrets to disk.
+if (process.env.KUBIQ_LOAD_DOTENV !== 'false') {
+  dotenv.config({ path: envPath, override: true });
+}
 
 console.log(`📋 Loading environment from: ${envFile}`);
 
@@ -129,6 +133,8 @@ import { apmIngestRouter, apmAnalyticsRouter } from './routes/apm';
 import { kubernetesRouter } from './routes/kubernetes';
 import { telemetryRouter } from './routes/telemetry';
 import { auditLogRouter } from './routes/auditLogs';
+import { kubiRouter } from './routes/kubi';
+import { requireKubiAccess } from './middleware/kubiAccess';
 
 import { KubernetesService } from './services/KubernetesService';
 import { DatabaseFactory } from './database/DatabaseFactory';
@@ -160,6 +166,7 @@ app.use(`${BACKEND_CONTEXT_PATH}/api/system`, authMiddleware, systemRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/logs`, authMiddleware, logRouter); // Log Management
 app.use(`${BACKEND_CONTEXT_PATH}/api/kubernetes`, authMiddleware, kubernetesRouter); // Kubernetes Monitoring
 app.use(`${BACKEND_CONTEXT_PATH}/api/audit-logs`, authMiddleware, requireRole('kubiq-admin'), auditLogRouter); // Audit Logging (Admin only)
+app.use(`${BACKEND_CONTEXT_PATH}/api/kubi`, authMiddleware, requireKubiAccess, kubiRouter);
 
 
 // Serve frontend static files
@@ -211,6 +218,7 @@ const startServer = async () => {
     await DatabaseFactory.getPasskeyRepository();
     await DatabaseFactory.getSystemRepository();
     await DatabaseFactory.getAuditLogRepository();
+    await DatabaseFactory.getKubiConversationRepository();
 
     // Start server
     // app.listen Replaced by httpServer.listen for Socket.IO support

@@ -1,5 +1,5 @@
 import mysql, { Pool, RowDataPacket } from 'mysql2/promise';
-import { IAuditLogRepository } from '../../interfaces/IAuditLogRepository';
+import { AuditLogFilters, IAuditLogRepository } from '../../interfaces/IAuditLogRepository';
 import { AuditLogEntry } from '../../../services/AuditLogService';
 
 export class MysqlAuditLogRepository implements IAuditLogRepository {
@@ -66,15 +66,19 @@ export class MysqlAuditLogRepository implements IAuditLogRepository {
     return fullEntry;
   }
 
-  public async getAuditLogs(limit: number = 100, search?: string): Promise<AuditLogEntry[]> {
+  public async getAuditLogs(limit: number = 100, search?: string, filters?: AuditLogFilters): Promise<AuditLogEntry[]> {
     let sql = `SELECT id, timestamp, user, action, target, details, ip FROM audit_logs`;
     const params: any[] = [];
 
+    const conditions: string[] = [];
     if (search && search.trim()) {
-      sql += ` WHERE user LIKE ? OR action LIKE ? OR target LIKE ? OR details LIKE ?`;
+      conditions.push('(user LIKE ? OR action LIKE ? OR target LIKE ? OR details LIKE ?)');
       const term = `%${search.trim()}%`;
       params.push(term, term, term, term);
     }
+    if (filters?.action) { conditions.push('action = ?'); params.push(filters.action); }
+    if (filters?.target) { conditions.push('target = ?'); params.push(filters.target); }
+    if (conditions.length) sql += ` WHERE ${conditions.join(' AND ')}`;
 
     const safeLimit = Math.max(1, Math.min(Number(limit) || 100, 1000));
     sql += ` ORDER BY timestamp DESC LIMIT ${safeLimit}`;

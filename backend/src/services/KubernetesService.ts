@@ -2,6 +2,7 @@ import * as k8s from '@kubernetes/client-node';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { KubiReaderAuth } from './KubiReaderAuth';
 
 export interface KubeContainer {
     name: string;
@@ -66,8 +67,11 @@ export class KubernetesService {
     private static instance: KubernetesService;
     private kc: k8s.KubeConfig;
     private clientCache = new Map<string, any>();
+    private kubiReaderKc?: k8s.KubeConfig;
+    private kubiReaderClientCache = new Map<string, any>();
 
     public available: boolean = false;
+    public kubiReaderAvailable: boolean = false;
     public defaultContext: string = '';
     private detectedClusterName: string = '';
 
@@ -93,6 +97,7 @@ export class KubernetesService {
                 this.defaultContext = this.kc.getCurrentContext();
                 this.available = true;
                 console.log('☸️  Kubernetes connected — in-cluster service account');
+                this.initializeKubiReader();
                 this.autoDetectClusterName().catch(() => {});
                 return;
             }
@@ -109,10 +114,35 @@ export class KubernetesService {
             this.defaultContext = this.kc.getCurrentContext() || 'default';
             this.available = true;
             console.log(`☸️  Kubernetes connected — default context: ${this.defaultContext}`);
+            this.initializeKubiReader();
             this.autoDetectClusterName().catch(() => {});
         } catch {
             this.available = false;
             console.log('☸️  Kubernetes not configured or unreachable — K8s monitoring disabled');
+        }
+    }
+
+    private initializeKubiReader(): void {
+        const namespace = process.env.KUBI_KUBERNETES_NAMESPACE;
+        if (!namespace || !process.env.KUBERNETES_SERVICE_HOST) return;
+        try {
+            const caFile = process.env.KUBI_KUBERNETES_CA_FILE || '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt';
+            const port = process.env.KUBERNETES_SERVICE_PORT_HTTPS || '443';
+            const contextName = 'kubi-readonly';
+            const reader = new k8s.KubeConfig();
+            reader.loadFromOptions({
+                clusters: [{ name: contextName, server: `https://${process.env.KUBERNETES_SERVICE_HOST}:${port}`, caFile }],
+                users: [{ name: contextName }],
+                contexts: [{ name: contextName, cluster: contextName, user: contextName }],
+                currentContext: contextName,
+            });
+            reader.addAuthenticator(new KubiReaderAuth(this.kc.makeApiClient(k8s.CoreV1Api), namespace));
+            this.kubiReaderKc = reader;
+            this.kubiReaderAvailable = true;
+            console.log('☸️  kubi read-only identity configured; credentials requested on first use');
+        } catch (error: any) {
+            this.kubiReaderAvailable = false;
+            console.warn(`☸️  kubi read-only Kubernetes access unavailable: ${error?.message || 'configuration error'}`);
         }
     }
 
@@ -140,26 +170,29 @@ export class KubernetesService {
         }
     }
 
-    private getClients(contextName: string) {
-        const ctx = contextName || this.defaultContext;
-        if (this.clientCache.has(ctx)) return this.clientCache.get(ctx);
+    private getClients(contextName: string, useKubiReader = false) {
+        const kubeConfig = useKubiReader ? this.kubiReaderKc : this.kc;
+        const cache = useKubiReader ? this.kubiReaderClientCache : this.clientCache;
+        if (!kubeConfig) throw new Error('kubi read-only Kubernetes client is not configured');
+        const ctx = useKubiReader ? kubeConfig.getCurrentContext() : contextName || this.defaultContext;
+        if (cache.has(ctx)) return cache.get(ctx);
         
         try {
-            this.kc.setCurrentContext(ctx);
+            kubeConfig.setCurrentContext(ctx);
         } catch (e) {
             console.warn('Context not found in kubeconfig:', ctx);
         }
 
         const clients = {
-            coreApi: this.kc.makeApiClient(k8s.CoreV1Api),
-            appsApi: this.kc.makeApiClient(k8s.AppsV1Api),
-            customApi: this.kc.makeApiClient(k8s.CustomObjectsApi),
-            netApi: this.kc.makeApiClient(k8s.NetworkingV1Api),
-            storageApi: this.kc.makeApiClient(k8s.StorageV1Api),
-            objectApi: k8s.KubernetesObjectApi.makeApiClient(this.kc),
-            autoscalingApi: this.kc.makeApiClient(k8s.AutoscalingV2Api)
+            coreApi: kubeConfig.makeApiClient(k8s.CoreV1Api),
+            appsApi: kubeConfig.makeApiClient(k8s.AppsV1Api),
+            customApi: kubeConfig.makeApiClient(k8s.CustomObjectsApi),
+            netApi: kubeConfig.makeApiClient(k8s.NetworkingV1Api),
+            storageApi: kubeConfig.makeApiClient(k8s.StorageV1Api),
+            objectApi: k8s.KubernetesObjectApi.makeApiClient(kubeConfig),
+            autoscalingApi: kubeConfig.makeApiClient(k8s.AutoscalingV2Api)
         };
-        this.clientCache.set(ctx, clients);
+        cache.set(ctx, clients);
         return clients;
     }
 
@@ -182,9 +215,9 @@ export class KubernetesService {
         });
     }
 
-    public async getNamespaces(ctx: string): Promise<string[]> {
-        if (!this.available) return [];
-        const { coreApi } = this.getClients(ctx);
+    public async getNamespaces(ctx: string, useKubiReader = false): Promise<string[]> {
+        if (useKubiReader ? !this.kubiReaderAvailable : !this.available) return [];
+        const { coreApi } = this.getClients(ctx, useKubiReader);
         const res = await coreApi.listNamespace();
         return (res.items ?? [])
             .map((ns: any) => ns.metadata?.name ?? '')
@@ -204,10 +237,10 @@ export class KubernetesService {
         }
     }
 
-    public async getPods(ctx: string, namespace: string): Promise<KubePod[]> {
-        if (!this.available) return [];
+    public async getPods(ctx: string, namespace: string, useKubiReader = false): Promise<KubePod[]> {
+        if (useKubiReader ? !this.kubiReaderAvailable : !this.available) return [];
         try {
-            const { coreApi } = this.getClients(ctx);
+            const { coreApi } = this.getClients(ctx, useKubiReader);
             const res = await coreApi.listNamespacedPod({ namespace });
             return (res.items ?? []).map((pod: any) => {
                 const containerStatuses = pod.status?.containerStatuses ?? [];
@@ -325,10 +358,10 @@ export class KubernetesService {
         }
     }
 
-    public async getEvents(ctx: string, namespace: string): Promise<KubeEvent[]> {
-        if (!this.available) return [];
+    public async getEvents(ctx: string, namespace: string, useKubiReader = false): Promise<KubeEvent[]> {
+        if (useKubiReader ? !this.kubiReaderAvailable : !this.available) return [];
         try {
-            const { coreApi } = this.getClients(ctx);
+            const { coreApi } = this.getClients(ctx, useKubiReader);
             const res = await coreApi.listNamespacedEvent({ namespace });
             return (res.items ?? [])
                 .filter((e: any) => e.type === 'Warning')
@@ -351,10 +384,10 @@ export class KubernetesService {
         }
     }
 
-    public async getDeployments(ctx: string, namespace: string): Promise<KubeDeployment[]> {
-        if (!this.available) return [];
+    public async getDeployments(ctx: string, namespace: string, useKubiReader = false): Promise<KubeDeployment[]> {
+        if (useKubiReader ? !this.kubiReaderAvailable : !this.available) return [];
         try {
-            const { appsApi } = this.getClients(ctx);
+            const { appsApi } = this.getClients(ctx, useKubiReader);
             const res = await appsApi.listNamespacedDeployment({ namespace });
             return (res.items ?? []).map((d: any) => ({
                 name: d.metadata?.name ?? '—',
@@ -777,10 +810,10 @@ export class KubernetesService {
         }
     }
 
-    public async getPodLogs(ctx: string, namespace: string, podName: string, containerName?: string, tailLines: number = 50): Promise<string> {
-        if (!this.available) return '';
+    public async getPodLogs(ctx: string, namespace: string, podName: string, containerName?: string, tailLines: number = 50, useKubiReader = false): Promise<string> {
+        if (useKubiReader ? !this.kubiReaderAvailable : !this.available) return '';
         try {
-            const { coreApi } = this.getClients(ctx);
+            const { coreApi } = this.getClients(ctx, useKubiReader);
             const res = await coreApi.readNamespacedPodLog({
                 name: podName,
                 namespace,

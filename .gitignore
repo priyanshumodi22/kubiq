@@ -15,6 +15,12 @@ build/
 .env.development.local
 .env.test.local
 .env.production.local
+gemini_ai_key.md
+avatar-doc.md
+premium-audit.json
+.superdesign/
+frontend/kubi-design-preview.html
+frontend/src/preview/
 
 # Data persistence
 data/

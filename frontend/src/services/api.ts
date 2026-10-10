@@ -93,6 +93,70 @@ class ApiClient {
     return response.data;
   }
 
+  // kubi — kubiq Pro AI assistant
+  async getKubiStatus(): Promise<{ enabled: boolean; proActive: boolean; providerConfigured: boolean; provider: string | null; reason?: string }> {
+    const response = await this.client.get('/api/kubi/status');
+    return response.data;
+  }
+
+  async createKubiConversation(title?: string) {
+    const response = await this.client.post('/api/kubi/conversations', { title });
+    return response.data;
+  }
+
+  async getKubiConversations() {
+    const response = await this.client.get('/api/kubi/conversations');
+    return response.data;
+  }
+
+  async getKubiConversation(id: string) {
+    const response = await this.client.get(`/api/kubi/conversations/${encodeURIComponent(id)}`);
+    return response.data;
+  }
+
+  async deleteKubiConversation(id: string) {
+    await this.client.delete(`/api/kubi/conversations/${encodeURIComponent(id)}`);
+  }
+
+  async clearKubiConversations() {
+    const response = await this.client.delete('/api/kubi/conversations');
+    return response.data;
+  }
+
+  async streamKubiMessage(conversationId: string, message: string, onEvent: (event: string, data: any) => void): Promise<void> {
+    const response = await fetch(`${BASE_PATH}/api/kubi/conversations/${encodeURIComponent(conversationId)}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+        ...(this.activeK8sContext ? { 'x-kubernetes-context': this.activeK8sContext } : {}),
+      },
+      body: JSON.stringify({ message }),
+    });
+    if (!response.ok || !response.body) throw new Error(`kubi request failed (${response.status})`);
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+      const events = buffer.split('\n\n');
+      buffer = events.pop() || '';
+      for (const entry of events) {
+        const event = entry.match(/^event:\s*(.+)$/m)?.[1] || 'message';
+        const raw = entry.match(/^data:\s*(.+)$/m)?.[1];
+        if (!raw) continue;
+        let data: unknown;
+        try { data = JSON.parse(raw); } catch { continue; }
+        // Completion handlers reload persisted messages; await them so failures
+        // reach the panel instead of leaving the avatar permanently busy.
+        await onEvent(event, data);
+      }
+      if (done) break;
+    }
+  }
+
   // WebAuthn / Biometrics
   async registerPasskeyOptions(authenticatorAttachment: PasskeyAuthenticatorAttachment = 'platform') {
     const response = await this.client.get('/api/auth/webauthn/register/options', {

@@ -6,9 +6,17 @@ import { AiStatusOrb } from './AiStatusOrb';
 interface ProUpgradeModalProps {
     isOpen: boolean;
     onClose: () => void;
+    unavailableReason?: 'AI_NOT_CONFIGURED' | 'DISABLED';
 }
 
-export function ProUpgradeModal({ isOpen, onClose }: ProUpgradeModalProps) {
+export function ProUpgradeModal({ isOpen, onClose, unavailableReason }: ProUpgradeModalProps) {
+    const configurationUnavailable = Boolean(unavailableReason);
+    const title = unavailableReason === 'AI_NOT_CONFIGURED' ? 'kubi is being configured' : unavailableReason === 'DISABLED' ? 'kubi is not enabled' : 'Unlock kubiq Pro';
+    const description = unavailableReason === 'AI_NOT_CONFIGURED'
+        ? 'An administrator needs to configure kubiq’s AI provider before kubi can answer questions. No telemetry is sent to an AI provider until that is configured.'
+        : unavailableReason === 'DISABLED'
+            ? 'kubi is currently disabled for this kubiq deployment.'
+            : 'Unlock AI diagnostics and log summarization with your preferred AI provider.';
     return createPortal(
         <AnimatePresence>
             {isOpen && (
@@ -49,13 +57,13 @@ export function ProUpgradeModal({ isOpen, onClose }: ProUpgradeModalProps) {
                             </div>
 
                             <h2 id="kubiq-pro-title" className="mb-2 text-3xl font-bold text-white">
-                                Unlock <span className="text-primary">kubiq Pro</span>
+                                {configurationUnavailable ? title : <>Unlock <span className="text-primary">kubiq Pro</span></>}
                             </h2>
                             <p className="mb-8 max-w-sm text-sm leading-6 text-gray-400">
-                                Unlock AI diagnostics and log summarization with your preferred AI provider.
+                                {description}
                             </p>
 
-                            <div className="mb-8 w-full space-y-4 rounded-xl border border-white/8 bg-white/[0.035] p-5 text-left">
+                            {!configurationUnavailable && <div className="mb-8 w-full space-y-4 rounded-xl border border-white/8 bg-white/[0.035] p-5 text-left">
                                 <div className="flex items-center gap-3 text-sm text-gray-300">
                                     <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
                                     <span>Instant AI root cause analysis</span>
@@ -68,19 +76,19 @@ export function ProUpgradeModal({ isOpen, onClose }: ProUpgradeModalProps) {
                                     <Zap className="h-5 w-5 shrink-0 text-yellow-400" />
                                     <span><strong>BYOK:</strong> OpenAI, Anthropic, and Gemini</span>
                                 </div>
-                            </div>
+                            </div>}
 
-                            <a
+                            {!configurationUnavailable && <a
                                 href="https://kubiq.priyanshumodi.in/pricing"
                                 target="_blank"
                                 rel="noreferrer"
                                 className="flex w-full items-center justify-center rounded-xl border border-blue-300/15 bg-primary px-6 py-3 font-medium text-white shadow-[0_12px_30px_rgba(37,99,235,0.22)] transition-all hover:-translate-y-0.5 hover:bg-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                             >
                                 View kubiq Pro plans
-                            </a>
-                            <p className="mt-5 inline-block rounded-md border border-gray-700/50 bg-gray-800/30 px-3 py-1.5 text-xs font-medium text-gray-400">
+                            </a>}
+                            {!configurationUnavailable && <p className="mt-5 inline-block rounded-md border border-gray-700/50 bg-gray-800/30 px-3 py-1.5 text-xs font-medium text-gray-400">
                                 Already have a license? Add <code className="text-primary">KUBIQ_LICENSE_KEY</code> to your environment.
-                            </p>
+                            </p>}
                         </div>
                     </motion.div>
                 </motion.div>

@@ -1,4 +1,4 @@
-import { IAuditLogRepository } from '../../interfaces/IAuditLogRepository';
+import { AuditLogFilters, IAuditLogRepository } from '../../interfaces/IAuditLogRepository';
 import { AuditLogEntry } from '../../../services/AuditLogService';
 import { AuditLogModel } from '../../schemas/AuditLogSchema';
 
@@ -18,7 +18,7 @@ export class MongoAuditLogRepository implements IAuditLogRepository {
     return fullEntry;
   }
 
-  public async getAuditLogs(limit: number = 100, search?: string): Promise<AuditLogEntry[]> {
+  public async getAuditLogs(limit: number = 100, search?: string, filters?: AuditLogFilters): Promise<AuditLogEntry[]> {
     let query: any = {};
     if (search && search.trim()) {
       const escaped = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -33,6 +33,8 @@ export class MongoAuditLogRepository implements IAuditLogRepository {
       };
     }
 
+    if (filters?.action) query.action = filters.action;
+    if (filters?.target) query.target = filters.target;
     const docs = await AuditLogModel.find(query)
       .sort({ timestamp: -1 })
       .limit(limit)

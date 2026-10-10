@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { IAuditLogRepository } from '../../interfaces/IAuditLogRepository';
+import { AuditLogFilters, IAuditLogRepository } from '../../interfaces/IAuditLogRepository';
 import { AuditLogEntry } from '../../../services/AuditLogService';
 
 export class JsonAuditLogRepository implements IAuditLogRepository {
@@ -10,7 +10,7 @@ export class JsonAuditLogRepository implements IAuditLogRepository {
   constructor() {
     const dataDir = process.env.DATA_DIR || path.join(process.cwd(), 'data');
     if (!fs.existsSync(dataDir)) {
-      try { fs.mkdirSync(dataDir, { recursive: true }); } catch {}
+      try { fs.mkdirSync(dataDir, { recursive: true }); } catch { /* saveLogs reports write failures. */ }
     }
     this.logFilePath = path.join(dataDir, 'audit_logs.json');
   }
@@ -25,7 +25,7 @@ export class JsonAuditLogRepository implements IAuditLogRepository {
         const raw = fs.readFileSync(this.logFilePath, 'utf-8');
         this.memoryLogs = JSON.parse(raw);
       }
-    } catch (e) {
+    } catch {
       console.warn('⚠️ Failed to read audit_logs.json, initializing empty log store.');
       this.memoryLogs = [];
     }
@@ -54,7 +54,7 @@ export class JsonAuditLogRepository implements IAuditLogRepository {
     return fullEntry;
   }
 
-  public async getAuditLogs(limit: number = 100, search?: string): Promise<AuditLogEntry[]> {
+  public async getAuditLogs(limit: number = 100, search?: string, filters?: AuditLogFilters): Promise<AuditLogEntry[]> {
     let filtered = this.memoryLogs;
     if (search && search.trim()) {
       const q = search.toLowerCase();
@@ -65,6 +65,8 @@ export class JsonAuditLogRepository implements IAuditLogRepository {
         (l.details && l.details.toLowerCase().includes(q))
       );
     }
+    if (filters?.action) filtered = filtered.filter(entry => entry.action === filters.action);
+    if (filters?.target) filtered = filtered.filter(entry => entry.target === filters.target);
     return filtered.slice(0, limit);
   }
 }

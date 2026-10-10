@@ -1,0 +1,119 @@
+.kubi-panel {
+  /* Match kubiq's black/slate dashboard; blue is reserved for actions and kubi. */
+  --kubi-canvas: #0c0d10;
+  --kubi-surface: #15171c;
+  --kubi-raised: #191c22;
+  --kubi-line: #30343c;
+  --kubi-muted: #a3a3a3;
+  --kubi-ink: #f5f5f5;
+  position: fixed; inset: 12px 12px 12px auto; z-index: 70;
+  width: min(520px, calc(100vw - 24px)); display: flex; flex-direction: column;
+  color: var(--kubi-ink); background: var(--kubi-canvas); border: 1px solid var(--kubi-line);
+  border-radius: 24px; box-shadow: -16px 16px 64px #0008; overflow: hidden;
+  font-family: inherit; isolation: isolate;
+}
+.kubi-panel button { cursor: pointer; }
+.kubi-panel button:disabled { cursor: not-allowed; opacity: .45; }
+.kubi-panel button:focus-visible, .kubi-panel summary:focus-visible { outline: 2px solid #80b9ff; outline-offset: 3px; }
+.kubi-panel button, .kubi-panel summary { -webkit-tap-highlight-color: transparent; }
+.kubi-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--kubi-line); gap: 8px; }
+.kubi-identity { display: flex; gap: 8px; align-items: center; }
+.kubi-identity h2 { font-size: 20px; font-weight: 650; letter-spacing: -.6px; }
+.kubi-identity p { font-size: 11px; color: var(--kubi-muted); margin-top: 1px; }
+.kubi-pro { font-size: 10px; color: var(--color-primary, #3b82f6); border: 1px solid #3b82f64d; background: #3b82f61a; border-radius: 999px; padding: 2px 8px; margin-left: 7px; vertical-align: middle; font-weight: 600; letter-spacing: .12em; }
+.kubi-tools { display: flex; gap: 2px; }
+.kubi-icon-button { width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; color: var(--kubi-muted); }
+.kubi-icon-button:hover { background: var(--kubi-surface); color: white; }
+.kubi-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 24px; scrollbar-color: #404040 var(--kubi-canvas); scrollbar-width: thin; }
+.kubi-welcome { padding: 10px 0 20px; }
+.kubi-stage { height: 178px; position: relative; display: grid; place-items: center; margin-bottom: 18px; background: radial-gradient(ellipse at center, #26384c33, transparent 68%); }
+.kubi-stage canvas { position: relative; }
+.kubi-welcome h3 { font-size: 30px; line-height: 1.15; font-weight: 600; letter-spacing: -1.1px; max-width: 330px; }
+.kubi-welcome h3 span { color: #8db9ef; }
+.kubi-welcome > p { color: var(--kubi-muted); font-size: 14px; line-height: 1.7; margin-top: 12px; max-width: 370px; }
+.kubi-suggestions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 26px; }
+.kubi-suggestion { border: 1px solid var(--kubi-line); border-radius: 14px; padding: 14px; text-align: left; min-width: 0; background: var(--kubi-surface); transition: border-color .15s, background .15s; }
+.kubi-suggestion:hover { border-color: #4d5662; background: var(--kubi-raised); }
+.kubi-suggestion > span { display: flex; align-items: center; gap: 8px; color: #a9bbd1; font-size: 12px; margin-bottom: 10px; }
+.kubi-suggestion p { font-size: 13px; line-height: 1.5; color: #e5e7eb; }
+.kubi-conversation { display: flex; flex-direction: column; gap: 24px; }
+.kubi-user-message { max-width: 90%; align-self: flex-end; background: #18212d; border: 1px solid #34465c; padding: 12px 16px; border-radius: 18px 18px 5px 18px; font-size: 14px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+.kubi-answer { font-size: 14px; line-height: 1.8; min-width: 0; overflow-wrap: anywhere; }
+.kubi-answer-author { display: flex; gap: 7px; align-items: center; font-weight: 600; margin-bottom: 10px; }
+.kubi-answer-author span { font-size: 11px; font-weight: 400; color: var(--kubi-muted); margin-left: auto; }
+.kubi-answer p + p, .kubi-answer ul, .kubi-answer ol { margin-top: 12px; }
+.kubi-answer ul { list-style: disc; padding-left: 21px; }
+.kubi-answer ol { list-style: decimal; padding-left: 21px; }
+.kubi-answer h1, .kubi-answer h2, .kubi-answer h3 { font-size: 16px; font-weight: 600; margin: 18px 0 8px; }
+.kubi-answer pre { background: #090a0e; border: 1px solid var(--kubi-line); padding: 12px; overflow-x: auto; border-radius: 10px; max-width: 100%; }
+.kubi-answer code { font-size: 12px; color: #b6d2f2; }
+.kubi-inline-link { color: #8db9ef; text-decoration: underline; text-underline-offset: 3px; }
+.kubi-evidence { border-top: 1px solid var(--kubi-line); margin-top: 16px; padding-top: 12px; }
+.kubi-evidence summary { color: var(--kubi-muted); font-size: 12px; cursor: pointer; padding: 6px 0; }
+.kubi-evidence-links { display: grid; gap: 6px; margin-top: 8px; }
+.kubi-evidence-links button { display: flex; align-items: center; gap: 8px; text-align: left; border: 1px solid var(--kubi-line); background: var(--kubi-raised); color: #c8d4e2; padding: 10px 12px; border-radius: 10px; min-height: 44px; font-size: 12px; }
+.kubi-evidence-links button span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.kubi-activity { border: 1px solid #3b4653; background: #14171c; border-radius: 16px; margin: 18px 0; padding: 8px 14px 15px; }
+.kubi-activity-heading { display: flex; align-items: center; gap: 2px; min-height: 84px; }
+.kubi-caption { color: var(--kubi-muted); font-size: 11px; }
+.kubi-activity-heading p { font-size: 14px; font-weight: 500; line-height: 1.5; margin-top: 3px; }
+.kubi-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding-top: 10px; border-top: 1px solid #343941; }
+.kubi-steps li { display: flex; gap: 5px; align-items: center; font-size: 10px; color: #9ca3af; }
+.kubi-steps svg { flex-shrink: 0; }
+.kubi-steps li[data-visited='true'] { color: #d5e4f5; }
+.kubi-steps li[aria-current='step'] { color: #7ae1ee; }
+.kubi-activity[data-state='error'] { border-color: #845152; }
+.kubi-activity[data-state='finished'] { border-color: #315854; }
+.kubi-spin { animation: kubi-spin 1.8s linear infinite; }
+@keyframes kubi-spin { to { transform: rotate(360deg); } }
+.kubi-footer { padding: 12px 18px 16px; background: var(--kubi-canvas); border-top: 1px solid var(--kubi-line); }
+.kubi-composer { border: 1px solid #3c4653; background: #171a20; border-radius: 18px; padding: 12px; }
+.kubi-composer:focus-within { border-color: #74aaf3; box-shadow: 0 0 0 2px #3b82f61f; }
+.kubi-composer label { display: block; color: #c7cbd1; font-size: 11px; margin-bottom: 6px; }
+.kubi-composer-row { display: flex; gap: 10px; align-items: flex-end; }
+.kubi-composer textarea { flex: 1; width: 100%; min-width: 0; resize: none; background: transparent; color: white; font-size: 16px; line-height: 1.5; min-height: 48px; max-height: 144px; outline: none; }
+.kubi-composer textarea::placeholder { color: #989da6; }
+.kubi-send { height: 44px; width: 44px; flex-shrink: 0; border-radius: 50%; background: var(--color-primary, #3b82f6); display: grid; place-items: center; color: white; }
+.kubi-send:hover { background: #286ce0; }
+.kubi-trust { display: flex; align-items: center; justify-content: center; gap: 5px; color: var(--kubi-muted); font-size: 10px; margin-top: 10px; }
+.kubi-trust svg { color: #63d6b2; }
+.kubi-error { color: #ffc0bc; font-size: 13px; line-height: 1.6; padding: 12px; border: 1px solid #744347; border-radius: 12px; margin-bottom: 12px; }
+.kubi-history { padding: 18px; border-bottom: 1px solid var(--kubi-line); background: #121418; max-height: 45%; overflow-y: auto; }
+.kubi-history-heading { display: flex; justify-content: space-between; align-items: center; color: var(--kubi-muted); font-size: 12px; }
+.kubi-history-item { display: block; width: 100%; text-align: left; padding: 12px; border-radius: 10px; margin-top: 4px; font-size: 13px; }
+.kubi-history-item:hover { background: var(--kubi-raised); }
+.kubi-history-item span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kubi-history-item small { color: var(--kubi-muted); font-size: 10px; }
+.kubi-history-empty { padding: 16px 0; font-size: 13px; color: var(--kubi-muted); }
+.kubi-clear-confirm { border: 1px solid #744347; padding: 12px; margin-top: 8px; border-radius: 12px; font-size: 13px; }
+.kubi-clear-confirm div { display: flex; gap: 8px; margin-top: 8px; }
+.kubi-clear-confirm button { min-height: 32px; padding: 4px 12px; font-size: 12px; border: 1px solid #5b6679; border-radius: 24px; }
+.kubi-launcher { position: fixed; bottom: max(20px, env(safe-area-inset-bottom)); right: 20px; z-index: 40; display: flex; align-items: flex-end; background: transparent; border: 0; padding: 0; color: #f5f5f5; }
+.kubi-launcher[hidden] { display: none; }
+.kubi-launcher:focus-visible { outline: 2px solid #3b82f6; outline-offset: 6px; border-radius: 18px; }
+.kubi-thought { position: relative; align-self: flex-start; margin-top: 0; margin-right: -8px; padding: 10px 16px; border-radius: 18px; border: 1px solid #353a43; background: #191c22; font-size: 13px; font-weight: 600; box-shadow: 0 5px 20px #0004; }
+.kubi-thought::before, .kubi-thought::after { content: ''; position: absolute; background: #191c22; border: 1px solid #353a43; border-radius: 50%; }
+.kubi-thought::before { width: 10px; height: 8px; right: 5px; bottom: -12px; }
+.kubi-thought::after { width: 5px; height: 5px; right: -3px; bottom: -20px; }
+@media (pointer: coarse) { .kubi-clear-confirm button { min-height: 44px; } }
+.kubi-clear-confirm button:last-child { color: #ffc0bc; border-color: #744347; }
+.kubi-clarification { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.kubi-clarification button { color: var(--kubi-ink); background: var(--kubi-raised); border: 1px solid var(--kubi-line); border-radius: 14px; padding: 9px 13px; min-height: 40px; font-size: 13px; text-align: left; max-width: 100%; overflow-wrap: anywhere; }
+.kubi-clarification button:hover:not(:disabled), .kubi-clarification button:focus-visible { border-color: #3b82f6; outline: 2px solid #3b82f640; outline-offset: 2px; }
+.kubi-clarification button:disabled { opacity: .5; cursor: default; }
+.kubi-clarification small { flex-basis: 100%; color: var(--kubi-muted); font-size: 11px; }
+.kubi-understanding { display: flex; align-items: center; gap: 8px; margin-top: 16px; color: var(--kubi-muted); font-size: 12px; }
+@media (pointer: coarse) { .kubi-clarification button { min-height: 44px; } }
+@media (max-width: 540px) {
+  .kubi-panel { inset: 0; width: 100%; height: 100dvh; border: 0; border-radius: 0; }
+  .kubi-header { padding: max(10px, env(safe-area-inset-top)) 12px 10px; }
+  .kubi-body { padding: 20px; }
+  .kubi-footer { padding: 10px 12px max(12px, env(safe-area-inset-bottom)); }
+  .kubi-welcome { padding-top: 0; }
+  .kubi-stage { height: 146px; margin-bottom: 12px; }
+  .kubi-welcome h3 { font-size: 28px; }
+  .kubi-suggestion { padding: 12px; }
+  .kubi-steps { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .kubi-steps li { font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) { .kubi-spin { animation: none; } .kubi-panel * { scroll-behavior: auto; transition: none; } }

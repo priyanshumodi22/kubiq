@@ -36,8 +36,10 @@ jobs:
             backend/package-lock.json
             frontend/package-lock.json
       - run: npm ci --prefix backend
+      - run: npm test --prefix backend -- --runInBand
       - run: npm run build --prefix backend
       - run: npm ci --prefix frontend
+      - run: npm test --prefix frontend -- --run
       - run: npm run build --prefix frontend
         env:
           VITE_FRONTEND_BASE_PATH: /kubiq/
