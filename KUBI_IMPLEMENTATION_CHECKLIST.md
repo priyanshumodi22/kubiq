@@ -36,8 +36,8 @@ This checklist is updated only after an item is implemented and verified.
 - [x] Replace the incorrectly projected reader token (which inherited the main pod identity) with short-lived TokenRequest credentials for `kubi-readonly`, named namespace-scoped token-request permission, refresh-before-expiry and fail-closed handling. Unit tests verify caching, concurrent requests, rotation and sanitized failure. Live RBAC acceptance remains pending.
 - [x] Add Docker context exclusions for local environment files, Gemini key, dependencies, generated builds and design previews.
 - [x] Run complete backend suite (71 tests), frontend suite (19 tests), backend TypeScript build, frontend production build, backend ncc packaging and manifest YAML parsing. Existing Browserslist age and large frontend chunk warnings remain.
-- [ ] After deployment, verify real Kubernetes inventory/pod logs, namespace restrictions, reader write denial and credential refresh. User explicitly approved deferring these live checks to production; this is not yet a pass.
-- [ ] Publish/release the feature and verify rollout. No deployment performed during this release-preparation step. Previously checked production image: `priyanshumodi22/kubiq:main-50`; recheck digest immediately before rollout. Keep feature work on `kubi`.
+- [x] Verify real Kubernetes inventory and pod logs through a freshly minted `kubi-readonly` token, plus reader write/exec denial. In production, token issuance returned `201`, namespace and pod-log reads returned `200`, while deployment patching returned `403`; pod is Ready on `priyanshumodi22/kubiq:main-51`. Refresh behavior remains covered by unit tests rather than a one-hour production wait.
+- [x] Publish/release the feature and verify rollout. GitHub workflow succeeded, Flux reconciled `main-51`, and deployment generation 49 is observed and Ready. Feature implementation remains on `kubi`; Flux committed the generated image tag to `main`.
 
 ### Clarification and audit conversations — 2026-10-11
 
@@ -49,7 +49,7 @@ This checklist is updated only after an item is implemented and verified.
 - [x] Add a specific provider-rate/quota error response after confirming a real HTTP 429 during the live follow-up. Verified by route test; no provider response body is exposed.
 - [x] Verify persisted clarification choices after reopening history and at a 390px mobile viewport: choices are enabled for the pending question and fit without horizontal overflow. Typed username and button paths were exercised in Chrome. Restored desktop viewport afterward.
 - [ ] Re-run live account-context follow-up after Gemini quota/rate capacity is available. The previous account-specific answer succeeded, but the follow-up failed upstream; do not mark it passed.
-- [ ] Verify live Kubernetes inventory/pod logs with a working isolated-reader cluster connection. Local Kubernetes access remains unavailable.
+- [x] Verify live Kubernetes inventory/pod logs with a working isolated-reader cluster connection. Production checks used the dedicated account token and completed successfully; local Kubernetes access remains unavailable.
 
 ### Documentation and chat polish — 2026-10-10
 
