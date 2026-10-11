@@ -101,6 +101,11 @@ export class KubiAiConfigService {
     // from the kubiq UI without having to re-enter a key that is already present
     // in the runtime environment. The selected value is then persisted encrypted.
     const bootstrap = !apiKey && !existing ? this.environmentConfig() : null;
+    // A stored key belongs only to its provider. Reusing it after the admin
+    // switches providers would both fail and conceal a configuration mistake.
+    if (!apiKey && existing && existing.provider !== provider) {
+      throw new Error('KUBI_API_KEY_REQUIRED');
+    }
     if (!apiKey && !existing && (!bootstrap || bootstrap.provider !== provider)) {
       throw new Error('KUBI_API_KEY_REQUIRED');
     }

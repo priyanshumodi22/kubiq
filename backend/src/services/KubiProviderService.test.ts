@@ -48,4 +48,16 @@ describe('KubiProviderService', () => {
     await expect(new KubiProviderService().stream(messages, delta => deltas.push(delta))).resolves.toBe('Healthy services');
     expect(deltas).toEqual(['Healthy ', 'services']);
   });
+
+  it.each([
+    ['anthropic', 'data: {"delta":{"text":"Healthy "}}\n\ndata: {"delta":{"text":"services"}}\n\n', 'Healthy services'],
+    ['gemini', 'data: {"candidates":[{"content":{"parts":[{"text":"Healthy "}]}}]}\n\ndata: {"candidates":[{"content":{"parts":[{"text":"services"}]}}]}\n\n', 'Healthy services'],
+  ])('forwards %s provider-native SSE deltas as they arrive', async (provider, data, expected) => {
+    process.env = { ...originalEnv, AI_PROVIDER: provider, AI_MODEL: 'test-model', AI_API_KEY: 'test-key' };
+    mockedAxios.post.mockResolvedValue({ data: Readable.from([data]) } as any);
+    const deltas: string[] = [];
+
+    await expect(new KubiProviderService().stream(messages, delta => deltas.push(delta))).resolves.toBe(expected);
+    expect(deltas).toEqual(['Healthy ', 'services']);
+  });
 });
