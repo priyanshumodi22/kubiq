@@ -38,6 +38,20 @@ describe('KubiAiConfigService', () => {
     await expect(KubiAiConfigService.getResolvedConfig()).resolves.toMatchObject({ apiKey: 'secret-value' });
   });
 
+  it('lets an administrator persist a model choice from the same-provider deployment bootstrap', async () => {
+    process.env.AI_PROVIDER = 'gemini';
+    process.env.AI_MODEL = 'gemini-2.5-flash';
+    process.env.AI_API_KEY = 'bootstrap-key';
+
+    await KubiAiConfigService.save({ provider: 'gemini', model: 'gemini-3.1-flash-lite' });
+
+    expect(stored).toMatchObject({ provider: 'gemini', model: 'gemini-3.1-flash-lite' });
+    expect(stored.encryptedApiKey).not.toContain('bootstrap-key');
+    await expect(KubiAiConfigService.getResolvedConfig()).resolves.toMatchObject({
+      provider: 'gemini', model: 'gemini-3.1-flash-lite', apiKey: 'bootstrap-key',
+    });
+  });
+
   it('fails closed when encryption is unavailable or a model is invalid', async () => {
     delete process.env.KUBI_AI_CONFIG_ENCRYPTION_KEY;
     await expect(KubiAiConfigService.save({ provider: 'gemini', model: 'gemini-2.5-flash', apiKey: 'key' }))

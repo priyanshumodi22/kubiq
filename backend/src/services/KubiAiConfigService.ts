@@ -96,8 +96,17 @@ export class KubiAiConfigService {
     const apiKey = typeof input.apiKey === 'string' ? input.apiKey.trim() : '';
     const repository = await DatabaseFactory.getSystemRepository();
     const existing = await repository.getKubiAiConfig();
-    if (!apiKey && !existing) throw new Error('KUBI_API_KEY_REQUIRED');
-    const encryptedApiKey = apiKey ? this.encrypt(apiKey) : existing!.encryptedApiKey;
+    // A deployment may provide an initial provider/key for a fresh install. An
+    // administrator should be able to select a new model for that same provider
+    // from the kubiq UI without having to re-enter a key that is already present
+    // in the runtime environment. The selected value is then persisted encrypted.
+    const bootstrap = !apiKey && !existing ? this.environmentConfig() : null;
+    if (!apiKey && !existing && (!bootstrap || bootstrap.provider !== provider)) {
+      throw new Error('KUBI_API_KEY_REQUIRED');
+    }
+    const encryptedApiKey = apiKey
+      ? this.encrypt(apiKey)
+      : existing?.encryptedApiKey || this.encrypt(bootstrap!.apiKey);
     await repository.saveKubiAiConfig({ provider, model, encryptedApiKey, updatedAt: Date.now() } satisfies KubiAiConfigRecord);
     return this.getPublicConfig();
   }
