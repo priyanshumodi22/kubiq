@@ -27,7 +27,7 @@ This checklist is updated only after an item is implemented and verified.
 - [x] Verify desktop, mobile, keyboard, and reduced-motion behavior. Verified at a 390px mobile breakpoint, with Escape/focus return; reduced-motion disables drawer movement and the spinner animation.
 - [x] Design original kubi avatar and seven states in Figma (Priyanshu Modi's team): https://www.figma.com/design/qt2arRo6RMK6zHnYEAkk5Q?node-id=2-2 . Verified rendered state sheet.
 - [x] Implement procedural Canvas avatar, protocol-based thinking/searching/working/composing/finished/error states, reduced motion, offscreen/tab pause, and cleanup. Verified 16 frontend tests, frontend build/typecheck, targeted avatar/panel lint, backend type build, and six route/evidence tests including real stage ordering. Desktop avatar rendered in Chrome. No new dependencies.
-- [ ] Complete final authenticated mobile/live-answer acceptance across all avatar states. The earlier local runtime/authentication blocker is resolved; the current remaining live follow-up test hit Gemini provider HTTP 429. Do not treat this as fully accepted until rechecked.
+- [x] Complete final authenticated mobile/live-answer acceptance across the live investigation states. In production at a 390px viewport, kubi remained within the viewport and completed a bounded `kubiq-web` error investigation with evidence; observed state sequence: ready → understanding → connecting → answer complete. The procedural state component remains covered by frontend tests.
 
 ## Verification and delivery
 
@@ -58,14 +58,14 @@ This checklist is updated only after an item is implemented and verified.
 - [x] Handle greetings, short incomplete input, identity and creator questions locally; retain unrelated coding refusals. Verified in Chrome with hello, creator and palindrome requests, and automated scope cases. Local replies no longer show evidence labels or a fictitious investigation trail.
 - [x] Replace launcher pill with robot plus Ask kubi thought bubble, using the Figma launcher reference and avatar guide. Match the navbar-style Pro badge, remove the welcome orbit, and reduce desktop history confirmation buttons to 32px while retaining coarse-pointer touch height.
 - [x] Verify panel in Chrome at desktop and a mobile viewport without horizontal panel overflow; verify history Cancel without deleting conversations. Backend build, frontend production build and 32 focused backend tests pass. Targeted frontend/new backend lint has no code findings; existing ESLint legacy-config, Browserslist age and large-bundle warnings remain.
-- [ ] Commit/push/deploy these changes only after user approval. Local frontend and backend remain running; production is unchanged.
+- [x] Commit, push, and deploy these changes after user approval. Production is running `priyanshumodi22/kubiq:main-54`; the pod is Ready, health is healthy, and the administrator-panel provider test succeeded.
 
 ### Robot redesign review — 2026-10-10
 
 - [x] Replace the cloud exploration with the user-approved blue robot, dark visor and expressive signal fins. Seven procedural states visually checked in Chrome using the explicit development preview.
 - [x] Implement the redesigned panel and persistent actual-event investigation trail. TypeScript, production build, 19 avatar/stream/progress tests and targeted ESLint pass. No new runtime dependencies.
 - [x] Start local frontend (5173) and backend (3001) using approved read-only k3s configuration retrieval, with secrets kept in process memory and localhost routing overrides. Verified HTTP 200, healthy backend, native auth enabled, existing authenticated Chrome session and actual redesigned panel opening.
-- [ ] Finish live follow-up streaming acceptance. Desktop/mobile clarification, history persistence and the account-specific streamed answer are verified; the subsequent live follow-up is currently limited by provider HTTP 429.
+- [x] Finish live follow-up streaming acceptance. With the free-tier Gemini model configured through the administrator panel, a production follow-up completed through the streamed investigation stages and returned bounded evidence-backed results.
 - [ ] Resolve broader existing design-audit findings separately. Strict audit reports native form/scrollbar ownership issues outside this redesign; no global compliance claim.
 
 ### kubi product-only scope — 2026-10-10
@@ -76,4 +76,4 @@ This checklist is updated only after an item is implemented and verified.
 - [x] Add backend and frontend automated tests. Verified: 29 backend tests and 1 frontend SSE client test pass.
 - [x] Update CI to run tests before image build/Flux delivery. Verified by parsing the production workflow test gates.
 - [x] Start local kubiq frontend/backend with production-equivalent k3s configuration and verify end-to-end behavior. Verified with an authenticated kubiq Pro session: availability gate, Gemini streaming answers, bounded service/log evidence, evidence links, persisted history, mobile layout, and Escape/focus return.
-- [ ] Verify production deployment only after explicit user approval.
+- [x] Verify production deployment after explicit user approval. GitHub Actions build 54 succeeded, Flux deployed `main-54`, the pod is Ready, the health endpoint is healthy, and a live Kubi answer completed.
