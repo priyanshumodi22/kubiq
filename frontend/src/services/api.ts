@@ -94,8 +94,23 @@ class ApiClient {
   }
 
   // kubi — kubiq Pro AI assistant
-  async getKubiStatus(): Promise<{ enabled: boolean; proActive: boolean; providerConfigured: boolean; provider: string | null; reason?: string }> {
+  async getKubiStatus(): Promise<{ enabled: boolean; proActive: boolean; providerConfigured: boolean; provider: string | null; model?: string | null; reason?: string }> {
     const response = await this.client.get('/api/kubi/status');
+    return response.data;
+  }
+
+  async getKubiAiConfiguration(): Promise<{ provider: 'gemini' | 'openai' | 'anthropic' | null; model: string | null; configured: boolean; managedInKubiq: boolean; encryptionReady: boolean }> {
+    const response = await this.client.get('/api/system/kubi-ai');
+    return response.data;
+  }
+
+  async saveKubiAiConfiguration(config: { provider: 'gemini' | 'openai' | 'anthropic'; model: string; apiKey?: string }) {
+    const response = await this.client.put('/api/system/kubi-ai', config);
+    return response.data;
+  }
+
+  async testKubiAiConfiguration(): Promise<{ ok: boolean }> {
+    const response = await this.client.post('/api/system/kubi-ai/test');
     return response.data;
   }
 

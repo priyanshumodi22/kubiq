@@ -1,10 +1,12 @@
 import { validateLicenseKey } from '../utils/licenseValidator';
+import { KubiAiConfigService } from './KubiAiConfigService';
 
 export type KubiAvailability = {
   enabled: boolean;
   proActive: boolean;
   providerConfigured: boolean;
   provider: string | null;
+  model?: string | null;
   reason?: 'DISABLED' | 'PRO_REQUIRED' | 'AI_NOT_CONFIGURED';
 };
 
@@ -13,12 +15,13 @@ export class KubiAccessService {
     const enabled = process.env.AI_KUBI_ENABLED === 'true';
     const licenseKey = process.env.KUBIQ_LICENSE_KEY?.trim() || '';
     const proActive = Boolean(licenseKey) && await validateLicenseKey(licenseKey);
-    const provider = (process.env.AI_PROVIDER || '').toLowerCase();
-    const providerConfigured = ['gemini', 'openai', 'anthropic'].includes(provider) && Boolean(process.env.AI_API_KEY?.trim());
+    const aiConfig = await KubiAiConfigService.getPublicConfig();
+    const provider = aiConfig.provider;
+    const providerConfigured = aiConfig.configured;
 
-    if (!enabled) return { enabled, proActive, providerConfigured, provider: provider || null, reason: 'DISABLED' };
-    if (!proActive) return { enabled, proActive, providerConfigured, provider: provider || null, reason: 'PRO_REQUIRED' };
-    if (!providerConfigured) return { enabled, proActive, providerConfigured, provider: provider || null, reason: 'AI_NOT_CONFIGURED' };
-    return { enabled, proActive, providerConfigured, provider };
+    if (!enabled) return { enabled, proActive, providerConfigured, provider, model: aiConfig.model, reason: 'DISABLED' };
+    if (!proActive) return { enabled, proActive, providerConfigured, provider, model: aiConfig.model, reason: 'PRO_REQUIRED' };
+    if (!providerConfigured) return { enabled, proActive, providerConfigured, provider, model: aiConfig.model, reason: 'AI_NOT_CONFIGURED' };
+    return { enabled, proActive, providerConfigured, provider, model: aiConfig.model };
   }
 }

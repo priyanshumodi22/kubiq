@@ -6,6 +6,8 @@ import { requireRole, getUserFromReq } from '../middleware/auth';
 import { AuditLogService } from '../services/AuditLogService';
 import { createHash } from 'crypto';
 import { validateLicenseKey } from '../utils/licenseValidator';
+import { KubiAiConfigService } from '../services/KubiAiConfigService';
+import { KubiProviderService } from '../services/KubiProviderService';
 
 const router = express.Router();
 const systemMonitor = SystemMonitorService.getInstance();
@@ -25,6 +27,47 @@ router.get('/pro-status', async (_req, res) => {
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// AI keys are write-only: only kubiq-admin may configure them, and no endpoint returns one.
+router.get('/kubi-ai', requireRole('kubiq-admin'), async (_req, res) => {
+  try {
+    res.json(await KubiAiConfigService.getPublicConfig());
+  } catch {
+    res.status(503).json({ message: 'Kubi AI configuration is unavailable.' });
+  }
+});
+
+router.put('/kubi-ai', requireRole('kubiq-admin'), async (req, res) => {
+  try {
+    const config = await KubiAiConfigService.save(req.body || {});
+    auditService.log({
+      user: getUserFromReq(req), action: 'KUBI_AI_CONFIG_UPDATE', target: 'kubi/ai-config',
+      details: `Updated kubi AI provider configuration (${config.provider}/${config.model}).`, ip: req.ip,
+    });
+    res.json(config);
+  } catch (error: any) {
+    const code = error?.message;
+    const message = code === 'KUBI_CONFIGURATION_ENCRYPTION_UNAVAILABLE'
+      ? 'Kubi AI secure configuration is not initialized. Set KUBI_AI_CONFIG_ENCRYPTION_KEY first.'
+      : code === 'KUBI_API_KEY_REQUIRED' ? 'An API key is required for the first Kubi AI configuration.'
+      : code === 'KUBI_PROVIDER_INVALID' || code === 'KUBI_MODEL_INVALID' ? 'Choose a supported provider and a valid model identifier.'
+      : 'Could not save Kubi AI configuration.';
+    res.status(400).json({ message });
+  }
+});
+
+router.post('/kubi-ai/test', requireRole('kubiq-admin'), async (_req, res) => {
+  try {
+    const response = await new KubiProviderService().complete([{ role: 'user', content: 'Reply exactly: OK' }], 8);
+    res.json({ ok: response.length > 0 });
+  } catch (error: any) {
+    const providerLimited = error?.response?.status === 429 || error?.response?.status === 402;
+    res.status(providerLimited ? 429 : 400).json({
+      ok: false,
+      message: providerLimited ? 'The configured provider has no available quota or credits.' : 'The configured provider could not complete a test.',
+    });
   }
 });
 

@@ -19,7 +19,7 @@ describe('KubiProviderService', () => {
     ['anthropic', { data: { content: [{ text: 'Anthropic answer' }] } }, 'Anthropic answer'],
     ['gemini', { data: { candidates: [{ content: { parts: [{ text: 'Gemini answer' }] } }] } }, 'Gemini answer'],
   ])('returns a normalized %s response', async (provider, response, expected) => {
-    process.env = { ...originalEnv, AI_PROVIDER: provider, AI_API_KEY: 'test-key', AI_KUBI_TIMEOUT_MS: '1500' };
+    process.env = { ...originalEnv, AI_PROVIDER: provider, AI_MODEL: 'test-model', AI_API_KEY: 'test-key', AI_KUBI_TIMEOUT_MS: '1500' };
     mockedAxios.post.mockResolvedValue(response as any);
 
     await expect(new KubiProviderService().complete(messages)).resolves.toBe(expected);
@@ -27,15 +27,15 @@ describe('KubiProviderService', () => {
   });
 
   it('fails closed when no key or unsupported provider is configured', async () => {
-    process.env = { ...originalEnv, AI_PROVIDER: 'gemini' };
+    process.env = { ...originalEnv, AI_PROVIDER: 'gemini', AI_MODEL: 'test-model' };
     await expect(new KubiProviderService().complete(messages)).rejects.toThrow('AI_NOT_CONFIGURED');
 
-    process.env = { ...originalEnv, AI_PROVIDER: 'unsupported', AI_API_KEY: 'test-key' };
-    await expect(new KubiProviderService().complete(messages)).rejects.toThrow('AI_PROVIDER_UNSUPPORTED');
+    process.env = { ...originalEnv, AI_PROVIDER: 'unsupported', AI_MODEL: 'test-model', AI_API_KEY: 'test-key' };
+    await expect(new KubiProviderService().complete(messages)).rejects.toThrow('AI_NOT_CONFIGURED');
   });
 
   it('forwards OpenAI provider-native SSE deltas as they arrive', async () => {
-    process.env = { ...originalEnv, AI_PROVIDER: 'openai', AI_API_KEY: 'test-key' };
+    process.env = { ...originalEnv, AI_PROVIDER: 'openai', AI_MODEL: 'test-model', AI_API_KEY: 'test-key' };
     mockedAxios.post.mockResolvedValue({
       data: Readable.from([
         'data: {"choices":[{"delta":{"content":"Healthy "}}]}\n\n',

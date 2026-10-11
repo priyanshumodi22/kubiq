@@ -1,6 +1,6 @@
 
 import mysql from 'mysql2/promise';
-import { ISystemRepository, LicenseActivation } from '../../interfaces/ISystemRepository';
+import { ISystemRepository, LicenseActivation, KubiAiConfigRecord } from '../../interfaces/ISystemRepository';
 import { SystemMetrics } from '../../../types';
 
 export class MysqlSystemRepository implements ISystemRepository {
@@ -8,6 +8,7 @@ export class MysqlSystemRepository implements ISystemRepository {
   private readonly configKey = 'storage_prefs';
   private readonly apmConfigKey = 'apm_prefs';
   private readonly licenseActivationKey = 'polar_license_activation';
+  private readonly kubiAiConfigKey = 'kubi_ai_config';
 
   async initialize(): Promise<void> {
     this.pool = mysql.createPool({
@@ -161,5 +162,19 @@ export class MysqlSystemRepository implements ISystemRepository {
       'INSERT INTO system_config (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?',
       [this.licenseActivationKey, value, value]
     );
+  }
+
+  async getKubiAiConfig(): Promise<KubiAiConfigRecord | null> {
+    if (!this.pool) await this.initialize();
+    const [rows]: any = await this.pool!.query('SELECT value FROM system_config WHERE `key` = ?', [this.kubiAiConfigKey]);
+    if (rows.length === 0) return null;
+    const value = typeof rows[0].value === 'string' ? JSON.parse(rows[0].value) : rows[0].value;
+    return value?.provider && value.model && value.encryptedApiKey && value.updatedAt ? value as KubiAiConfigRecord : null;
+  }
+
+  async saveKubiAiConfig(config: KubiAiConfigRecord): Promise<void> {
+    if (!this.pool) await this.initialize();
+    const value = JSON.stringify(config);
+    await this.pool!.execute('INSERT INTO system_config (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?', [this.kubiAiConfigKey, value, value]);
   }
 }

@@ -9,7 +9,7 @@ const originalEnv = { ...process.env };
 
 describe('KubiAccessService', () => {
   beforeEach(() => {
-    process.env = { ...originalEnv, AI_KUBI_ENABLED: 'true', KUBIQ_LICENSE_KEY: 'test-license', AI_PROVIDER: 'gemini' };
+    process.env = { ...originalEnv, AI_KUBI_ENABLED: 'true', KUBIQ_LICENSE_KEY: 'test-license', AI_PROVIDER: 'gemini', AI_MODEL: 'test-model' };
     mockedLicenseValidator.mockResolvedValue(true);
   });
 

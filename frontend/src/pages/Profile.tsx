@@ -20,11 +20,13 @@ import {
   Laptop,
   ArrowLeft,
   Edit2,
-  ExternalLink
+  ExternalLink,
+  Sparkles
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { KubiAiSettings } from '../components/KubiAiSettings';
 
 // --- Utility for Tailwind Classes ---
 function cn(...inputs: (string | undefined | null | false)[]) {
@@ -102,9 +104,9 @@ const Button = ({
 
 const Profile: React.FC = () => {
   const { success, error } = useToast();
-  const { provider } = useAuth();
+  const { provider, hasRole } = useAuth();
   const isNative = provider === 'native';
-  const [activeTab, setActiveTab] = useState<'details' | 'security'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'security' | 'kubi-ai'>('details');
 
   // Logic State
   const [profile, setProfile] = useState({ username: '', email: '' });
@@ -305,6 +307,7 @@ const Profile: React.FC = () => {
               {[
                 { id: 'details', label: 'Personal Details', icon: User },
                 { id: 'security', label: 'Login & Security', icon: Shield },
+                ...(hasRole('kubiq-admin') ? [{ id: 'kubi-ai', label: 'Kubi AI', icon: Sparkles }] : []),
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -470,6 +473,7 @@ const Profile: React.FC = () => {
 
                 </div>
               )}
+              {activeTab === 'kubi-ai' && hasRole('kubiq-admin') && <KubiAiSettings />}
             </div>
           </div>
         </div>

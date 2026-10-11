@@ -1,12 +1,13 @@
 import express from 'express';
 import yaml from 'js-yaml';
-import axios from 'axios';
 import { KubernetesService } from '../services/KubernetesService';
 import { requireRole, getUserFromReq, checkNamespaceAccess } from '../middleware/auth';
 import { clickhouseService } from '../services/ClickhouseService';
 import { AuditLogService } from '../services/AuditLogService';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { validateLicenseKey } from '../utils/licenseValidator';
+import { KubiAiConfigService } from '../services/KubiAiConfigService';
+import { KubiProviderService } from '../services/KubiProviderService';
 
 const router = express.Router();
 const k8sService = KubernetesService.getInstance();
@@ -442,10 +443,9 @@ router.post('/namespaces/:ns/pods/:name/ai-diagnose', checkNamespaceAccess, asyn
             conditions: pod?.conditions || []
         };
 
-        const apiKey = process.env.AI_API_KEY;
-        const aiProvider = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
+        const aiConfig = await KubiAiConfigService.getResolvedConfig();
 
-        if (!apiKey) {
+        if (!aiConfig) {
             const fallbackMarkdown = `### 🤖 SRE Automated Diagnostic Report
 **Target**: Pod \`${name}\` (Namespace: \`${ns}\`)
 **Current Status**: \`${podContext.status}\` | **Total Restarts**: \`${podContext.restarts}\`
@@ -460,7 +460,7 @@ ${logs.split('\n').slice(-15).join('\n') || 'No logs recorded.'}
 \`\`\`
 
 > [!TIP]
-> Configure \`AI_API_KEY\` in your environment to enable full LLM-powered SRE analysis.`;
+> Ask a kubiq administrator to configure Kubi AI for full LLM-powered SRE analysis.`;
             return res.json({ diagnosis: fallbackMarkdown });
         }
 
@@ -488,33 +488,7 @@ Provide a concise markdown response:
 ### 3. 🛠️ Recommended Actionable Fix
 (Exact kubectl command or YAML edit to resolve this issue)`;
 
-        let diagnosis = '';
-        if (aiProvider === 'openai') {
-            const url = 'https://api.openai.com/v1/chat/completions';
-            const response = await axios.post(url, {
-                model: 'gpt-4o',
-                messages: [{ role: 'user', content: prompt }]
-            }, { headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' } });
-            diagnosis = response.data.choices[0].message.content;
-        } else if (aiProvider === 'anthropic') {
-            const url = 'https://api.anthropic.com/v1/messages';
-            const response = await axios.post(url, {
-                model: 'claude-3-5-sonnet-latest',
-                max_tokens: 1024,
-                messages: [{ role: 'user', content: prompt }]
-            }, { headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' } });
-            diagnosis = response.data.content[0].text;
-        } else {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-            const response = await axios.post(url, {
-                contents: [{ parts: [{ text: prompt }] }]
-            }, { headers: { 'Content-Type': 'application/json' } });
-            if (response.data?.candidates?.[0]) {
-                diagnosis = response.data.candidates[0].content.parts[0].text;
-            } else {
-                throw new Error('Invalid response from Gemini API');
-            }
-        }
+        let diagnosis = await new KubiProviderService().complete([{ role: 'user', content: prompt }], 1024);
 
         diagnosis = diagnosis.replace(/^```(?:markdown)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
         res.json({ diagnosis });
@@ -539,10 +513,9 @@ router.post('/namespaces/:ns/events/ai-diagnose', checkNamespaceAccess, async (r
             ip: req.ip
         });
 
-        const apiKey = process.env.AI_API_KEY;
-        const aiProvider = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
+        const aiConfig = await KubiAiConfigService.getResolvedConfig();
 
-        if (!apiKey) {
+        if (!aiConfig) {
             const fallbackMarkdown = `### 🤖 SRE Warning Event Analysis
 **Namespace**: \`${ns}\`
 **Reason**: \`${event.reason}\`
@@ -555,7 +528,7 @@ ${event.message}
 \`\`\`
 
 > [!TIP]
-> Configure \`AI_API_KEY\` in your environment to enable full LLM-powered SRE analysis.`;
+> Ask a kubiq administrator to configure Kubi AI for full LLM-powered SRE analysis.`;
             return res.json({ diagnosis: fallbackMarkdown });
         }
 
@@ -570,27 +543,7 @@ Provide a concise markdown breakdown:
 ### 2. ⚡ Risk & Impact
 ### 3. 🛠️ Resolution Commands`;
 
-        let diagnosis = '';
-        if (aiProvider === 'openai') {
-            const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-                model: 'gpt-4o',
-                messages: [{ role: 'user', content: prompt }]
-            }, { headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' } });
-            diagnosis = response.data.choices[0].message.content;
-        } else if (aiProvider === 'anthropic') {
-            const response = await axios.post('https://api.anthropic.com/v1/messages', {
-                model: 'claude-3-5-sonnet-latest',
-                max_tokens: 1024,
-                messages: [{ role: 'user', content: prompt }]
-            }, { headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' } });
-            diagnosis = response.data.content[0].text;
-        } else {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-            const response = await axios.post(url, {
-                contents: [{ parts: [{ text: prompt }] }]
-            }, { headers: { 'Content-Type': 'application/json' } });
-            diagnosis = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
-        }
+        let diagnosis = await new KubiProviderService().complete([{ role: 'user', content: prompt }], 1024);
 
         diagnosis = diagnosis.replace(/^```(?:markdown)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
         res.json({ diagnosis });

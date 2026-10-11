@@ -1,7 +1,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { ISystemRepository, LicenseActivation } from '../../interfaces/ISystemRepository';
+import { ISystemRepository, LicenseActivation, KubiAiConfigRecord } from '../../interfaces/ISystemRepository';
 import { SystemMetrics } from '../../../types';
 
 export class JsonSystemRepository implements ISystemRepository {
@@ -10,6 +10,7 @@ export class JsonSystemRepository implements ISystemRepository {
   private configPath: string;
   private apmConfigPath: string;
   private licenseActivationPath: string;
+  private kubiAiConfigPath: string;
 
   constructor() {
     this.dataDir = process.env.DATA_DIR || './data';
@@ -17,6 +18,7 @@ export class JsonSystemRepository implements ISystemRepository {
     this.configPath = path.join(this.dataDir, 'system-config.json');
     this.apmConfigPath = path.join(this.dataDir, 'apm-config.json');
     this.licenseActivationPath = path.join(this.dataDir, 'polar-license-activation.json');
+    this.kubiAiConfigPath = path.join(this.dataDir, 'kubi-ai-config.json');
   }
 
   async initialize(): Promise<void> {
@@ -90,5 +92,18 @@ export class JsonSystemRepository implements ISystemRepository {
   async saveLicenseActivation(activation: LicenseActivation): Promise<void> {
     if (!fs.existsSync(this.dataDir)) await this.initialize();
     fs.writeFileSync(this.licenseActivationPath, JSON.stringify(activation, null, 2));
+  }
+
+  async getKubiAiConfig(): Promise<KubiAiConfigRecord | null> {
+    if (!fs.existsSync(this.kubiAiConfigPath)) return null;
+    try {
+      const value = JSON.parse(fs.readFileSync(this.kubiAiConfigPath, 'utf-8')) as Partial<KubiAiConfigRecord>;
+      return value.provider && value.model && value.encryptedApiKey && value.updatedAt ? value as KubiAiConfigRecord : null;
+    } catch { return null; }
+  }
+
+  async saveKubiAiConfig(config: KubiAiConfigRecord): Promise<void> {
+    if (!fs.existsSync(this.dataDir)) await this.initialize();
+    fs.writeFileSync(this.kubiAiConfigPath, JSON.stringify(config, null, 2));
   }
 }

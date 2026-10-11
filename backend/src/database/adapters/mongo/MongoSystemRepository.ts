@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { ISystemRepository, LicenseActivation } from '../../interfaces/ISystemRepository';
+import { ISystemRepository, LicenseActivation, KubiAiConfigRecord } from '../../interfaces/ISystemRepository';
 import { SystemMetrics } from '../../../types';
 import { SystemMetricsModel } from '../../schemas/SystemMetricsSchema';
 import { SystemPreferencesModel } from '../../schemas/SystemPreferencesSchema';
@@ -8,6 +8,7 @@ export class MongoSystemRepository implements ISystemRepository {
     private readonly configKey = 'storage_prefs';
     private readonly apmConfigKey = 'apm_prefs';
     private readonly licenseActivationKey = 'polar_license_activation';
+    private readonly kubiAiConfigKey = 'kubi_ai_config';
 
     async initialize(): Promise<void> {
         if (mongoose.connection.readyState === 0) {
@@ -97,6 +98,22 @@ export class MongoSystemRepository implements ISystemRepository {
         await SystemPreferencesModel.findOneAndUpdate(
             { key: this.licenseActivationKey },
             { key: this.licenseActivationKey, value: activation },
+            { upsert: true, new: true }
+        );
+    }
+
+    async getKubiAiConfig(): Promise<KubiAiConfigRecord | null> {
+        await this.initialize();
+        const doc = await SystemPreferencesModel.findOne({ key: this.kubiAiConfigKey }).lean();
+        const value = doc?.value as Partial<KubiAiConfigRecord> | undefined;
+        return value?.provider && value.model && value.encryptedApiKey && value.updatedAt ? value as KubiAiConfigRecord : null;
+    }
+
+    async saveKubiAiConfig(config: KubiAiConfigRecord): Promise<void> {
+        await this.initialize();
+        await SystemPreferencesModel.findOneAndUpdate(
+            { key: this.kubiAiConfigKey },
+            { key: this.kubiAiConfigKey, value: config },
             { upsert: true, new: true }
         );
     }

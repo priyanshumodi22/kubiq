@@ -2,9 +2,10 @@ import { Request, Response, Router } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { DatabaseFactory } from '../database/DatabaseFactory';
-import axios from 'axios';
 import { isPathSafe } from '../utils/pathSecurity';
 import { AICacheService } from '../services/AICacheService';
+import { KubiAiConfigService } from '../services/KubiAiConfigService';
+import { KubiProviderService } from '../services/KubiProviderService';
 
 export const logRouter = Router();
 
@@ -151,10 +152,9 @@ logRouter.post('/summarize', async (req: Request, res: Response) => {
         }
 
         // 2. AI Provider Configuration
-        const aiProvider = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
-        const apiKey = process.env.AI_API_KEY;
+        const aiConfig = await KubiAiConfigService.getResolvedConfig();
 
-        if (!apiKey) {
+        if (!aiConfig) {
             // Smart local digest fallback if they have a license but forgot their API key
             const errCount = logs.filter(l => l.level?.toUpperCase() === 'ERROR').length;
             const warnCount = logs.filter(l => l.level?.toUpperCase() === 'WARN').length;
@@ -167,7 +167,7 @@ logRouter.post('/summarize', async (req: Request, res: Response) => {
 - **Warnings**: ${warnCount}
 - **Total Logs**: ${logs.length}
 
-Please add your OpenAI, Anthropic, or Gemini API key to your \`.env\` file for deep AI analysis.`;
+Ask a kubiq administrator to configure Kubi AI for deep analysis.`;
             return res.json({ summary: fallbackMarkdown });
         }
 
@@ -184,44 +184,7 @@ ${logLines}`;
 
         let summary = '';
 
-        if (aiProvider === 'openai') {
-            const url = 'https://api.openai.com/v1/chat/completions';
-            const response = await axios.post(url, {
-                model: 'gpt-4o',
-                messages: [{ role: 'user', content: prompt }]
-            }, {
-                headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }
-            });
-            summary = response.data.choices[0].message.content;
-
-        } else if (aiProvider === 'anthropic') {
-            const url = 'https://api.anthropic.com/v1/messages';
-            const response = await axios.post(url, {
-                model: 'claude-3-5-sonnet-latest',
-                max_tokens: 1024,
-                messages: [{ role: 'user', content: prompt }]
-            }, {
-                headers: {
-                    'x-api-key': apiKey,
-                    'anthropic-version': '2023-06-01',
-                    'Content-Type': 'application/json'
-                }
-            });
-            summary = response.data.content[0].text;
-
-        } else {
-            // Default to Gemini
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-            const response = await axios.post(url, {
-                contents: [{ parts: [{ text: prompt }] }]
-            }, { headers: { 'Content-Type': 'application/json' } });
-
-            if (response.data && response.data.candidates && response.data.candidates[0]) {
-                summary = response.data.candidates[0].content.parts[0].text;
-            } else {
-                throw new Error('Invalid response format from Gemini API');
-            }
-        }
+        summary = await new KubiProviderService().complete([{ role: 'user', content: prompt }], 1024);
 
         if (summary) {
             // Strip markdown block wrappers that LLMs sometimes add (e.g. ```markdown ... ```)

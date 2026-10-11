@@ -6,6 +6,14 @@ export type LicenseActivation = {
   activationId: string;
 };
 
+/** Encrypted at the service layer before persistence; never expose this record to a client. */
+export type KubiAiConfigRecord = {
+  provider: 'gemini' | 'openai' | 'anthropic';
+  model: string;
+  encryptedApiKey: string;
+  updatedAt: number;
+};
+
 export interface ISystemRepository {
   initialize(): Promise<void>;
   saveMetrics(metrics: SystemMetrics): Promise<void>;
@@ -16,4 +24,6 @@ export interface ISystemRepository {
   updateApmConfig(config: { ignoredRoutes: string[] }): Promise<void>;
   getLicenseActivation(): Promise<LicenseActivation | null>;
   saveLicenseActivation(activation: LicenseActivation): Promise<void>;
+  getKubiAiConfig(): Promise<KubiAiConfigRecord | null>;
+  saveKubiAiConfig(config: KubiAiConfigRecord): Promise<void>;
 }
