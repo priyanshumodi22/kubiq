@@ -1,4 +1,8 @@
-import { AuditLogFilters, IAuditLogRepository } from '../../interfaces/IAuditLogRepository';
+import {
+  AuditLogFilters,
+  AuditLogPage,
+  IAuditLogRepository,
+} from '../../interfaces/IAuditLogRepository';
 import { AuditLogEntry } from '../../../services/AuditLogService';
 import { AuditLogModel } from '../../schemas/AuditLogSchema';
 
@@ -11,34 +15,30 @@ export class MongoAuditLogRepository implements IAuditLogRepository {
     const fullEntry: AuditLogEntry = {
       id: `audit-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
       timestamp: new Date().toISOString(),
-      ...entry
+      ...entry,
     };
 
     await AuditLogModel.create(fullEntry);
     return fullEntry;
   }
 
-  public async getAuditLogs(limit: number = 100, search?: string, filters?: AuditLogFilters): Promise<AuditLogEntry[]> {
+  public async getAuditLogs(
+    limit: number = 100,
+    search?: string,
+    filters?: AuditLogFilters
+  ): Promise<AuditLogEntry[]> {
     let query: any = {};
     if (search && search.trim()) {
       const escaped = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(escaped, 'i');
       query = {
-        $or: [
-          { user: regex },
-          { action: regex },
-          { target: regex },
-          { details: regex }
-        ]
+        $or: [{ user: regex }, { action: regex }, { target: regex }, { details: regex }],
       };
     }
 
     if (filters?.action) query.action = filters.action;
     if (filters?.target) query.target = filters.target;
-    const docs = await AuditLogModel.find(query)
-      .sort({ timestamp: -1 })
-      .limit(limit)
-      .lean();
+    const docs = await AuditLogModel.find(query).sort({ timestamp: -1 }).limit(limit).lean();
 
     return docs.map((doc: any) => ({
       id: doc.id,
@@ -47,7 +47,40 @@ export class MongoAuditLogRepository implements IAuditLogRepository {
       action: doc.action,
       target: doc.target,
       details: doc.details,
-      ip: doc.ip
+      ip: doc.ip,
     }));
+  }
+
+  public async getAuditLogPage(
+    limit: number,
+    offset: number,
+    search?: string
+  ): Promise<AuditLogPage> {
+    const query = this.queryForSearch(search);
+    const safeLimit = Math.max(1, Math.min(Number(limit) || 25, 100));
+    const safeOffset = Math.max(0, Number(offset) || 0);
+    const [docs, total] = await Promise.all([
+      AuditLogModel.find(query).sort({ timestamp: -1 }).skip(safeOffset).limit(safeLimit).lean(),
+      AuditLogModel.countDocuments(query),
+    ]);
+    return {
+      records: docs.map((doc: any) => ({
+        id: doc.id,
+        timestamp: doc.timestamp,
+        user: doc.user,
+        action: doc.action,
+        target: doc.target,
+        details: doc.details,
+        ip: doc.ip,
+      })),
+      total,
+    };
+  }
+
+  private queryForSearch(search?: string): any {
+    if (!search?.trim()) return {};
+    const escaped = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escaped, 'i');
+    return { $or: [{ user: regex }, { action: regex }, { target: regex }, { details: regex }] };
   }
 }

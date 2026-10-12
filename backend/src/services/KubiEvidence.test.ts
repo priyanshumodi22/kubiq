@@ -6,11 +6,12 @@ const traceRepository = { getServiceMetrics: jest.fn<any>(), getRecentTraces: je
 const auditRepository = { getAuditLogs: jest.fn<any>() };
 const k8s = { kubiReaderAvailable: true, defaultContext: 'cluster', getNamespaces: jest.fn<any>(), getPods: jest.fn<any>(), getEvents: jest.fn<any>(), getDeployments: jest.fn<any>(), getPodLogs: jest.fn<any>() };
 const notificationManager = { getHistory: jest.fn<any>() };
+const rbacConfig = { version: 1 as const, updatedAt: 1, roles: [{ id: 'incident-kubi', name: 'incident-kubi', description: '', permissions: ['kubi.use', 'services.read'], builtIn: false }] };
 
 jest.mock('../database/DatabaseFactory', () => ({
   DatabaseFactory: {
     getLogRepository: jest.fn(async () => logRepository), getTraceRepository: jest.fn(async () => traceRepository),
-    getAuditLogRepository: jest.fn(async () => auditRepository), getUserRepository: jest.fn(), isApmSupported: jest.fn(() => true),
+    getAuditLogRepository: jest.fn(async () => auditRepository), getUserRepository: jest.fn(), getSystemRepository: jest.fn(async () => ({ getRbacConfig: jest.fn(async () => rbacConfig) })), isApmSupported: jest.fn(() => true),
   },
 }));
 jest.mock('./ServiceMonitor', () => ({ ServiceMonitor: { getInstance: () => serviceMonitor } }));
@@ -104,6 +105,20 @@ describe('kubi read-only evidence collection', () => {
     expect(evidence.map((item: any) => item.reference.type)).toEqual(expect.arrayContaining(['service', 'logs', 'trace']));
     expect(tracePayload.slowDatabaseSpans[0].attributes['db.statement']).toBeUndefined();
     expect(logRepository.queryLogs).toHaveBeenCalledWith('api', expect.objectContaining({ limit: 50 }));
+  });
+
+  it('allows the kubiq-user evidence categories while retaining sensitive SQL masking', async () => {
+    const evidence = await (new KubiService() as any).collectEvidence('Show logs and slow database queries for api', { user: { role: 'kubiq-user' }, username: 'user', k8sContext: 'cluster' });
+    const tracePayload = evidence.find((item: any) => item.reference.type === 'trace').payload;
+    expect(evidence.map((item: any) => item.reference.type)).toEqual(expect.arrayContaining(['service', 'logs', 'trace']));
+    expect(tracePayload.slowDatabaseSpans[0].attributes['db.statement']).toBeUndefined();
+  });
+
+  it('keeps a custom kubi role within its explicitly granted evidence scope', async () => {
+    const evidence = await (new KubiService() as any).collectEvidence('Show service health and logs for api', { user: { role: 'incident-kubi', roles: ['incident-kubi'] }, username: 'custom', k8sContext: 'cluster' });
+    expect(evidence.map((item: any) => item.reference.type)).toContain('service');
+    expect(evidence.map((item: any) => item.reference.type)).not.toContain('logs');
+    expect(logRepository.queryLogs).not.toHaveBeenCalled();
   });
 
   it('exposes notification history and redacted administrator audit history only to admins', async () => {

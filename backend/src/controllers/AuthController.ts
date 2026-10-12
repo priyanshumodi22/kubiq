@@ -5,8 +5,14 @@ import { DatabaseFactory } from '../database/DatabaseFactory';
 import { User, AuthResponse } from '../types';
 import { AuditLogService } from '../services/AuditLogService';
 import { getUserFromReq } from '../middleware/auth';
+import { RbacRoleService } from '../services/RbacRoleService';
+import { getNativeJwtSecret, isNativeJwtConfigurationError } from '../utils/nativeJwt';
 
 export class AuthController {
+  private static issueNativeToken(user: User): string {
+    const secret = getNativeJwtSecret();
+    return jwt.sign({ sub: user.id, username: user.username, preferred_username: user.username, roles: user.roles?.length ? user.roles : [user.role], allowedNamespaces: user.allowedNamespaces || ['apps', 'default'], type: 'native' }, secret, { expiresIn: '24h' });
+  }
   
   static async login(req: Request, res: Response) {
     try {
@@ -33,19 +39,10 @@ export class AuthController {
       }
 
       // Generate JWT
-      const secret = process.env.JWT_SECRET || 'dev-secret-do-not-use-in-prod';
-      const token = jwt.sign(
-        { 
-            sub: user.id, 
-            username: user.username,
-            preferred_username: user.username, 
-            roles: [user.role],
-            allowedNamespaces: user.allowedNamespaces || (user.role === 'kubiq-viewer' ? ['apps', 'default'] : undefined),
-            type: 'native'
-        }, 
-        secret, 
-        { expiresIn: '24h' }
-      );
+      // Express invokes the route handler as an unbound function, so do not
+      // depend on `this` here. Referencing the class keeps Native login usable
+      // in the actual HTTP flow as well as direct controller tests.
+      const token = AuthController.issueNativeToken(user);
 
       // Update last login
       await repo.updateLastLogin(user.id);
@@ -70,7 +67,24 @@ export class AuthController {
 
     } catch (error: any) {
       console.error('Login error:', error);
+      if (isNativeJwtConfigurationError(error)) return res.status(503).json({ message: error.message });
       res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  static async refresh(req: Request, res: Response) {
+    try {
+      const header = String(req.headers.authorization || '');
+      if (!header.startsWith('Bearer ')) return res.status(401).json({ message: 'A Native authentication token is required.' });
+      const payload = jwt.verify(header.slice(7), getNativeJwtSecret()) as any;
+      if (payload.type !== 'native' || !payload.sub) return res.status(401).json({ message: 'Invalid Native authentication token.' });
+      const user = await (await DatabaseFactory.getUserRepository()).findById(String(payload.sub));
+      if (!user || user.enabled === false) return res.status(403).json({ message: 'Account is disabled or no longer available.' });
+      // Resolve current roles/scopes from persistence so revoked access takes effect at refresh.
+      return res.json({ token: AuthController.issueNativeToken(user), user: { ...user, passwordHash: undefined } });
+    } catch (error) {
+      if (isNativeJwtConfigurationError(error)) return res.status(503).json({ message: error.message });
+      return res.status(401).json({ message: 'Invalid or expired Native authentication token.' });
     }
   }
 
@@ -78,8 +92,8 @@ export class AuthController {
     try {
       const { username, password, email } = req.body;
 
-      if (!username || !password) {
-        return res.status(400).json({ message: 'Username and password are required' });
+      if (!/^[a-zA-Z0-9._-]{3,100}$/.test(String(username || '')) || typeof password !== 'string' || password.length < 12) {
+        return res.status(400).json({ message: 'Provide a valid username and a password of at least 12 characters.' });
       }
 
       const repo = await DatabaseFactory.getUserRepository();
@@ -95,7 +109,8 @@ export class AuthController {
           username,
           passwordHash: hash,
           email,
-          role: 'kubiq-viewer' // Default role
+          role: 'kubiq-viewer',
+          roles: ['kubiq-viewer'],
       });
 
       res.status(201).json({ 
@@ -135,13 +150,20 @@ export class AuthController {
           }
 
           // Generate fresh token with updated roles
-          const secret = process.env.JWT_SECRET || 'dev-secret-do-not-use-in-prod';
+          let secret: string;
+          try {
+            secret = getNativeJwtSecret();
+          } catch (error) {
+            if (isNativeJwtConfigurationError(error)) return res.status(503).json({ message: error.message });
+            throw error;
+          }
           const token = jwt.sign(
             { 
                 sub: freshUser.id, 
                 username: freshUser.username,
                 preferred_username: freshUser.username, 
-                roles: [freshUser.role],
+                roles: freshUser.roles?.length ? freshUser.roles : [freshUser.role],
+                allowedNamespaces: freshUser.allowedNamespaces || ['apps', 'default'],
                 type: 'native'
             }, 
             secret, 
@@ -152,7 +174,9 @@ export class AuthController {
               id: freshUser.id,
               username: freshUser.username,
               email: freshUser.email,
-              roles: [freshUser.role], // Fresh role from DB
+              avatarUrl: freshUser.avatarUrl,
+              roles: freshUser.roles?.length ? freshUser.roles : [freshUser.role],
+              permissions: await RbacRoleService.getEffectivePermissions(freshUser),
               type: 'native',
               authenticated: true,
               token // Return new token
@@ -164,6 +188,7 @@ export class AuthController {
             email: user.email,
             name: user.name,
             roles: user.roles || [],
+            permissions: await RbacRoleService.getEffectivePermissions(user),
             type: 'keycloak',
             authenticated: true,
           });
@@ -174,10 +199,22 @@ export class AuthController {
   static async updateProfile(req: Request, res: Response) {
       try {
           const userId = (req as any).user.sub;
-          const { username, email } = req.body;
+          const { username, email, avatarUrl } = req.body;
+          if ((req as any).user.type !== 'native') {
+            return res.status(403).json({ message: 'Profile details are managed by your identity provider' });
+          }
           
           if (!username) {
                return res.status(400).json({ message: 'Username is required' });
+          }
+
+          if (avatarUrl !== undefined && avatarUrl !== null) {
+            const validAvatar = typeof avatarUrl === 'string'
+              && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/i.test(avatarUrl)
+              && avatarUrl.length <= 360_000;
+            if (!validAvatar) {
+              return res.status(400).json({ message: 'Display picture must be a PNG, JPEG, or WebP image under 250 KB.' });
+            }
           }
 
           const repo = await DatabaseFactory.getUserRepository();
@@ -190,7 +227,7 @@ export class AuthController {
              }
           }
 
-          const updated = await repo.updateUser(userId, { username, email });
+          const updated = await repo.updateUser(userId, { username, email, avatarUrl: avatarUrl ?? undefined });
           
           AuditLogService.getInstance().log({
               user: getUserFromReq(req),

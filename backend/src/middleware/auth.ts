@@ -1,5 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { DatabaseFactory } from '../database/DatabaseFactory';
+import { RbacService } from '../services/RbacService';
+import { RbacRoleService } from '../services/RbacRoleService';
+import axios from 'axios';
+import { createPublicKey } from 'crypto';
+import { AuditLogService } from '../services/AuditLogService';
+import { getNativeJwtSecret, isNativeJwtConfigurationError } from '../utils/nativeJwt';
 
 interface KeycloakConfig {
   realm: string;
@@ -15,10 +21,67 @@ const keycloakConfig: KeycloakConfig = {
   enabled: process.env.KEYCLOAK_ENABLED === 'true',
 };
 
+export type AuthenticationProvider = 'native' | 'keycloak';
+const nativeAuthEnabled = process.env.NATIVE_AUTH_ENABLED !== 'false';
+const requestedAuthProvider = process.env.AUTH_PROVIDER?.trim().toLowerCase();
+const authProvider: AuthenticationProvider | null = requestedAuthProvider === 'native' || requestedAuthProvider === 'keycloak'
+  ? requestedAuthProvider
+  : keycloakConfig.enabled ? 'keycloak' : nativeAuthEnabled ? 'native' : null;
+
+export const getAuthenticationProvider = (): AuthenticationProvider | null => authProvider;
+
 // Cache for validated tokens (in production, use Redis or similar)
 const tokenCache = new Map<string, { exp: number; user: any }>();
+const jwksCache = new Map<string, { expiresAt: number; keys: any[] }>();
 
 import jwt from 'jsonwebtoken';
+
+const keycloakIssuer = () => `${keycloakConfig.authServerUrl.replace(/\/$/, '')}/realms/${encodeURIComponent(keycloakConfig.realm)}`;
+
+export const verifyKeycloakToken = async (token: string): Promise<any> => {
+  const decoded = jwt.decode(token, { complete: true });
+  if (!decoded || typeof decoded === 'string' || !decoded.header.kid || decoded.header.alg !== 'RS256') throw new Error('Invalid Keycloak token header');
+  const issuer = keycloakIssuer();
+  const cached = jwksCache.get(issuer);
+  const keys = cached && cached.expiresAt > Date.now()
+    ? cached.keys
+    : (await axios.get(`${issuer}/protocol/openid-connect/certs`, { timeout: 5000, maxRedirects: 0 })).data.keys;
+  if (!cached || cached.expiresAt <= Date.now()) jwksCache.set(issuer, { keys, expiresAt: Date.now() + 10 * 60_000 });
+  const jwk = keys.find((key: any) => key.kid === decoded.header.kid && key.kty === 'RSA');
+  if (!jwk) throw new Error('Keycloak signing key not found');
+  const key = createPublicKey({ key: jwk, format: 'jwk' }).export({ type: 'spki', format: 'pem' });
+  return jwt.verify(token, key, { algorithms: ['RS256'], issuer, audience: keycloakConfig.clientId });
+};
+
+/** Authenticate a Socket.IO handshake with the same provider and claims used by HTTP routes. */
+export const getSocketUser = async (token: unknown): Promise<any | null> => {
+  if (typeof token !== 'string' || !token || !authProvider) return null;
+  try {
+    if (authProvider === 'native') {
+      const decoded = jwt.verify(token, getNativeJwtSecret()) as any;
+      if (decoded?.type !== 'native') return null;
+      const username = decoded.username || decoded.preferred_username || decoded.sub || 'admin';
+      return { ...decoded, username, preferred_username: username };
+    }
+    const payload = await verifyKeycloakToken(token) as any;
+    const roles = payload.resource_access?.[keycloakConfig.clientId]?.roles || [];
+    const username = payload.preferred_username || payload.username || payload.name || payload.sub || 'admin';
+    return { ...payload, username, preferred_username: username, roles: [...new Set(roles)], type: 'keycloak' };
+  } catch {
+    return null;
+  }
+};
+
+/** Namespace scope for websocket requests mirrors checkNamespaceAccess for HTTP routes. */
+export const canAccessKubernetesNamespace = async (user: any, namespace: unknown): Promise<boolean> => {
+  const requested = typeof namespace === 'string' ? namespace.trim().toLowerCase() : '';
+  if (!requested || requested === 'all' || requested === '*') return false;
+  if (await RbacRoleService.hasPermission(user || {}, 'kubernetes.namespaces.all')) return true;
+  const allowed = Array.isArray(user?.allowedNamespaces) && user.allowedNamespaces.length > 0
+    ? user.allowedNamespaces
+    : ['apps', 'default'];
+  return allowed.some((value: unknown) => String(value).trim().toLowerCase() === requested);
+};
 
 // ... config ...
 
@@ -36,9 +99,8 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
   }
 
   if (!token) {
-    const nativeAuthEnabled = process.env.NATIVE_AUTH_ENABLED !== 'false';
     // If no auth provider is configured, reject with a configuration error — never bypass
-    if (!keycloakConfig.enabled && !nativeAuthEnabled) {
+    if (!authProvider) {
         return res.status(503).json({
           error: 'Auth Not Configured',
           message: 'No authentication provider is enabled. Set NATIVE_AUTH_ENABLED=true or KEYCLOAK_ENABLED=true and restart.',
@@ -50,9 +112,10 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     });
   }
 
-  // 1. Try Native Auth (JWT Verify)
-  try {
-      const secret = process.env.JWT_SECRET || 'dev-secret-do-not-use-in-prod';
+  // A deployment accepts tokens from exactly one selected provider.
+  if (authProvider === 'native') {
+    try {
+      const secret = getNativeJwtSecret();
       if (secret) {
           const decoded = jwt.verify(token, secret) as any;
           if (decoded && decoded.type === 'native') {
@@ -65,13 +128,18 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
               return next();
           }
       }
-  } catch (err) {
-      // Ignore error, try Keycloak next
+    } catch (err) {
+      if (isNativeJwtConfigurationError(err)) {
+        return res.status(503).json({ error: 'NATIVE_JWT_SECRET_UNAVAILABLE', message: err.message });
+      }
+      return res.status(401).json({ message: 'Invalid or expired Native authentication token' });
+    }
+    return res.status(401).json({ message: 'Invalid Native authentication token' });
   }
 
-  // 2. Try Keycloak (Existing logic)
-  if (!keycloakConfig.enabled) {
-      return res.status(401).json({ message: 'Native auth failed and Keycloak disabled' });
+  // Keycloak is the selected provider from this point onward.
+  if (authProvider !== 'keycloak' || !keycloakConfig.enabled) {
+      return res.status(503).json({ error: 'AUTH_PROVIDER_UNAVAILABLE', message: 'The selected authentication provider is not configured.' });
   }
 
   try {
@@ -82,31 +150,13 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
       return next();
     }
 
-    // Decode (Keycloak)
-      const tokenParts = token.split('.');
-      if (tokenParts.length !== 3) {
-        throw new Error('Invalid token format');
-      }
-
-      const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
-
-      // Check token expiration
-      if (payload.exp && payload.exp < Date.now() / 1000) {
-        return res.status(401).json({
-          error: 'Unauthorized',
-          message: 'Token has expired',
-        });
-      }
+    // Verify the Keycloak signature, issuer, audience and expiry against its JWKS.
+      const payload = await verifyKeycloakToken(token);
 
       // Extract roles from token
       const roles: string[] = [];
 
-      // Get realm roles
-      if (payload.realm_access?.roles) {
-        roles.push(...payload.realm_access.roles);
-      }
-
-      // Get client-specific roles
+      // kubiq authorizes only client roles; realm roles are intentionally ignored.
       if (payload.resource_access?.[keycloakConfig.clientId]?.roles) {
         roles.push(...payload.resource_access[keycloakConfig.clientId].roles);
       }
@@ -147,8 +197,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
 // Optional: Middleware to check specific roles
 export const requireRole = (...requiredRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const nativeAuthEnabled = process.env.NATIVE_AUTH_ENABLED !== 'false';
-    if (!keycloakConfig.enabled && !nativeAuthEnabled) {
+    if (!authProvider) {
       return res.status(503).json({
         error: 'Auth Not Configured',
         message: 'No authentication provider is enabled. Set NATIVE_AUTH_ENABLED=true or KEYCLOAK_ENABLED=true and restart.',
@@ -177,17 +226,42 @@ export const requireRole = (...requiredRoles: string[]) => {
   };
 };
 
+/**
+ * Authoritative backend permission guard. UI visibility must never be relied on
+ * for authorization because callers can invoke API routes directly.
+ */
+export const requirePermission = (...requiredPermissions: string[]) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Authentication is required.' });
+    }
+    const allowed = (await Promise.all(requiredPermissions.map(permission => RbacRoleService.hasPermission(user, permission)))).some(Boolean);
+    if (!allowed) {
+      if (requiredPermissions.includes('kubi.use')) {
+        AuditLogService.getInstance().log({
+          user: getUserFromReq(req), action: 'KUBI_PERMISSION_DENIED', target: 'kubi/access',
+          details: `Denied kubi access; missing one of: ${requiredPermissions.join(', ')}.`, ip: req.ip,
+        });
+      }
+      return res.status(403).json({
+        error: 'RBAC_FORBIDDEN',
+        message: 'Your kubiq role does not include the required permission.',
+        requiredPermissions,
+      });
+    }
+    next();
+  };
+};
+
 export const checkNamespaceAccess = async (req: Request, res: Response, next: NextFunction) => {
     const user = req.user as any;
     const rawNs = req.params.ns;
     const requestedNs = Array.isArray(rawNs) ? rawNs[0] : rawNs;
 
-    if (!requestedNs || requestedNs === 'all' || requestedNs === '*') {
-      return next();
-    }
-
-    // Admins have access to all cluster namespaces
-    if (user && (user.roles?.includes('kubiq-admin') || user.role === 'kubiq-admin')) {
+    // Explicit capability, not a role-name bypass. This keeps custom roles
+    // constrained unless they are deliberately granted cluster-wide scope.
+    if (await RbacRoleService.hasPermission(user || {}, 'kubernetes.namespaces.all')) {
       return next();
     }
 
@@ -208,7 +282,14 @@ export const checkNamespaceAccess = async (req: Request, res: Response, next: Ne
     }
 
     if (!allowed) {
-      allowed = user?.allowedNamespaces || (user?.role === 'kubiq-viewer' || user?.roles?.includes('kubiq-viewer') ? ['apps', 'default'] : undefined);
+      allowed = user?.allowedNamespaces || ['apps', 'default'];
+    }
+
+    if (!requestedNs || requestedNs === 'all' || requestedNs === '*') {
+      return res.status(403).json({
+        error: 'RBAC_FORBIDDEN',
+        message: 'A specific permitted namespace is required for this request.',
+      });
     }
 
     if (allowed && Array.isArray(allowed) && allowed.length > 0) {

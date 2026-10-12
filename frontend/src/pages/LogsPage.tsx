@@ -13,8 +13,8 @@ import { ServiceStatus } from '../types';
 
 export default function LogsPage() {
     const { services, refresh } = useServices();
-    const { hasRole } = useAuth();
-    const isAdmin = hasRole('kubiq-admin');
+    const { hasPermission } = useAuth();
+    const isAdmin = hasPermission('services.manage') && hasPermission('logs.raw.read');
     const { addToast } = useToast();
     const [selectedServiceName, setSelectedServiceName] = useState<string | null>(null);
     
@@ -82,7 +82,7 @@ export default function LogsPage() {
             
             {/* Background Effects (Matched to Dashboard) */}
             <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-                <div className="absolute inset-0 bg-gradient-to-br from-bg via-bg to-bg-surface"></div>
+                <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
                 <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
                 <div className="absolute top-1/3 -right-20 w-80 h-80 bg-primary/3 rounded-full blur-3xl"></div>

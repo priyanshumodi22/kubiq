@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Virtuoso } from 'react-virtuoso';
 import io from 'socket.io-client';
-import { Play, Pause, Trash2, ArrowDown, FileText, ChevronDown, Check, Activity, Search, Copy, X } from 'lucide-react';
+import { Play, Pause, Trash2, ArrowDown, FileText, ChevronDown, Check, Activity, Search, Copy, X, Download } from 'lucide-react';
 import { LogSource } from '../types';
 import { LogSearch } from './LogSearch';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,6 +10,7 @@ import { apiClient } from '../services/api';
 import { ProUpgradeModal } from './ProUpgradeModal';
 import { AiStatusOrb } from './AiStatusOrb';
 import { AiSummaryContent } from './AiSummaryContent';
+import { useAuth } from '../contexts/AuthContext';
 
 interface LogViewerProps {
     logPath: string; // Legacy fallback
@@ -151,6 +152,7 @@ const LEVEL_COLORS: Record<LogLine['level'], string> = {
 
 
 export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpen, onClose, serviceName, isEmbedded = false }) => {
+    const { hasPermission } = useAuth();
     // Determine effective sources
     const effectiveSources = (logSources && logSources.length > 0)
         ? logSources
@@ -242,7 +244,8 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
 
         const socket = io(backendUrl, {
             path: `${contextPath}/socket.io`,
-            transports: ['websocket']
+            transports: ['websocket'],
+            auth: { token: apiClient.getToken() }
         });
 
         socketRef.current = socket;
@@ -355,6 +358,19 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
         }
     };
 
+    const exportBufferedLogs = () => {
+        const csv = ['Timestamp,Level,Message', ...logs.map(log => {
+            const field = (value: string) => `"${value.replace(/"/g, '""')}"`;
+            return `${field(new Date(log.id).toISOString())},${field(log.level)},${field(log.content)}`;
+        })].join('\n');
+        const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `kubiq-${serviceName}-logs-${Date.now()}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
     // Auto-scroll logic handled mostly by Virtuoso 'followOutput'
 
     if (!isOpen) return null;
@@ -369,7 +385,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-8"
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-9999 flex items-center justify-center p-8"
                             onClick={() => setShowSummaryModal(false)}
                         >
                             <motion.div
@@ -434,7 +450,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 bg-[#161920]">
                     <div className="flex items-center space-x-3">
-                        <FileText className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                        <FileText className="w-5 h-5 text-gray-400 shrink-0" />
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                                 <h2 className="text-sm font-bold text-gray-200 whitespace-nowrap">{serviceName} Logs</h2>
@@ -528,7 +544,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                         </div>
                     </div>
 
-                    <div className="flex items-center space-x-2 ml-4 flex-shrink-0">
+                    <div className="flex items-center space-x-2 ml-4 shrink-0">
                         {/* Tab Switcher */}
                         <div className="flex bg-black/40 rounded-lg p-1 mr-2 border border-gray-800">
                             <button
@@ -548,6 +564,15 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                         </div>
 
                         {activeTab === 'live' && (
+                            <>
+                            {hasPermission('logs.export') && <button
+                                onClick={exportBufferedLogs}
+                                disabled={logs.length === 0}
+                                className="p-1.5 text-gray-400 hover:text-primary hover:bg-white/5 rounded-lg transition-colors disabled:opacity-40"
+                                title="Export buffered logs as CSV"
+                            >
+                                <Download className="w-4 h-4" />
+                            </button>}
                             <button
                                 onClick={() => setLogs([])}
                                 className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-white/5 rounded-lg transition-colors"
@@ -555,6 +580,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                             >
                                 <Trash2 className="w-4 h-4" />
                             </button>
+                            </>
                         )}
                         {!isEmbedded && (
                             <button
@@ -690,7 +716,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
 
     return (
         <>
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
                 {content}
             </div>
             {modals}

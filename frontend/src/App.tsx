@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import StatusPage from './pages/StatusPage';
 import Layout from './components/Layout';
 import AdminUsers from './pages/AdminUsers';
@@ -10,6 +10,7 @@ import LogsPage from './pages/LogsPage';
 import ApmDashboard from './pages/ApmDashboard';
 import KubernetesDashboard from './pages/KubernetesDashboard';
 import { AuditLogViewer } from './components/AuditLogViewer';
+import SystemAdministration from './pages/SystemAdministration';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, authEnabled, nativeAuthEnabled } = useAuth();
@@ -50,16 +51,29 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { hasRole } = useAuth();
-  if (!hasRole('kubiq-admin')) {
-    return <Navigate to="/dashboard" replace />;
+  const { hasPermission, permissionsLoaded } = useAuth();
+  if (!permissionsLoaded) return <div className="flex min-h-screen items-center justify-center bg-bg"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
+  if (!hasPermission('system.access')) {
+    return <PermissionDeniedRedirect />;
   }
   return <>{children}</>;
 }
 
-import { ToastProvider } from './contexts/ToastContext';
+function PermissionRoute({ permission, children }: { permission: string; children: React.ReactNode }) {
+  const { hasPermission, permissionsLoaded } = useAuth();
+  if (!permissionsLoaded) return <div className="flex min-h-screen items-center justify-center bg-bg"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
+  return hasPermission(permission) ? <>{children}</> : <PermissionDeniedRedirect />;
+}
+
+import { ToastProvider, useToast } from './contexts/ToastContext';
 
 import Profile from './pages/Profile';
+
+function PermissionDeniedRedirect() {
+  const { warning } = useToast();
+  useEffect(() => { warning('You do not have permission to access that area.'); }, [warning]);
+  return <Navigate to="/dashboard" replace />;
+}
 
 function App() {
   // console.log('🚀 [App] BASE_URL:', import.meta.env.BASE_URL);
@@ -70,11 +84,11 @@ function App() {
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            <Route path="/register" element={<Navigate to="/login" replace />} />
             <Route path="/status/:slug" element={<StatusPage />} />
             <Route path="/admin/users" element={
               <ProtectedRoute>
-                <AdminUsers />
+                <PermissionRoute permission="users.manage"><AdminUsers /></PermissionRoute>
               </ProtectedRoute>
             } />
             <Route
@@ -82,7 +96,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <LogsPage />
+                    <PermissionRoute permission="logs.read"><LogsPage /></PermissionRoute>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -98,11 +112,23 @@ function App() {
               }
             />
             <Route
+              path="/system"
+              element={
+                <ProtectedRoute>
+                  <AdminRoute>
+                    <Layout>
+                      <SystemAdministration />
+                    </Layout>
+                  </AdminRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <Dashboard />
+                    <PermissionRoute permission="services.read"><Dashboard /></PermissionRoute>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -112,7 +138,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <ApmDashboard />
+                    <PermissionRoute permission="apm.read"><ApmDashboard /></PermissionRoute>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -122,7 +148,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <KubernetesDashboard />
+                    <PermissionRoute permission="kubernetes.read"><KubernetesDashboard /></PermissionRoute>
                   </Layout>
                 </ProtectedRoute>
               }
@@ -131,11 +157,11 @@ function App() {
               path="/audit-logs"
               element={
                 <ProtectedRoute>
-                  <AdminRoute>
+                  <PermissionRoute permission="audit.read">
                     <Layout>
                       <AuditLogViewer />
                     </Layout>
-                  </AdminRoute>
+                  </PermissionRoute>
                 </ProtectedRoute>
               }
             />

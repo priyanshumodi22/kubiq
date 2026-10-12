@@ -1,7 +1,8 @@
 import express from 'express';
 import { NotificationManager } from '../services/NotificationManager';
 import { NotificationChannel } from '../types';
-import { requireRole, hasRole, getUserFromReq } from '../middleware/auth';
+import { requirePermission, getUserFromReq } from '../middleware/auth';
+import { RbacRoleService } from '../services/RbacRoleService';
 import { AuditLogService } from '../services/AuditLogService';
 
 const router = express.Router();
@@ -9,14 +10,13 @@ const notificationManager = NotificationManager.getInstance();
 const auditService = AuditLogService.getInstance();
 
 // GET /api/notifications - List all channels
-router.get('/', (req, res) => {
+router.get('/', requirePermission('notifications.read'), async (req, res) => {
   try {
     const channels = notificationManager.getChannels();
     
-    // Check if user is admin
-    const isAdmin = hasRole(req.user, 'kubiq-admin');
+    const canManageNotifications = await RbacRoleService.hasPermission(req.user || {}, 'notifications.manage');
 
-    if (!isAdmin) {
+    if (!canManageNotifications) {
       // Mask sensitive data for non-admins
       const maskedChannels = channels.map(channel => ({
         ...channel,
@@ -53,7 +53,7 @@ function maskEmail(emailStr: string): string {
 }
 
 // POST /api/notifications - Create a channel (Admin only)
-router.post('/', requireRole('kubiq-admin'), async (req, res) => {
+router.post('/', requirePermission('notifications.manage'), async (req, res) => {
   try {
     const { name, type, config, enabled, events } = req.body;
     
@@ -89,7 +89,7 @@ router.post('/', requireRole('kubiq-admin'), async (req, res) => {
 });
 
 // PUT /api/notifications/:id - Update a channel (Admin only)
-router.put('/:id', requireRole('kubiq-admin'), async (req, res) => {
+router.put('/:id', requirePermission('notifications.manage'), async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -114,7 +114,7 @@ router.put('/:id', requireRole('kubiq-admin'), async (req, res) => {
 });
 
 // DELETE /api/notifications/:id - Delete a channel (Admin only)
-router.delete('/:id', requireRole('kubiq-admin'), async (req, res) => {
+router.delete('/:id', requirePermission('notifications.manage'), async (req, res) => {
   try {
     const { id } = req.params;
     await notificationManager.deleteChannel(id as string);
@@ -134,10 +134,10 @@ router.delete('/:id', requireRole('kubiq-admin'), async (req, res) => {
 });
 
 // POST /api/notifications/:id/test - Test a channel (Allowed for all authenticated users)
-router.post('/:id/test', async (req, res) => {
+router.post('/:id/test', requirePermission('notifications.manage'), async (req, res) => {
   try {
     const { id } = req.params;
-    await notificationManager.sendTest(id);
+    await notificationManager.sendTest(id as string);
 
     auditService.log({
       user: getUserFromReq(req),
@@ -154,7 +154,7 @@ router.post('/:id/test', async (req, res) => {
 });
 
 // GET /api/notifications/history - View alert dispatch history
-router.get('/history', (req, res) => {
+router.get('/history', requirePermission('notifications.read'), (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
     const history = notificationManager.getHistory(limit);
@@ -165,7 +165,7 @@ router.get('/history', (req, res) => {
 });
 
 // DELETE /api/notifications/history - Clear alert dispatch history
-router.delete('/history', requireRole('kubiq-admin'), (req, res) => {
+router.delete('/history', requirePermission('notifications.manage'), (req, res) => {
   try {
     notificationManager.clearHistory();
 
@@ -184,7 +184,7 @@ router.delete('/history', requireRole('kubiq-admin'), (req, res) => {
 });
 
 // GET /api/notifications/maintenance - Get maintenance & mute configuration
-router.get('/maintenance', (req, res) => {
+router.get('/maintenance', requirePermission('notifications.read'), (req, res) => {
   try {
     const config = notificationManager.getMaintenanceConfig();
     res.json(config);
@@ -194,7 +194,7 @@ router.get('/maintenance', (req, res) => {
 });
 
 // POST /api/notifications/maintenance - Update maintenance & mute configuration
-router.post('/maintenance', requireRole('kubiq-admin'), (req, res) => {
+router.post('/maintenance', requirePermission('notifications.manage'), (req, res) => {
   try {
     const updatedConfig = notificationManager.setMaintenanceConfig(req.body);
 

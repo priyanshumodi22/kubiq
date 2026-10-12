@@ -72,12 +72,12 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
   const publicUrl = slug ? `${window.location.origin}${pathPrefix}status/${slug}` : null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-bg-surface border border-white/10 rounded-2xl w-full max-w-md shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden">
         
         {/* Header */}
         <div className="flex items-center justify-between p-6 pb-4">
-          <h2 className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+          <h2 className="text-xl font-bold bg-linear-to-r from-white to-gray-400 bg-clip-text text-transparent">
              Public Status Page
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg">
@@ -165,7 +165,7 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
                       href={publicUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-shrink-0 text-blue-400 hover:text-white transition-colors p-1"
+                      className="shrink-0 text-blue-400 hover:text-white transition-colors p-1"
                       title="Open Public Page"
                     >
                       Open

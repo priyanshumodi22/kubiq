@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { X, CheckCircle, AlertTriangle, Info, AlertCircle } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -41,6 +41,15 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const info = (msg: string) => addToast(msg, 'info');
   const warning = (msg: string) => addToast(msg, 'warning');
 
+  useEffect(() => {
+    const handleToast = (event: Event) => {
+      const detail = (event as CustomEvent<{ message?: string; type?: ToastType }>).detail;
+      if (detail?.message) addToast(detail.message, detail.type || 'warning');
+    };
+    window.addEventListener('kubiq:toast', handleToast);
+    return () => window.removeEventListener('kubiq:toast', handleToast);
+  }, [addToast]);
+
   const getIcon = (type: ToastType) => {
     switch (type) {
       case 'success': return <CheckCircle className="w-5 h-5 text-green-500" />;
@@ -53,14 +62,14 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   return (
     <ToastContext.Provider value={{ addToast, success, error, info, warning }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2">
+      <div className="fixed bottom-4 right-4 z-100 flex flex-col gap-2">
         {toasts.map((toast) => (
           <div
             key={toast.id}
             className="flex items-center gap-3 p-4 bg-gray-800 border border-gray-700 shadow-xl rounded-lg text-white min-w-[300px] animate-slide-in-right"
           >
             {getIcon(toast.type)}
-            <p className="flex-grow text-sm">{toast.message}</p>
+            <p className="grow text-sm">{toast.message}</p>
             <button 
               onClick={() => removeToast(toast.id)}
               className="text-gray-400 hover:text-white transition-colors"

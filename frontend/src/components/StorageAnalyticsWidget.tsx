@@ -7,7 +7,7 @@ import { StoragePrediction, SystemMetrics, DiskInfo } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
 export const StorageAnalyticsWidget = () => {
-    const { hasRole } = useAuth();
+    const { hasPermission } = useAuth();
     const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
     const [predictions, setPredictions] = useState<StoragePrediction[]>([]);
     const [showConfig, setShowConfig] = useState(false);
@@ -104,7 +104,7 @@ export const StorageAnalyticsWidget = () => {
         <>
             {/* Global Toast Portal */}
             {toast && createPortal(
-                <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-200 ${
+                <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-200 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-200 ${
                     toast.type === 'success' ? 'bg-green-500/90 text-white' : 'bg-red-500/90 text-white'
                 }`}>
                     {toast.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
@@ -123,7 +123,7 @@ export const StorageAnalyticsWidget = () => {
                     </h3>
                     
                     {/* Configuration Dropdown */}
-                    {hasRole('kubiq-admin') && (
+                    {hasPermission('system.configure') && (
                     <div className="relative">
                         <button 
                             ref={(el) => {
@@ -146,11 +146,11 @@ export const StorageAnalyticsWidget = () => {
                             (
                             <>
                                 {/* Click overlay to close */}
-                                <div className="fixed inset-0 z-[100]" onClick={() => setShowConfig(false)}></div>
+                                <div className="fixed inset-0 z-100" onClick={() => setShowConfig(false)}></div>
                                 
                                 {/* Dropdown Content - Portal'd to Body */}
                                 <div 
-                                    className="absolute z-[101] w-80 bg-gray-900 border border-border-color rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+                                    className="absolute z-101 w-80 bg-gray-900 border border-border-color rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
                                     style={{
                                         top: dropdownPos.top,
                                         right: dropdownPos.right
@@ -234,7 +234,7 @@ export const StorageAnalyticsWidget = () => {
                                     {prediction && prediction.trend === 'growing' && prediction.daysRemaining < 365 && (
                                         <div className={`mt-3 flex flex-col p-3 rounded ${prediction.isCritical ? 'bg-red-500/10 text-red-200 border border-red-500/20' : 'bg-blue-500/10 text-blue-200 border border-blue-500/20'}`}>
                                             <div className="flex items-center mb-1">
-                                                <AlertTriangle className="w-4 h-4 mr-2 flex-shrink-0" />
+                                                <AlertTriangle className="w-4 h-4 mr-2 shrink-0" />
                                                 <span className="text-xs font-bold uppercase tracking-wider">
                                                     {prediction.isCritical ? 'Critical Warning' : 'Usage Projection'}
                                                 </span>

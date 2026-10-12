@@ -162,35 +162,10 @@ export function useKubernetes() {
     // to avoid duplicate API calls when multiple components use this hook.
 
 
-    const scaleDeployment = async (name: string, replicas: number) => {
-        if (!selectedNamespace) return;
-        try {
-            await apiClient.scaleKubernetesDeployment(selectedNamespace, name, replicas);
-            refresh();
-        } catch (e: any) { setError(e.message); throw e; }
-    };
-
-    const restartDeployment = async (name: string) => {
-        if (!selectedNamespace) return;
-        try {
-            await apiClient.restartKubernetesDeployment(selectedNamespace, name);
-            refresh();
-        } catch (e: any) { setError(e.message); throw e; }
-    };
-
-    const deleteResource = async (type: string, name: string) => {
-        if (!selectedNamespace) return;
-        try {
-            await apiClient.deleteKubernetesResource(selectedNamespace, type, name);
-            refresh();
-        } catch (e: any) { setError(e.message); throw e; }
-    };
-
     return {
         available, context, contexts, switchContext, namespaces, selectedNamespace, setSelectedNamespace,
         pods, metrics, events, deployments, loading, error,
         refresh,
-        scaleDeployment, restartDeployment, deleteResource,
     };
 
 }

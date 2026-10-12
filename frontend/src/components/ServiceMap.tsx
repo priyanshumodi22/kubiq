@@ -35,9 +35,9 @@ const CustomServiceNode = ({ data }: { data: { label: string, isError?: boolean,
 
     return (
         <div className={`px-5 py-3 shadow-2xl rounded-xl bg-bg-surface/80 backdrop-blur-md border ${borderGlow} ${pulseEffect} min-w-[150px] flex items-center justify-center gap-3 hover:scale-105 group relative overflow-hidden`}>
-            <Handle type="target" position={Position.Left} className="w-2 h-2 !bg-gray-500 !border-0 opacity-0" />
+            <Handle type="target" position={Position.Left} className="w-2 h-2 bg-gray-500! border-0! opacity-0" />
 
-            <div className={`absolute inset-0 bg-gradient-to-br ${bgGradient} to-transparent opacity-0 group-hover:opacity-100 transition-opacity`}></div>
+            <div className={`absolute inset-0 bg-linear-to-br ${bgGradient} to-transparent opacity-0 group-hover:opacity-100 transition-opacity`}></div>
             <div className={`p-2 rounded-lg ${iconBg}`}>
                 <Server className="w-5 h-5" />
             </div>
@@ -45,7 +45,7 @@ const CustomServiceNode = ({ data }: { data: { label: string, isError?: boolean,
                 {data.label}
             </div>
 
-            <Handle type="source" position={Position.Right} className="w-2 h-2 !bg-gray-500 !border-0 opacity-0" />
+            <Handle type="source" position={Position.Right} className="w-2 h-2 bg-gray-500! border-0! opacity-0" />
         </div>
     );
 };

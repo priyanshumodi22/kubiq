@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { LogOut } from 'lucide-react';
 import Keycloak from 'keycloak-js';
 import { apiClient } from '../services/api';
@@ -13,17 +13,21 @@ export interface AuthContextType {
   provider: AuthProviderType | null;
   user: any | null;
   roles: string[];
+  permissions: string[];
+  permissionsLoaded: boolean;
   
   // Actions
   loginKeycloak: () => void;
   loginNative: (credentials: any) => Promise<void>;
   loginWithToken: (token: string, user: any) => void;
   registerNative: (data: any) => Promise<void>;
+  refreshCurrentUser: () => Promise<any | null>;
   logout: () => void;
   
   // Helpers
   keycloak: Keycloak | null;
   hasRole: (role: string) => boolean;
+  hasPermission: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,22 +44,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [provider, setProvider] = useState<AuthProviderType | null>(null);
   const [user, setUser] = useState<any | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
+  const [permissions, setPermissions] = useState<string[]>([]);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const [keycloak, setKeycloak] = useState<Keycloak | null>(null);
+  const nativeRefreshTimer = useRef<number | null>(null);
+  const keycloakRefreshTimer = useRef<number | null>(null);
 
   useEffect(() => {
     initAuth();
+    return () => {
+      if (nativeRefreshTimer.current !== null) window.clearInterval(nativeRefreshTimer.current);
+      if (keycloakRefreshTimer.current !== null) window.clearInterval(keycloakRefreshTimer.current);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    setPermissionsLoaded(false);
+    apiClient.getCurrentUser().then(currentUser => {
+      setPermissions(Array.isArray(currentUser.permissions) ? currentUser.permissions : []);
+    }).catch(() => setPermissions([])).finally(() => setPermissionsLoaded(true));
+  }, [isAuthenticated]);
+
+  // Native JWTs are refreshed from the current server-side user record. This
+  // means a role, namespace, or disabled-account change takes effect in an
+  // active browser session instead of waiting for the original token to expire.
+  useEffect(() => {
+    if (!isAuthenticated || provider !== 'native') return;
+
+    const refresh = async () => {
+      try {
+        const session = await apiClient.refreshNativeSession();
+        if (!session?.token || !session?.user) throw new Error('Native refresh returned no session.');
+        localStorage.setItem('kubiq_token', session.token);
+        apiClient.setToken(session.token);
+        handleNativeSuccess(session.user);
+      } catch {
+        // A disabled/deleted account or invalid token must not keep its old UI
+        // permissions. Clear only the local Native session and return to login.
+        localStorage.removeItem('kubiq_token');
+        apiClient.clearToken();
+        setIsAuthenticated(false);
+        setUser(null);
+        setRoles([]);
+        setPermissions([]);
+        setPermissionsLoaded(false);
+        setProvider(null);
+      }
+    };
+
+    nativeRefreshTimer.current = window.setInterval(() => { void refresh(); }, 10 * 60 * 1000);
+    return () => {
+      if (nativeRefreshTimer.current !== null) window.clearInterval(nativeRefreshTimer.current);
+      nativeRefreshTimer.current = null;
+    };
+  }, [isAuthenticated, provider]);
 
   const initAuth = async () => {
     try {
       // 1. Get Config
       const config = await apiClient.getAuthConfig();
-      setAuthEnabled(config.enabled);
-      setNativeAuthEnabled(config.nativeEnabled !== false); // Default true if undefined
+      setAuthEnabled(config.provider === 'keycloak');
+      setNativeAuthEnabled(config.provider === 'native');
 
       // 2. Try Keycloak (if enabled)
       let kcAuthenticated = false;
-      if (config.enabled) {
+      if (config.provider === 'keycloak') {
           const kc = new Keycloak({
             url: config.url,
             realm: config.realm,
@@ -85,7 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // 3. Try Native (if not Keycloak authenticated)
-      if (!kcAuthenticated && (config.nativeEnabled !== false)) {
+      if (!kcAuthenticated && config.provider === 'native') {
           const storedToken = localStorage.getItem('kubiq_token');
           if (storedToken) {
               apiClient.setToken(storedToken);
@@ -132,15 +186,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(u);
 
       const r: string[] = [];
-       if (tokenParsed?.realm_access?.roles) r.push(...tokenParsed.realm_access.roles);
        const clientId = kc.clientId;
        if (clientId && tokenParsed?.resource_access?.[clientId]?.roles) {
            r.push(...tokenParsed.resource_access[clientId].roles);
        }
        setRoles([...new Set(r)]);
+       setPermissions([]);
+       setPermissionsLoaded(false);
        
        // Periodically refresh token
-       setInterval(() => {
+       if (keycloakRefreshTimer.current !== null) window.clearInterval(keycloakRefreshTimer.current);
+       keycloakRefreshTimer.current = window.setInterval(() => {
            kc.updateToken(70).then(refreshed => {
                if (refreshed) apiClient.setToken(kc.token!);
            });
@@ -154,12 +210,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           id: userData.id,
           username: userData.username,
           email: userData.email,
-          name: userData.name
+          name: userData.name,
+          avatarUrl: userData.avatarUrl
       });
       const r: string[] = [];
       if (userData.role) r.push(userData.role);
       if (userData.roles && Array.isArray(userData.roles)) r.push(...userData.roles);
       setRoles(r);
+      setPermissions(Array.isArray(userData.permissions) ? userData.permissions : []);
+      setPermissionsLoaded(false);
       // Token is already set in apiClient before calling this
   };
 
@@ -180,6 +239,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('kubiq_token', token);
       apiClient.setToken(token);
       handleNativeSuccess(user);
+  };
+
+  const refreshCurrentUser = async () => {
+    if (!isAuthenticated) return null;
+    const currentUser = await apiClient.getCurrentUser();
+    if (provider === 'native') {
+      if (currentUser.token) {
+        localStorage.setItem('kubiq_token', currentUser.token);
+        apiClient.setToken(currentUser.token);
+      }
+      handleNativeSuccess(currentUser);
+    }
+    return currentUser;
   };
 
   const registerNative = async (data: any) => {
@@ -211,6 +283,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setIsAuthenticated(false);
             setUser(null);
             setRoles([]);
+            setPermissions([]);
+            setPermissionsLoaded(false);
             setProvider(null);
             // Reload to reset state fully or just redirect
             window.location.href = loginUrl; 
@@ -219,6 +293,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const hasRole = (role: string) => roles.includes(role);
+  const hasPermission = (permission: string) => permissions.includes('*') || permissions.includes(permission);
 
   return (
     <AuthContext.Provider
@@ -230,25 +305,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         provider,
         user,
         roles,
+        permissions,
+        permissionsLoaded,
         loginKeycloak,
         loginNative,
         loginWithToken,
         registerNative,
+        refreshCurrentUser,
         logout,
         keycloak,
         hasRole,
+        hasPermission,
       }}
     >
       {children}
 
       {/* Premium Logout Modal */}
       {isLoggingOut && (
-         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-             <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl scale-100 animate-in zoom-in-95 duration-300 flex flex-col items-center">
+         <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+             <div className="bg-bg-surface border border-white/10 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl scale-100 animate-in zoom-in-95 duration-300 flex flex-col items-center">
                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mb-6 animate-bounce">
                      <LogOut className="w-8 h-8 text-primary" />
                  </div>
-                 <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent mb-2">
+                 <h2 className="text-2xl font-bold bg-linear-to-r from-white to-white/60 bg-clip-text text-transparent mb-2">
                     Logging Out
                  </h2>
                  <p className="text-text-dim">

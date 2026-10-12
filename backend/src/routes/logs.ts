@@ -6,10 +6,12 @@ import { isPathSafe } from '../utils/pathSecurity';
 import { AICacheService } from '../services/AICacheService';
 import { KubiAiConfigService } from '../services/KubiAiConfigService';
 import { KubiProviderService } from '../services/KubiProviderService';
+import { requirePermission } from '../middleware/auth';
 
 export const logRouter = Router();
+logRouter.use(requirePermission('logs.read'));
 
-logRouter.get('/check', (req: Request, res: Response) => {
+logRouter.get('/check', requirePermission('logs.raw.read'), (req: Request, res: Response) => {
     const filePath = req.query.path as string;
 
     if (!filePath) return res.status(400).json({ valid: false, message: 'Path required' });
@@ -46,7 +48,7 @@ logRouter.get('/all-services', async (req: Request, res: Response) => {
 });
 
 // GET /api/logs/sources - fetch all sources for a service
-logRouter.get('/sources', async (req: Request, res: Response) => {
+logRouter.get('/sources', requirePermission('logs.raw.read'), async (req: Request, res: Response) => {
     try {
         const serviceName = req.query.serviceName as string;
         if (!serviceName) return res.status(400).json({ error: 'serviceName is required' });
@@ -167,7 +169,7 @@ logRouter.post('/summarize', async (req: Request, res: Response) => {
 - **Warnings**: ${warnCount}
 - **Total Logs**: ${logs.length}
 
-Ask a kubiq administrator to configure Kubi AI for deep analysis.`;
+Ask a kubiq administrator to configure kubi AI for deep analysis.`;
             return res.json({ summary: fallbackMarkdown });
         }
 

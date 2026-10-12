@@ -24,9 +24,16 @@ export class JsonUserRepository implements IUserRepository {
       if (fs.existsSync(dataFile)) {
         const fileContent = fs.readFileSync(dataFile, 'utf-8');
         const users = JSON.parse(fileContent);
+        let migrated = false;
         users.forEach((user: User) => {
-          this.users.set(user.id, user);
+          const roles = Array.isArray(user.roles) && user.roles.length
+            ? [...new Set(user.roles.map(role => String(role).trim()).filter(Boolean))]
+            : user.role ? [user.role] : ['kubiq-viewer'];
+          const normalized: User = { ...user, role: roles[0], roles };
+          migrated ||= user.role !== normalized.role || JSON.stringify(user.roles || []) !== JSON.stringify(roles);
+          this.users.set(normalized.id, normalized);
         });
+        if (migrated) this.saveUsers();
         console.log(`👤 Loaded ${this.users.size} users from JSON`);
       }
     } catch (error) {
@@ -66,6 +73,8 @@ export class JsonUserRepository implements IUserRepository {
         email: user.email,
         passwordHash: user.passwordHash,
         role: user.role,
+        roles: user.roles?.length ? user.roles : [user.role],
+        allowedNamespaces: user.allowedNamespaces,
         createdAt: Date.now(),
         lastLogin: undefined,
         enabled: true
@@ -81,6 +90,19 @@ export class JsonUserRepository implements IUserRepository {
     if (!user) throw new Error('User not found');
     
     user.role = role;
+    user.roles = [role];
+    this.users.set(id, user);
+    this.saveUsers();
+    return user;
+  }
+
+  async updateUserRoles(id: string, roles: string[]): Promise<User> {
+    const user = this.users.get(id);
+    if (!user) throw new Error('User not found');
+    const normalized = [...new Set(roles.map(role => role.trim()).filter(Boolean))];
+    if (normalized.length === 0) throw new Error('At least one role is required');
+    user.roles = normalized;
+    user.role = normalized[0];
     this.users.set(id, user);
     this.saveUsers();
     return user;
@@ -119,7 +141,8 @@ export class JsonUserRepository implements IUserRepository {
       if (!existing) throw new Error('User not found');
       
       if (user.username) existing.username = user.username;
-      if (user.email) existing.email = user.email;
+      if (user.email !== undefined) existing.email = user.email;
+      if (user.avatarUrl !== undefined) existing.avatarUrl = user.avatarUrl;
       if (user.allowedNamespaces !== undefined) existing.allowedNamespaces = user.allowedNamespaces;
       
       this.users.set(id, existing);

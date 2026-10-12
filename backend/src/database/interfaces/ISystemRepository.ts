@@ -1,5 +1,5 @@
 
-import { SystemMetrics } from '../../types';
+import { RoleDefinition, SystemMetrics } from '../../types';
 
 export type LicenseActivation = {
   keyFingerprint: string;
@@ -11,6 +11,12 @@ export type KubiAiConfigRecord = {
   provider: 'gemini' | 'openai' | 'anthropic';
   model: string;
   encryptedApiKey: string;
+  updatedAt: number;
+};
+
+export type RbacConfigRecord = {
+  version: 1;
+  roles: RoleDefinition[];
   updatedAt: number;
 };
 
@@ -26,4 +32,6 @@ export interface ISystemRepository {
   saveLicenseActivation(activation: LicenseActivation): Promise<void>;
   getKubiAiConfig(): Promise<KubiAiConfigRecord | null>;
   saveKubiAiConfig(config: KubiAiConfigRecord): Promise<void>;
+  getRbacConfig(): Promise<RbacConfigRecord | null>;
+  saveRbacConfig(config: RbacConfigRecord): Promise<void>;
 }

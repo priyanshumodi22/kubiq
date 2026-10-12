@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { startRegistration } from '@simplewebauthn/browser';
 import { apiClient, type PasskeyAuthenticatorAttachment } from '../services/api';
@@ -21,17 +21,28 @@ import {
   ArrowLeft,
   Edit2,
   ExternalLink,
-  Sparkles
+  Camera,
+  BadgeCheck,
+  Crop,
+  ZoomIn,
+  Move
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { KubiAiSettings } from '../components/KubiAiSettings';
 
 // --- Utility for Tailwind Classes ---
 function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
 }
+
+type AvatarEditor = {
+  source: string;
+  image: HTMLImageElement;
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
+};
 
 // --- Icons ---
 // Using Lucide icons imported above
@@ -40,7 +51,7 @@ function cn(...inputs: (string | undefined | null | false)[]) {
 
 const SectionHeader = ({ title, description }: { title: string; description: string }) => (
   <div className="mb-6">
-    <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
+    <h2 className="text-2xl font-bold bg-linear-to-r from-primary to-blue-400 bg-clip-text text-transparent">
       {title}
     </h2>
     <p className="text-text-dim text-sm mt-1">{description}</p>
@@ -104,12 +115,14 @@ const Button = ({
 
 const Profile: React.FC = () => {
   const { success, error } = useToast();
-  const { provider, hasRole } = useAuth();
+  const { provider, roles, refreshCurrentUser } = useAuth();
   const isNative = provider === 'native';
-  const [activeTab, setActiveTab] = useState<'details' | 'security' | 'kubi-ai'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'security'>('details');
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [avatarEditor, setAvatarEditor] = useState<AvatarEditor | null>(null);
 
   // Logic State
-  const [profile, setProfile] = useState({ username: '', email: '' });
+  const [profile, setProfile] = useState({ username: '', email: '', avatarUrl: '' });
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
   const [passkeys, setPasskeys] = useState<any[]>([]);
 
@@ -142,7 +155,8 @@ const Profile: React.FC = () => {
 
       setProfile({
         username: user.username,
-        email: user.email || ''
+        email: user.email || '',
+        avatarUrl: user.avatarUrl || ''
       });
       setPasskeys(pkList);
     } catch (err) {
@@ -158,6 +172,7 @@ const Profile: React.FC = () => {
     setLoading(p => ({ ...p, profile: true }));
     try {
       await apiClient.updateProfile(profile);
+      await refreshCurrentUser();
       success('Profile updated successfully');
     } catch (err: any) {
       error(err.response?.data?.message || 'Failed to update');
@@ -165,6 +180,68 @@ const Profile: React.FC = () => {
       setLoading(p => ({ ...p, profile: false }));
     }
   };
+
+  const handleAvatarSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      error('Choose a PNG, JPEG, or WebP image.');
+      return;
+    }
+
+    try {
+      const source = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error('Unable to read image'));
+        reader.readAsDataURL(file);
+      });
+      const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const nextImage = new Image();
+        nextImage.onload = () => resolve(nextImage);
+        nextImage.onerror = () => reject(new Error('Unable to process image'));
+        nextImage.src = source;
+      });
+      setAvatarEditor({ source, image, zoom: 1, offsetX: 0, offsetY: 0 });
+    } catch {
+      error('Could not prepare that image. Try a smaller image.');
+    }
+  };
+
+  const applyAvatarCrop = () => {
+    if (!avatarEditor) return;
+    try {
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('Unable to prepare image');
+      const scale = Math.max(size / avatarEditor.image.width, size / avatarEditor.image.height) * avatarEditor.zoom;
+      const width = avatarEditor.image.width * scale;
+      const height = avatarEditor.image.height * scale;
+      const overflowX = Math.max(0, width - size) / 2;
+      const overflowY = Math.max(0, height - size) / 2;
+      context.drawImage(
+        avatarEditor.image,
+        (size - width) / 2 + avatarEditor.offsetX * overflowX,
+        (size - height) / 2 + avatarEditor.offsetY * overflowY,
+        width,
+        height
+      );
+      const avatarUrl = canvas.toDataURL('image/webp', 0.82);
+      if (avatarUrl.length > 360_000) throw new Error('Image is too detailed');
+      setProfile(current => ({ ...current, avatarUrl }));
+      setAvatarEditor(null);
+      success('Display picture cropped. Save changes to apply it.');
+    } catch {
+      error('Could not prepare that image. Try a smaller image.');
+    }
+  };
+
+  const assignedRoles = roles.filter(role => role.toLowerCase().startsWith('kubiq'));
+  const currentRole = assignedRoles[0] || roles[0] || 'No role assigned';
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -262,7 +339,7 @@ const Profile: React.FC = () => {
       {/* Background Effects matching Dashboard */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         {/* Gradient base */}
-        <div className="absolute inset-0 bg-gradient-to-br from-bg via-bg to-bg-surface"></div>
+        <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
         {/* Radial gradient overlay */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
         {/* Blur orbs */}
@@ -285,15 +362,33 @@ const Profile: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
 
           {/* Sidebar Nav */}
-          <div className="md:col-span-3 flex flex-row md:flex-col gap-4 md:gap-6">
-            <div className="flex-1 bg-bg-surface/30 backdrop-blur-md border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center">
-              <div className="w-16 h-16 md:w-24 md:h-24 bg-gradient-to-br from-primary to-blue-600 rounded-full flex items-center justify-center mb-2 md:mb-4 shadow-xl shadow-blue-500/20 shrink-0">
-                <span className="text-xl md:text-3xl font-bold text-white">{profile.username.substring(0, 2).toUpperCase()}</span>
+          <div className="md:col-span-3 flex flex-row md:flex-col md:self-start gap-4 md:gap-6">
+            <div className="w-full shrink-0 min-h-[260px] md:h-[260px] bg-bg-surface/30 backdrop-blur-md border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center">
+              <div className="relative mb-2 md:mb-4 shrink-0">
+                <div className="w-16 h-16 md:w-24 md:h-24 overflow-hidden bg-linear-to-br from-primary to-blue-600 rounded-full flex items-center justify-center shadow-xl shadow-blue-500/20 ring-4 ring-bg/50">
+                  {profile.avatarUrl ? (
+                    <img src={profile.avatarUrl} alt={`${profile.username}'s display picture`} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-xl md:text-3xl font-bold text-white">{profile.username.substring(0, 2).toUpperCase()}</span>
+                  )}
+                </div>
+                {isNative && (
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="absolute -right-1 -bottom-1 w-8 h-8 rounded-full border-2 border-bg bg-primary text-white shadow-lg transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/70"
+                    aria-label="Change display picture"
+                    title="Change display picture"
+                  >
+                    <Camera className="w-3.5 h-3.5 mx-auto" />
+                  </button>
+                )}
+                <input ref={avatarInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleAvatarSelection} />
               </div>
               <h2 className="text-lg md:text-xl font-bold truncate w-full">{profile.username}</h2>
               <div className="flex flex-col gap-1 md:gap-2 mt-1 items-center">
-                <span className="px-3 py-1 bg-white/5 rounded-full text-[10px] md:text-xs text-text-dim capitalize">
-                  kubiq User
+                <span className="px-3 py-1 bg-primary/10 border border-primary/20 rounded-full text-[10px] md:text-xs text-primary font-medium">
+                  {currentRole}
                 </span>
                 {!isNative && (
                   <span className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-[10px] md:text-xs">
@@ -303,11 +398,10 @@ const Profile: React.FC = () => {
               </div>
             </div>
 
-            <nav className="flex-[1.2] flex flex-col justify-center space-y-2">
+            <nav className="w-full flex flex-col justify-center space-y-2">
               {[
                 { id: 'details', label: 'Personal Details', icon: User },
                 { id: 'security', label: 'Login & Security', icon: Shield },
-                ...(hasRole('kubiq-admin') ? [{ id: 'kubi-ai', label: 'Kubi AI', icon: Sparkles }] : []),
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -327,20 +421,20 @@ const Profile: React.FC = () => {
           </div>
 
           {/* Main Content */}
-          <div className="md:col-span-9">
-            <div className="bg-bg-surface/30 backdrop-blur-md border border-white/5 rounded-3xl p-8 relative overflow-hidden min-h-[600px]">
+          <div className="md:col-span-9 md:max-w-3xl">
+            <div className="bg-bg-surface/30 backdrop-blur-md border border-white/5 rounded-3xl p-6 md:p-7 relative overflow-hidden">
               {/* Background Glow */}
               <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/20 rounded-full blur-[100px] pointer-events-none" />
 
               {activeTab === 'details' && (
-                <div className="animate-scale-up space-y-8 max-w-2xl">
+                <div className="animate-scale-up max-w-2xl">
                   <SectionHeader
                     title="Personal Information"
                     description="Manage your public profile and contact info."
                   />
 
-                  <form onSubmit={handleUpdateProfile} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <form onSubmit={handleUpdateProfile} className="rounded-2xl border border-white/7 bg-black/10 p-5 md:p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <InputGroup
                         label="Username"
                         icon={User}
@@ -358,8 +452,12 @@ const Profile: React.FC = () => {
                       />
                     </div>
 
-                    <div className="pt-4 border-t border-white/5 flex justify-end">
-                      <Button type="submit" isLoading={loading.profile} disabled={!isNative}>
+                    <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-2 text-xs text-text-dim">
+                        <BadgeCheck className="h-4 w-4 text-primary" />
+                        {isNative ? 'Your display picture and profile are stored securely in kubiq.' : 'Profile details are managed by your identity provider.'}
+                      </div>
+                      <Button type="submit" isLoading={loading.profile} disabled={!isNative} className="self-end">
                         {isNative ? 'Save Changes' : 'Managed externally'}
                       </Button>
                     </div>
@@ -368,7 +466,7 @@ const Profile: React.FC = () => {
               )}
 
               {activeTab === 'security' && (
-                <div className="animate-scale-up space-y-12">
+                <div className="animate-scale-up">
 
                   {/* Password Section */}
                   <section className="max-w-2xl">
@@ -412,7 +510,7 @@ const Profile: React.FC = () => {
                   </section>
 
                   {/* Passkeys Section */}
-                  <section>
+                  <section className="mt-16 border-t border-white/10 pt-10">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-primary/10 rounded-lg shrink-0">
@@ -473,15 +571,66 @@ const Profile: React.FC = () => {
 
                 </div>
               )}
-              {activeTab === 'kubi-ai' && hasRole('kubiq-admin') && <KubiAiSettings />}
             </div>
           </div>
         </div>
 
         {/* Passkey Modal */}
+        {avatarEditor && (() => {
+          const frameSize = 248;
+          const scale = Math.max(frameSize / avatarEditor.image.width, frameSize / avatarEditor.image.height) * avatarEditor.zoom;
+          const width = avatarEditor.image.width * scale;
+          const height = avatarEditor.image.height * scale;
+          const overflowX = Math.max(0, width - frameSize) / 2;
+          const overflowY = Math.max(0, height - frameSize) / 2;
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+              <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-bg-surface shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="flex items-start justify-between border-b border-white/8 px-6 py-5">
+                  <div>
+                    <div className="flex items-center gap-2 text-primary"><Crop className="h-5 w-5" /><span className="text-xs font-semibold tracking-[0.16em] uppercase">Display picture</span></div>
+                    <h3 className="mt-1 text-xl font-bold text-text">Crop your photo</h3>
+                    <p className="mt-1 text-sm text-text-dim">Adjust the framing before it becomes your kubiq display picture.</p>
+                  </div>
+                  <button type="button" onClick={() => setAvatarEditor(null)} className="rounded-lg p-2 text-text-dim transition-colors hover:bg-white/5 hover:text-text" aria-label="Close photo editor"><X className="h-5 w-5" /></button>
+                </div>
+                <div className="grid gap-7 p-6 md:grid-cols-[248px_1fr] md:items-center">
+                  <div className="relative mx-auto h-[248px] w-[248px] overflow-hidden rounded-full border-4 border-primary/40 bg-black shadow-[0_0_0_1px_rgba(255,255,255,0.06)]">
+                    <img
+                      src={avatarEditor.source}
+                      alt="Crop preview"
+                      className="absolute max-w-none select-none"
+                      style={{ width, height, left: frameSize / 2 + avatarEditor.offsetX * overflowX, top: frameSize / 2 + avatarEditor.offsetY * overflowY, transform: 'translate(-50%, -50%)' }}
+                    />
+                    <div className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-white/30" />
+                  </div>
+                  <div className="space-y-5">
+                    <label className="block">
+                      <span className="mb-2 flex items-center gap-2 text-sm font-medium text-text"><ZoomIn className="h-4 w-4 text-primary" />Zoom</span>
+                      <input aria-label="Zoom photo" type="range" min="1" max="2.5" step="0.05" value={avatarEditor.zoom} onChange={event => setAvatarEditor(current => current ? { ...current, zoom: Number(event.target.value) } : current)} className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-primary" />
+                    </label>
+                    <label className="block">
+                      <span className="mb-2 flex items-center gap-2 text-sm font-medium text-text"><Move className="h-4 w-4 text-primary" />Move horizontally</span>
+                      <input aria-label="Move photo horizontally" type="range" min="-1" max="1" step="0.05" value={avatarEditor.offsetX} onChange={event => setAvatarEditor(current => current ? { ...current, offsetX: Number(event.target.value) } : current)} className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-primary" />
+                    </label>
+                    <label className="block">
+                      <span className="mb-2 flex items-center gap-2 text-sm font-medium text-text"><Move className="h-4 w-4 text-primary" />Move vertically</span>
+                      <input aria-label="Move photo vertically" type="range" min="-1" max="1" step="0.05" value={avatarEditor.offsetY} onChange={event => setAvatarEditor(current => current ? { ...current, offsetY: Number(event.target.value) } : current)} className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-primary" />
+                    </label>
+                  </div>
+                </div>
+                <div className="flex flex-col-reverse gap-3 border-t border-white/8 px-6 py-5 sm:flex-row sm:justify-end">
+                  <Button type="button" variant="outline" onClick={() => setAvatarEditor(null)}>Cancel</Button>
+                  <Button type="button" onClick={applyAvatarCrop}>Use this picture</Button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {showPasskeyModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
+            <div className="bg-bg-surface border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold flex items-center gap-2">
                   <Fingerprint className="w-5 h-5 text-primary" />
@@ -529,7 +678,7 @@ const Profile: React.FC = () => {
         {/* Rename Passkey Modal */}
         {passkeyToRename && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
+            <div className="bg-bg-surface border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold flex items-center gap-2">
                   <Edit2 className="w-5 h-5 text-primary" />

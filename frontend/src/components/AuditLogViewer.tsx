@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, Search, RefreshCw, Download } from 'lucide-react';
+import { Shield, Search, RefreshCw, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -15,23 +15,28 @@ export interface AuditLogItem {
 }
 
 export function AuditLogViewer() {
-    const { hasRole } = useAuth();
+    const { hasPermission } = useAuth();
     const [logs, setLogs] = useState<AuditLogItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [page, setPage] = useState(1);
+    const [pageSize] = useState(25);
+    const [total, setTotal] = useState(0);
 
-    if (!hasRole('kubiq-admin')) {
+    if (!hasPermission('audit.read')) {
         return <Navigate to="/dashboard" replace />;
     }
 
     const fetchLogs = async () => {
         setLoading(true);
         try {
-            const res = await apiClient.getAuditLogs(search);
-            setLogs(res || []);
+            const res = await apiClient.getAuditLogs(page, pageSize, search);
+            setLogs(res.records || []);
+            setTotal(Number(res.total) || 0);
         } catch (e) {
             console.error('Failed to fetch audit logs:', e);
             setLogs([]);
+            setTotal(0);
         } finally {
             setLoading(false);
         }
@@ -55,7 +60,7 @@ export function AuditLogViewer() {
 
     useEffect(() => {
         fetchLogs();
-    }, [search]);
+    }, [page, pageSize, search]);
 
     const getActionBadge = (action: string) => {
         switch (action) {
@@ -80,7 +85,7 @@ export function AuditLogViewer() {
         <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full animate-fade-in relative z-10 space-y-6">
             {/* Background Effects (Matched to Dashboard, APM, and Logs) */}
             <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-                <div className="absolute inset-0 bg-gradient-to-br from-bg via-bg to-bg-surface"></div>
+                <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
                 <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
                 <div className="absolute top-1/3 -right-20 w-80 h-80 bg-primary/3 rounded-full blur-3xl"></div>
@@ -106,18 +111,18 @@ export function AuditLogViewer() {
                             type="text"
                             placeholder="Filter by user, action, target..."
                             value={search}
-                            onChange={(e) => setSearch(e.target.value)}
+                            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                             className="bg-black/30 border border-gray-700 text-xs text-white rounded-xl pl-9 pr-3 py-2 w-full focus:outline-none focus:border-primary/50"
                         />
                     </div>
-                    <button
+                    {hasPermission('audit.export') && <button
                         onClick={handleExportCsv}
                         className="flex items-center gap-1.5 px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-xl text-xs font-medium transition-colors"
                         title="Download audit logs as CSV"
                     >
                         <Download className="w-3.5 h-3.5" />
                         <span>Export CSV</span>
-                    </button>
+                    </button>}
                     <button
                         onClick={fetchLogs}
                         className="p-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl border border-white/10 transition-colors"
@@ -138,6 +143,7 @@ export function AuditLogViewer() {
                     No administrative audit events recorded yet.
                 </div>
             ) : (
+                <>
                 <div className="overflow-x-auto border border-gray-800/80 rounded-xl">
                     <table className="w-full text-left text-xs font-mono">
                         <thead className="bg-black/40 text-gray-400 border-b border-gray-800">
@@ -152,7 +158,7 @@ export function AuditLogViewer() {
                         </thead>
                         <tbody className="divide-y divide-gray-800/50">
                             {logs.map((log) => (
-                                <tr key={log.id} className="hover:bg-white/[0.02] transition-colors">
+                                <tr key={log.id} className="hover:bg-white/2 transition-colors">
                                     <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
                                         {new Date(log.timestamp).toLocaleString()}
                                     </td>
@@ -176,6 +182,14 @@ export function AuditLogViewer() {
                         </tbody>
                     </table>
                 </div>
+                <div className="flex items-center justify-between gap-3 text-xs text-gray-400">
+                    <span>{total} event{total === 1 ? '' : 's'} · page {page} of {Math.max(1, Math.ceil(total / pageSize))}</span>
+                    <div className="flex items-center gap-2">
+                        <button type="button" onClick={() => setPage(current => Math.max(1, current - 1))} disabled={page === 1} className="p-2 rounded-lg border border-gray-700 disabled:opacity-40 hover:bg-white/5" aria-label="Previous audit-log page"><ChevronLeft className="w-4 h-4" /></button>
+                        <button type="button" onClick={() => setPage(current => current + 1)} disabled={page >= Math.ceil(total / pageSize)} className="p-2 rounded-lg border border-gray-700 disabled:opacity-40 hover:bg-white/5" aria-label="Next audit-log page"><ChevronRight className="w-4 h-4" /></button>
+                    </div>
+                </div>
+                </>
             )}
         </div>
     </div>

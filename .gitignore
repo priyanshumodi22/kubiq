@@ -12,6 +12,7 @@ build/
 
 # Environment variables - Local development overrides (git ignored)
 .env.local
+.env.k3s.local
 .env.development.local
 .env.test.local
 .env.production.local

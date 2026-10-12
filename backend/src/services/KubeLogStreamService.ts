@@ -2,6 +2,8 @@ import { Server, Socket } from 'socket.io';
 import * as k8s from '@kubernetes/client-node';
 import { PassThrough } from 'stream';
 import { KubernetesService } from './KubernetesService';
+import { canAccessKubernetesNamespace, getSocketUser } from '../middleware/auth';
+import { RbacRoleService } from './RbacRoleService';
 
 interface K8sSocketSub {
     roomName: string;
@@ -56,6 +58,16 @@ export class KubeLogStreamService {
                 console.log(`☸️  [K8sLogs] Socket ${socket.id} → watch ${namespace}/${target}${container ? `[${container}]` : ''}`);
 
                 this.unsubscribeSocket(socket);
+
+                const user = await getSocketUser(socket.handshake.auth?.token);
+                if (!user || !(await RbacRoleService.hasPermission(user, 'kubernetes.read'))) {
+                    socket.emit('k8s:log:error', { message: 'Your kubiq role does not permit Kubernetes logs.' });
+                    return;
+                }
+                if (!(await canAccessKubernetesNamespace(user, namespace))) {
+                    socket.emit('k8s:log:error', { message: `Access denied to namespace '${namespace}'.` });
+                    return;
+                }
 
                 if (!this.kc) {
                     socket.emit('k8s:log:error', { message: 'Kubernetes not connected' });

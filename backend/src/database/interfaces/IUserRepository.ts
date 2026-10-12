@@ -10,6 +10,7 @@ export interface IUserRepository {
   updateUser(id: string, user: Partial<User>): Promise<User>;
   updatePassword(id: string, passwordHash: string): Promise<void>;
   updateUserRole(id: string, role: string): Promise<User>;
+  updateUserRoles(id: string, roles: string[]): Promise<User>;
   updateUserStatus(id: string, enabled: boolean): Promise<User>;
   deleteUser(id: string): Promise<void>;
   

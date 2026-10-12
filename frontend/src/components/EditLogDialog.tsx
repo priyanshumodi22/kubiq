@@ -65,11 +65,11 @@ export function EditLogDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-[#1a1a1a] rounded-2xl shadow-2xl w-full max-w-sm border border-gray-800 flex flex-col items-center text-center relative overflow-hidden">
+      <div className="bg-bg-surface rounded-2xl shadow-2xl w-full max-w-sm border border-gray-800 flex flex-col items-center text-center relative overflow-hidden">
         
         {/* Subtle Gradient Glow at top */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary/20 to-transparent" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-24 bg-gradient-to-br from-primary/20 to-transparent blur-3xl opacity-20" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-primary/20 to-transparent" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-24 bg-linear-to-br from-primary/20 to-transparent blur-3xl opacity-20" />
 
         <div className="p-6 w-full flex flex-col items-center">
         

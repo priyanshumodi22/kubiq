@@ -67,7 +67,7 @@ export default function ServiceCard({
             }
             
             if (headerCount > 0) {
-                return <span className="text-xs text-blue-400 flex-shrink-0">- Headers</span>;
+                return <span className="text-xs text-blue-400 shrink-0">- Headers</span>;
             }
             return null;
           })()}

@@ -1,5 +1,5 @@
 import { DatabaseFactory } from '../database/DatabaseFactory';
-import { IAuditLogRepository } from '../database/interfaces/IAuditLogRepository';
+import { AuditLogPage, IAuditLogRepository } from '../database/interfaces/IAuditLogRepository';
 
 export interface AuditLogEntry {
   id: string;
@@ -47,7 +47,9 @@ export class AuditLogService {
     try {
       const repo = await this.getRepo();
       const fullEntry = await repo.addAuditLog(entry);
-      console.log(`🛡️ [AuditLog] [${fullEntry.action}] User: ${fullEntry.user} → Target: ${fullEntry.target}`);
+      console.log(
+        `🛡️ [AuditLog] [${fullEntry.action}] User: ${fullEntry.user} → Target: ${fullEntry.target}`
+      );
       return fullEntry;
     } catch (err) {
       console.error('❌ Failed to save audit log entry:', err);
@@ -58,5 +60,16 @@ export class AuditLogService {
   public async getLogs(limit: number = 100, search?: string): Promise<AuditLogEntry[]> {
     const repo = await this.getRepo();
     return repo.getAuditLogs(limit, search);
+  }
+
+  public async getLogPage(
+    page: number = 1,
+    pageSize: number = 25,
+    search?: string
+  ): Promise<AuditLogPage> {
+    const safePage = Math.max(1, Math.floor(Number(page) || 1));
+    const safePageSize = Math.max(10, Math.min(Math.floor(Number(pageSize) || 25), 100));
+    const repo = await this.getRepo();
+    return repo.getAuditLogPage(safePageSize, (safePage - 1) * safePageSize, search);
   }
 }

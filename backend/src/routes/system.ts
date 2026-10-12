@@ -2,7 +2,7 @@
 import express from 'express';
 import { SystemMonitorService } from '../services/SystemMonitorService';
 import { DatabaseFactory } from '../database/DatabaseFactory';
-import { requireRole, getUserFromReq } from '../middleware/auth';
+import { requirePermission, getUserFromReq } from '../middleware/auth';
 import { AuditLogService } from '../services/AuditLogService';
 import { createHash } from 'crypto';
 import { validateLicenseKey } from '../utils/licenseValidator';
@@ -12,6 +12,7 @@ import { KubiProviderService } from '../services/KubiProviderService';
 const router = express.Router();
 const systemMonitor = SystemMonitorService.getInstance();
 const auditService = AuditLogService.getInstance();
+router.use(requirePermission('system.read'));
 
 // GET /api/system/pro-status - Authenticated, non-secret license state for the UI
 router.get('/pro-status', async (_req, res) => {
@@ -31,15 +32,15 @@ router.get('/pro-status', async (_req, res) => {
 });
 
 // AI keys are write-only: only kubiq-admin may configure them, and no endpoint returns one.
-router.get('/kubi-ai', requireRole('kubiq-admin'), async (_req, res) => {
+router.get('/kubi-ai', requirePermission('kubi.configure'), async (_req, res) => {
   try {
     res.json(await KubiAiConfigService.getPublicConfig());
   } catch {
-    res.status(503).json({ message: 'Kubi AI configuration is unavailable.' });
+    res.status(503).json({ message: 'kubi AI configuration is unavailable.' });
   }
 });
 
-router.put('/kubi-ai', requireRole('kubiq-admin'), async (req, res) => {
+router.put('/kubi-ai', requirePermission('kubi.configure'), async (req, res) => {
   try {
     const config = await KubiAiConfigService.save(req.body || {});
     auditService.log({
@@ -50,15 +51,15 @@ router.put('/kubi-ai', requireRole('kubiq-admin'), async (req, res) => {
   } catch (error: any) {
     const code = error?.message;
     const message = code === 'KUBI_CONFIGURATION_ENCRYPTION_UNAVAILABLE'
-      ? 'Kubi AI secure configuration is not initialized. Set KUBI_AI_CONFIG_ENCRYPTION_KEY first.'
-      : code === 'KUBI_API_KEY_REQUIRED' ? 'An API key is required for the first Kubi AI configuration.'
+      ? 'kubi AI secure configuration is not initialized. Set KUBI_AI_CONFIG_ENCRYPTION_KEY first.'
+      : code === 'KUBI_API_KEY_REQUIRED' ? 'An API key is required for the first kubi AI configuration.'
       : code === 'KUBI_PROVIDER_INVALID' || code === 'KUBI_MODEL_INVALID' ? 'Choose a supported provider and a valid model identifier.'
-      : 'Could not save Kubi AI configuration.';
+      : 'Could not save kubi AI configuration.';
     res.status(400).json({ message });
   }
 });
 
-router.post('/kubi-ai/test', requireRole('kubiq-admin'), async (_req, res) => {
+router.post('/kubi-ai/test', requirePermission('kubi.configure'), async (_req, res) => {
   try {
     const response = await new KubiProviderService().complete([{ role: 'user', content: 'Reply exactly: OK' }], 8);
     res.json({ ok: response.length > 0 });
@@ -102,7 +103,7 @@ router.get('/disks/config', async (req, res) => {
 });
 
 // PUT /api/system/disks/config - Update monitored list
-router.put('/disks/config', requireRole('kubiq-admin'), async (req, res) => {
+router.put('/disks/config', requirePermission('system.configure'), async (req, res) => {
   try {
     const { mounts } = req.body;
     if (!Array.isArray(mounts)) {
@@ -147,7 +148,7 @@ router.get('/apm-config', async (req, res) => {
 });
 
 // PUT /api/system/apm-config
-router.put('/apm-config', requireRole('kubiq-admin'), async (req, res) => {
+router.put('/apm-config', requirePermission('system.configure'), async (req, res) => {
   try {
     const { ignoredRoutes } = req.body;
     if (!Array.isArray(ignoredRoutes)) {

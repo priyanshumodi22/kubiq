@@ -22,7 +22,7 @@ import { useToast } from '../contexts/ToastContext';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
 export default function AdminUsers() {
-    const { hasRole, isLoading: authLoading, user: currentUser } = useAuth();
+    const { hasPermission, isLoading: authLoading, user: currentUser } = useAuth();
     const { success, error: showError } = useToast();
     const [users, setUsers] = useState<UserData[]>([]);
     const [loading, setLoading] = useState(true);
@@ -158,7 +158,7 @@ export default function AdminUsers() {
 
     if (authLoading) return null;
 
-    if (!hasRole('kubiq-admin')) {
+    if (!hasPermission('users.manage')) {
         return <Navigate to="/dashboard" replace />;
     }
 
@@ -166,7 +166,7 @@ export default function AdminUsers() {
         <div className="min-h-screen bg-bg flex flex-col">
             <Header />
 
-            <main className="flex-grow container mx-auto px-4 py-8">
+            <main className="grow container mx-auto px-4 py-8">
 
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-4">
@@ -314,7 +314,7 @@ export default function AdminUsers() {
                                                                     onChange={(e) => setCustomNsInput(e.target.value)}
                                                                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomNs(); } }}
                                                                     placeholder="Custom namespace..."
-                                                                    className="bg-black/40 border border-gray-700 rounded-lg text-xs text-white px-2 py-1 focus:outline-none font-mono flex-grow"
+                                                                    className="bg-black/40 border border-gray-700 rounded-lg text-xs text-white px-2 py-1 focus:outline-none font-mono grow"
                                                                 />
                                                                 <button
                                                                     type="button"
@@ -426,11 +426,11 @@ export default function AdminUsers() {
                 {openDropdownUserId && dropdownRect && createPortal(
                     <>
                         {/* Transparent overlay — click anywhere outside to close */}
-                        <div className="fixed inset-0 z-[9998]" onClick={() => setOpenDropdownUserId(null)} />
+                        <div className="fixed inset-0 z-9998" onClick={() => setOpenDropdownUserId(null)} />
                         {/* Dropdown panel */}
                         <div
                             style={{ position: 'fixed', top: dropdownRect.top, left: dropdownRect.left, width: dropdownRect.width, zIndex: 9999 }}
-                            className="bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl overflow-hidden"
+                            className="bg-bg-surface border border-white/10 rounded-xl shadow-xl overflow-hidden"
                         >
                             {[
                                 { value: 'kubiq-viewer', label: 'Viewer' },

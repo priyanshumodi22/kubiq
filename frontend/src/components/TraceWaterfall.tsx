@@ -100,20 +100,20 @@ export default function TraceWaterfall({ spans }: TraceWaterfallProps) {
                     onClick={() => setSelectedSpan(node)}
                     className={`flex items-center text-sm py-1 rounded px-2 transition-colors relative cursor-pointer ${selectedSpan?.spanId === node.spanId ? 'bg-primary/20 border border-primary/30' : 'hover:bg-white/5 border border-transparent'}`}
                 >
-                    <div className="w-1/3 flex-shrink-0 flex items-center pr-4 overflow-hidden" style={{ paddingLeft: `${node.depth * 16}px` }}>
+                    <div className="w-1/3 shrink-0 flex items-center pr-4 overflow-hidden" style={{ paddingLeft: `${node.depth * 16}px` }}>
                         <div className="flex flex-col min-w-0">
                             <div className="flex items-center gap-1.5 min-w-0">
-                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${layerColor.badge}`}></span>
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${layerColor.badge}`}></span>
                                 <span className="font-medium text-white truncate text-xs sm:text-sm">{node.name}</span>
                             </div>
                             <div className="flex items-center gap-1 text-xs text-gray-500 ml-3.5 mt-0.5 min-w-0">
-                                <Server className="w-3 h-3 flex-shrink-0" />
+                                <Server className="w-3 h-3 shrink-0" />
                                 <span className="truncate">{node.serviceName}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="w-2/3 flex-grow relative h-6 border-l border-gray-800 flex items-center">
+                    <div className="w-2/3 grow relative h-6 border-l border-gray-800 flex items-center">
                         <div
                             className={`absolute h-4 rounded-sm ${layerColor.bg} border ${layerColor.border}`}
                             style={{

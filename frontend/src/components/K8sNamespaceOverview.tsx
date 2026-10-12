@@ -136,7 +136,7 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
                 {/* Pod Health Card */}
                 <div
                     onClick={() => onSwitchTab('pods')}
-                    className="bg-[#1a1a1a]/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:border-primary/30 hover:bg-[#1a1a1a]/60 cursor-pointer transition-all duration-300 group relative overflow-hidden"
+                    className="bg-bg-surface/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:border-primary/30 hover:bg-bg-surface/60 cursor-pointer transition-all duration-300 group relative overflow-hidden"
                 >
                     <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors" />
                     <div className="flex items-center justify-between mb-4">
@@ -201,7 +201,7 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
                 {/* Deployments Health Card */}
                 <div
                     onClick={() => onSwitchTab('deployments')}
-                    className="bg-[#1a1a1a]/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:border-blue-500/30 hover:bg-[#1a1a1a]/60 cursor-pointer transition-all duration-300 group relative overflow-hidden"
+                    className="bg-bg-surface/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:border-blue-500/30 hover:bg-bg-surface/60 cursor-pointer transition-all duration-300 group relative overflow-hidden"
                 >
                     <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-colors" />
                     <div className="flex items-center justify-between mb-4">
@@ -250,20 +250,20 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
                 </div>
 
                 {/* Configurations & Services Overview */}
-                <div className="bg-[#1a1a1a]/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:border-white/15 transition-all duration-300 group relative overflow-hidden">
+                <div className="bg-bg-surface/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:border-white/15 transition-all duration-300 group relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-colors" />
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Other Resources</h3>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div onClick={() => onSwitchTab('services')} className="bg-black/20 p-2.5 rounded-xl border border-white/[0.03] hover:border-primary/20 cursor-pointer transition-colors">
+                        <div onClick={() => onSwitchTab('services')} className="bg-black/20 p-2.5 rounded-xl border border-white/3 hover:border-primary/20 cursor-pointer transition-colors">
                             <span className="text-[10px] text-gray-500 uppercase font-mono block">Services</span>
                             <span className="text-lg font-mono font-bold text-white">{services.length}</span>
                         </div>
-                        <div onClick={() => onSwitchTab('configmaps')} className="bg-black/20 p-2.5 rounded-xl border border-white/[0.03] hover:border-primary/20 cursor-pointer transition-colors">
+                        <div onClick={() => onSwitchTab('configmaps')} className="bg-black/20 p-2.5 rounded-xl border border-white/3 hover:border-primary/20 cursor-pointer transition-colors">
                             <span className="text-[10px] text-gray-500 uppercase font-mono block">ConfigMaps</span>
                             <span className="text-lg font-mono font-bold text-white">{configMaps.length}</span>
                         </div>
-                        <div onClick={() => onSwitchTab('secrets')} className="bg-black/20 p-2.5 rounded-xl border border-white/[0.03] hover:border-primary/20 cursor-pointer transition-colors col-span-2">
+                        <div onClick={() => onSwitchTab('secrets')} className="bg-black/20 p-2.5 rounded-xl border border-white/3 hover:border-primary/20 cursor-pointer transition-colors col-span-2">
                             <span className="text-[10px] text-gray-500 uppercase font-mono block">Secrets (Encrypted)</span>
                             <span className="text-lg font-mono font-bold text-white">{secrets.length}</span>
                         </div>
@@ -289,7 +289,7 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
 
             {/* ── RESOURCE QUOTAS & LIMITRANGES VISUALIZER ──────────────────────── */}
             {quotasData.quotas && quotasData.quotas.length > 0 && (
-                <div className="bg-[#1a1a1a]/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 relative overflow-hidden space-y-4">
+                <div className="bg-bg-surface/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 relative overflow-hidden space-y-4">
                     <div className="flex items-center justify-between border-b border-white/5 pb-3">
                         <div className="flex items-center gap-2">
                             <PieChart className="w-4 h-4 text-primary" />
@@ -347,7 +347,7 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
             {metrics.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* CPU Usage Card */}
-                    <div className="bg-[#1a1a1a]/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 relative overflow-hidden">
+                    <div className="bg-bg-surface/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-3xl" />
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">CPU Utilization</h3>
@@ -355,9 +355,9 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
                         </div>
 
                         {/* Progress bar */}
-                        <div className="w-full bg-gray-800/50 rounded-full h-2.5 mb-4 overflow-hidden border border-white/[0.05]">
+                        <div className="w-full bg-gray-800/50 rounded-full h-2.5 mb-4 overflow-hidden border border-white/5">
                             <div
-                                className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]"
+                                className="bg-linear-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]"
                                 style={{ width: `${Math.min(100, (totalCpuM / 2000) * 100)}%` }}
                             />
                         </div>
@@ -366,7 +366,7 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
                         <div className="space-y-2">
                             <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Top Consumers</h4>
                             {topCpuPods.map((p) => (
-                                <div key={p.name} className="flex items-center justify-between text-xs bg-black/10 hover:bg-black/20 p-2 rounded-lg border border-white/[0.02] transition-colors gap-2">
+                                <div key={p.name} className="flex items-center justify-between text-xs bg-black/10 hover:bg-black/20 p-2 rounded-lg border border-white/2 transition-colors gap-2">
                                     <span className="font-mono text-gray-300 truncate max-w-[160px]">{p.name}</span>
                                     <div className="flex items-center gap-3">
                                         <K8sMiniSparkline values={p.cpuSparkline} color="#06b6d4" />
@@ -378,7 +378,7 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
                     </div>
 
                     {/* Memory Usage Card */}
-                    <div className="bg-[#1a1a1a]/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 relative overflow-hidden">
+                    <div className="bg-bg-surface/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-fuchsia-500/5 rounded-full blur-3xl" />
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Memory Utilization</h3>
@@ -386,9 +386,9 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
                         </div>
 
                         {/* Progress bar */}
-                        <div className="w-full bg-gray-800/50 rounded-full h-2.5 mb-4 overflow-hidden border border-white/[0.05]">
+                        <div className="w-full bg-gray-800/50 rounded-full h-2.5 mb-4 overflow-hidden border border-white/5">
                             <div
-                                className="bg-gradient-to-r from-fuchsia-500 to-pink-500 h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(217,70,239,0.5)]"
+                                className="bg-linear-to-r from-fuchsia-500 to-pink-500 h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(217,70,239,0.5)]"
                                 style={{ width: `${Math.min(100, (totalMemMi / 4096) * 100)}%` }}
                             />
                         </div>
@@ -397,7 +397,7 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
                         <div className="space-y-2">
                             <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Top Consumers</h4>
                             {topMemPods.map((p) => (
-                                <div key={p.name} className="flex items-center justify-between text-xs bg-black/10 hover:bg-black/20 p-2 rounded-lg border border-white/[0.02] transition-colors gap-2">
+                                <div key={p.name} className="flex items-center justify-between text-xs bg-black/10 hover:bg-black/20 p-2 rounded-lg border border-white/2 transition-colors gap-2">
                                     <span className="font-mono text-gray-300 truncate max-w-[160px]">{p.name}</span>
                                     <div className="flex items-center gap-3">
                                         <K8sMiniSparkline values={p.memSparkline} color="#d946ef" />
@@ -419,7 +419,7 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
             )}
 
             {/* ── GRID 3: TIMELINE EVENT WATCHER ─────────────────────────────────── */}
-            <div className="bg-[#1a1a1a]/40 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden shadow-inner">
+            <div className="bg-bg-surface/40 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden shadow-inner">
                 <div className="p-4 border-b border-white/5 flex items-center justify-between bg-black/20">
                     <div className="flex items-center gap-2">
                         <AlertTriangle className="w-4 h-4 text-yellow-400 animate-pulse" />
@@ -433,7 +433,7 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
                     </button>
                 </div>
 
-                <div className="divide-y divide-white/[0.03]">
+                <div className="divide-y divide-white/3">
                     {warningEvents.length === 0 ? (
                         <div className="p-10 text-center flex flex-col items-center justify-center text-gray-500">
                             <span className="text-green-400 text-3xl mb-2">🛡️</span>
@@ -443,7 +443,7 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
                         warningEvents.slice(0, 6).map((ev: any, i: number) => (
                             <div
                                 key={i}
-                                className="px-5 py-3 flex items-start gap-3 hover:bg-white/[0.02] transition-colors group justify-between"
+                                className="px-5 py-3 flex items-start gap-3 hover:bg-white/2 transition-colors group justify-between"
                             >
                                 <div
                                     onClick={() => onSelectItem({ type: 'events', data: ev })}

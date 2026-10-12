@@ -24,7 +24,7 @@ export function ProUpgradeModal({ isOpen, onClose, unavailableReason }: ProUpgra
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
+                    className="fixed inset-0 z-9999 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
                     onClick={onClose}
                     role="presentation"
                 >
@@ -39,7 +39,7 @@ export function ProUpgradeModal({ isOpen, onClose, unavailableReason }: ProUpgra
                         aria-modal="true"
                         aria-labelledby="kubiq-pro-title"
                     >
-                        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
+                        <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-primary/70 to-transparent" />
                         <div className="absolute left-1/2 top-0 h-56 w-80 -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
 
                         <div className="relative z-10 flex flex-col items-center p-8 text-center">

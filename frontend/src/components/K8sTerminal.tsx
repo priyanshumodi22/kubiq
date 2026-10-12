@@ -5,6 +5,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import { Terminal, RefreshCw, AlertTriangle, ChevronDown } from 'lucide-react';
 import { K8sRbacPermissionBanner } from './K8sRbacPermissionBanner';
+import { apiClient } from '../services/api';
 
 interface K8sTerminalProps {
     namespace: string;
@@ -78,7 +79,8 @@ export default function K8sTerminal({ namespace, podName, containers }: K8sTermi
             socket = io(backendUrl, {
                 path: `${contextPath}/socket.io`,
                 transports: ['websocket'],
-                forceNew: true
+                forceNew: true,
+                auth: { token: apiClient.getToken() }
             });
             socketRef.current = socket;
 
@@ -165,7 +167,7 @@ export default function K8sTerminal({ namespace, podName, containers }: K8sTermi
     };
 
     return (
-        <div className="flex flex-col h-full bg-[#0a0a0a] overflow-hidden relative border border-white/5 shadow-inner">
+        <div className="flex flex-col h-full bg-bg overflow-hidden relative border border-white/5 shadow-inner">
             {/* Terminal Window Header Chrome */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between px-4 py-2 border-b border-white/5 bg-[#121212]/80 backdrop-blur-md sticky top-0 z-10 shrink-0 gap-2">
                 <div className="flex items-center gap-2 shrink-0">
@@ -175,7 +177,7 @@ export default function K8sTerminal({ namespace, podName, containers }: K8sTermi
                 <div className="flex items-center gap-3 font-mono overflow-x-auto custom-scrollbar pb-1 sm:pb-0 shrink-0">
                     {/* Multi-container Dropdown Selector */}
                     {containers.length > 1 ? (
-                        <div className="relative flex items-center bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded px-2 py-0.5 transition-colors cursor-pointer group whitespace-nowrap shrink-0">
+                        <div className="relative flex items-center bg-white/3 hover:bg-white/6 border border-white/10 rounded px-2 py-0.5 transition-colors cursor-pointer group whitespace-nowrap shrink-0">
                             <span className="text-[9px] text-gray-500 font-bold mr-1.5 uppercase select-none">Container:</span>
                             <select 
                                 value={selectedContainer}
@@ -191,13 +193,13 @@ export default function K8sTerminal({ namespace, podName, containers }: K8sTermi
                             <ChevronDown className="w-3 h-3 text-gray-500 absolute right-1.5 pointer-events-none group-hover:text-gray-300 transition-colors" />
                         </div>
                     ) : (
-                        <div className="flex items-center gap-1.5 bg-white/[0.02] border border-white/5 px-2 py-0.5 rounded text-[9px] text-gray-400">
+                        <div className="flex items-center gap-1.5 bg-white/2 border border-white/5 px-2 py-0.5 rounded text-[9px] text-gray-400">
                             <span className="text-gray-500 font-bold">CONTAINER:</span>
                             <span>{selectedContainer}</span>
                         </div>
                     )}
 
-                    <div className="flex items-center gap-1.5 bg-white/[0.02] border border-white/5 px-2 py-0.5 rounded text-[9px] text-gray-400">
+                    <div className="flex items-center gap-1.5 bg-white/2 border border-white/5 px-2 py-0.5 rounded text-[9px] text-gray-400">
                         <span className="text-gray-500 font-bold">NS:</span>
                         <span>{namespace}</span>
                     </div>
@@ -225,9 +227,9 @@ export default function K8sTerminal({ namespace, podName, containers }: K8sTermi
             </div>
 
             {/* Terminal Render Container */}
-            <div className="flex-1 p-2 bg-[#0a0a0a] overflow-hidden relative">
+            <div className="flex-1 p-2 bg-bg overflow-hidden relative">
                 {connecting && (
-                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0a0a0a]/90 backdrop-blur-sm space-y-4">
+                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-bg/90 backdrop-blur-sm space-y-4">
                         <div className="relative flex items-center justify-center">
                             <div className="w-10 h-10 border-2 border-emerald-400/20 border-t-emerald-400 rounded-full animate-spin" />
                             <Terminal className="w-4 h-4 text-emerald-400 absolute" />
@@ -240,7 +242,7 @@ export default function K8sTerminal({ namespace, podName, containers }: K8sTermi
                 )}
 
                 {error && (
-                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0a0a0a]/95 p-6">
+                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-bg/95 p-6">
                         {error.includes('403') || error.toLowerCase().includes('forbidden') ? (
                             <K8sRbacPermissionBanner 
                                 resource="pods/exec"

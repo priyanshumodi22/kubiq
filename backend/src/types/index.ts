@@ -92,16 +92,36 @@ export interface SystemConfig {
   refreshInterval?: number;
 }
 
-export type UserRole = 'kubiq-admin' | 'kubiq-viewer';
+export const BUILTIN_USER_ROLES = ['kubiq-admin', 'kubiq-user', 'kubiq-viewer'] as const;
+export type BuiltinUserRole = typeof BUILTIN_USER_ROLES[number];
+/**
+ * Role names are intentionally extensible because system administrators can
+ * create custom kubiq roles. The legacy `role` field remains during migration.
+ */
+export type UserRole = string;
+
+export type PermissionKey = string;
+
+export interface RoleDefinition {
+  id: string;
+  name: string;
+  description: string;
+  permissions: PermissionKey[];
+  builtIn?: boolean;
+}
 
 export interface User {
   id: string; // UUID or Int->String
   username: string;
   passwordHash?: string; // Optional for security when sending to frontend
   email?: string;
+  /** A validated, compressed profile image stored with the native user record. */
+  avatarUrl?: string;
   firstName?: string;
   lastName?: string;
   role: UserRole;
+  /** Multiple RBAC assignments. When absent, `role` is used for migration compatibility. */
+  roles?: UserRole[];
   allowedNamespaces?: string[];
   createdAt?: number;
   lastLogin?: number;

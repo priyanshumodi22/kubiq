@@ -4,8 +4,10 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Determine which .env file to load based on NODE_ENV
-const envFile = process.env.NODE_ENV === 'production' ? '.env' : '.env.local';
+// Determine which .env file to load based on NODE_ENV. KUBIQ_ENV_FILE is an
+// explicit local/test override so an operator can exercise the backend with a
+// securely retrieved deployment environment without replacing .env or .env.local.
+const envFile = process.env.KUBIQ_ENV_FILE?.trim() || (process.env.NODE_ENV === 'production' ? '.env' : '.env.local');
 const envPath = path.resolve(process.cwd(), envFile);
 
 // Production loads its mounted .env as before. Local production-equivalent tests can
@@ -26,7 +28,7 @@ import { healthRouter } from './routes/health';
 import { authRouter } from './routes/auth';
 import authWebAuthnRouter from './routes/auth-webauthn';
 import { errorHandler } from './middleware/errorHandler';
-import { authMiddleware, requireRole } from './middleware/auth';
+import { authMiddleware, requirePermission } from './middleware/auth';
 import { ServiceMonitor } from './services/ServiceMonitor';
 import { NotificationManager } from './services/NotificationManager';
 
@@ -103,7 +105,7 @@ app.use(
       const allowedOriginsStr = process.env.CORS_ORIGIN || process.env.FRONTEND_DNS || 'http://localhost:3000';
       const allowedOrigins = allowedOriginsStr.split(',').map(o => o.trim().replace(/\/$/, ''));
       // Always allow local development origins to connect for easier debugging
-      allowedOrigins.push('http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:5173');
+      allowedOrigins.push('http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:5173', 'http://127.0.0.1:5174');
 
       const cleanRequestOrigin = requestOrigin.replace(/\/$/, '');
 
@@ -134,6 +136,7 @@ import { kubernetesRouter } from './routes/kubernetes';
 import { telemetryRouter } from './routes/telemetry';
 import { auditLogRouter } from './routes/auditLogs';
 import { kubiRouter } from './routes/kubi';
+import { rbacRouter } from './routes/rbac';
 import { requireKubiAccess } from './middleware/kubiAccess';
 
 import { KubernetesService } from './services/KubernetesService';
@@ -163,10 +166,11 @@ app.use(`${BACKEND_CONTEXT_PATH}/api/services`, authMiddleware, servicesRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/notifications`, authMiddleware, notificationsRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/users`, authMiddleware, usersRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/system`, authMiddleware, systemRouter);
+app.use(`${BACKEND_CONTEXT_PATH}/api/rbac`, authMiddleware, rbacRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/logs`, authMiddleware, logRouter); // Log Management
 app.use(`${BACKEND_CONTEXT_PATH}/api/kubernetes`, authMiddleware, kubernetesRouter); // Kubernetes Monitoring
-app.use(`${BACKEND_CONTEXT_PATH}/api/audit-logs`, authMiddleware, requireRole('kubiq-admin'), auditLogRouter); // Audit Logging (Admin only)
-app.use(`${BACKEND_CONTEXT_PATH}/api/kubi`, authMiddleware, requireKubiAccess, kubiRouter);
+app.use(`${BACKEND_CONTEXT_PATH}/api/audit-logs`, authMiddleware, requirePermission('audit.read'), auditLogRouter);
+app.use(`${BACKEND_CONTEXT_PATH}/api/kubi`, authMiddleware, requirePermission('kubi.use'), requireKubiAccess, kubiRouter);
 
 
 // Serve frontend static files

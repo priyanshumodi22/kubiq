@@ -47,12 +47,12 @@ export function ConfirmDialog({
   const style = styles[type];
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden relative">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-bg-surface border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden relative">
         
         {/* Subtle Gradient Glow at top */}
-        <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${style.gradient}`} />
-        <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-24 h-24 bg-gradient-to-br ${style.gradient} blur-3xl opacity-20`} />
+        <div className={`absolute top-0 left-0 right-0 h-1 bg-linear-to-r ${style.gradient}`} />
+        <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-24 h-24 bg-linear-to-br ${style.gradient} blur-3xl opacity-20`} />
 
         {/* Content */}
         <div className="p-6 text-center">

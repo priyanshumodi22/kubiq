@@ -1,6 +1,6 @@
 
 import mysql from 'mysql2/promise';
-import { ISystemRepository, LicenseActivation, KubiAiConfigRecord } from '../../interfaces/ISystemRepository';
+import { ISystemRepository, LicenseActivation, KubiAiConfigRecord, RbacConfigRecord } from '../../interfaces/ISystemRepository';
 import { SystemMetrics } from '../../../types';
 
 export class MysqlSystemRepository implements ISystemRepository {
@@ -9,6 +9,7 @@ export class MysqlSystemRepository implements ISystemRepository {
   private readonly apmConfigKey = 'apm_prefs';
   private readonly licenseActivationKey = 'polar_license_activation';
   private readonly kubiAiConfigKey = 'kubi_ai_config';
+  private readonly rbacConfigKey = 'rbac_config';
 
   async initialize(): Promise<void> {
     this.pool = mysql.createPool({
@@ -176,5 +177,19 @@ export class MysqlSystemRepository implements ISystemRepository {
     if (!this.pool) await this.initialize();
     const value = JSON.stringify(config);
     await this.pool!.execute('INSERT INTO system_config (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?', [this.kubiAiConfigKey, value, value]);
+  }
+
+  async getRbacConfig(): Promise<RbacConfigRecord | null> {
+    if (!this.pool) await this.initialize();
+    const [rows]: any = await this.pool!.query('SELECT value FROM system_config WHERE `key` = ?', [this.rbacConfigKey]);
+    if (rows.length === 0) return null;
+    const value = typeof rows[0].value === 'string' ? JSON.parse(rows[0].value) : rows[0].value;
+    return value?.version === 1 && Array.isArray(value.roles) && typeof value.updatedAt === 'number' ? value as RbacConfigRecord : null;
+  }
+
+  async saveRbacConfig(config: RbacConfigRecord): Promise<void> {
+    if (!this.pool) await this.initialize();
+    const value = JSON.stringify(config);
+    await this.pool!.execute('INSERT INTO system_config (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?', [this.rbacConfigKey, value, value]);
   }
 }

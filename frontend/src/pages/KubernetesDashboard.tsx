@@ -77,7 +77,6 @@ const SIDEBAR_MENU = [
 export default function KubernetesDashboard() {
     const { 
         available, context, contexts, switchContext, namespaces, selectedNamespace, setSelectedNamespace,
-        scaleDeployment, restartDeployment, deleteResource 
     } = useKubernetes();
 
     const formatContextName = (name: string) => {
@@ -384,10 +383,10 @@ export default function KubernetesDashboard() {
     }
 
     return (
-        <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-screen-2xl mx-auto w-full animate-fade-in relative z-10 flex flex-col h-full">
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-(--breakpoint-2xl) mx-auto w-full animate-fade-in relative z-10 flex flex-col h-full">
             {/* Background */}
-            <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none bg-[#0a0a0a]">
-                <div className="absolute top-0 w-full h-96 bg-gradient-to-b from-primary/5 to-transparent" />
+            <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none bg-bg">
+                <div className="absolute top-0 w-full h-96 bg-linear-to-b from-primary/5 to-transparent" />
             </div>
 
             {/* Header */}
@@ -428,7 +427,7 @@ export default function KubernetesDashboard() {
                                     }}
                                     onMouseEnter={() => { if (!isCtxOpen) setHoveredCtx(context); }}
                                     onMouseLeave={() => setHoveredCtx(null)}
-                                    className="bg-[#1a1a1a] border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2 transition-colors focus:outline-none w-full sm:w-[240px]"
+                                    className="bg-bg-surface border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2 transition-colors focus:outline-none w-full sm:w-[240px]"
                                 >
                                     <Server className="w-4 h-4 text-gray-400 shrink-0" />
                                     <span className="flex-1 text-left truncate w-[170px] font-mono text-xs font-semibold">{formatContextName(context) || 'Select context'}</span>
@@ -438,7 +437,7 @@ export default function KubernetesDashboard() {
                                 {/* Trigger-Only Tooltip (Shown below the button only when dropdown is closed) */}
                                 {hoveredCtx && !isCtxOpen && (
                                     <div 
-                                        className="absolute right-0 top-full mt-2 bg-[#121212]/95 border border-gray-800 rounded-xl p-4 shadow-2xl z-[10000] backdrop-blur-md min-w-[320px] pointer-events-none transition-all animate-fade-in"
+                                        className="absolute right-0 top-full mt-2 bg-[#121212]/95 border border-gray-800 rounded-xl p-4 shadow-2xl z-10000 backdrop-blur-md min-w-[320px] pointer-events-none transition-all animate-fade-in"
                                         style={{ boxShadow: '0 20px 40px -5px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.05)' }}
                                     >
                                         <div className="text-[10px] font-bold text-primary uppercase tracking-widest mb-2 flex items-center gap-1.5">
@@ -452,7 +451,7 @@ export default function KubernetesDashboard() {
                                             </div>
                                             <div>
                                                 <div className="text-[9px] text-gray-500 uppercase font-bold mb-0.5">Raw Context Identifier</div>
-                                                <div className="text-white break-all bg-black/45 p-2 rounded-lg border border-white/[0.04] text-[10px] leading-relaxed">
+                                                <div className="text-white break-all bg-black/45 p-2 rounded-lg border border-white/4 text-[10px] leading-relaxed">
                                                     {hoveredCtx}
                                                 </div>
                                             </div>
@@ -477,7 +476,7 @@ export default function KubernetesDashboard() {
                                 {/* Portal-Docked Option Tooltip (Shown to the left of the list when dropdown is open) */}
                                 {isCtxOpen && hoveredCtx && ctxRect && createPortal(
                                     <div 
-                                        className="fixed bg-[#121212]/95 border border-gray-800 rounded-xl p-4 shadow-2xl z-[10000] backdrop-blur-md w-[320px] pointer-events-none transition-all animate-fade-in"
+                                        className="fixed bg-[#121212]/95 border border-gray-800 rounded-xl p-4 shadow-2xl z-10000 backdrop-blur-md w-[320px] pointer-events-none transition-all animate-fade-in"
                                         style={{ 
                                             top: ctxRect.top, 
                                             left: ctxRect.left - 330, 
@@ -495,7 +494,7 @@ export default function KubernetesDashboard() {
                                             </div>
                                             <div>
                                                 <div className="text-[9px] text-gray-500 uppercase font-bold mb-0.5">Raw Context Identifier</div>
-                                                <div className="text-white break-all bg-black/45 p-2 rounded-lg border border-white/[0.04] text-[10px] leading-relaxed">
+                                                <div className="text-white break-all bg-black/45 p-2 rounded-lg border border-white/4 text-[10px] leading-relaxed">
                                                     {hoveredCtx}
                                                 </div>
                                             </div>
@@ -563,7 +562,7 @@ export default function KubernetesDashboard() {
                                     }
                                     setIsNsOpen(o => !o);
                                 }}
-                                className="bg-[#1a1a1a] border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2 transition-colors focus:outline-none w-full sm:min-w-[160px]"
+                                className="bg-bg-surface border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2 transition-colors focus:outline-none w-full sm:min-w-[160px]"
                             >
                                 <Layers className="w-4 h-4 text-gray-400 shrink-0" />
                                 <span className="flex-1 text-left">{selectedNamespace || 'Select namespace'}</span>
@@ -594,7 +593,7 @@ export default function KubernetesDashboard() {
                         <button
                             onClick={() => fetchData()}
                             disabled={loading}
-                            className="bg-[#1a1a1a] border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-center gap-2 px-3 py-2 transition-colors w-full sm:w-auto"
+                            className="bg-bg-surface border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-center gap-2 px-3 py-2 transition-colors w-full sm:w-auto"
                         >
                             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                             Refresh
@@ -608,10 +607,10 @@ export default function KubernetesDashboard() {
             ) : (
                 <div className="flex flex-col lg:flex-row flex-1 overflow-visible lg:overflow-hidden gap-6 relative z-10 min-h-0">
                     {/* Mobile View Selector Dropdown */}
-                    <div className="lg:hidden w-full relative z-[60] mb-1 shrink-0">
+                    <div className="lg:hidden w-full relative z-60 mb-1 shrink-0">
                         <button
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="w-full bg-[#1a1a1a] border border-gray-700 hover:border-primary/50 text-gray-300 text-xs rounded-lg flex items-center justify-between gap-3 px-3 py-2 transition-all focus:outline-none"
+                            className="w-full bg-bg-surface border border-gray-700 hover:border-primary/50 text-gray-300 text-xs rounded-lg flex items-center justify-between gap-3 px-3 py-2 transition-all focus:outline-none"
                         >
                             <div className="flex items-center gap-2.5">
                                 <Menu className="w-3.5 h-3.5 text-primary" />
@@ -742,7 +741,7 @@ export default function KubernetesDashboard() {
                         ) : (
                             <>
                                 {/* Toolbar */}
-                                <div className="p-3 border-b border-gray-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-[#1a1a1a] shrink-0 text-left gap-2">
+                                <div className="p-3 border-b border-gray-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-bg-surface shrink-0 text-left gap-2">
                                     <div className="flex items-center gap-2 px-2">
                                         <span className="text-sm font-semibold text-white capitalize">{activeResource.replace('persistent', 'Persistent ')}</span>
                                         <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">{filteredAndSortedData.length}</span>
@@ -767,7 +766,7 @@ export default function KubernetesDashboard() {
                                 {/* Dynamic Table View */}
                                 <div className="flex-1 overflow-auto custom-scrollbar">
                                     <table className="w-full text-sm">
-                                        <thead className="bg-[#1a1a1a] sticky top-0 z-10 shadow-sm">
+                                        <thead className="bg-bg-surface sticky top-0 z-10 shadow-sm">
                                             <tr className="text-xs text-gray-400 border-b border-gray-800">
                                                 <th className="text-left px-4 py-3 font-medium cursor-pointer hover:text-white" onClick={() => handleSort('name')}>
                                                     Name {sortCol?.key === 'name' && (sortCol.asc ? '↑' : '↓')}
@@ -860,7 +859,7 @@ export default function KubernetesDashboard() {
                                                 const cTime = item.startTime || item.metadata?.creationTimestamp;
 
                                                 return (
-                                                    <tr key={`${name}-${idx}`} className="hover:bg-white/[0.04] transition-colors cursor-pointer group" onClick={() => setSelectedItem({type: activeResource, data: item})}>
+                                                    <tr key={`${name}-${idx}`} className="hover:bg-white/4 transition-colors cursor-pointer group" onClick={() => setSelectedItem({type: activeResource, data: item})}>
                                                         <td className="px-4 py-2.5">
                                                             <div className="flex items-center gap-2">
                                                                 <FileJson className="w-3.5 h-3.5 text-gray-500 group-hover:text-primary transition-colors" />
@@ -1079,10 +1078,6 @@ export default function KubernetesDashboard() {
                     item={selectedItem} 
                     onClose={() => setSelectedItem(null)} 
                     namespace={selectedNamespace}
-                    onScale={scaleDeployment}
-                    onRestart={restartDeployment}
-                    onDelete={deleteResource}
-                    onApplyManifest={apiClient.applyKubernetesManifest.bind(apiClient)}
                     metricsHistory={metricsHistory}
                 />
             )}

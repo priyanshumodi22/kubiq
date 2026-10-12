@@ -1,4 +1,4 @@
-import { LogOut, User, ChevronDown, Shield, Bell, Users } from 'lucide-react';
+import { LogOut, User, ChevronDown, Shield, Bell, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -6,7 +6,7 @@ import { NotificationConfigModal } from './NotificationConfigModal';
 import { apiClient } from '../services/api';
 
 export default function Header() {
-  const { isAuthenticated, user, roles, logout, hasRole } = useAuth();
+  const { isAuthenticated, user, roles, logout, hasPermission } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isProActive, setIsProActive] = useState(false);
@@ -55,10 +55,20 @@ export default function Header() {
   // Filter roles to only show kubiq-specific roles
   const kubiqRoles = roles.filter((role) => role.toLowerCase().startsWith('kubiq'));
   const userRole = kubiqRoles.length > 0 ? kubiqRoles.join(', ') : 'No Role Assigned';
+  const userInitials = (userDisplayName || 'U').slice(0, 2).toUpperCase();
+  const UserAvatar = ({ className = 'w-8 h-8' }: { className?: string }) => (
+    <div className={`${className} overflow-hidden bg-primary/20 rounded-full flex items-center justify-center shrink-0`}>
+      {user?.avatarUrl ? (
+        <img src={user.avatarUrl} alt="Your display picture" className="h-full w-full object-cover" />
+      ) : (
+        <span className="text-xs font-bold text-primary">{userInitials}</span>
+      )}
+    </div>
+  );
 
   const renderNavLinks = () => (
     <>
-      <Link
+      {hasPermission('services.read') && <Link
         to="/dashboard?tab=services"
         className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${location.pathname === '/dashboard' && (!location.search.includes('tab=system'))
           ? 'bg-primary text-white shadow-md'
@@ -66,9 +76,9 @@ export default function Header() {
           }`}
       >
         Services
-      </Link>
+      </Link>}
 
-      {isAuthenticated && (
+      {isAuthenticated && hasPermission('system.read') && (
         <Link
           to="/dashboard?tab=system"
           className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${location.pathname === '/dashboard' && location.search.includes('tab=system')
@@ -80,7 +90,7 @@ export default function Header() {
         </Link>
       )}
 
-      {isAuthenticated && (
+      {isAuthenticated && hasPermission('logs.read') && (
         <Link
           to="/logs"
           className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${location.pathname.startsWith('/logs')
@@ -92,7 +102,7 @@ export default function Header() {
         </Link>
       )}
 
-      {isAuthenticated && (
+      {isAuthenticated && hasPermission('apm.read') && (
         <Link
           to="/apm"
           className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${location.pathname.startsWith('/apm')
@@ -104,7 +114,7 @@ export default function Header() {
         </Link>
       )}
 
-      {isAuthenticated && (
+      {isAuthenticated && hasPermission('kubernetes.read') && (
         <Link
           to="/kubernetes"
           className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${location.pathname.startsWith('/kubernetes')
@@ -116,22 +126,11 @@ export default function Header() {
         </Link>
       )}
 
-      {isAuthenticated && hasRole('kubiq-admin') && (
-        <Link
-          to="/audit-logs"
-          className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap ${location.pathname.startsWith('/audit-logs')
-            ? 'bg-primary text-white shadow-md'
-            : 'text-gray-400 hover:text-white hover:bg-white/5'
-            }`}
-        >
-          Audit Logs
-        </Link>
-      )}
     </>
   );
 
   return (
-    <header className="bg-gradient-to-r from-bg via-bg-surface to-bg border-b border-gray-800/50 relative">
+    <header className="bg-linear-to-r from-bg via-bg-surface to-bg border-b border-gray-800/50 relative">
       {/* Background container with overflow hidden */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Subtle animated background effect */}
@@ -144,7 +143,7 @@ export default function Header() {
         <div className="flex items-center justify-between gap-2 sm:gap-4 w-full">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Link to="/dashboard" className="flex items-center gap-2 sm:gap-3 min-w-0 hover:opacity-90 transition-opacity">
-              <div className="inline-flex items-center justify-center w-12 h-12 sm:w-12 sm:h-12 bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl shadow-lg shadow-primary/10">
+              <div className="inline-flex items-center justify-center w-12 h-12 sm:w-12 sm:h-12 bg-linear-to-br from-primary/20 to-primary/5 rounded-2xl shadow-lg shadow-primary/10">
                 <img
                   src={`${import.meta.env.BASE_URL.endsWith('/')
                     ? import.meta.env.BASE_URL
@@ -189,15 +188,13 @@ export default function Header() {
             )}
 
             {isAuthenticated && (
-              <div className="relative flex-shrink-0" ref={dropdownRef}>
+              <div className="relative shrink-0" ref={dropdownRef}>
                 {/* User Profile Button */}
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-2 bg-bg-surface hover:bg-gray-800 rounded-lg transition-colors group"
                 >
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
-                    <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
-                  </div>
+                  <UserAvatar className="w-7 h-7 sm:w-8 sm:h-8" />
                   <div className="text-left hidden md:block">
                     <div className="text-sm font-medium text-text truncate max-w-[120px] lg:max-w-none">
                       {userDisplayName}
@@ -218,9 +215,7 @@ export default function Header() {
                     {/* User Info Section */}
                     <div className="p-3 border-b border-gray-700 bg-bg-surface">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
-                          <User className="w-5 h-5 text-primary" />
-                        </div>
+                        <UserAvatar className="w-10 h-10" />
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium text-text truncate">
                             {user?.email || user?.username}
@@ -232,7 +227,7 @@ export default function Header() {
                     {/* Role Section */}
                     <div className="p-3 border-b border-gray-700">
                       <div className="flex items-start gap-2">
-                        <Shield className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                        <Shield className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="text-xs font-medium text-text-dim mb-1.5">Role(s)</div>
                           <div className="flex flex-wrap gap-1">
@@ -267,15 +262,15 @@ export default function Header() {
                     </div>
 
                     {/* Admin Links */}
-                    {roles.includes('kubiq-admin') && (
+                    {hasPermission('system.access') && (
                       <div className="p-1 px-1.5 border-b border-gray-700">
                         <Link
-                          to="/admin/users"
+                          to="/system"
                           className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-text hover:bg-gray-700/50 rounded-lg transition-colors"
                           onClick={() => setDropdownOpen(false)}
                         >
-                          <Users className="w-4 h-4 text-primary" />
-                          Manage Users
+                          <Settings className="w-4 h-4 text-primary" />
+                          System Administration
                         </Link>
                       </div>
                     )}

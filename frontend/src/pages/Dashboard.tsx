@@ -17,7 +17,7 @@ import { StorageAnalyticsWidget } from '../components/StorageAnalyticsWidget';
 
 export default function Dashboard() {
   const { services, stats, loading, error, refresh } = useServices();
-  const { hasRole } = useAuth();
+  const { hasPermission } = useAuth();
   const [searchParams] = useSearchParams();
   
   // Drive active tab from URL, default to 'services'
@@ -35,7 +35,7 @@ export default function Dashboard() {
   const [editService, setEditService] = useState<ServiceStatus | null>(null);
   const [deleteService, setDeleteService] = useState<ServiceStatus | null>(null);
 
-  const isAdmin = hasRole('kubiq-admin');
+  const isAdmin = hasPermission('services.manage');
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -62,7 +62,7 @@ export default function Dashboard() {
     return (
       <div className="relative min-h-screen">
         <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-br from-bg via-bg to-bg-surface"></div>
+          <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
           <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
           <div className="absolute top-1/3 -right-20 w-80 h-80 bg-primary/3 rounded-full blur-3xl"></div>
@@ -83,7 +83,7 @@ export default function Dashboard() {
     return (
       <div className="relative min-h-screen">
         <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-br from-bg via-bg to-bg-surface"></div>
+          <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
           <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
           <div className="absolute top-1/3 -right-20 w-80 h-80 bg-primary/3 rounded-full blur-3xl"></div>
@@ -109,7 +109,7 @@ export default function Dashboard() {
   return (
     <div className="relative min-h-screen pt-4 sm:pt-0">
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-bg via-bg to-bg-surface"></div>
+        <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
         <div className="absolute top-1/3 -right-20 w-80 h-80 bg-primary/3 rounded-full blur-3xl"></div>
@@ -159,7 +159,7 @@ export default function Dashboard() {
               <div className="flex gap-3 sm:gap-4 w-full sm:w-auto">
                 {/* Filter */}
                 <div className="flex items-center gap-2 flex-1 sm:flex-none min-w-0">
-                  <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-text-dim flex-shrink-0" />
+                  <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-text-dim shrink-0" />
                   <div className="relative flex-1 min-w-0" ref={filterDropdownRef}>
                     <button
                       onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
@@ -172,7 +172,7 @@ export default function Dashboard() {
                         {statusFilter === 'unknown' && 'Unknown'}
                       </span>
                       <ChevronDown
-                        className={`w-4 h-4 text-text-dim flex-shrink-0 transition-transform ${
+                        className={`w-4 h-4 text-text-dim shrink-0 transition-transform ${
                           filterDropdownOpen ? 'rotate-180' : ''
                         }`}
                       />

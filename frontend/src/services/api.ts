@@ -48,6 +48,11 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error: AxiosError) => {
+        if (typeof window !== 'undefined' && error.response?.status === 403 && (error.response.data as any)?.error === 'RBAC_FORBIDDEN') {
+          window.dispatchEvent(new CustomEvent('kubiq:toast', {
+            detail: { type: 'warning', message: 'You do not have permission to perform this action.' }
+          }));
+        }
         // Don't redirect on 401 - let the auth context handle it
         // The token refresh will handle expired tokens
         return Promise.reject(error);
@@ -63,6 +68,10 @@ class ApiClient {
     this.token = null;
   }
 
+  getToken() {
+    return this.token;
+  }
+
   setKubernetesContext(context: string | null) {
     this.activeK8sContext = context;
   }
@@ -73,8 +82,24 @@ class ApiClient {
     return response.data;
   }
 
+  async previewAuthMigration(target: 'native' | 'keycloak') {
+    const response = await this.client.post('/api/auth/migration/preview', { target });
+    return response.data as {
+      current: string | null;
+      target: string;
+      requiresRestart: boolean;
+      requirements: string[];
+      rollback: string;
+    };
+  }
+
   async login(credentials: any) {
     const response = await this.client.post('/api/auth/login', credentials);
+    return response.data;
+  }
+
+  async refreshNativeSession() {
+    const response = await this.client.post('/api/auth/refresh');
     return response.data;
   }
 
@@ -94,17 +119,34 @@ class ApiClient {
   }
 
   // kubi — kubiq Pro AI assistant
-  async getKubiStatus(): Promise<{ enabled: boolean; proActive: boolean; providerConfigured: boolean; provider: string | null; model?: string | null; reason?: string }> {
+  async getKubiStatus(): Promise<{
+    enabled: boolean;
+    proActive: boolean;
+    providerConfigured: boolean;
+    provider: string | null;
+    model?: string | null;
+    reason?: string;
+  }> {
     const response = await this.client.get('/api/kubi/status');
     return response.data;
   }
 
-  async getKubiAiConfiguration(): Promise<{ provider: 'gemini' | 'openai' | 'anthropic' | null; model: string | null; configured: boolean; managedInKubiq: boolean; encryptionReady: boolean }> {
+  async getKubiAiConfiguration(): Promise<{
+    provider: 'gemini' | 'openai' | 'anthropic' | null;
+    model: string | null;
+    configured: boolean;
+    managedInKubiq: boolean;
+    encryptionReady: boolean;
+  }> {
     const response = await this.client.get('/api/system/kubi-ai');
     return response.data;
   }
 
-  async saveKubiAiConfiguration(config: { provider: 'gemini' | 'openai' | 'anthropic'; model: string; apiKey?: string }) {
+  async saveKubiAiConfiguration(config: {
+    provider: 'gemini' | 'openai' | 'anthropic';
+    model: string;
+    apiKey?: string;
+  }) {
     const response = await this.client.put('/api/system/kubi-ai', config);
     return response.data;
   }
@@ -112,6 +154,46 @@ class ApiClient {
   async testKubiAiConfiguration(): Promise<{ ok: boolean }> {
     const response = await this.client.post('/api/system/kubi-ai/test');
     return response.data;
+  }
+
+  // RBAC and System Administration
+  async getRbacRoles() {
+    const response = await this.client.get('/api/rbac/roles');
+    return response.data as Array<{
+      id: string;
+      name: string;
+      description: string;
+      permissions: string[];
+      builtIn?: boolean;
+    }>;
+  }
+
+  async getRbacPermissions() {
+    const response = await this.client.get('/api/rbac/permissions');
+    return response.data as Array<{ key: string; label: string }>;
+  }
+
+  async createRbacRole(input: { name: string; description: string; permissions: string[] }) {
+    const response = await this.client.post('/api/rbac/roles', input);
+    return response.data;
+  }
+
+  async syncKeycloakClientRoles() {
+    const response = await this.client.post('/api/rbac/keycloak/sync');
+    return response.data as { created: string[]; unexpected?: string[]; inspected: number };
+  }
+
+  async getKeycloakHealth() {
+    const response = await this.client.get('/api/rbac/keycloak/health');
+    return response.data as { selected: boolean; configured: boolean; reachable: boolean };
+  }
+
+  async updateRbacRole(id: string, input: { description: string; permissions: string[] }) {
+    return (await this.client.put(`/api/rbac/roles/${id}`, input)).data;
+  }
+
+  async deleteRbacRole(id: string) {
+    await this.client.delete(`/api/rbac/roles/${id}`);
   }
 
   async createKubiConversation(title?: string) {
@@ -138,16 +220,23 @@ class ApiClient {
     return response.data;
   }
 
-  async streamKubiMessage(conversationId: string, message: string, onEvent: (event: string, data: any) => void): Promise<void> {
-    const response = await fetch(`${BASE_PATH}/api/kubi/conversations/${encodeURIComponent(conversationId)}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
-        ...(this.activeK8sContext ? { 'x-kubernetes-context': this.activeK8sContext } : {}),
-      },
-      body: JSON.stringify({ message }),
-    });
+  async streamKubiMessage(
+    conversationId: string,
+    message: string,
+    onEvent: (event: string, data: any) => void
+  ): Promise<void> {
+    const response = await fetch(
+      `${BASE_PATH}/api/kubi/conversations/${encodeURIComponent(conversationId)}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+          ...(this.activeK8sContext ? { 'x-kubernetes-context': this.activeK8sContext } : {}),
+        },
+        body: JSON.stringify({ message }),
+      }
+    );
     if (!response.ok || !response.body) throw new Error(`kubi request failed (${response.status})`);
 
     const reader = response.body.getReader();
@@ -163,7 +252,11 @@ class ApiClient {
         const raw = entry.match(/^data:\s*(.+)$/m)?.[1];
         if (!raw) continue;
         let data: unknown;
-        try { data = JSON.parse(raw); } catch { continue; }
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          continue;
+        }
         // Completion handlers reload persisted messages; await them so failures
         // reach the panel instead of leaving the avatar permanently busy.
         await onEvent(event, data);
@@ -173,7 +266,9 @@ class ApiClient {
   }
 
   // WebAuthn / Biometrics
-  async registerPasskeyOptions(authenticatorAttachment: PasskeyAuthenticatorAttachment = 'platform') {
+  async registerPasskeyOptions(
+    authenticatorAttachment: PasskeyAuthenticatorAttachment = 'platform'
+  ) {
     const response = await this.client.get('/api/auth/webauthn/register/options', {
       params: { authenticatorAttachment },
     });
@@ -191,34 +286,37 @@ class ApiClient {
   }
 
   async loginPasskeyVerify(username: string, data: any) {
-    const response = await this.client.post('/api/auth/webauthn/login/verify', { username, ...data });
+    const response = await this.client.post('/api/auth/webauthn/login/verify', {
+      username,
+      ...data,
+    });
     return response.data;
   }
 
   // Profile Management
-  async updateProfile(data: { username: string; email: string }) {
-      const response = await this.client.put('/api/auth/profile', data);
-      return response.data;
+  async updateProfile(data: { username: string; email: string; avatarUrl?: string }) {
+    const response = await this.client.put('/api/auth/profile', data);
+    return response.data;
   }
 
   async changePassword(data: any) {
-      const response = await this.client.put('/api/auth/change-password', data);
-      return response.data;
+    const response = await this.client.put('/api/auth/change-password', data);
+    return response.data;
   }
 
   async getPasskeys() {
-      const response = await this.client.get('/api/auth/webauthn/passkeys');
-      return response.data;
+    const response = await this.client.get('/api/auth/webauthn/passkeys');
+    return response.data;
   }
 
   async renamePasskey(id: string, name: string) {
-      const response = await this.client.put(`/api/auth/webauthn/passkeys/${id}`, { name });
-      return response.data;
+    const response = await this.client.put(`/api/auth/webauthn/passkeys/${id}`, { name });
+    return response.data;
   }
 
   async deletePasskey(id: string) {
-      const response = await this.client.delete(`/api/auth/webauthn/passkeys/${id}`);
-      return response.data;
+    const response = await this.client.delete(`/api/auth/webauthn/passkeys/${id}`);
+    return response.data;
   }
 
   // Service endpoints
@@ -266,7 +364,13 @@ class ApiClient {
   }
 
   // Service CRUD operations (admin only)
-  async createService(name: string, endpoint: string, type: 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp' = 'http', interval?: number, retries?: number) {
+  async createService(
+    name: string,
+    endpoint: string,
+    type: 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp' = 'http',
+    interval?: number,
+    retries?: number
+  ) {
     const response = await this.client.post('/api/services', {
       name,
       endpoint,
@@ -277,7 +381,16 @@ class ApiClient {
     return response.data;
   }
 
-  async updateService(name: string, endpoint: string, type?: 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp', ignoreSSL?: boolean, logPath?: string, logSources?: any[], interval?: number, retries?: number) {
+  async updateService(
+    name: string,
+    endpoint: string,
+    type?: 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp',
+    ignoreSSL?: boolean,
+    logPath?: string,
+    logSources?: any[],
+    interval?: number,
+    retries?: number
+  ) {
     const response = await this.client.put(`/api/services/${name}`, {
       endpoint,
       type,
@@ -363,7 +476,11 @@ class ApiClient {
     return response.data;
   }
 
-  async updateMaintenanceConfig(data: { maintenanceMode?: boolean; mutedNamespaces?: string[]; mutedServices?: string[] }) {
+  async updateMaintenanceConfig(data: {
+    maintenanceMode?: boolean;
+    mutedNamespaces?: string[];
+    mutedServices?: string[];
+  }) {
     const response = await this.client.post('/api/notifications/maintenance', data);
     return response.data;
   }
@@ -371,35 +488,58 @@ class ApiClient {
   async exportAuditLogsCsv(search?: string) {
     const response = await this.client.get('/api/audit-logs/export', {
       params: { search },
-      responseType: 'blob'
+      responseType: 'blob',
     });
     return response.data;
   }
 
   // Admin User Management
   async getUsers() {
-      const response = await this.client.get('/api/users');
-      return response.data;
+    const response = await this.client.get('/api/users');
+    return response.data;
+  }
+
+  async createUser(input: {
+    username: string;
+    password: string;
+    email?: string;
+    roles: string[];
+    allowedNamespaces?: string[];
+  }) {
+    const response = await this.client.post('/api/users', input);
+    return response.data;
   }
 
   async updateUserRole(userId: string, role: string) {
-      const response = await this.client.put(`/api/users/${userId}/role`, { role });
-      return response.data;
+    const response = await this.client.put(`/api/users/${userId}/role`, { role });
+    return response.data;
+  }
+
+  async updateUserRoles(userId: string, roles: string[]) {
+    const response = await this.client.put(`/api/users/${userId}/roles`, { roles });
+    return response.data;
   }
 
   async updateUserAllowedNamespaces(userId: string, allowedNamespaces: string[]) {
-      const response = await this.client.put(`/api/users/${userId}/namespaces`, { allowedNamespaces });
-      return response.data;
+    const response = await this.client.put(`/api/users/${userId}/namespaces`, {
+      allowedNamespaces,
+    });
+    return response.data;
   }
 
   async updateUserStatus(userId: string, enabled: boolean) {
-      const response = await this.client.put(`/api/users/${userId}/status`, { enabled });
-      return response.data;
+    const response = await this.client.put(`/api/users/${userId}/status`, { enabled });
+    return response.data;
+  }
+
+  async resetUserPassword(userId: string, password: string) {
+    const response = await this.client.put(`/api/users/${userId}/password`, { password });
+    return response.data;
   }
 
   async deleteUser(userId: string) {
-      const response = await this.client.delete(`/api/users/${userId}`);
-      return response.data;
+    const response = await this.client.delete(`/api/users/${userId}`);
+    return response.data;
   }
 
   // System Monitoring
@@ -447,18 +587,18 @@ class ApiClient {
   async switchKubernetesContext(context: string) {
     this.setKubernetesContext(context);
     try {
-        const response = await this.client.get('/api/kubernetes/status');
-        return {
-            message: `Context switched to ${context}`,
-            available: response.data.available,
-            context: context
-        };
+      const response = await this.client.get('/api/kubernetes/status');
+      return {
+        message: `Context switched to ${context}`,
+        available: response.data.available,
+        context: context,
+      };
     } catch (e) {
-        return {
-            message: `Context switched locally but status check failed`,
-            available: false,
-            context: context
-        };
+      return {
+        message: `Context switched locally but status check failed`,
+        available: false,
+        context: context,
+      };
     }
   }
 
@@ -474,7 +614,10 @@ class ApiClient {
 
   async getKubernetesPodMetricsHistory(namespace: string, podName: string, hours?: number) {
     const params = hours ? { hours } : {};
-    const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/pods/${podName}/metrics/history`, { params });
+    const response = await this.client.get(
+      `/api/kubernetes/namespaces/${namespace}/pods/${podName}/metrics/history`,
+      { params }
+    );
     return response.data;
   }
 
@@ -515,7 +658,9 @@ class ApiClient {
   }
 
   async getKubernetesPersistentVolumeClaims(namespace: string) {
-    const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/persistentvolumeclaims`);
+    const response = await this.client.get(
+      `/api/kubernetes/namespaces/${namespace}/persistentvolumeclaims`
+    );
     return response.data;
   }
 
@@ -542,23 +687,9 @@ class ApiClient {
   }
 
   async getKubernetesAutoscalers(namespace: string, type: string, name: string) {
-    const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/autoscalers/${type}/${name}`);
-    return response.data;
-  }
-
-  // --- Management Actions ---
-  async scaleKubernetesDeployment(namespace: string, name: string, replicas: number) {
-    const response = await this.client.post(`/api/kubernetes/namespaces/${namespace}/deployments/${name}/scale`, { replicas });
-    return response.data;
-  }
-
-  async restartKubernetesDeployment(namespace: string, name: string) {
-    const response = await this.client.post(`/api/kubernetes/namespaces/${namespace}/deployments/${name}/restart`);
-    return response.data;
-  }
-
-  async deleteKubernetesResource(namespace: string, type: string, name: string) {
-    const response = await this.client.delete(`/api/kubernetes/namespaces/${namespace}/${type}/${name}`);
+    const response = await this.client.get(
+      `/api/kubernetes/namespaces/${namespace}/autoscalers/${type}/${name}`
+    );
     return response.data;
   }
 
@@ -568,15 +699,19 @@ class ApiClient {
   }
 
   async aiDiagnosePod(namespace: string, name: string) {
-    const response = await this.client.post(`/api/kubernetes/namespaces/${namespace}/pods/${name}/ai-diagnose`);
+    const response = await this.client.post(
+      `/api/kubernetes/namespaces/${namespace}/pods/${name}/ai-diagnose`
+    );
     return response.data;
   }
 
   async aiDiagnoseEvent(namespace: string, event: any) {
-    const response = await this.client.post(`/api/kubernetes/namespaces/${namespace}/events/ai-diagnose`, { event });
+    const response = await this.client.post(
+      `/api/kubernetes/namespaces/${namespace}/events/ai-diagnose`,
+      { event }
+    );
     return response.data;
   }
-
 
   // --- Logs ---
   async getDiscoveredLogServices() {
@@ -585,7 +720,9 @@ class ApiClient {
   }
 
   async getLogSources(serviceName: string) {
-    const response = await this.client.get(`/api/logs/sources?serviceName=${encodeURIComponent(serviceName)}`);
+    const response = await this.client.get(
+      `/api/logs/sources?serviceName=${encodeURIComponent(serviceName)}`
+    );
     return response.data;
   }
 
@@ -596,12 +733,18 @@ class ApiClient {
 
   async summarizeLogs(logs: any[], serviceName?: string) {
     // LLM API calls can take longer than the default 10s global timeout
-    const response = await this.client.post('/api/logs/summarize', { logs, serviceName }, { timeout: 60000 });
+    const response = await this.client.post(
+      '/api/logs/summarize',
+      { logs, serviceName },
+      { timeout: 60000 }
+    );
     return response.data;
   }
 
   async getRecentSummary(serviceName: string) {
-    const response = await this.client.get(`/api/logs/recent-summary?serviceName=${encodeURIComponent(serviceName)}`);
+    const response = await this.client.get(
+      `/api/logs/recent-summary?serviceName=${encodeURIComponent(serviceName)}`
+    );
     return response.data;
   }
 
@@ -613,11 +756,6 @@ class ApiClient {
 
   async updateApmConfig(config: { ignoredRoutes: string[] }) {
     const response = await this.client.put('/api/system/apm-config', config);
-    return response.data;
-  }
-
-  async applyKubernetesManifest(manifest: string | object) {
-    const response = await this.client.post('/api/kubernetes/apply', { manifest });
     return response.data;
   }
 
@@ -638,21 +776,25 @@ class ApiClient {
   }
 
   async getApmServiceTraces(serviceName: string, params: Record<string, string>) {
-    const response = await this.client.get(`/api/apm/services/${encodeURIComponent(serviceName)}/traces`, { params });
+    const response = await this.client.get(
+      `/api/apm/services/${encodeURIComponent(serviceName)}/traces`,
+      { params }
+    );
     return response.data;
   }
 
   async getApmEdgeRecentTrace(source: string, target: string) {
-    const response = await this.client.get(`/api/apm/edges/${encodeURIComponent(source)}/${encodeURIComponent(target)}/recent-trace`);
+    const response = await this.client.get(
+      `/api/apm/edges/${encodeURIComponent(source)}/${encodeURIComponent(target)}/recent-trace`
+    );
     return response.data;
   }
 
-  async getAuditLogs(search?: string) {
-    const params = search ? { search } : {};
+  async getAuditLogs(page: number = 1, pageSize: number = 25, search?: string) {
+    const params = { page, pageSize, ...(search ? { search } : {}) };
     const response = await this.client.get('/api/audit-logs', { params });
     return response.data;
   }
-
 
   async getApmServiceMap(params: Record<string, string>) {
     const response = await this.client.get('/api/apm/service-map', { params });
@@ -663,7 +805,6 @@ class ApiClient {
     const response = await this.client.get('/api/apm/export', { params, responseType: 'blob' });
     return response;
   }
-
 }
 
 export const apiClient = new ApiClient();

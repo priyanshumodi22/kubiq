@@ -5,6 +5,8 @@ import path from 'path';
 import { EventEmitter } from 'events';
 import { glob } from 'glob';
 import { isPathSafe } from '../utils/pathSecurity';
+import { getSocketUser } from '../middleware/auth';
+import { RbacRoleService } from './RbacRoleService';
 
 // ─── Shared file watcher: ONE per unique file path ─────────────────
 interface SharedFileWatcher {
@@ -62,6 +64,11 @@ export class LogStreamService extends EventEmitter {
             socket.on('watch:log', async (data: { path: string, pattern?: string, limit?: number, serviceName?: string }) => {
                 const { path: logPath, pattern, limit, serviceName } = data;
                 console.log(`👀 Client ${socket.id} requested to watch: ${logPath} (Pattern: ${pattern}, Limit: ${limit}, Service: ${serviceName})`);
+                const user = await getSocketUser(socket.handshake.auth?.token);
+                if (!user || !(await RbacRoleService.hasPermission(user, 'logs.raw.read'))) {
+                    socket.emit('error', { message: 'Your kubiq role does not permit raw log streaming.' });
+                    return;
+                }
                 
                 if (!isPathSafe(logPath) || (pattern && !isPathSafe(pattern))) {
                     console.warn(`⚠️ Path traversal or blocked directory access attempt detected from ${socket.id}: ${logPath} / ${pattern}`);

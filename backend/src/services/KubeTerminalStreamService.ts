@@ -2,6 +2,8 @@ import { Server, Socket } from 'socket.io';
 import * as k8s from '@kubernetes/client-node';
 import { PassThrough } from 'stream';
 import { KubernetesService } from './KubernetesService';
+import { canAccessKubernetesNamespace, getSocketUser } from '../middleware/auth';
+import { RbacRoleService } from './RbacRoleService';
 
 interface TerminalSession {
     connection: any;
@@ -45,6 +47,16 @@ export class KubeTerminalStreamService {
 
                 if (!enabled) {
                     socket.emit('k8s:terminal:error', { message: 'K8s TERMINAL IS DISABLED' });
+                    return;
+                }
+
+                const user = await getSocketUser(socket.handshake.auth?.token);
+                if (!user || !(await RbacRoleService.hasPermission(user, 'kubernetes.exec'))) {
+                    socket.emit('k8s:terminal:error', { message: 'Your kubiq role does not permit pod terminals.' });
+                    return;
+                }
+                if (!(await canAccessKubernetesNamespace(user, namespace))) {
+                    socket.emit('k8s:terminal:error', { message: `Access denied to namespace '${namespace}'.` });
                     return;
                 }
 
@@ -106,9 +118,12 @@ export class KubeTerminalStreamService {
                     );
 
                     // Sync initial TTY dimensions immediately on launch before shell prompt is drawn
-                    if (data.cols && data.rows && typeof connection.resize === 'function') {
+                    const resizableConnection = connection as typeof connection & {
+                        resize?: (columns: number, rows: number) => void;
+                    };
+                    if (data.cols && data.rows && typeof resizableConnection.resize === 'function') {
                         try {
-                            connection.resize(data.cols, data.rows);
+                            resizableConnection.resize(data.cols, data.rows);
                         } catch (e) {}
                     }
 

@@ -69,8 +69,9 @@ const getPresets = () => {
 };
 
 export default function ApmDashboard() {
-    const { hasRole } = useAuth();
-    const isAdmin = hasRole('kubiq-admin');
+    const { hasPermission } = useAuth();
+    const isAdmin = hasPermission('system.configure');
+    const canExport = hasPermission('apm.export');
     const [status, setStatus] = useState<{ supported: boolean; dbType: string; reason?: string; fix?: string } | null>(null);
     const [checkingStatus, setCheckingStatus] = useState(true);
 
@@ -366,7 +367,7 @@ export default function ApmDashboard() {
             <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] relative z-10 animate-fade-in">
                 {/* Background Effects */}
                 <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-                    <div className="absolute inset-0 bg-gradient-to-br from-bg via-bg to-bg-surface"></div>
+                    <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
                 </div>
                 <div className="flex flex-col items-center gap-4">
@@ -385,14 +386,14 @@ export default function ApmDashboard() {
             <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full animate-fade-in relative z-10">
                 {/* Background Effects */}
                 <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-                    <div className="absolute inset-0 bg-gradient-to-br from-bg via-bg to-bg-surface"></div>
+                    <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(239,68,68,0.08),transparent_60%)]"></div>
                     <div className="absolute -top-40 -left-40 w-96 h-96 bg-error/5 rounded-full blur-3xl"></div>
                     <div className="absolute bottom-20 right-20 w-80 h-80 bg-primary/3 rounded-full blur-3xl"></div>
                 </div>
 
                 <div className="mt-8 mb-6 text-center sm:text-left">
-                    <h1 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-400">
+                    <h1 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-white via-gray-200 to-gray-400">
                         APM & Distributed Traces
                     </h1>
                     <p className="text-text-dim mt-1">Application performance monitoring and diagnostics</p>
@@ -401,7 +402,7 @@ export default function ApmDashboard() {
                 {/* Glassmorphic main alert box */}
                 <div className="bg-bg-surface/60 backdrop-blur-xl border border-error/20 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
                     {/* Top edge glowing stripe */}
-                    <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-error/50 to-transparent"></div>
+                    <div className="absolute top-0 inset-x-0 h-[2px] bg-linear-to-r from-transparent via-error/50 to-transparent"></div>
 
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
                         <div className="p-4 rounded-xl bg-error/10 border border-error/20 text-error animate-pulse-slow">
@@ -479,7 +480,7 @@ export default function ApmDashboard() {
         <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full animate-fade-in relative z-10">
             {/* Background Effects (Matched to Dashboard and Logs) */}
             <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-                <div className="absolute inset-0 bg-gradient-to-br from-bg via-bg to-bg-surface"></div>
+                <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
                 <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
                 <div className="absolute top-1/3 -right-20 w-80 h-80 bg-primary/3 rounded-full blur-3xl"></div>
@@ -488,7 +489,7 @@ export default function ApmDashboard() {
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+                    <h1 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-white to-gray-400">
                         APM & Traces
                     </h1>
                     <p className="text-gray-400 mt-1">Monitor application performance and distributed traces</p>
@@ -546,7 +547,7 @@ export default function ApmDashboard() {
                                 width: window.innerWidth < 640 ? 'auto' : timeRangeRect.width,
                                 zIndex: 9999
                             }}
-                            className="bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col"
+                            className="bg-bg-surface border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col"
                         >
                             {/* Header */}
                             <div className="flex border-b border-white/10 bg-black/20">
@@ -661,14 +662,14 @@ export default function ApmDashboard() {
                         document.body
                     )}
 
-                    <button
+                    {canExport && <button
                         onClick={handleRefresh}
                         disabled={apmLoading || mapLoading}
                         className="px-3 h-[40px] bg-bg-elevated border border-gray-700 hover:border-blue-500 text-text rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50 text-xs sm:text-sm"
                     >
                         <Activity className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${apmLoading ? 'animate-spin' : ''}`} />
                         Refresh
-                    </button>
+                    </button>}
 
                     <button
                         onClick={() => {
@@ -840,7 +841,7 @@ export default function ApmDashboard() {
             {selectedInspectorService ? (
                 <div className="flex flex-col lg:flex-row gap-6 animate-fade-in">
                     {/* Left Panel: Service Cards List */}
-                    <div className="w-full lg:w-1/3 xl:w-1/4 flex-shrink-0 flex flex-col gap-3 max-h-[800px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="w-full lg:w-1/3 xl:w-1/4 shrink-0 flex flex-col gap-3 max-h-[800px] overflow-y-auto pr-2 custom-scrollbar">
                         <div className="flex items-center justify-between mb-2">
                             <h2 className="text-lg font-bold text-white">Services</h2>
                             <button onClick={() => {
@@ -894,7 +895,7 @@ export default function ApmDashboard() {
                         <div className="bg-bg-surface border border-gray-800 rounded-xl p-4 shadow-sm flex flex-col gap-4">
                             <h2 className="text-xl font-bold text-white flex items-start sm:items-center gap-2 mb-2">
                                 <Search className="w-5 h-5 text-primary shrink-0 mt-1 sm:mt-0" />
-                                <span className="break-words">Trace Inspector ({selectedInspectorService})</span>
+                                <span className="wrap-break-word">Trace Inspector ({selectedInspectorService})</span>
                             </h2>
 
                             {/* Filter Bar */}
@@ -928,7 +929,7 @@ export default function ApmDashboard() {
                                         <div
                                             ref={latencyPanelRef}
                                             style={{ position: 'fixed', top: latencyRect.top, left: latencyRect.left, width: latencyRect.width, zIndex: 9999 }}
-                                            className="bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl overflow-hidden"
+                                            className="bg-bg-surface border border-white/10 rounded-xl shadow-xl overflow-hidden"
                                         >
                                             {[
                                                 { value: 0, label: 'Any Latency' },
@@ -1020,7 +1021,7 @@ export default function ApmDashboard() {
                                                                     setIsTraceDropdownOpen(false);
                                                                 }}
                                                                 className={`trace-option flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${selectedTraceObj?.traceId === t.traceId
-                                                                        ? 'bg-[#3b82f6]/20 border border-[#3b82f6]/50 text-white'
+                                                                        ? 'bg-primary/20 border border-primary/50 text-white'
                                                                         : 'hover:bg-[#1f2937] text-gray-300 hover:text-white border border-transparent'
                                                                     }`}
                                                             >
@@ -1142,7 +1143,7 @@ export default function ApmDashboard() {
                                         ref={sidebarRef}
                                         className="absolute right-6 top-1/2 -translate-y-1/2 w-full md:w-80 h-auto max-h-[550px] bg-black/40 backdrop-blur-2xl border border-gray-600/30 shadow-2xl rounded-2xl z-50 transform transition-all duration-300 flex flex-col overflow-hidden"
                                     >
-                                        <div className="px-5 py-4 border-b border-gray-700/50 flex justify-between items-center bg-white/[0.03]">
+                                        <div className="px-5 py-4 border-b border-gray-700/50 flex justify-between items-center bg-white/3">
                                             <h3 className="text-lg font-bold text-white flex items-center gap-2">
                                                 <Server className="w-4 h-4 text-blue-400" />
                                                 {selectedMapService}
@@ -1289,10 +1290,10 @@ export default function ApmDashboard() {
 
             {/* Export Slow Queries Modal */}
             {isExportModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity duration-300" onClick={() => setIsExportModalOpen(false)} />
-                    <div className="relative bg-[#0B0C10] bg-gradient-to-b from-[#13151A] to-[#0B0C10] border border-gray-700/60 rounded-2xl shadow-2xl shadow-green-900/10 w-full max-w-lg animate-fade-in ring-1 ring-white/5">
-                        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-800/80 bg-white/[0.02] rounded-t-2xl">
+                    <div className="relative bg-[#0B0C10] bg-linear-to-b from-[#13151A] to-[#0B0C10] border border-gray-700/60 rounded-2xl shadow-2xl shadow-green-900/10 w-full max-w-lg animate-fade-in ring-1 ring-white/5">
+                        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-800/80 bg-white/2 rounded-t-2xl">
                             <div className="flex items-center gap-4">
                                 <div className="p-2.5 bg-green-500/10 rounded-xl border border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]">
                                     <Download className="w-5 h-5 text-green-400" />
@@ -1430,7 +1431,7 @@ export default function ApmDashboard() {
                             </div>
                             {exportError && (
                                 <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm animate-fade-in flex items-start gap-2">
-                                    <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                    <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
                                     <span>{exportError}</span>
                                 </div>
                             )}
@@ -1438,7 +1439,7 @@ export default function ApmDashboard() {
                                 Up to 2,000 spans, slowest first. Columns: traceId, spanName, service, startTime, durationMs, status, db.system, db.statement, http.method, http.url, net.peer.name, rpc.service, messaging.destination
                             </p>
                         </div>
-                        <div className="px-6 py-5 border-t border-gray-800/80 bg-white/[0.02] rounded-b-2xl flex justify-end gap-3">
+                        <div className="px-6 py-5 border-t border-gray-800/80 bg-white/2 rounded-b-2xl flex justify-end gap-3">
                             <button onClick={() => setIsExportModalOpen(false)}
                                 className="px-5 py-2.5 text-sm font-medium text-gray-400 hover:text-white bg-transparent border border-gray-700 hover:border-gray-500 rounded-xl transition-all hover:bg-white/5">
                                 Cancel

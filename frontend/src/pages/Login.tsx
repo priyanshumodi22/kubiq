@@ -2,7 +2,7 @@
 import { useAuth } from '../contexts/AuthContext';
 import { Shield, User, Lock, LogIn, Fingerprint } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Footer from '../components/Footer';
 import { startAuthentication } from '@simplewebauthn/browser';
 import { apiClient } from '../services/api';
@@ -83,7 +83,7 @@ export default function Login() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-bg via-bg to-bg-surface flex items-center justify-center p-4 pb-20 relative overflow-hidden">
+        <div className="min-h-screen bg-linear-to-br from-bg via-bg to-bg-surface flex items-center justify-center p-4 pb-20 relative overflow-hidden">
             {/* Subtle animated background effect */}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.03),transparent_50%)]"></div>
             <div className="absolute top-20 left-20 w-72 h-72 bg-primary/5 rounded-full blur-3xl"></div>
@@ -92,7 +92,7 @@ export default function Login() {
             <div className="max-w-md w-full relative z-10">
                 {/* Logo and Title */}
                 <div className="text-center mb-10">
-                    <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary/20 to-primary/5 rounded-3xl mb-6 shadow-lg shadow-primary/10">
+                    <div className="inline-flex items-center justify-center w-20 h-20 bg-linear-to-br from-primary/20 to-primary/5 rounded-3xl mb-6 shadow-lg shadow-primary/10">
                         <img
                             src={`${import.meta.env.BASE_URL.endsWith('/')
                                     ? import.meta.env.BASE_URL
@@ -194,12 +194,9 @@ export default function Login() {
                     )}
 
                     {nativeAuthEnabled && (
-                        <div className="mt-6 text-center text-sm text-text-dim">
-                            Don't have an account? {' '}
-                            <Link to="/register" className="text-primary hover:underline hover:text-primary-light">
-                                Create account
-                            </Link>
-                        </div>
+                        <p className="mt-6 text-center text-sm text-text-dim">
+                            Need access? Ask a kubiq administrator to create your account.
+                        </p>
                     )}
 
                 </div>

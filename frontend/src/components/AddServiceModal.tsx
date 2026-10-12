@@ -131,12 +131,12 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
   ];
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-bg-surface border border-white/10 rounded-2xl w-full max-w-md shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden">
         
         {/* Header */}
         <div className="flex items-center justify-between p-6 pb-4">
-          <h2 className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Add New Service</h2>
+          <h2 className="text-xl font-bold bg-linear-to-r from-white to-gray-400 bg-clip-text text-transparent">Add New Service</h2>
           <button
             onClick={handleClose}
             className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
@@ -149,7 +149,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
         <form onSubmit={handleSubmit} className="p-6 pt-2 space-y-6">
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-xl flex items-center gap-2 text-sm">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 shrink-0" />
               {error}
             </div>
           )}
@@ -190,7 +190,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
                 <div
                   ref={typeDropdownPanelRef}
                   style={{ position: 'fixed', top: typeDropdownRect.top, left: typeDropdownRect.left, width: typeDropdownRect.width, zIndex: 9999 }}
-                  className="bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+                  className="bg-bg-surface border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
                 >
                   {monitorTypes.map(opt => (
                     <button
@@ -343,7 +343,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
             <div
               ref={dropdownPanelRef}
               style={{ position: 'fixed', top: dropdownRect.top, left: dropdownRect.left, width: dropdownRect.width, zIndex: 9999 }}
-              className="bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl overflow-hidden"
+              className="bg-bg-surface border border-white/10 rounded-xl shadow-xl overflow-hidden"
             >
               {[
                 { value: 10000,  label: 'Every 10 seconds' },

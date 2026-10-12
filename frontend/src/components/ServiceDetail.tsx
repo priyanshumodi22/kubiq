@@ -167,7 +167,7 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
   };
 
   const modalContent = (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-100 flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-200">
       <div className="bg-bg-surface rounded-xl border border-gray-800 max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto scrollbar-hide scale-100 animate-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="sticky top-0 bg-bg-surface border-b border-gray-800 p-4 sm:p-6 flex items-start justify-between z-10 gap-2 sm:gap-4">
@@ -178,7 +178,7 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
               {service.headers && Object.keys(service.headers).length > 0 && (
                 <button
                   onClick={() => setShowHeaders(!showHeaders)}
-                  className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 flex-shrink-0"
+                  className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 shrink-0"
                 >
                   {showHeaders ? (
                     <ChevronUp className="w-3 h-3" />
@@ -202,7 +202,7 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 sm:p-2 hover:bg-bg-elevated rounded-lg transition-colors flex-shrink-0"
+            className="p-1.5 sm:p-2 hover:bg-bg-elevated rounded-lg transition-colors shrink-0"
           >
             <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
@@ -309,7 +309,7 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
               </h3>
               <div className="flex flex-col gap-3 mb-4">
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <div className="relative w-full sm:w-24 flex-shrink-0">
+                  <div className="relative w-full sm:w-24 shrink-0">
                     <div className="relative">
                       <select
                         value={method}

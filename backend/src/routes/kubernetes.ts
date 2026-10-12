@@ -1,17 +1,21 @@
 import express from 'express';
-import yaml from 'js-yaml';
 import { KubernetesService } from '../services/KubernetesService';
-import { requireRole, getUserFromReq, checkNamespaceAccess } from '../middleware/auth';
+import { getUserFromReq, checkNamespaceAccess, requirePermission } from '../middleware/auth';
 import { clickhouseService } from '../services/ClickhouseService';
 import { AuditLogService } from '../services/AuditLogService';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { validateLicenseKey } from '../utils/licenseValidator';
 import { KubiAiConfigService } from '../services/KubiAiConfigService';
 import { KubiProviderService } from '../services/KubiProviderService';
+import { RbacRoleService } from '../services/RbacRoleService';
+import { isSecretResourceType } from '../utils/kubernetesResourceType';
 
 const router = express.Router();
 const k8sService = KubernetesService.getInstance();
 const auditLogService = AuditLogService.getInstance();
+
+// Every Kubernetes endpoint is read-only and requires an explicit telemetry permission.
+router.use(requirePermission('kubernetes.read'));
 
 const requireProLicense = async (res: express.Response): Promise<boolean> => {
     const licenseKey = process.env.KUBIQ_LICENSE_KEY || '';
@@ -74,8 +78,8 @@ router.get('/namespaces', async (req, res) => {
         const clusterNamespaces = await k8sService.getNamespaces(getContext(req));
         
         const user = req.user as any;
-        // Admins see all cluster namespaces
-        if (!user || user.role === 'kubiq-admin' || user.roles?.includes('kubiq-admin')) {
+        // Cluster-wide namespace visibility is an explicit permission.
+        if (await RbacRoleService.hasPermission(user || {}, 'kubernetes.namespaces.all')) {
             return res.json(clusterNamespaces);
         }
 
@@ -93,9 +97,7 @@ router.get('/namespaces', async (req, res) => {
             } catch {}
         }
 
-        if (!allowed) {
-            allowed = user.allowedNamespaces || (user.role === 'kubiq-viewer' || user.roles?.includes('kubiq-viewer') ? ['apps', 'default'] : undefined);
-        }
+        if (!allowed) allowed = user.allowedNamespaces || ['apps', 'default'];
 
         if (allowed && Array.isArray(allowed) && allowed.length > 0) {
             const allowedLower = allowed.map((s: string) => String(s).toLowerCase().trim());
@@ -103,7 +105,7 @@ router.get('/namespaces', async (req, res) => {
             return res.json(filtered.length > 0 ? filtered : allowed);
         }
 
-        res.json(clusterNamespaces);
+        res.json([]);
     } catch (e: any) {
         handleK8sError(res, e);
     }
@@ -211,7 +213,7 @@ router.get('/namespaces/:ns/configmaps', checkNamespaceAccess, async (req, res) 
     } catch (e: any) { handleK8sError(res, e); }
 });
 
-router.get('/namespaces/:ns/secrets', checkNamespaceAccess, async (req, res) => {
+router.get('/namespaces/:ns/secrets', requirePermission('kubernetes.secrets.read'), checkNamespaceAccess, async (req, res) => {
     try {
         if (!k8sService.available) return res.json([]);
         res.json(await k8sService.getSecrets(getContext(req), (req.params.ns as string)));
@@ -248,111 +250,11 @@ router.get('/namespaces/:ns/pods/:podName/metrics/history', checkNamespaceAccess
     }
 });
 
-// --- Management Actions ---
-
-// --- Management Actions ---
-
-// POST /api/kubernetes/namespaces/:ns/deployments/:name/scale
-router.post('/namespaces/:ns/deployments/:name/scale', requireRole('kubiq-admin'), async (req, res) => {
-    try {
-        const { replicas } = req.body;
-        if (typeof replicas !== 'number') return res.status(400).json({ message: 'Replicas must be a number' });
-        const ns = req.params.ns as string;
-        const name = req.params.name as string;
-        await k8sService.scaleDeployment(getContext(req), ns, name, replicas);
-
-        const user = getUserFromReq(req);
-        auditLogService.log({
-            user,
-            action: 'DEPLOYMENT_SCALE',
-            target: `deployment/${ns}/${name}`,
-            details: `Scaled replicas to ${replicas}`,
-            ip: req.ip
-        });
-
-        res.json({ message: 'Scaling initiated' });
-    } catch (e: any) { res.status(500).json({ message: e.message }); }
-});
-
-// POST /api/kubernetes/namespaces/:ns/deployments/:name/restart
-router.post('/namespaces/:ns/deployments/:name/restart', requireRole('kubiq-admin'), async (req, res) => {
-    try {
-        const ns = req.params.ns as string;
-        const name = req.params.name as string;
-        await k8sService.restartDeployment(getContext(req), ns, name);
-
-        const user = getUserFromReq(req);
-        auditLogService.log({
-            user,
-            action: 'DEPLOYMENT_RESTART',
-            target: `deployment/${ns}/${name}`,
-            details: `Initiated rollout restart`,
-            ip: req.ip
-        });
-
-        res.json({ message: 'Restart initiated' });
-    } catch (e: any) { res.status(500).json({ message: e.message }); }
-});
-
-// DELETE /api/kubernetes/namespaces/:ns/:type/:name
-router.delete('/namespaces/:ns/:type/:name', requireRole('kubiq-admin'), async (req, res) => {
-    try {
-        const ns = req.params.ns as string;
-        const type = req.params.type as string;
-        const name = req.params.name as string;
-        await k8sService.deleteResource(getContext(req), ns, type, name);
-
-        const user = getUserFromReq(req);
-        auditLogService.log({
-            user,
-            action: 'RESOURCE_DELETE',
-            target: `${type}/${ns}/${name}`,
-            details: `Deleted Kubernetes ${type} resource`,
-            ip: req.ip
-        });
-
-        res.json({ message: 'Deletion initiated' });
-    } catch (e: any) { res.status(500).json({ message: e.message }); }
-});
-
-// POST /api/kubernetes/apply - Apply raw YAML/JSON manifest
-router.post('/apply', requireRole('kubiq-admin'), async (req, res) => {
-    try {
-        let { manifest } = req.body;
-        if (!manifest) return res.status(400).json({ message: 'Manifest is required' });
-
-        if (typeof manifest === 'string') {
-            try {
-                manifest = yaml.load(manifest);
-            } catch (yamlError: any) {
-                return res.status(400).json({ message: `YAML Parsing Error: ${yamlError.message}` });
-            }
-        }
-
-        const result = await k8sService.applyResource(getContext(req), manifest);
-
-        const user = getUserFromReq(req);
-        const targetKind = manifest?.kind || 'Resource';
-        const targetName = manifest?.metadata?.name || 'unknown';
-        const targetNs = manifest?.metadata?.namespace || 'default';
-
-        auditLogService.log({
-            user,
-            action: 'MANIFEST_APPLY',
-            target: `${targetKind}/${targetNs}/${targetName}`,
-            details: `Applied manifest for ${targetKind}/${targetName}`,
-            ip: req.ip
-        });
-
-        res.json(result);
-    } catch (e: any) {
-        res.status(500).json({ message: e.message });
-    }
-});
-
-
 router.get('/namespaces/:ns/yaml/:type/:name', checkNamespaceAccess, async (req, res) => {
     try {
+        if (isSecretResourceType(req.params.type) && !(await RbacRoleService.hasPermission(req.user || {}, 'kubernetes.secrets.read'))) {
+            return res.status(403).json({ error: 'RBAC_FORBIDDEN', message: 'Viewing Kubernetes Secret YAML requires kubernetes.secrets.read.' });
+        }
         if (!k8sService.available) return res.status(503).json({ message: 'K8s not available' });
         const raw = await k8sService.getResourceRaw(getContext(req), (req.params.ns as string), (req.params.type as string), (req.params.name as string));
         if (!raw) return res.status(404).json({ message: 'Not found' });
@@ -365,6 +267,7 @@ router.get('/namespaces/:ns/yaml/:type/:name', checkNamespaceAccess, async (req,
 // GET /api/kubernetes/yaml/:type/:name (for cluster-scoped resources)
 router.get('/yaml/:type/:name', async (req, res) => {
     try {
+        if (isSecretResourceType(req.params.type)) return res.status(403).json({ error: 'RBAC_FORBIDDEN', message: 'Cluster-scoped Secret access is not available.' });
         if (!k8sService.available) return res.status(503).json({ message: 'K8s not available' });
         const raw = await k8sService.getResourceRaw(getContext(req), '', (req.params.type as string), (req.params.name as string));
         if (!raw) return res.status(404).json({ message: 'Not found' });
@@ -460,7 +363,7 @@ ${logs.split('\n').slice(-15).join('\n') || 'No logs recorded.'}
 \`\`\`
 
 > [!TIP]
-> Ask a kubiq administrator to configure Kubi AI for full LLM-powered SRE analysis.`;
+> Ask a kubiq administrator to configure kubi AI for full LLM-powered SRE analysis.`;
             return res.json({ diagnosis: fallbackMarkdown });
         }
 
@@ -528,7 +431,7 @@ ${event.message}
 \`\`\`
 
 > [!TIP]
-> Ask a kubiq administrator to configure Kubi AI for full LLM-powered SRE analysis.`;
+> Ask a kubiq administrator to configure kubi AI for full LLM-powered SRE analysis.`;
             return res.json({ diagnosis: fallbackMarkdown });
         }
 

@@ -1,6 +1,10 @@
 import fs from 'fs';
 import path from 'path';
-import { AuditLogFilters, IAuditLogRepository } from '../../interfaces/IAuditLogRepository';
+import {
+  AuditLogFilters,
+  AuditLogPage,
+  IAuditLogRepository,
+} from '../../interfaces/IAuditLogRepository';
 import { AuditLogEntry } from '../../../services/AuditLogService';
 
 export class JsonAuditLogRepository implements IAuditLogRepository {
@@ -10,7 +14,11 @@ export class JsonAuditLogRepository implements IAuditLogRepository {
   constructor() {
     const dataDir = process.env.DATA_DIR || path.join(process.cwd(), 'data');
     if (!fs.existsSync(dataDir)) {
-      try { fs.mkdirSync(dataDir, { recursive: true }); } catch { /* saveLogs reports write failures. */ }
+      try {
+        fs.mkdirSync(dataDir, { recursive: true });
+      } catch {
+        /* saveLogs reports write failures. */
+      }
     }
     this.logFilePath = path.join(dataDir, 'audit_logs.json');
   }
@@ -46,7 +54,7 @@ export class JsonAuditLogRepository implements IAuditLogRepository {
     const fullEntry: AuditLogEntry = {
       id: `audit-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
       timestamp: new Date().toISOString(),
-      ...entry
+      ...entry,
     };
 
     this.memoryLogs.unshift(fullEntry);
@@ -54,19 +62,41 @@ export class JsonAuditLogRepository implements IAuditLogRepository {
     return fullEntry;
   }
 
-  public async getAuditLogs(limit: number = 100, search?: string, filters?: AuditLogFilters): Promise<AuditLogEntry[]> {
+  public async getAuditLogs(
+    limit: number = 100,
+    search?: string,
+    filters?: AuditLogFilters
+  ): Promise<AuditLogEntry[]> {
     let filtered = this.memoryLogs;
     if (search && search.trim()) {
       const q = search.toLowerCase();
-      filtered = filtered.filter(l => 
-        l.user.toLowerCase().includes(q) ||
-        l.action.toLowerCase().includes(q) ||
-        l.target.toLowerCase().includes(q) ||
-        (l.details && l.details.toLowerCase().includes(q))
+      filtered = filtered.filter(
+        (l) =>
+          l.user.toLowerCase().includes(q) ||
+          l.action.toLowerCase().includes(q) ||
+          l.target.toLowerCase().includes(q) ||
+          (l.details && l.details.toLowerCase().includes(q))
       );
     }
-    if (filters?.action) filtered = filtered.filter(entry => entry.action === filters.action);
-    if (filters?.target) filtered = filtered.filter(entry => entry.target === filters.target);
+    if (filters?.action) filtered = filtered.filter((entry) => entry.action === filters.action);
+    if (filters?.target) filtered = filtered.filter((entry) => entry.target === filters.target);
     return filtered.slice(0, limit);
+  }
+
+  public async getAuditLogPage(
+    limit: number,
+    offset: number,
+    search?: string
+  ): Promise<AuditLogPage> {
+    let filtered = this.memoryLogs;
+    if (search?.trim()) {
+      const query = search.trim().toLowerCase();
+      filtered = filtered.filter((entry) =>
+        [entry.user, entry.action, entry.target, entry.details || ''].some((value) =>
+          value.toLowerCase().includes(query)
+        )
+      );
+    }
+    return { records: filtered.slice(offset, offset + limit), total: filtered.length };
   }
 }

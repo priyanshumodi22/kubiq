@@ -2,9 +2,11 @@ import { Router, Request, Response } from 'express';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { ISpan } from '../database/interfaces/ITraceRepository';
 import { IngestionBufferService } from '../services/IngestionBufferService';
+import { requirePermission } from '../middleware/auth';
 
 export const apmIngestRouter = Router();
 export const apmAnalyticsRouter = Router();
+apmAnalyticsRouter.use(requirePermission('apm.read'));
 
 // Ingest middleware: bypass trace processing if APM is unsupported
 apmIngestRouter.use((req, res, next) => {
@@ -415,7 +417,7 @@ apmAnalyticsRouter.get('/service-map', async (req: Request, res: Response) => {
  *   - errorOnly   'true' to include only error spans
  *   - search      partial match on span name
  */
-apmAnalyticsRouter.get('/export', async (req: Request, res: Response) => {
+apmAnalyticsRouter.get('/export', requirePermission('apm.export'), async (req: Request, res: Response) => {
     try {
         const fromParam = req.query.from as string | undefined;
         const toParam = req.query.to as string | undefined;

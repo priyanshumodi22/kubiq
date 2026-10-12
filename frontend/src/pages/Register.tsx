@@ -42,7 +42,7 @@ export default function Register() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-bg via-bg to-bg-surface flex items-center justify-center p-4 pb-20 relative overflow-hidden">
+        <div className="min-h-screen bg-linear-to-br from-bg via-bg to-bg-surface flex items-center justify-center p-4 pb-20 relative overflow-hidden">
             {/* Subtle animated background effect */}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.03),transparent_50%)]"></div>
 

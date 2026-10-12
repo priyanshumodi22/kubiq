@@ -59,7 +59,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ value, onChange, options, d
                 disabled={disabled}
             >
                 <span className="truncate pr-2">{selectedOption?.label || 'Select...'}</span>
-                <ChevronDown className="w-3 h-3 text-gray-500 flex-shrink-0" />
+                <ChevronDown className="w-3 h-3 text-gray-500 shrink-0" />
             </button>
             
             {isOpen && !disabled && (
@@ -328,7 +328,7 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-8"
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-9999 flex items-center justify-center p-8"
                             onClick={() => setShowSummaryModal(false)}
                         >
                             <motion.div

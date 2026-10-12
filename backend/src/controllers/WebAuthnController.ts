@@ -8,6 +8,7 @@ import {
 } from '@simplewebauthn/server';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import jwt from 'jsonwebtoken';
+import { getNativeJwtSecret, isNativeJwtConfigurationError } from '../utils/nativeJwt';
 
 // RP = Relying Party (Your App)
 const rpName = 'kubiq Dashboard';
@@ -223,7 +224,7 @@ export class WebAuthnController {
         challenges.delete(user.id);
 
         // Issue JWT (Login Successful)
-        const secret = process.env.JWT_SECRET || 'dev-secret-do-not-use-in-prod';
+        const secret = getNativeJwtSecret();
         const token = jwt.sign(
           {
             sub: user.id,
@@ -242,6 +243,9 @@ export class WebAuthnController {
 
     } catch (error) {
       console.error(error);
+      if (isNativeJwtConfigurationError(error)) {
+        return res.status(503).json({ error: error.message });
+      }
       res.status(500).json({ error: 'Internal server error' });
     }
   }

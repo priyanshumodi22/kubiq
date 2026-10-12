@@ -10,6 +10,7 @@ import { redactKubiValue } from '../utils/kubiSanitizer';
 import { NotificationManager } from './NotificationManager';
 import { KubiDocsService } from './KubiDocsService';
 import { KubiScopeService } from './KubiScopeService';
+import { RbacRoleService } from './RbacRoleService';
 import { KubiDomain, KubiPlan } from './KubiIntentService';
 
 type KubiRequestContext = { user: any; username: string; k8sContext: string };
@@ -90,13 +91,13 @@ export class KubiService {
     const services = ServiceMonitor.getInstance().getAllServices();
     const service = [...services].sort((a, b) => b.name.length - a.name.length).find(item => normalized.includes(item.name.toLowerCase()));
 
-    if (selected('services', Boolean(hasWord(question, ['service', 'uptime', 'down', 'unhealthy', 'incident', 'status']) || service))) {
+    if (selected('services', Boolean(hasWord(question, ['service', 'uptime', 'down', 'unhealthy', 'incident', 'status']) || service)) && await this.can(context.user, 'services.read')) {
       const safeServices = services.slice(0, maxResults).map(item => ({ name: item.name, type: item.type, currentStatus: item.currentStatus,
         history: (item.history || []).slice(-10).map(history => ({ timestamp: history.timestamp, success: history.success, status: history.status, responseTime: history.responseTime })) }));
       evidence.push({ reference: { type: 'service', label: service ? `Service: ${service.name}` : 'Service health', href: '/dashboard?tab=services' }, payload: safeServices });
     }
 
-    if (selected('logs', hasWord(question, ['log', 'error', 'exception', 'stack trace'])) && service && evidence.length < maxTools) {
+    if (selected('logs', hasWord(question, ['log', 'error', 'exception', 'stack trace'])) && service && evidence.length < maxTools && await this.can(context.user, 'logs.read')) {
       try {
         const repository = await DatabaseFactory.getLogRepository();
         const now = Date.now();
@@ -107,7 +108,7 @@ export class KubiService {
       }
     }
 
-    if (selected('apm', hasWord(question, ['trace', 'apm', 'latency', 'slow', 'database', 'query'])) && DatabaseFactory.isApmSupported() && evidence.length < maxTools) {
+    if (selected('apm', hasWord(question, ['trace', 'apm', 'latency', 'slow', 'database', 'query'])) && DatabaseFactory.isApmSupported() && evidence.length < maxTools && await this.can(context.user, 'apm.read')) {
       try {
         const repository = await DatabaseFactory.getTraceRepository();
         const now = Date.now();
@@ -124,10 +125,10 @@ export class KubiService {
             minDurationMs: 250,
             spanNameSearch: 'db',
           });
-          const isAdmin = context.user?.role === 'kubiq-admin' || context.user?.roles?.includes('kubiq-admin');
+          const canReadRawSql = await this.can(context.user, 'database.sql.read');
           payload.slowDatabaseSpans = spans.slice(0, maxResults).map(span => {
             const safe = redactKubiValue(span);
-            if (!isAdmin && safe?.attributes) {
+            if (!canReadRawSql && safe?.attributes) {
               delete safe.attributes['db.statement'];
               delete safe.attributes['db.query.text'];
               delete safe.attributes['sql.query'];
@@ -145,7 +146,7 @@ export class KubiService {
       }
     }
 
-    if (selected('system', hasWord(question, ['cpu', 'memory', 'disk', 'system health', 'resource'])) && evidence.length < maxTools) {
+    if (selected('system', hasWord(question, ['cpu', 'memory', 'disk', 'system health', 'resource'])) && evidence.length < maxTools && await this.can(context.user, 'system.read')) {
       try {
         evidence.push({ reference: { type: 'system', label: 'System health', href: '/dashboard?tab=system' }, payload: await SystemMonitorService.getInstance().getLiveStats() });
       } catch (error: any) {
@@ -153,7 +154,7 @@ export class KubiService {
       }
     }
 
-    if (selected('notifications', hasWord(question, ['notification', 'alert', 'delivery', 'webhook', 'email'])) && evidence.length < maxTools) {
+    if (selected('notifications', hasWord(question, ['notification', 'alert', 'delivery', 'webhook', 'email'])) && evidence.length < maxTools && await this.can(context.user, 'notifications.read')) {
       try {
         const history = NotificationManager.getInstance().getHistory(maxResults);
         evidence.push({
@@ -165,13 +166,13 @@ export class KubiService {
       }
     }
 
-    if (selected('kubernetes', hasWord(question, ['kubernetes', 'k8s', 'pod', 'deployment', 'namespace', 'cluster', 'container'])) && evidence.length < maxTools) {
+    if (selected('kubernetes', hasWord(question, ['kubernetes', 'k8s', 'pod', 'deployment', 'namespace', 'cluster', 'container'])) && evidence.length < maxTools && await this.can(context.user, 'kubernetes.read')) {
       await this.collectKubernetesEvidence(question, context, evidence, maxResults, plan?.namespace);
     }
 
     if (selected('audit', hasWord(question, ['audit', 'who changed', 'activity history'])) && evidence.length < maxTools) {
-      if (!this.isAdmin(context.user)) {
-        evidence.push({ reference: { type: 'audit', label: 'Audit access restricted', href: '/audit-logs' }, payload: { permissionDenied: true, message: 'Audit history requires kubiq-admin, including own-account history.' } });
+      if (!await this.can(context.user, 'audit.read')) {
+        evidence.push({ reference: { type: 'audit', label: 'Audit access restricted', href: '/audit-logs' }, payload: { permissionDenied: true, message: 'Audit history requires the audit.read permission, including own-account history.' } });
         return evidence;
       }
       try {
@@ -193,8 +194,8 @@ export class KubiService {
     return evidence;
   }
 
-  private isAdmin(user: any): boolean {
-    return user?.role === 'kubiq-admin' || user?.roles?.includes('kubiq-admin');
+  private async can(user: any, permission: string): Promise<boolean> {
+    return RbacRoleService.hasPermission(user || {}, permission);
   }
 
   private async collectKubernetesEvidence(question: string, context: KubiRequestContext, evidence: Array<{ reference: KubiEvidenceReference; payload: unknown }>, maxResults: number, requestedNamespace?: string): Promise<void> {
@@ -227,7 +228,7 @@ export class KubiService {
 
   private async allowedNamespaces(user: any, k8s: KubernetesService, context: string): Promise<string[]> {
     const all = await k8s.getNamespaces(context, true);
-    if (user?.role === 'kubiq-admin' || user?.roles?.includes('kubiq-admin')) return all;
+    if (await this.can(user, 'kubernetes.namespaces.all')) return all;
     const userId = user?.sub || user?.id;
     let allowed = user?.allowedNamespaces as string[] | undefined;
     if (userId) {
@@ -236,8 +237,8 @@ export class KubiService {
         allowed = dbUser?.allowedNamespaces || allowed;
       } catch { /* fallback below */ }
     }
-    if (!allowed && (user?.role === 'kubiq-viewer' || user?.roles?.includes('kubiq-viewer'))) allowed = ['apps', 'default'];
-    if (!allowed?.length) return all;
+    if (!allowed) allowed = ['apps', 'default'];
+    if (!allowed.length) return [];
     const permitted = new Set(allowed.map(item => item.toLowerCase()));
     return all.filter(item => permitted.has(item.toLowerCase()));
   }

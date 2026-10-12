@@ -111,7 +111,7 @@ export default function StatusPage() {
         {/* Background Effects */}
         <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
           {/* Gradient base */}
-          <div className="absolute inset-0 bg-gradient-to-br from-bg via-bg to-bg-surface"></div>
+          <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
           {/* Radial gradient overlay */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
           {/* Blur orbs */}

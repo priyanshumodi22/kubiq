@@ -4,7 +4,13 @@ import { UserModel } from '../../schemas/UserSchema';
 
 export class MongoUserRepository implements IUserRepository {
   async initialize(): Promise<void> {
-    // Assumes connection established by ServiceRepository or generic init
+    // Idempotent, access-preserving migration: legacy users retain their
+    // existing single role as their first multi-role assignment.
+    const legacyUsers = await UserModel.find({ $or: [{ roles: { $exists: false } }, { roles: null }, { roles: { $size: 0 } }] }).select('_id role').lean();
+    await Promise.all(legacyUsers.map(user => UserModel.updateOne(
+      { _id: user._id },
+      { $set: { roles: [user.role || 'kubiq-viewer'] } }
+    )));
   }
 
   async findByUsername(username: string): Promise<User | null> {
@@ -30,10 +36,22 @@ export class MongoUserRepository implements IUserRepository {
   async updateUserRole(id: string, role: UserRole): Promise<User> {
     const updated = await UserModel.findByIdAndUpdate(
         id,
-        { $set: { role } },
+        { $set: { role, roles: [role] } },
         { new: true }
     ).lean();
 
+    if (!updated) throw new Error(`User ${id} not found`);
+    return this.mapToUser(updated);
+  }
+
+  async updateUserRoles(id: string, roles: string[]): Promise<User> {
+    const normalized = [...new Set(roles.map(role => role.trim()).filter(Boolean))];
+    if (normalized.length === 0) throw new Error('At least one role is required');
+    const updated = await UserModel.findByIdAndUpdate(
+      id,
+      { $set: { role: normalized[0], roles: normalized } },
+      { new: true }
+    ).lean();
     if (!updated) throw new Error(`User ${id} not found`);
     return this.mapToUser(updated);
   }
@@ -68,9 +86,11 @@ export class MongoUserRepository implements IUserRepository {
           username: doc.username,
           passwordHash: doc.password, // Mapped from DB password field
           email: doc.email,
+          avatarUrl: doc.avatarUrl,
           firstName: doc.firstName,
           lastName: doc.lastName,
           role: doc.role,
+          roles: Array.isArray(doc.roles) && doc.roles.length ? doc.roles : [doc.role],
           allowedNamespaces: doc.allowedNamespaces,
           createdAt: doc.createdAt,
           lastLogin: doc.lastLogin,
@@ -80,7 +100,8 @@ export class MongoUserRepository implements IUserRepository {
   async updateUser(id: string, user: Partial<User>): Promise<User> {
     const updateQuery: any = {};
     if (user.username) updateQuery.username = user.username;
-    if (user.email) updateQuery.email = user.email;
+    if (user.email !== undefined) updateQuery.email = user.email;
+    if (user.avatarUrl !== undefined) updateQuery.avatarUrl = user.avatarUrl;
     if (user.allowedNamespaces !== undefined) updateQuery.allowedNamespaces = user.allowedNamespaces;
     
     const updated = await UserModel.findByIdAndUpdate(

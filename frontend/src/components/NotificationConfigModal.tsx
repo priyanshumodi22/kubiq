@@ -128,7 +128,7 @@ function ChannelForm({
                 <div
                     ref={typePanelRef}
                     style={{ position: 'fixed', top: typeRect.top, left: typeRect.left, width: typeRect.width, zIndex: 10000 }}
-                    className="bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200"
+                    className="bg-bg-surface border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200"
                 >
                     {channelTypes.map(opt => (
                         <button
@@ -148,7 +148,7 @@ function ChannelForm({
                 document.body
             )}
 
-            <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 space-y-5">
+            <div className="p-5 rounded-2xl bg-white/2 border border-white/5 space-y-5">
                 {type === 'webhook' && (
                     <div className="space-y-1 animate-in fade-in slide-in-from-left-2 duration-300">
                         <label className={labelClasses}>Webhook URL</label>
@@ -315,9 +315,9 @@ export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigM
     });
     const [newMutedNs, setNewMutedNs] = useState('');
 
-    const { hasRole } = useAuth();
+    const { hasPermission } = useAuth();
     const { addToast } = useToast();
-    const isAdmin = hasRole('kubiq-admin');
+    const isAdmin = hasPermission('notifications.manage');
 
     const fetchChannels = async () => {
         try {

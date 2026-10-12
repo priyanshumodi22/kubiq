@@ -325,7 +325,7 @@ export function K8sRelationshipMap({
     return (
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative select-none">
             {/* Header Control Panel */}
-            <div className="p-3 border-b border-gray-800 bg-[#1a1a1a] flex flex-col sm:flex-row items-stretch sm:items-center justify-between z-10 gap-3">
+            <div className="p-3 border-b border-gray-800 bg-bg-surface flex flex-col sm:flex-row items-stretch sm:items-center justify-between z-10 gap-3">
                 <div className="flex items-center gap-2 justify-between sm:justify-start">
                     <span className="text-sm font-semibold text-white">Service Topology Map ({namespace})</span>
                     <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full shrink-0">
@@ -732,7 +732,7 @@ export function K8sRelationshipMap({
                                         }
                                     `}
                                 >
-                                    <div className="w-8 h-8 rounded-lg bg-black/35 flex items-center justify-center shrink-0 border border-white/[0.04]">
+                                    <div className="w-8 h-8 rounded-lg bg-black/35 flex items-center justify-center shrink-0 border border-white/4">
                                         {getNodeIcon(node.type)}
                                     </div>
                                     <div className="min-w-0 flex-1">

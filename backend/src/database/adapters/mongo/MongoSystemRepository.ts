@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { ISystemRepository, LicenseActivation, KubiAiConfigRecord } from '../../interfaces/ISystemRepository';
+import { ISystemRepository, LicenseActivation, KubiAiConfigRecord, RbacConfigRecord } from '../../interfaces/ISystemRepository';
 import { SystemMetrics } from '../../../types';
 import { SystemMetricsModel } from '../../schemas/SystemMetricsSchema';
 import { SystemPreferencesModel } from '../../schemas/SystemPreferencesSchema';
@@ -9,6 +9,7 @@ export class MongoSystemRepository implements ISystemRepository {
     private readonly apmConfigKey = 'apm_prefs';
     private readonly licenseActivationKey = 'polar_license_activation';
     private readonly kubiAiConfigKey = 'kubi_ai_config';
+    private readonly rbacConfigKey = 'rbac_config';
 
     async initialize(): Promise<void> {
         if (mongoose.connection.readyState === 0) {
@@ -114,6 +115,22 @@ export class MongoSystemRepository implements ISystemRepository {
         await SystemPreferencesModel.findOneAndUpdate(
             { key: this.kubiAiConfigKey },
             { key: this.kubiAiConfigKey, value: config },
+            { upsert: true, new: true }
+        );
+    }
+
+    async getRbacConfig(): Promise<RbacConfigRecord | null> {
+        await this.initialize();
+        const doc = await SystemPreferencesModel.findOne({ key: this.rbacConfigKey }).lean();
+        const value = doc?.value as Partial<RbacConfigRecord> | undefined;
+        return value?.version === 1 && Array.isArray(value.roles) && typeof value.updatedAt === 'number' ? value as RbacConfigRecord : null;
+    }
+
+    async saveRbacConfig(config: RbacConfigRecord): Promise<void> {
+        await this.initialize();
+        await SystemPreferencesModel.findOneAndUpdate(
+            { key: this.rbacConfigKey },
+            { key: this.rbacConfigKey, value: config },
             { upsert: true, new: true }
         );
     }

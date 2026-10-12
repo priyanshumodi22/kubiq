@@ -1,7 +1,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { ISystemRepository, LicenseActivation, KubiAiConfigRecord } from '../../interfaces/ISystemRepository';
+import { ISystemRepository, LicenseActivation, KubiAiConfigRecord, RbacConfigRecord } from '../../interfaces/ISystemRepository';
 import { SystemMetrics } from '../../../types';
 
 export class JsonSystemRepository implements ISystemRepository {
@@ -11,6 +11,7 @@ export class JsonSystemRepository implements ISystemRepository {
   private apmConfigPath: string;
   private licenseActivationPath: string;
   private kubiAiConfigPath: string;
+  private rbacConfigPath: string;
 
   constructor() {
     this.dataDir = process.env.DATA_DIR || './data';
@@ -19,6 +20,7 @@ export class JsonSystemRepository implements ISystemRepository {
     this.apmConfigPath = path.join(this.dataDir, 'apm-config.json');
     this.licenseActivationPath = path.join(this.dataDir, 'polar-license-activation.json');
     this.kubiAiConfigPath = path.join(this.dataDir, 'kubi-ai-config.json');
+    this.rbacConfigPath = path.join(this.dataDir, 'rbac-config.json');
   }
 
   async initialize(): Promise<void> {
@@ -105,5 +107,18 @@ export class JsonSystemRepository implements ISystemRepository {
   async saveKubiAiConfig(config: KubiAiConfigRecord): Promise<void> {
     if (!fs.existsSync(this.dataDir)) await this.initialize();
     fs.writeFileSync(this.kubiAiConfigPath, JSON.stringify(config, null, 2));
+  }
+
+  async getRbacConfig(): Promise<RbacConfigRecord | null> {
+    if (!fs.existsSync(this.rbacConfigPath)) return null;
+    try {
+      const value = JSON.parse(fs.readFileSync(this.rbacConfigPath, 'utf-8')) as Partial<RbacConfigRecord>;
+      return value.version === 1 && Array.isArray(value.roles) && typeof value.updatedAt === 'number' ? value as RbacConfigRecord : null;
+    } catch { return null; }
+  }
+
+  async saveRbacConfig(config: RbacConfigRecord): Promise<void> {
+    if (!fs.existsSync(this.dataDir)) await this.initialize();
+    fs.writeFileSync(this.rbacConfigPath, JSON.stringify(config, null, 2));
   }
 }

@@ -7,6 +7,7 @@ import { AuditLogService } from '../services/AuditLogService';
 import { getUserFromReq } from '../middleware/auth';
 import { KubiScopeService } from '../services/KubiScopeService';
 import { KubiIntentService } from '../services/KubiIntentService';
+import { RbacRoleService } from '../services/RbacRoleService';
 
 export const kubiRouter = Router();
 const kubiService = new KubiService();
@@ -110,8 +111,8 @@ kubiRouter.post('/conversations/:conversationId/messages', async (req, res) => {
     }
 
     const context = kubiService.getRequestContext(req);
-    const isAdmin = context.user?.role === 'kubiq-admin' || context.user?.roles?.includes('kubiq-admin');
-    const plan = await new KubiIntentService().plan(question, conversation.messages, Boolean(isAdmin));
+    const canReadAudit = await RbacRoleService.hasPermission(context.user || {}, 'audit.read');
+    const plan = await new KubiIntentService().plan(question, conversation.messages, canReadAudit);
     if (plan.kind !== 'answer') {
       const assistantMessage = kubiMessage('assistant', plan.message);
       if (plan.kind === 'clarify') assistantMessage.clarification = { options: plan.options, ...(plan.slot ? { slot: plan.slot, question: plan.question } : {}) };

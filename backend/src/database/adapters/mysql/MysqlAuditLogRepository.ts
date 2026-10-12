@@ -1,5 +1,9 @@
 import mysql, { Pool, RowDataPacket } from 'mysql2/promise';
-import { AuditLogFilters, IAuditLogRepository } from '../../interfaces/IAuditLogRepository';
+import {
+  AuditLogFilters,
+  AuditLogPage,
+  IAuditLogRepository,
+} from '../../interfaces/IAuditLogRepository';
 import { AuditLogEntry } from '../../../services/AuditLogService';
 
 export class MysqlAuditLogRepository implements IAuditLogRepository {
@@ -47,7 +51,7 @@ export class MysqlAuditLogRepository implements IAuditLogRepository {
     const fullEntry: AuditLogEntry = {
       id: `audit-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
       timestamp: new Date().toISOString(),
-      ...entry
+      ...entry,
     };
 
     await this.pool.execute(
@@ -59,14 +63,18 @@ export class MysqlAuditLogRepository implements IAuditLogRepository {
         fullEntry.action,
         fullEntry.target,
         fullEntry.details || null,
-        fullEntry.ip || null
+        fullEntry.ip || null,
       ]
     );
 
     return fullEntry;
   }
 
-  public async getAuditLogs(limit: number = 100, search?: string, filters?: AuditLogFilters): Promise<AuditLogEntry[]> {
+  public async getAuditLogs(
+    limit: number = 100,
+    search?: string,
+    filters?: AuditLogFilters
+  ): Promise<AuditLogEntry[]> {
     let sql = `SELECT id, timestamp, user, action, target, details, ip FROM audit_logs`;
     const params: any[] = [];
 
@@ -76,8 +84,14 @@ export class MysqlAuditLogRepository implements IAuditLogRepository {
       const term = `%${search.trim()}%`;
       params.push(term, term, term, term);
     }
-    if (filters?.action) { conditions.push('action = ?'); params.push(filters.action); }
-    if (filters?.target) { conditions.push('target = ?'); params.push(filters.target); }
+    if (filters?.action) {
+      conditions.push('action = ?');
+      params.push(filters.action);
+    }
+    if (filters?.target) {
+      conditions.push('target = ?');
+      params.push(filters.target);
+    }
     if (conditions.length) sql += ` WHERE ${conditions.join(' AND ')}`;
 
     const safeLimit = Math.max(1, Math.min(Number(limit) || 100, 1000));
@@ -91,7 +105,43 @@ export class MysqlAuditLogRepository implements IAuditLogRepository {
       action: r.action,
       target: r.target,
       details: r.details || undefined,
-      ip: r.ip || undefined
+      ip: r.ip || undefined,
     }));
+  }
+
+  public async getAuditLogPage(
+    limit: number,
+    offset: number,
+    search?: string
+  ): Promise<AuditLogPage> {
+    const params: string[] = [];
+    let where = '';
+    if (search?.trim()) {
+      where = ' WHERE (user LIKE ? OR action LIKE ? OR target LIKE ? OR details LIKE ?)';
+      const term = `%${search.trim()}%`;
+      params.push(term, term, term, term);
+    }
+    const safeLimit = Math.max(1, Math.min(Number(limit) || 25, 100));
+    const safeOffset = Math.max(0, Number(offset) || 0);
+    const [rows] = await this.pool.query<RowDataPacket[]>(
+      `SELECT id, timestamp, user, action, target, details, ip FROM audit_logs${where} ORDER BY timestamp DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+      params
+    );
+    const [counts] = await this.pool.query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS total FROM audit_logs${where}`,
+      params
+    );
+    return {
+      records: rows.map((r: any) => ({
+        id: r.id,
+        timestamp: r.timestamp,
+        user: r.user,
+        action: r.action,
+        target: r.target,
+        details: r.details || undefined,
+        ip: r.ip || undefined,
+      })),
+      total: Number(counts[0]?.total || 0),
+    };
   }
 }

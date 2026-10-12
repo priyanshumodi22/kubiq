@@ -51,7 +51,7 @@ export class NotificationManager {
   private repository!: INotificationRepository;
   private persistenceEnabled: boolean;
   public throttleMap = new Map<string, number>();
-  private transporters = new Map<string, nodemailer.Transporter>();
+  private transporters = new Map<string, ReturnType<typeof nodemailer.createTransport>>();
 
   // Alert History & Maintenance Silence Mode
   private history: AlertHistoryEntry[] = [];

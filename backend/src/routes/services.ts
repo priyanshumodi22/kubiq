@@ -1,43 +1,35 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { ServiceMonitor } from '../services/ServiceMonitor';
-import { requireRole, hasRole, getUserFromReq } from '../middleware/auth';
+import { requirePermission, getUserFromReq } from '../middleware/auth';
 import { AuditLogService } from '../services/AuditLogService';
+import { maskServiceEndpoint } from '../utils/sensitiveData';
+import { RbacRoleService } from '../services/RbacRoleService';
 
 const router = Router();
 const monitor = ServiceMonitor.getInstance();
 const auditLog = AuditLogService.getInstance();
 
-// Helper to mask sensitive connection strings for viewers
-const maskServiceEndpoint = (service: any, user: any) => {
-  // If no user (shouldn't happen in protected routes) or admin, show everything
-  if (!user || hasRole(user, 'kubiq-admin')) {
-    return service;
+const requireRawLogAccessWhenConfigured = (req: Request, res: Response, next: NextFunction) => {
+  if (req.body?.logPath !== undefined || req.body?.logSources !== undefined) {
+    return requirePermission('logs.raw.read')(req, res, next);
   }
-
-  // If viewer (and not admin), mask DB connection strings
-  if (hasRole(user, 'kubiq-viewer')) {
-    const type = service.type?.toLowerCase();
-    if (type === 'mongodb' || type === 'mysql' || type === 'mariadb') {
-      return { ...service, endpoint: '*****' };
-    }
-  }
-
-  return service;
+  return next();
 };
 
+// Helper to mask sensitive connection strings for viewers
 // GET /api/services - Get all services (with history limit)
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', requirePermission('services.read'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const historyLimit = parseInt(req.query.historyLimit as string) || 20;
-    const services = monitor.getAllServices().map((service) => {
-      const maskedService = maskServiceEndpoint(service, req.user);
+    const canReadRawLogs = await RbacRoleService.hasPermission(req.user as any, 'logs.raw.read');
+    const services = await Promise.all(monitor.getAllServices().map(async (service) => {
+      const maskedService = await maskServiceEndpoint(service, req.user);
       return {
         ...maskedService,
-        logPath: service.logPath,
-        logSources: service.logSources, // New: Preserve multi-log sources
+        ...(canReadRawLogs ? { logPath: service.logPath, logSources: service.logSources } : {}),
         history: (service.history || []).slice(-historyLimit),
       };
-    });
+    }));
 
     res.json({
       services,
@@ -49,10 +41,10 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // GET /api/services/status - Get lightweight status only (no history)
-router.get('/status', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/status', requirePermission('services.read'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const services = monitor.getAllServices().map((service) => {
-      const maskedService = maskServiceEndpoint(service, req.user);
+    const services = await Promise.all(monitor.getAllServices().map(async (service) => {
+      const maskedService = await maskServiceEndpoint(service, req.user);
       const lastHistory =
         (service.history || []).length > 0 ? (service.history || [])[(service.history || []).length - 1] : null;
 
@@ -72,7 +64,7 @@ router.get('/status', async (req: Request, res: Response, next: NextFunction) =>
             }
           : null,
       };
-    });
+    }));
 
     res.json({
       services,
@@ -84,18 +76,19 @@ router.get('/status', async (req: Request, res: Response, next: NextFunction) =>
 });
 
 // GET /api/services/stream - Server-Sent Events for real-time updates
-router.get('/stream', async (req: Request, res: Response) => {
+router.get('/stream', requirePermission('services.read'), async (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
 
   // Capture user from request closure
   const currentUser = req.user;
+  const canReadRawLogs = await RbacRoleService.hasPermission(currentUser as any, 'logs.raw.read');
 
   // Send initial data
-  const sendUpdate = () => {
-    const services = monitor.getAllServices().map((service) => {
-      const maskedService = maskServiceEndpoint(service, currentUser);
+  const sendUpdate = async () => {
+    const services = await Promise.all(monitor.getAllServices().map(async (service) => {
+      const maskedService = await maskServiceEndpoint(service, currentUser);
       const lastHistory =
         (service.history || []).length > 0 ? (service.history || [])[(service.history || []).length - 1] : null;
 
@@ -104,8 +97,7 @@ router.get('/stream', async (req: Request, res: Response) => {
         currentStatus: maskedService.currentStatus,
         endpoint: maskedService.endpoint, // Ensure masked endpoint
         type: maskedService.type,
-        logPath: service.logPath, 
-        logSources: service.logSources, // New: Preserve multi-log sources
+        ...(canReadRawLogs ? { logPath: service.logPath, logSources: service.logSources } : {}),
         lastCheck: lastHistory
           ? {
               timestamp: lastHistory.timestamp,
@@ -115,14 +107,14 @@ router.get('/stream', async (req: Request, res: Response) => {
             }
           : null,
       };
-    });
+    }));
 
     res.write(`data: ${JSON.stringify({ services, stats: monitor.getStats() })}\n\n`);
   };
 
   // Send updates every 5 seconds
-  sendUpdate();
-  const interval = setInterval(sendUpdate, 5000);
+  void sendUpdate();
+  const interval = setInterval(() => { void sendUpdate(); }, 5000);
 
   // Cleanup on connection close
   req.on('close', () => {
@@ -132,7 +124,7 @@ router.get('/stream', async (req: Request, res: Response) => {
 });
 
 // GET /api/services/:name - Get specific service
-router.get('/:name', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:name', requirePermission('services.read'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name } = req.params;
     const service = monitor.getServiceByName(name as string);
@@ -144,14 +136,19 @@ router.get('/:name', async (req: Request, res: Response, next: NextFunction) => 
       });
     }
 
-    res.json(maskServiceEndpoint(service, req.user));
+    const masked = await maskServiceEndpoint(service, req.user);
+    if (await RbacRoleService.hasPermission(req.user as any, 'logs.raw.read')) {
+      return res.json(masked);
+    }
+    const { logPath: _logPath, logSources: _logSources, ...safeService } = masked;
+    return res.json(safeService);
   } catch (error) {
     next(error);
   }
 });
 
 // GET /api/services/:name/history - Get service history
-router.get('/:name/history', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:name/history', requirePermission('services.read'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name } = req.params;
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
@@ -176,7 +173,7 @@ router.get('/:name/history', async (req: Request, res: Response, next: NextFunct
 });
 
 // POST /api/services/:name/check - Trigger manual health check
-router.post('/:name/check', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:name/check', requirePermission('services.read'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name } = req.params;
 
@@ -199,7 +196,7 @@ router.post('/:name/check', async (req: Request, res: Response, next: NextFuncti
 });
 
 // POST /api/services/custom-check - Custom endpoint check
-router.post('/custom-check', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/custom-check', requirePermission('services.manage'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { service, endpoint, method, headers, body } = req.body;
 
@@ -235,7 +232,8 @@ router.post('/custom-check', async (req: Request, res: Response, next: NextFunct
 // POST /api/services - Create new service (admin only)
 router.post(
   '/',
-  requireRole('kubiq-admin'),
+  requirePermission('services.manage'),
+  requireRawLogAccessWhenConfigured,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { name, endpoint, headers, type, ignoreSSL, logPath, logSources, interval, retries } = req.body;
@@ -274,7 +272,8 @@ router.post(
 // PUT /api/services/:name - Update service (admin only)
 router.put(
   '/:name',
-  requireRole('kubiq-admin'),
+  requirePermission('services.manage'),
+  requireRawLogAccessWhenConfigured,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { name } = req.params;
@@ -314,7 +313,7 @@ router.put(
 // DELETE /api/services/:name - Delete service (admin only)
 router.delete(
   '/:name',
-  requireRole('kubiq-admin'),
+  requirePermission('services.manage'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { name } = req.params;
@@ -343,7 +342,7 @@ router.delete(
 );
 
 // GET /api/services/status-page/config - Get config (Admin/Auth)
-router.get('/status-page/config', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/status-page/config', requirePermission('services.read'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const config = monitor.getStatusPageConfig();
     res.json(config);
@@ -355,7 +354,7 @@ router.get('/status-page/config', async (req: Request, res: Response, next: Next
 // PUT /api/services/status-page/config - Update config (Admin only)
 router.put(
   '/status-page/config',
-  requireRole('kubiq-admin'),
+  requirePermission('services.manage'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { slug, title, refreshInterval } = req.body;

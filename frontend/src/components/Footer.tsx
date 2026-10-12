@@ -42,12 +42,12 @@ export default function Footer() {
       </footer>
 
       {isLicenseOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onMouseDown={closeLicense}>
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onMouseDown={closeLicense}>
           <section
             role="dialog"
             aria-modal="true"
             aria-labelledby="license-dialog-title"
-            className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-2xl"
+            className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-bg shadow-2xl"
             onMouseDown={(event) => event.stopPropagation()}
           >
             <header className="flex items-center justify-between border-b border-white/10 bg-white/5 px-6 py-4">
