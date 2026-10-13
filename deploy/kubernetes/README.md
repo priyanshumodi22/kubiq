@@ -1,4 +1,4 @@
-# Kubiq on the Priyanshu k3s node
+# kubiq on the Priyanshu k3s node
 
 This is the production setup for `https://priyanshumodi.in/kubiq`.
 
@@ -14,6 +14,12 @@ Before the first apply, create `kubiq-runtime` from the example using values
 that never enter Git. FluxCD's `kubiq-gitops.yaml` requires a dedicated GitHub
 deploy key stored only as the `flux-system/kubiq-git-auth` Kubernetes Secret.
 No GitHub Action has SSH access to the VM.
+
+Before rolling out authenticated telemetry/APM ingestion, add
+`KUBIQ_INGESTION_TOKEN` to the live `kubiq-runtime` Secret first. Then update
+the Fluent Bit DaemonSet and OTLP/Zipkin clients with `Authorization: Bearer
+<token>`, and only then roll out the backend. This order prevents agent pod
+startup failures and avoids a gap in log or trace ingestion.
 
 The public hostname cannot be switched until the Portfolio is also behind this
 same Traefik ingress, because Cloudflare DNS cannot route only `/kubiq` while

@@ -9,12 +9,13 @@ import tls from 'tls';
 import { URL } from 'url';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { IServiceRepository } from '../database/interfaces/IServiceRepository';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { KubernetesService } from './KubernetesService';
 import { NotificationManager } from './NotificationManager';
+import { endpointToIcmpHost } from '../utils/icmpTarget';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export class ServiceMonitor {
   private static instance: ServiceMonitor;
@@ -444,35 +445,18 @@ export class ServiceMonitor {
 
   private async checkIcmp(endpoint: string): Promise<boolean> {
     try {
-      const host = this.endpointToHost(endpoint);
+      const host = endpointToIcmpHost(endpoint);
+      if (!host) return false;
       const isWindows = process.platform === 'win32';
-      // -n 1 for Windows, -c 1 for others (Linux/Mac)
-      // -w 2000 for 2 second timeout
-      const timeoutFlag = isWindows ? '-w 2000' : '-W 2';
-      const countFlag = isWindows ? '-n 1' : '-c 1';
-      const command = `ping ${countFlag} ${timeoutFlag} ${host}`;
-      
-      await execAsync(command);
+      // Keep the existing platform behavior but never construct shell syntax
+      // from a configured monitor endpoint.
+      const args = isWindows
+        ? ['-n', '1', '-w', '2000', host]
+        : ['-c', '1', '-W', '2', host];
+      await execFileAsync('ping', args);
       return true;
     } catch (e) {
       return false;
-    }
-  }
-
-  private endpointToHost(endpoint: string): string {
-    try {
-      // If it's a full URL, extract hostname
-      if (endpoint.includes('://')) {
-        const url = new URL(endpoint);
-        return url.hostname;
-      }
-      // If it's host:port, extract host
-      if (endpoint.includes(':') && !endpoint.includes('[')) {
-        return endpoint.split(':')[0];
-      }
-      return endpoint;
-    } catch {
-      return endpoint;
     }
   }
 

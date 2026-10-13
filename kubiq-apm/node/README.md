@@ -18,6 +18,7 @@ npm install kubiq-apm
 ```bash
 export OTEL_SERVICE_NAME="auth-api"
 export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="http://localhost:3001/api/apm/v1/traces"
+export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer ${KUBIQ_INGESTION_TOKEN}"
 
 node --require kubiq-apm/auto index.js
 ```

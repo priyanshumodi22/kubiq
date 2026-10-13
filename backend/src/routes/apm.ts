@@ -3,10 +3,19 @@ import { DatabaseFactory } from '../database/DatabaseFactory';
 import { ISpan } from '../database/interfaces/ITraceRepository';
 import { IngestionBufferService } from '../services/IngestionBufferService';
 import { requirePermission } from '../middleware/auth';
+import { requireIngestionAuth } from '../middleware/ingestionAuth';
 
 export const apmIngestRouter = Router();
 export const apmAnalyticsRouter = Router();
 apmAnalyticsRouter.use(requirePermission('apm.read'));
+// This router shares the /api/apm mount with analytics. Restrict ingestion
+// credentials to the OTLP/Zipkin namespace so dashboard reads keep JWT auth.
+apmIngestRouter.use('/v1', requireIngestionAuth);
+
+const MAX_SPANS_PER_REQUEST = (() => {
+    const value = Number.parseInt(process.env.KUBIQ_INGESTION_MAX_SPANS_PER_REQUEST || '', 10);
+    return Number.isSafeInteger(value) && value > 0 ? value : 1_000;
+})();
 
 // Ingest middleware: bypass trace processing if APM is unsupported
 apmIngestRouter.use((req, res, next) => {
@@ -150,6 +159,10 @@ apmIngestRouter.post('/v1/traces', async (req: Request, res: Response) => {
             res.status(202).json({ message: 'No spans found in payload' });
             return;
         }
+        if (spans.length > MAX_SPANS_PER_REQUEST) {
+            res.status(413).json({ error: 'APM_BATCH_TOO_LARGE', message: `A maximum of ${MAX_SPANS_PER_REQUEST} spans is accepted per request.` });
+            return;
+        }
 
         // 2. Filter out ignored routes to save DB space
         const config = await getApmConfigCached();
@@ -169,7 +182,10 @@ apmIngestRouter.post('/v1/traces', async (req: Request, res: Response) => {
         }
 
         // 3. Insert into the high-throughput buffer instead of directly writing to the DB
-        IngestionBufferService.getInstance().addSpans(cleanSpans);
+        if (!IngestionBufferService.getInstance().addSpans(cleanSpans)) {
+            res.status(429).json({ error: 'APM_BUFFER_FULL', message: 'APM ingestion is temporarily at capacity.' });
+            return;
+        }
 
         // 3. Return 202 Accepted (standard for OTLP receivers)
         res.status(202).end();
@@ -225,6 +241,10 @@ apmIngestRouter.post('/v1/zipkin', async (req: Request, res: Response) => {
             res.status(202).json({ message: 'No spans found' });
             return;
         }
+        if (spans.length > MAX_SPANS_PER_REQUEST) {
+            res.status(413).json({ error: 'APM_BATCH_TOO_LARGE', message: `A maximum of ${MAX_SPANS_PER_REQUEST} spans is accepted per request.` });
+            return;
+        }
 
         const config = await getApmConfigCached();
         const ignoredPaths = config.ignoredRoutes;
@@ -243,7 +263,10 @@ apmIngestRouter.post('/v1/zipkin', async (req: Request, res: Response) => {
         }
 
         // Push to high-throughput buffer
-        IngestionBufferService.getInstance().addSpans(cleanSpans);
+        if (!IngestionBufferService.getInstance().addSpans(cleanSpans)) {
+            res.status(429).json({ error: 'APM_BUFFER_FULL', message: 'APM ingestion is temporarily at capacity.' });
+            return;
+        }
 
         res.status(202).end();
     } catch (error) {

@@ -15,9 +15,20 @@ Across *all* languages and frameworks, kubiq APM relies on these standard OpenTe
 | `OTEL_SERVICE_NAME` | The logical name of your microservice. | `my-billing-service` |
 | `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | The EXACT URL of your kubiq APM ingestion endpoint. | `http://<kubiq-host>:3001/api/apm/v1/traces` |
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | The formatting protocol (Usually HTTP Protobuf). | `http/protobuf` |
+| `OTEL_EXPORTER_OTLP_HEADERS` | Required bearer authentication header for kubiq ingestion. | `Authorization=Bearer <KUBIQ_INGESTION_TOKEN>` |
 
 
 *(Note: Replace `<kubiq-host>` with `localhost` or your server's IP depending on your deployment).*
+
+## Ingestion authentication
+
+kubiq requires a shared ingestion token for OTLP and Zipkin traffic. Store it in your secret manager as `KUBIQ_INGESTION_TOKEN`; never commit it. For OTLP exporters, use the standard header environment variable:
+
+```bash
+export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer ${KUBIQ_INGESTION_TOKEN}"
+```
+
+The kubiq Node and Python wrappers pass this standard OpenTelemetry setting through. For Java Zipkin, set `-Dotel.exporter.zipkin.headers=Authorization=Bearer <token>`.
 
 ---
 
@@ -38,6 +49,7 @@ Instead of modifying any code, you simply preload the `kubiq-apm` package when s
 ```bash
 export OTEL_SERVICE_NAME="auth-api"
 export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="http://localhost:3001/api/apm/v1/traces"
+export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer ${KUBIQ_INGESTION_TOKEN}"
 
 node --require kubiq-apm/auto index.js
 ```
@@ -66,6 +78,7 @@ Simply prefix your normal startup command (like `python manage.py runserver` or 
 export OTEL_SERVICE_NAME="my-python-service"
 # Optional: It defaults to http://localhost:3001/api/apm/v1/traces automatically!
 # export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="http://localhost:3001/api/apm/v1/traces"
+export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer ${KUBIQ_INGESTION_TOKEN}"
 
 # For generic Python files
 kubiq-apm python main.py
@@ -100,6 +113,7 @@ nohup java \
     -Dotel.service.name="my-spring-boot-service" \
     -Dotel.traces.exporter=zipkin \
     -Dotel.exporter.zipkin.endpoint="http://localhost:3001/api/apm/v1/zipkin" \
+    -Dotel.exporter.zipkin.headers="Authorization=Bearer ${KUBIQ_INGESTION_TOKEN}" \
     -Dotel.metrics.exporter=none \
     -Dotel.logs.exporter=none \
     -Dotel.bsp.schedule.delay=2000 \

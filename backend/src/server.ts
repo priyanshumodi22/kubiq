@@ -123,8 +123,12 @@ app.use(compression()); // Enable gzip compression
 app.use(morgan('combined', {
   skip: (req) => req.url === '/auth/health/ready' || req.originalUrl === '/auth/health/ready'
 }));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// A bounded default prevents any unauthenticated or authenticated route from
+// allocating arbitrarily large JSON documents. Operators may raise this only
+// when a known integration requires it.
+const httpBodyLimit = process.env.HTTP_JSON_BODY_LIMIT || '2mb';
+app.use(express.json({ limit: httpBodyLimit }));
+app.use(express.urlencoded({ limit: httpBodyLimit, extended: true }));
 
 import { publicStatusRouter } from './routes/publicStatus';
 import { notificationsRouter } from './routes/notifications';
@@ -154,9 +158,9 @@ app.use(`${BACKEND_CONTEXT_PATH}/api/auth`, authRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/auth/webauthn`, authWebAuthnRouter);
 app.use(`${BACKEND_CONTEXT_PATH}/api/public`, publicStatusRouter);
 if (apmEnabled) {
-  app.use(`${BACKEND_CONTEXT_PATH}/api/apm`, apmIngestRouter); // Unauthenticated OTLP ingestion
+  app.use(`${BACKEND_CONTEXT_PATH}/api/apm`, apmIngestRouter); // Authenticated OTLP ingestion
 }
-app.use(`${BACKEND_CONTEXT_PATH}/api/telemetry`, telemetryRouter); // Agent telemetry ingestion
+app.use(`${BACKEND_CONTEXT_PATH}/api/telemetry`, telemetryRouter); // Authenticated agent telemetry ingestion
 if (apmEnabled) {
   app.use(`${BACKEND_CONTEXT_PATH}/api/apm`, authMiddleware, apmAnalyticsRouter); // Protected analytics routes
 }

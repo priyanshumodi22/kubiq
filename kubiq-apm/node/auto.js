@@ -12,8 +12,21 @@ process.env.OTEL_BSP_SCHEDULE_DELAY = process.env.OTEL_BSP_SCHEDULE_DELAY || '20
 const exporterUrl = process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || 'http://localhost:3001/api/apm/v1/traces';
 const serviceName = process.env.OTEL_SERVICE_NAME || 'unknown-node-service';
 
+const exporterHeaders = Object.fromEntries(
+    (process.env.OTEL_EXPORTER_OTLP_HEADERS || '')
+        .split(',')
+        .map((header) => {
+            const separator = header.indexOf('=');
+            return separator === -1
+                ? []
+                : [header.slice(0, separator).trim(), header.slice(separator + 1).trim()];
+        })
+        .filter(([key, value]) => key && value)
+);
+
 const traceExporter = new OTLPTraceExporter({
     url: exporterUrl,
+    headers: exporterHeaders,
 });
 
 const sdk = new opentelemetry.NodeSDK({
