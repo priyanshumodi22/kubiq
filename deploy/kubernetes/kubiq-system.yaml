@@ -191,8 +191,8 @@ data:
   KUBI_KUBERNETES_NAMESPACE: kubiq-system
   LOG_RETENTION_DAYS: '7'
   # AI_API_KEY goes in kubiq-runtime Secret
-   # KUBIQ_INGESTION_TOKEN goes in kubiq-runtime Secret. It is required by
-   # Fluent Bit and OTLP/Zipkin collectors using the public API path.
+  # KUBIQ_INGESTION_TOKEN goes in kubiq-runtime Secret. It is required by
+  # Fluent Bit and OTLP/Zipkin collectors using the public API path.
 
   # ── kubiq Pro licensing (Polar production) ──
   # The private KUBIQ_LICENSE_KEY remains in the kubiq-runtime Secret.
@@ -225,7 +225,7 @@ spec:
       automountServiceAccountToken: true
       containers:
         - name: kubiq
-          image: priyanshumodi22/kubiq:main-55 # {"$imagepolicy": "flux-system:kubiq"}
+          image: priyanshumodi22/kubiq:main-56 # {"$imagepolicy": "flux-system:kubiq"}
           imagePullPolicy: Always
           ports:
             - name: http
