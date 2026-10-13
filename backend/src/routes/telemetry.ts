@@ -1,7 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { IngestionBufferService } from '../services/IngestionBufferService';
+import { requireIngestionAuth } from '../middleware/ingestionAuth';
 
 export const telemetryRouter = Router();
+telemetryRouter.use(requireIngestionAuth);
+
+const MAX_LOG_BATCH = (() => {
+    const value = Number.parseInt(process.env.KUBIQ_INGESTION_MAX_LOG_BATCH || '', 10);
+    return Number.isSafeInteger(value) && value > 0 ? value : 500;
+})();
 
 /**
  * POST /api/telemetry/logs
@@ -17,6 +24,10 @@ telemetryRouter.post('/logs', (req: Request, res: Response) => {
         // We will adapt standard format if needed, but for now expect standard objects.
         if (!Array.isArray(payload)) {
             res.status(400).json({ error: 'Payload must be a JSON array' });
+            return;
+        }
+        if (payload.length > MAX_LOG_BATCH) {
+            res.status(413).json({ error: 'TELEMETRY_BATCH_TOO_LARGE', message: `A maximum of ${MAX_LOG_BATCH} logs is accepted per request.` });
             return;
         }
 
@@ -45,7 +56,10 @@ telemetryRouter.post('/logs', (req: Request, res: Response) => {
         });
 
         if (logs.length > 0) {
-            IngestionBufferService.getInstance().addLogs(logs);
+            if (!IngestionBufferService.getInstance().addLogs(logs)) {
+                res.status(429).json({ error: 'TELEMETRY_BUFFER_FULL', message: 'Telemetry ingestion is temporarily at capacity.' });
+                return;
+            }
         }
 
         res.status(202).end();

@@ -42,5 +42,6 @@ kubiq-apm automatically configures defaults optimized for the kubiq dashboard. Y
 |---|---|---|
 | `OTEL_SERVICE_NAME` | `unknown-python-service` | The name of your service on the dashboard |
 | `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | `http://localhost:3001/api/apm/v1/traces` | Where kubiq is running |
+| `OTEL_EXPORTER_OTLP_HEADERS` | `Authorization=Bearer <KUBIQ_INGESTION_TOKEN>` | Required ingestion authentication |
 | `OTEL_BSP_MAX_EXPORT_BATCH_SIZE` | `50` | Batched spans limit |
 | `OTEL_BSP_SCHEDULE_DELAY` | `2000` | Flush delay (ms) |

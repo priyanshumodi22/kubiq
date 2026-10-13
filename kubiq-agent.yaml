@@ -85,6 +85,7 @@ data:
         Format        json
         json_date_key timestamp
         json_date_format iso8601
+        Header        Authorization Bearer ${KUBIQ_INGESTION_TOKEN}
         Retry_Limit   5
 
   parsers.conf: |
@@ -142,6 +143,13 @@ spec:
           value: "YOUR_KUBIQ_VM_IP"
         - name: KUBIQ_BACKEND_PORT
           value: "3001"
+        - name: KUBIQ_INGESTION_TOKEN
+          # Prerequisite: add this key to the live kubiq-runtime Secret before
+          # rolling out this DaemonSet or the agent will not start.
+          valueFrom:
+            secretKeyRef:
+              name: kubiq-runtime
+              key: KUBIQ_INGESTION_TOKEN
         ports:
           - containerPort: 2020
         volumeMounts:
