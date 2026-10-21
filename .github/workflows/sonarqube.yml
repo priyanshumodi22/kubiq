@@ -6,6 +6,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: sonarqube-release-scan
+  cancel-in-progress: false
+
 jobs:
   scan:
     if: github.ref == 'refs/heads/main'
@@ -35,5 +39,15 @@ jobs:
         with:
           args: >
             -Dsonar.projectKey=kubiq
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=600
             -Dsonar.sources=backend/src,frontend/src,kubiq-apm
             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/*.test.*,**/*.spec.*
+      - name: Report scan outcome
+        if: always()
+        env:
+          SCAN_STATUS: ${{ job.status }}
+        run: |
+          printf 'SonarQube scan status: %s\n\n' "$SCAN_STATUS" >> "$GITHUB_STEP_SUMMARY"
+          printf '[SonarQube results](https://sonar.priyanshumodi.in/dashboard?id=kubiq)\n\n' >> "$GITHUB_STEP_SUMMARY"
+          printf '[Persistent Google Sheets reports](https://docs.google.com/spreadsheets/d/1C7G0-c7mjQkQ3ur57u20mdv-XPIXWVBxWwgwyNHQqGY/edit)\n' >> "$GITHUB_STEP_SUMMARY"
