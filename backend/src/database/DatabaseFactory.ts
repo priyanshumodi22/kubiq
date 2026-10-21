@@ -44,20 +44,23 @@ export class DatabaseFactory {
 
     switch (startArgs.toLowerCase()) {
       case 'mysql':
-      case 'mariadb':
+      case 'mariadb': {
         const { MysqlServiceRepository } = await import('./adapters/mysql/MysqlServiceRepository');
         this.serviceRepository = new MysqlServiceRepository();
         break;
+      }
       case 'mongo':
-      case 'mongodb':
+      case 'mongodb': {
         const { MongoServiceRepository } = await import('./adapters/mongo/MongoServiceRepository');
         this.serviceRepository = new MongoServiceRepository();
         break;
+      }
       case 'json':
-      default:
+      default: {
         const { JsonServiceRepository } = await import('./adapters/json/JsonServiceRepository');
         this.serviceRepository = new JsonServiceRepository();
         break;
+      }
     }
 
     await this.serviceRepository.initialize();
@@ -74,20 +77,23 @@ export class DatabaseFactory {
 
     switch (startArgs.toLowerCase()) {
       case 'mysql':
-      case 'mariadb':
+      case 'mariadb': {
         const { MysqlNotificationRepository } = await import('./adapters/mysql/MysqlNotificationRepository');
         this.notificationRepository = new MysqlNotificationRepository();
         break;
+      }
       case 'mongo':
-      case 'mongodb':
+      case 'mongodb': {
         const { MongoNotificationRepository } = await import('./adapters/mongo/MongoNotificationRepository');
         this.notificationRepository = new MongoNotificationRepository();
         break;
+      }
       case 'json':
-      default:
+      default: {
         const { JsonNotificationRepository } = await import('./adapters/json/JsonNotificationRepository');
         this.notificationRepository = new JsonNotificationRepository();
         break;
+      }
     }
 
     await this.notificationRepository.initialize();
@@ -104,20 +110,23 @@ export class DatabaseFactory {
 
     switch (startArgs.toLowerCase()) {
       case 'mysql':
-      case 'mariadb':
+      case 'mariadb': {
         const { MysqlUserRepository } = await import('./adapters/mysql/MysqlUserRepository');
         this.userRepository = new MysqlUserRepository();
         break;
+      }
       case 'mongo':
-      case 'mongodb':
+      case 'mongodb': {
         const { MongoUserRepository } = await import('./adapters/mongo/MongoUserRepository');
         this.userRepository = new MongoUserRepository();
         break;
+      }
       case 'json':
-      default:
+      default: {
         const { JsonUserRepository } = await import('./adapters/json/JsonUserRepository');
         this.userRepository = new JsonUserRepository();
         break;
+      }
     }
 
     await this.userRepository.initialize();
@@ -134,20 +143,23 @@ export class DatabaseFactory {
 
     switch (startArgs.toLowerCase()) {
       case 'mysql':
-      case 'mariadb':
+      case 'mariadb': {
         const { MysqlPasskeyRepository } = await import('./adapters/mysql/MysqlPasskeyRepository');
         this.passkeyRepository = new MysqlPasskeyRepository();
         break;
+      }
       case 'mongo':
-      case 'mongodb':
+      case 'mongodb': {
         const { MongoPasskeyRepository } = await import('./adapters/mongo/MongoPasskeyRepository');
         this.passkeyRepository = new MongoPasskeyRepository();
         break;
+      }
       case 'json':
-      default:
+      default: {
         const { JsonPasskeyRepository } = await import('./adapters/json/JsonPasskeyRepository');
         this.passkeyRepository = new JsonPasskeyRepository();
         break;
+      }
     }
 
     await this.passkeyRepository.initialize();
@@ -165,20 +177,23 @@ export class DatabaseFactory {
 
     switch (startArgs.toLowerCase()) {
       case 'mysql':
-      case 'mariadb':
+      case 'mariadb': {
         const { MysqlSystemRepository } = await import('./adapters/mysql/MysqlSystemRepository');
         this.systemRepository = new MysqlSystemRepository();
         break;
+      }
       case 'mongo':
-      case 'mongodb':
+      case 'mongodb': {
         const { MongoSystemRepository } = await import('./adapters/mongo/MongoSystemRepository');
         this.systemRepository = new MongoSystemRepository();
         break;
+      }
       case 'json':
-      default:
+      default: {
         const { JsonSystemRepository } = await import('./adapters/json/JsonSystemRepository');
         this.systemRepository = new JsonSystemRepository();
         break;
+      }
     }
 
     await this.systemRepository.initialize();
@@ -202,15 +217,17 @@ export class DatabaseFactory {
 
     switch (startArgs.toLowerCase()) {
       case 'mysql':
-      case 'mariadb':
+      case 'mariadb': {
         const { MysqlTraceRepository } = await import('./adapters/mysql/MysqlTraceRepository');
         this.traceRepository = new MysqlTraceRepository();
         break;
+      }
       case 'mongo':
-      case 'mongodb':
+      case 'mongodb': {
         const { MongoTraceRepository } = await import('./adapters/mongo/MongoTraceRepository');
         this.traceRepository = new MongoTraceRepository();
         break;
+      }
       case 'json':
       default:
         // APM is not supported with the JSON adapter.
@@ -242,10 +259,11 @@ export class DatabaseFactory {
 
     switch (startArgs.toLowerCase()) {
       case 'mongo':
-      case 'mongodb':
+      case 'mongodb': {
         const { MongoLogRepository } = await import('./adapters/mongo/MongoLogRepository');
         this.logRepository = new MongoLogRepository();
         break;
+      }
       case 'mysql':
       case 'mariadb':
       case 'json':
@@ -275,20 +293,23 @@ export class DatabaseFactory {
 
       switch (startArgs.toLowerCase()) {
         case 'mysql':
-        case 'mariadb':
+        case 'mariadb': {
           const { MysqlAuditLogRepository } = await import('./adapters/mysql/MysqlAuditLogRepository');
           repo = new MysqlAuditLogRepository();
           break;
+        }
         case 'mongo':
-        case 'mongodb':
+        case 'mongodb': {
           const { MongoAuditLogRepository } = await import('./adapters/mongo/MongoAuditLogRepository');
           repo = new MongoAuditLogRepository();
           break;
+        }
         case 'json':
-        default:
+        default: {
           const { JsonAuditLogRepository } = await import('./adapters/json/JsonAuditLogRepository');
           repo = new JsonAuditLogRepository();
           break;
+        }
       }
 
       await repo.initialize();

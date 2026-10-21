@@ -1,5 +1,6 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
+import { newAuditId } from '../../../utils/auditId';
 import {
   AuditLogFilters,
   AuditLogPage,
@@ -8,7 +9,7 @@ import {
 import { AuditLogEntry } from '../../../services/AuditLogService';
 
 export class JsonAuditLogRepository implements IAuditLogRepository {
-  private logFilePath: string;
+  private readonly logFilePath: string;
   private memoryLogs: AuditLogEntry[] = [];
 
   constructor() {
@@ -52,7 +53,7 @@ export class JsonAuditLogRepository implements IAuditLogRepository {
 
   public async addAuditLog(entry: Omit<AuditLogEntry, 'id' | 'timestamp'>): Promise<AuditLogEntry> {
     const fullEntry: AuditLogEntry = {
-      id: `audit-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      id: newAuditId(),
       timestamp: new Date().toISOString(),
       ...entry,
     };

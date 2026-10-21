@@ -156,7 +156,7 @@ router.post('/:id/test', requirePermission('notifications.manage'), async (req, 
 // GET /api/notifications/history - View alert dispatch history
 router.get('/history', requirePermission('notifications.read'), (req, res) => {
   try {
-    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
+    const limit = req.query.limit ? Number.parseInt(req.query.limit as string, 10) : 50;
     const history = notificationManager.getHistory(limit);
     res.json(history);
   } catch (error: any) {

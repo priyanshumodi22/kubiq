@@ -32,7 +32,7 @@ const markdownComponents: Components = {
     hr: () => <hr className="my-5 border-slate-700/80" />,
 };
 
-export function AiSummaryContent({ summary }: { summary: string }) {
+export function AiSummaryContent({ summary }: Readonly<{ summary: string }>) {
     return (
         <section className="rounded-2xl border border-white/15 bg-[#14151b] px-5 py-5 shadow-[0_18px_42px_rgba(0,0,0,0.2)] sm:px-6">
             <ReactMarkdown components={markdownComponents}>{summary}</ReactMarkdown>

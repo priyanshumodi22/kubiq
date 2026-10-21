@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import * as k8s from '@kubernetes/client-node';
-import { PassThrough } from 'stream';
+import { PassThrough } from 'node:stream';
 import { KubernetesService } from './KubernetesService';
 import { canAccessKubernetesNamespace, getSocketUser } from '../middleware/auth';
 import { RbacRoleService } from './RbacRoleService';
@@ -24,8 +24,8 @@ export class KubeLogStreamService {
     private static instance: KubeLogStreamService;
     private io: Server | null = null;
     private kc: k8s.KubeConfig | null = null;
-    private socketSubs = new Map<string, K8sSocketSub>();
-    private podStreams = new Map<string, SharedPodStream>();
+    private readonly socketSubs = new Map<string, K8sSocketSub>();
+    private readonly podStreams = new Map<string, SharedPodStream>();
 
     private constructor() {}
 

@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import type { KubiAiConfigRecord } from '../database/interfaces/ISystemRepository';
 

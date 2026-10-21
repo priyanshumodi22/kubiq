@@ -31,7 +31,7 @@ function getSpanLayerColor(span: ISpan): { bg: string; border: string; badge: st
     return { bg: 'bg-blue-500/80', border: 'border-blue-400', badge: 'bg-blue-400' };
 }
 
-export default function TraceWaterfall({ spans }: TraceWaterfallProps) {
+export default function TraceWaterfall({ spans }: Readonly<TraceWaterfallProps>) {
     const [selectedSpan, setSelectedSpan] = useState<ISpan | null>(null);
 
     // 1. Build the Tree

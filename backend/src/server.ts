@@ -2,7 +2,7 @@
 
 // Load environment variables SECOND
 import dotenv from 'dotenv';
-import path from 'path';
+import path from 'node:path';
 
 // Determine which .env file to load based on NODE_ENV. KUBIQ_ENV_FILE is an
 // explicit local/test override so an operator can exercise the backend with a
@@ -32,7 +32,7 @@ import { authMiddleware, requirePermission } from './middleware/auth';
 import { ServiceMonitor } from './services/ServiceMonitor';
 import { NotificationManager } from './services/NotificationManager';
 
-import { createServer } from 'http';
+import { createServer } from 'node:http';
 import { Server } from 'socket.io';
 import { LogStreamService } from './services/LogStreamService';
 import { KubeLogStreamService } from './services/KubeLogStreamService';

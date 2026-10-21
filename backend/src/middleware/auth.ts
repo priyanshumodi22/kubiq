@@ -3,7 +3,7 @@ import { DatabaseFactory } from '../database/DatabaseFactory';
 import { RbacService } from '../services/RbacService';
 import { RbacRoleService } from '../services/RbacRoleService';
 import axios from 'axios';
-import { createPublicKey } from 'crypto';
+import { createPublicKey } from 'node:crypto';
 import { AuditLogService } from '../services/AuditLogService';
 import { getNativeJwtSecret, isNativeJwtConfigurationError } from '../utils/nativeJwt';
 

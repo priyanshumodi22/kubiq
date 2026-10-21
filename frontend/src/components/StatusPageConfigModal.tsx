@@ -147,7 +147,7 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
                      <input
                       type="number"
                       value={refreshInterval}
-                      onChange={(e) => setRefreshInterval(parseInt(e.target.value) || 300)}
+                      onChange={(e) => setRefreshInterval(Number.parseInt(e.target.value) || 300)}
                       min="10"
                       className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all appearance-none"
                      />

@@ -67,7 +67,8 @@ export function KubiAiSettings() {
     setTesting(true);
     try {
       const result = await apiClient.testKubiAiConfiguration();
-      result.ok ? success('Provider test succeeded.') : error('Provider test failed.');
+      if (result.ok) success('Provider test succeeded.');
+      else error('Provider test failed.');
     } catch (err: any) {
       error(err.response?.data?.message || 'Provider test failed.');
     } finally {

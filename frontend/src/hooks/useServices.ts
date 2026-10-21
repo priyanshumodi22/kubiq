@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
-const POLL_INTERVAL = parseInt(import.meta.env.VITE_POLL_INTERVAL || '5000', 10);
+const POLL_INTERVAL = Number.parseInt(import.meta.env.VITE_POLL_INTERVAL || '5000', 10);
 const FULL_DATA_INTERVAL = 30000; // Fetch full data every 30 seconds
 const USE_SSE = import.meta.env.VITE_USE_SSE === 'true'; // Optional SSE support
 

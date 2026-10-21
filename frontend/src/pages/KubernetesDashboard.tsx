@@ -164,8 +164,8 @@ export default function KubernetesDashboard() {
                 const podName = m.name;
                 const key = `${selectedNamespace}/${podName}`;
                 const currentMetric = getMetricForPod(metrics, podName);
-                const cpuVal = parseInt(currentMetric.cpu) || 0;
-                const memVal = parseInt(currentMetric.memory) || 0;
+                const cpuVal = Number.parseInt(currentMetric.cpu) || 0;
+                const memVal = Number.parseInt(currentMetric.memory) || 0;
 
                 if (!next[key]) {
                     next[key] = { cpu: [], memory: [], timestamps: [] };

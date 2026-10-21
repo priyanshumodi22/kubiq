@@ -20,7 +20,7 @@ export interface K8sNamespaceOverviewProps {
     onSelectItem: (item: any) => void;
 }
 
-function K8sMiniSparkline({ values, color }: { values: number[]; color: string }) {
+function K8sMiniSparkline({ values, color }: Readonly<{ values: number[]; color: string }>) {
     if (!values || values.length === 0) return null;
     const max = Math.max(...values, 1);
     const min = Math.min(...values, 0);
@@ -45,7 +45,7 @@ function K8sMiniSparkline({ values, color }: { values: number[]; color: string }
     );
 }
 
-export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onSelectItem }: K8sNamespaceOverviewProps) {
+export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onSelectItem }: Readonly<K8sNamespaceOverviewProps>) {
     const [quotasData, setQuotasData] = useState<{ quotas: any[]; limitRanges: any[]; rbacForbidden?: boolean }>({ quotas: [], limitRanges: [] });
     const [selectedEventForAi, setSelectedEventForAi] = useState<any | null>(null);
 
@@ -99,15 +99,15 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
         let podMem = 0;
         m.containers.forEach((c: any) => {
             const cpu = c.cpu || '0';
-            if (cpu.endsWith('n')) podCpu += parseInt(cpu) / 1_000_000;
-            else if (cpu.endsWith('m')) podCpu += parseInt(cpu);
-            else if (!isNaN(parseInt(cpu))) podCpu += parseInt(cpu);
+            if (cpu.endsWith('n')) podCpu += Number.parseInt(cpu) / 1_000_000;
+            else if (cpu.endsWith('m')) podCpu += Number.parseInt(cpu);
+            else if (!Number.isNaN(Number.parseInt(cpu))) podCpu += Number.parseInt(cpu);
 
             const mem = c.memory || '0';
-            if (mem.endsWith('Ki')) podMem += parseInt(mem) / 1024;
-            else if (mem.endsWith('Mi')) podMem += parseFloat(mem);
-            else if (mem.endsWith('Gi')) podMem += parseFloat(mem) * 1024;
-            else if (!isNaN(parseFloat(mem))) podMem += parseFloat(mem);
+            if (mem.endsWith('Ki')) podMem += Number.parseInt(mem) / 1024;
+            else if (mem.endsWith('Mi')) podMem += Number.parseFloat(mem);
+            else if (mem.endsWith('Gi')) podMem += Number.parseFloat(mem) * 1024;
+            else if (!Number.isNaN(Number.parseFloat(mem))) podMem += Number.parseFloat(mem);
         });
 
         totalCpuM += podCpu;
@@ -317,9 +317,9 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
                                             const uVal = String(used[k] || '0');
                                             const hVal = String(hard[k] || '0');
                                             let pct = 0;
-                                            const numU = parseFloat(uVal);
-                                            const numH = parseFloat(hVal);
-                                            if (!isNaN(numU) && !isNaN(numH) && numH > 0) pct = Math.min(100, Math.round((numU / numH) * 100));
+                                            const numU = Number.parseFloat(uVal);
+                                            const numH = Number.parseFloat(hVal);
+                                            if (!Number.isNaN(numU) && !Number.isNaN(numH) && numH > 0) pct = Math.min(100, Math.round((numU / numH) * 100));
 
                                             const barColor = pct > 90 ? 'bg-red-500' : pct > 75 ? 'bg-yellow-500' : 'bg-primary';
 

@@ -1,12 +1,12 @@
-import crypto from 'crypto';
-import fs from 'fs';
-import path from 'path';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import { IKubiConversationRepository, KubiConversation, KubiConversationMessage } from '../../interfaces/IKubiConversationRepository';
 
 const retentionMs = () => Math.max(1, Number(process.env.AI_KUBI_HISTORY_RETENTION_DAYS || 90)) * 24 * 60 * 60 * 1000;
 
 export class JsonKubiConversationRepository implements IKubiConversationRepository {
-  private filePath: string;
+  private readonly filePath: string;
   private conversations: KubiConversation[] = [];
 
   constructor() {

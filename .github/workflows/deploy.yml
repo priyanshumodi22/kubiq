@@ -5,12 +5,23 @@ on:
     types: [published]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Require exact-commit Sonar release approval
+        run: node .github/scripts/verify-sonar-release.cjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -50,6 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -58,6 +70,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Require exact-commit Sonar release approval
+        run: node .github/scripts/verify-sonar-release.cjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Build Frontend & Backend (AMD64)
         run: |

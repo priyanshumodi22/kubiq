@@ -1455,7 +1455,7 @@ export default function ApmDashboard() {
                                     const parseUserTime = (timeStr: string) => {
                                         const cleanTimeStr = timeStr.trim().replace(/([ap]m)/i, ' $1').toUpperCase();
                                         const d = new Date(`${todayDate} ${cleanTimeStr}`);
-                                        if (isNaN(d.getTime())) {
+                                        if (Number.isNaN(d.getTime())) {
                                             throw new Error(`Invalid time format: "${timeStr}". Try "11:03:55 PM"`);
                                         }
                                         return d;

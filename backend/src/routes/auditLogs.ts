@@ -8,8 +8,8 @@ const auditService = AuditLogService.getInstance();
 // GET /api/audit-logs
 router.get('/', async (req, res) => {
   try {
-    const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
-    const pageSize = req.query.pageSize ? parseInt(req.query.pageSize as string, 10) : 25;
+    const page = req.query.page ? Number.parseInt(req.query.page as string, 10) : 1;
+    const pageSize = req.query.pageSize ? Number.parseInt(req.query.pageSize as string, 10) : 25;
     const search = req.query.search as string;
     const result = await auditService.getLogPage(page, pageSize, search);
     res.json({
@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
 // GET /api/audit-logs/export - Download audit logs as CSV file
 router.get('/export', requirePermission('audit.export'), async (req, res) => {
   try {
-    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 500;
+    const limit = req.query.limit ? Number.parseInt(req.query.limit as string, 10) : 500;
     const search = req.query.search as string;
     const logs = await auditService.getLogs(limit, search);
 

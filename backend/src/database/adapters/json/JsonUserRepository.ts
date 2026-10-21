@@ -1,11 +1,11 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import { IUserRepository } from '../../interfaces/IUserRepository';
 import { User, UserRole } from '../../../types';
 
 export class JsonUserRepository implements IUserRepository {
-  private dataDir: string;
-  private users: Map<string, User> = new Map();
+  private readonly dataDir: string;
+  private readonly users: Map<string, User> = new Map();
 
   constructor() {
     this.dataDir = process.env.DATA_DIR || './data';

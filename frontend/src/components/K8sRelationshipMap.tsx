@@ -23,7 +23,7 @@ export function K8sRelationshipMap({
     configMaps = [],
     secrets = [],
     onSelectItem
-}: K8sRelationshipMapProps) {
+}: Readonly<K8sRelationshipMapProps>) {
 
     // Zoom & Pan state
     const [scale, setScale] = useState(1);

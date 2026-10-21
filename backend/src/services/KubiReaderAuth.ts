@@ -1,5 +1,5 @@
 import type { CoreV1Api, User } from '@kubernetes/client-node';
-import type { RequestOptions } from 'https';
+import type { RequestOptions } from 'node:https';
 
 /** Short-lived credentials for the dedicated reader; never falls back to the host identity. */
 export class KubiReaderAuth {

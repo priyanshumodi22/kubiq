@@ -48,6 +48,11 @@ coverage/
 temp/
 tmp/
 docs/
+!docs/
+docs/*
+!docs/sonarqube/
+!docs/sonarqube/**
+.sonar-release-proof.json
 
 
 backend/test-mongo-fix.js

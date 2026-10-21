@@ -25,7 +25,7 @@ export function CustomSelect<T extends string>({
   disabled = false,
   compact = false,
   placement = 'bottom',
-}: CustomSelectProps<T>) {
+}: Readonly<CustomSelectProps<T>>) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const selected = options.find((option) => option.value === value) || options[0];

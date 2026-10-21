@@ -1,5 +1,5 @@
 import NodeCache from 'node-cache';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 
 export interface AISummaryCacheEntry {
     summary: string;
@@ -10,7 +10,7 @@ export interface AISummaryCacheEntry {
 
 export class AICacheService {
     private static instance: AICacheService;
-    private cache: NodeCache;
+    private readonly cache: NodeCache;
 
     private constructor() {
         // Initialize cache with 4 hour standard TTL
@@ -30,7 +30,7 @@ export class AICacheService {
      * We hash the serviceName to ensure there are no key collisions with weird characters.
      */
     private generateKey(serviceName: string, timeBucketStart: number): string {
-        const hash = crypto.createHash('md5').update(serviceName).digest('hex');
+        const hash = crypto.createHash('sha256').update(serviceName).digest('hex');
         return `ai_summary_${hash}_${timeBucketStart}`;
     }
 
@@ -71,7 +71,7 @@ export class AICacheService {
      */
     public getMostRecentSummary(serviceName: string): AISummaryCacheEntry | null {
         const keys = this.cache.keys();
-        const serviceHash = crypto.createHash('md5').update(serviceName).digest('hex');
+        const serviceHash = crypto.createHash('sha256').update(serviceName).digest('hex');
         const prefix = `ai_summary_${serviceHash}_`;
         
         let mostRecent: AISummaryCacheEntry | null = null;

@@ -4,7 +4,7 @@ import { SystemMonitorService } from '../services/SystemMonitorService';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { requirePermission, getUserFromReq } from '../middleware/auth';
 import { AuditLogService } from '../services/AuditLogService';
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 import { validateLicenseKey } from '../utils/licenseValidator';
 import { KubiAiConfigService } from '../services/KubiAiConfigService';
 import { KubiProviderService } from '../services/KubiProviderService';

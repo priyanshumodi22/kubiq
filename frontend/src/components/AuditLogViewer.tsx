@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Shield, Search, RefreshCw, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,11 +23,10 @@ export function AuditLogViewer() {
     const [pageSize] = useState(25);
     const [total, setTotal] = useState(0);
 
-    if (!hasPermission('audit.read')) {
-        return <Navigate to="/dashboard" replace />;
-    }
+    const canReadAudit = hasPermission('audit.read');
 
-    const fetchLogs = async () => {
+    const fetchLogs = useCallback(async () => {
+        if (!canReadAudit) return;
         setLoading(true);
         try {
             const res = await apiClient.getAuditLogs(page, pageSize, search);
@@ -40,9 +39,10 @@ export function AuditLogViewer() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [canReadAudit, page, pageSize, search]);
 
     const handleExportCsv = async () => {
+        if (!canReadAudit || !hasPermission('audit.export')) return;
         try {
             const blob = await apiClient.exportAuditLogsCsv(search);
             const url = window.URL.createObjectURL(new Blob([blob], { type: 'text/csv' }));
@@ -59,8 +59,10 @@ export function AuditLogViewer() {
     };
 
     useEffect(() => {
-        fetchLogs();
-    }, [page, pageSize, search]);
+        if (canReadAudit) void fetchLogs();
+    }, [fetchLogs]);
+
+    if (!canReadAudit) return <Navigate to="/dashboard" replace />;
 
     const getActionBadge = (action: string) => {
         switch (action) {

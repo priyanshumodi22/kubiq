@@ -1,7 +1,7 @@
 import * as k8s from '@kubernetes/client-node';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
 import { KubiReaderAuth } from './KubiReaderAuth';
 
 export interface KubeContainer {
@@ -65,10 +65,10 @@ export interface KubeDeployment {
 
 export class KubernetesService {
     private static instance: KubernetesService;
-    private kc: k8s.KubeConfig;
-    private clientCache = new Map<string, any>();
+    private readonly kc: k8s.KubeConfig;
+    private readonly clientCache = new Map<string, any>();
     private kubiReaderKc?: k8s.KubeConfig;
-    private kubiReaderClientCache = new Map<string, any>();
+    private readonly kubiReaderClientCache = new Map<string, any>();
 
     public available: boolean = false;
     public kubiReaderAvailable: boolean = false;

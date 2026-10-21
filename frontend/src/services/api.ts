@@ -19,7 +19,7 @@ const BACKEND_CONTEXT = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
 const BASE_PATH = `${BACKEND_DNS}${BACKEND_CONTEXT}`;
 
 class ApiClient {
-  private client: AxiosInstance;
+  private readonly client: AxiosInstance;
   private token: string | null = null;
   private activeK8sContext: string | null = null;
 
@@ -223,7 +223,7 @@ class ApiClient {
   async streamKubiMessage(
     conversationId: string,
     message: string,
-    onEvent: (event: string, data: any) => void
+    onEvent: (event: string, data: any) => void | Promise<void>
   ): Promise<void> {
     const response = await fetch(
       `${BASE_PATH}/api/kubi/conversations/${encodeURIComponent(conversationId)}/messages`,
@@ -248,8 +248,9 @@ class ApiClient {
       const events = buffer.split('\n\n');
       buffer = events.pop() || '';
       for (const entry of events) {
-        const event = entry.match(/^event:\s*(.+)$/m)?.[1] || 'message';
-        const raw = entry.match(/^data:\s*(.+)$/m)?.[1];
+        const lines = entry.split('\n');
+        const event = lines.find(line => line.startsWith('event:'))?.slice(6).trim() || 'message';
+        const raw = lines.filter(line => line.startsWith('data:')).map(line => line.slice(5).trimStart()).join('\n');
         if (!raw) continue;
         let data: unknown;
         try {

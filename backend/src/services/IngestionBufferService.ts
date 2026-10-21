@@ -8,7 +8,7 @@ export class IngestionBufferService {
     private pendingLogCount = 0;
     private pendingSpanCount = 0;
     private isFlushing = false;
-    private flushInterval: NodeJS.Timeout;
+    private readonly flushInterval: NodeJS.Timeout;
     private readonly maxBufferedLogs = this.readPositiveLimit('KUBIQ_INGESTION_MAX_BUFFERED_LOGS', 10_000);
     private readonly maxBufferedSpans = this.readPositiveLimit('KUBIQ_INGESTION_MAX_BUFFERED_SPANS', 10_000);
 

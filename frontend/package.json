@@ -9,6 +9,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
+    "test:coverage": "vitest run --coverage --coverage.reporter=lcov --coverage.reporter=text-summary --coverage.include=src/**",
     "test:ui": "vitest --ui",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --ext ts,tsx --fix"
@@ -30,8 +31,8 @@
     "keycloak-js": "^26.2.2",
     "lucide-react": "^0.562.0",
     "monaco-editor": "^0.55.1",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.18.4",
     "react-virtuoso": "^4.18.1",
@@ -46,6 +47,12 @@
     "ws": "8.22.0"
   },
   "devDependencies": {
+    "@eslint/js": "9.39.2",
+    "globals": "14.0.0",
+    "@vitest/coverage-v8": "4.0.17",
+    "@testing-library/react": "16.3.0",
+    "@testing-library/dom": "10.4.1",
+    "jsdom": "26.1.0",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.10.5",
     "@types/react": "^19.2.7",

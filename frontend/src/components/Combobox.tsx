@@ -15,7 +15,7 @@ export default function Combobox({
   options,
   placeholder,
   className = '',
-}: ComboboxProps) {
+}: Readonly<ComboboxProps>) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState(value);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -29,12 +29,7 @@ export default function Combobox({
     function handleClickOutside(event: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setIsOpen(false);
-        // Reset search term to current value if closed without selection
-        if (options.includes(searchTerm) || !searchTerm) {
-             // keep as is
-        } else {
-            // Optional: enforce selection? For now, let it be free text as per "Postman" (headers can be anything)
-        }
+        // Header values intentionally support free text; closing preserves it.
       }
     }
     document.addEventListener('mousedown', handleClickOutside);

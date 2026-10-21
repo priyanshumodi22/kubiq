@@ -4,12 +4,12 @@ import { NotificationChannel } from '../../../types';
 
 export class MysqlNotificationRepository implements INotificationRepository {
   private pool!: Pool;
-  private channels: Map<string, NotificationChannel> = new Map();
+  private readonly channels: Map<string, NotificationChannel> = new Map();
 
   async initialize(): Promise<void> {
     this.pool = mysql.createPool({
       host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '3306'),
+      port: Number.parseInt(process.env.DB_PORT || '3306'),
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASS || '',
       database: process.env.DB_NAME || 'kubiq_db',

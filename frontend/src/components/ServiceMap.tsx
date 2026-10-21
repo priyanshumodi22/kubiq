@@ -22,7 +22,7 @@ interface ServiceMapProps {
 }
 
 // A custom node component to make the services look like beautiful cards
-const CustomServiceNode = ({ data }: { data: { label: string, isError?: boolean, isPulsing?: boolean } }) => {
+const CustomServiceNode = ({ data }: Readonly<{ data: { label: string, isError?: boolean, isPulsing?: boolean } }>) => {
     const isError = data.isError;
     const isPulsing = data.isPulsing;
 
@@ -54,7 +54,7 @@ const nodeTypes = {
     serviceNode: CustomServiceNode,
 };
 
-export default function ServiceMap({ dependencies, onNodeClick, onEdgeClick, onPaneClick }: ServiceMapProps) {
+export default function ServiceMap({ dependencies, onNodeClick, onEdgeClick, onPaneClick }: Readonly<ServiceMapProps>) {
     const [isPulsing, setIsPulsing] = useState(false);
 
     // Trigger visual pulse when data updates

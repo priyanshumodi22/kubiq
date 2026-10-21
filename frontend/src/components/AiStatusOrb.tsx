@@ -13,7 +13,7 @@ type AiStatusOrbProps = {
  * This keeps each visible AI state intentional: waiting for Pro, working for
  * modal headers, reasoning for analysis context, and lighthouse for search.
  */
-export function AiStatusOrb({ activity, size = 20, className }: AiStatusOrbProps) {
+export function AiStatusOrb({ activity, size = 20, className }: Readonly<AiStatusOrbProps>) {
     const sharedProps = {
         size,
         density: size >= 64 ? 1.35 : 1.1,

@@ -23,7 +23,7 @@ export function ConfirmDialog({
   cancelText = 'Cancel',
   type = 'danger',
   isLoading = false
-}: ConfirmDialogProps) {
+}: Readonly<ConfirmDialogProps>) {
   if (!isOpen) return null;
 
   const styles = {

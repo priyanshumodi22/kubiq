@@ -52,7 +52,7 @@ const LEVEL_COLORS: Record<LogLine['level'], string> = {
 
 const TAIL_OPTIONS = [50, 100, 200, 500];
 
-export function K8sLogViewer({ namespace, podName, deploymentName, containers }: K8sLogViewerProps) {
+export function K8sLogViewer({ namespace, podName, deploymentName, containers }: Readonly<K8sLogViewerProps>) {
     const [selectedContainer, setSelectedContainer] = useState(containers[0]?.name ?? '');
     const [tailLines, setTailLines] = useState(100);
     const [containerDropdownOpen, setContainerDropdownOpen] = useState(false);
@@ -403,7 +403,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                 <div className="ml-auto flex items-center gap-1">
                     {/* Pause / Resume */}
                     <button
-                        onClick={() => { isPaused ? resume() : setIsPaused(true); }}
+                        onClick={() => { if (isPaused) resume(); else setIsPaused(true); }}
                         className={`flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] transition-colors ${isPaused ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' : 'bg-white/5 border-gray-700 text-gray-400 hover:text-white'}`}
                         title={isPaused ? 'Resume tailing' : 'Pause tailing'}
                     >

@@ -4,7 +4,25 @@ const ORIGIN = 'https://kubiq.priyanshumodi.in';
 const GUIDES = ['quick-start', 'configuration', 'apm', 'node-agent', 'python-agent', 'kubernetes', 'deployment-files'];
 type Passage = { title: string; href: string; text: string };
 
-const plainText = (html: string) => html.replace(/<\/(td|th)>/gi, ' | ').replace(/<\/(tr|p|li|h[1-6])>/gi, '\n').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#(?:39|x27);/g, "'").replace(/[^\S\n]+/g, ' ').replace(/ *\n */g, '\n').trim();
+const plainText = (html: string): string => {
+  const parts: string[] = [];
+  let cursor = 0;
+  while (cursor < html.length) {
+    const start = html.indexOf('<', cursor);
+    if (start === -1) { parts.push(html.slice(cursor)); break; }
+    parts.push(html.slice(cursor, start));
+    const end = html.indexOf('>', start + 1);
+    if (end === -1) { parts.push(html.slice(start)); break; }
+    const tag = html.slice(start + 1, end).toLowerCase();
+    if (tag === '/td' || tag === '/th') parts.push(' | ');
+    else if (['/tr', '/p', '/li', '/h1', '/h2', '/h3', '/h4', '/h5', '/h6'].includes(tag)) parts.push('\n');
+    else parts.push(' ');
+    cursor = end + 1;
+  }
+  return parts.join('').replaceAll('&nbsp;', ' ').replaceAll('&amp;', '&').replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>').replaceAll('&quot;', '"').replaceAll('&#39;', "'").replaceAll('&#x27;', "'")
+    .split('\n').map(line => line.replace(/\s+/g, ' ').trim()).join('\n').trim();
+};
 
 /** Only published, allowlisted kubiq pages are fetched; never a user-provided URL. */
 export class KubiDocsService {

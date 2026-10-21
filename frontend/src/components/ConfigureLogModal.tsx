@@ -13,7 +13,7 @@ interface ConfigureLogModalProps {
   preSelectedService?: string;
 }
 
-export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedService }: ConfigureLogModalProps) {
+export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedService }: Readonly<ConfigureLogModalProps>) {
   const { services } = useServices();
   const { hasPermission } = useAuth();
   const toast = useToast();
@@ -101,7 +101,7 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
               id: Date.now().toString(),
               name: newLabel.trim(),
               path: newPath.trim(),
-              fileLimit: newLimit ? parseInt(newLimit) : undefined
+              fileLimit: newLimit ? Number.parseInt(newLimit) : undefined
           }
       ]);
       setNewLabel('');

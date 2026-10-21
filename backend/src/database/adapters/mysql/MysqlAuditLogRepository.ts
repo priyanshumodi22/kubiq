@@ -5,6 +5,7 @@ import {
   IAuditLogRepository,
 } from '../../interfaces/IAuditLogRepository';
 import { AuditLogEntry } from '../../../services/AuditLogService';
+import { newAuditId } from '../../../utils/auditId';
 
 export class MysqlAuditLogRepository implements IAuditLogRepository {
   private pool!: Pool;
@@ -12,7 +13,7 @@ export class MysqlAuditLogRepository implements IAuditLogRepository {
   async initialize(): Promise<void> {
     this.pool = mysql.createPool({
       host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '3306'),
+      port: Number.parseInt(process.env.DB_PORT || '3306'),
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASS || '',
       database: process.env.DB_NAME || 'kubiq_db',
@@ -49,7 +50,7 @@ export class MysqlAuditLogRepository implements IAuditLogRepository {
 
   public async addAuditLog(entry: Omit<AuditLogEntry, 'id' | 'timestamp'>): Promise<AuditLogEntry> {
     const fullEntry: AuditLogEntry = {
-      id: `audit-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      id: newAuditId(),
       timestamp: new Date().toISOString(),
       ...entry,
     };

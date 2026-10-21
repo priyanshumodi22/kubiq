@@ -47,11 +47,11 @@ function PermissionPicker({
   permissions,
   selected,
   setSelected,
-}: {
+}: Readonly<{
   permissions: Permission[];
   selected: string[];
   setSelected: (next: string[]) => void;
-}) {
+}>) {
   const groups = permissions.reduce<Record<string, Permission[]>>((result, item) => {
     const group = item.key.split('.')[0];
     (result[group] ||= []).push(item);

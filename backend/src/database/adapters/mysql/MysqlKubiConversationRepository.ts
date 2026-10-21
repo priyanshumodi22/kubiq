@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import mysql, { Pool, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { IKubiConversationRepository, KubiConversation, KubiConversationMessage } from '../../interfaces/IKubiConversationRepository';
 

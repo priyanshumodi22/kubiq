@@ -9,7 +9,7 @@ const investigationSteps = [
   { state: 'composing', label: 'Answer' },
 ] as const;
 
-export function KubiActivity({ state, steps, phase }: { state: KubiAvatarState; steps: KubiAvatarState[]; phase: string | null }) {
+export function KubiActivity({ state, steps, phase }: Readonly<{ state: KubiAvatarState; steps: KubiAvatarState[]; phase: string | null }>) {
   const active = Boolean(phase);
   return <section className="kubi-activity" aria-label="Investigation progress" data-state={state}>
     <div className="kubi-activity-heading">

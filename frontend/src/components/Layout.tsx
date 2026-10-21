@@ -8,7 +8,7 @@ interface LayoutProps {
   children: ReactNode;
 }
 
-export default function Layout({ children }: LayoutProps) {
+export default function Layout({ children }: Readonly<LayoutProps>) {
   return (
     <div className="min-h-screen bg-linear-to-br from-bg via-bg to-bg-surface relative overflow-hidden">
       {/* Subtle animated background effect - unique pattern */}

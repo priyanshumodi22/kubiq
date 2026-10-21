@@ -5,16 +5,6 @@ on:
     tags:
       - 'v*-apm'
   workflow_dispatch:
-    inputs:
-      version_bump:
-        description: 'Publish manually (if not triggered by a GitHub Release)'
-        required: true
-        type: choice
-        options:
-        - patch
-        - minor
-        - major
-        default: 'patch'
 
 jobs:
   build-and-publish:
@@ -24,6 +14,7 @@ jobs:
     # It gives the GitHub Action permission to request the cryptographically signed JWT token from GitHub.
     permissions:
       contents: write
+      actions: read
       id-token: write 
       
     steps:
@@ -38,22 +29,18 @@ jobs:
 
       # Go into the kubiq-apm sub-directory where the package lives
       - name: Install dependencies
-        working-directory: ./kubiq-apm
+        working-directory: ./kubiq-apm/node
         run: npm ci
 
       # If this was triggered manually via workflow_dispatch, bump the version
-      - name: Bump Version (Manual Trigger Only)
-        if: github.event_name == 'workflow_dispatch'
-        working-directory: ./kubiq-apm
-        run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'actions@github.com'
-          npm version ${{ github.event.inputs.version_bump }} -m "chore: bump version to %s [skip ci]"
-          git push
+      - name: Require exact-commit Sonar release approval
+        run: node .github/scripts/verify-sonar-release.cjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       # Finally, publish the package with the `--provenance` flag to get the green checkmark
       - name: Publish to NPM with Provenance
-        working-directory: ./kubiq-apm
+        working-directory: ./kubiq-apm/node
         run: |
           npm config delete //registry.npmjs.org/:_authToken || true
           npm publish --provenance --access public

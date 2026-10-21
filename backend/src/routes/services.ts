@@ -20,7 +20,7 @@ const requireRawLogAccessWhenConfigured = (req: Request, res: Response, next: Ne
 // GET /api/services - Get all services (with history limit)
 router.get('/', requirePermission('services.read'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const historyLimit = parseInt(req.query.historyLimit as string) || 20;
+    const historyLimit = Number.parseInt(req.query.historyLimit as string) || 20;
     const canReadRawLogs = await RbacRoleService.hasPermission(req.user as any, 'logs.raw.read');
     const services = await Promise.all(monitor.getAllServices().map(async (service) => {
       const maskedService = await maskServiceEndpoint(service, req.user);
@@ -151,7 +151,7 @@ router.get('/:name', requirePermission('services.read'), async (req: Request, re
 router.get('/:name/history', requirePermission('services.read'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name } = req.params;
-    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+    const limit = req.query.limit ? Number.parseInt(req.query.limit as string, 10) : undefined;
 
     const service = monitor.getServiceByName(name as string);
     if (!service) {

@@ -4,7 +4,7 @@ export interface K8sPodStatusBadgeProps {
     isTerminating?: boolean;
 }
 
-export function K8sPodStatusBadge({ status, isTerminating }: K8sPodStatusBadgeProps) {
+export function K8sPodStatusBadge({ status, isTerminating }: Readonly<K8sPodStatusBadgeProps>) {
     const rawStatus = typeof status === 'string' ? status : (status as any)?.phase || (status as any)?.reason || 'Active';
     let color = 'bg-gray-500/10 text-gray-400 border-gray-500/20';
     let label = isTerminating ? 'Terminating' : rawStatus;

@@ -7,7 +7,7 @@ interface TimeRangeSliderProps {
     onChange: (value: [number, number]) => void;
 }
 
-export function TimeRangeSlider({ minMs, maxMs, value, onChange }: TimeRangeSliderProps) {
+export function TimeRangeSlider({ minMs, maxMs, value, onChange }: Readonly<TimeRangeSliderProps>) {
     const trackRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState<'from' | 'to' | null>(null);
 

@@ -41,12 +41,12 @@ function ChannelForm({
     onSubmit,
     onCancel,
     isLoading
-}: {
+}: Readonly<{
     initialValues?: Partial<NotificationChannel>,
     onSubmit: (data: any) => void,
     onCancel?: () => void,
     isLoading: boolean
-}) {
+}>) {
     const [name, setName] = useState(initialValues?.name || '');
     const [type, setType] = useState<'webhook' | 'email'>(initialValues?.type || 'webhook');
     const [config, setConfig] = useState<any>(initialValues?.config || {});
@@ -225,7 +225,7 @@ function ChannelForm({
                                     type="number"
                                     required
                                     value={config.smtpPort || 587}
-                                    onChange={e => setConfig({ ...config, smtpPort: parseInt(e.target.value) })}
+                                    onChange={e => setConfig({ ...config, smtpPort: Number.parseInt(e.target.value) })}
                                     className={inputClasses}
                                 />
                             </div>
@@ -298,7 +298,7 @@ function ChannelForm({
     );
 }
 
-export function NotificationConfigModal({ isOpen, onClose }: NotificationConfigModalProps) {
+export function NotificationConfigModal({ isOpen, onClose }: Readonly<NotificationConfigModalProps>) {
     const [channels, setChannels] = useState<NotificationChannel[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');

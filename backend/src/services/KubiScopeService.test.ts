@@ -1,5 +1,9 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, test } from '@jest/globals';
 import { KubiScopeService } from './KubiScopeService';
+
+test('large punctuation suffix is processed without a backtracking regex', () => {
+  expect(KubiScopeService.fixedProductAnswer('hello' + '!'.repeat(100000))).toContain('Hey!');
+});
 
 describe('KubiScopeService', () => {
   it.each(['hello', 'g', 'how are you kubi?', "who's this??", 'are you kubi?', 'who is priyanshu modi?'])('answers conversational input locally: %s', question => {

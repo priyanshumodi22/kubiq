@@ -26,7 +26,7 @@ const RESOURCE_RBAC_MAP: Record<string, { apiGroup: string; verb: string }> = {
     'pods/log': { apiGroup: '""', verb: 'get' }
 };
 
-export function K8sRbacPermissionBanner({ resource, namespace = 'cluster', message, onRetry }: K8sRbacPermissionBannerProps) {
+export function K8sRbacPermissionBanner({ resource, namespace = 'cluster', message, onRetry }: Readonly<K8sRbacPermissionBannerProps>) {
     const [copied, setCopied] = useState(false);
     const rbacMeta = RESOURCE_RBAC_MAP[resource.toLowerCase()] || { apiGroup: '""', verb: 'get, list, watch' };
 

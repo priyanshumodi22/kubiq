@@ -286,8 +286,8 @@ export function K8sDetailPanel({
                                 const chartData = cpuData.map((cpuVal, idx) => {
                                     const memVal = memData[idx] || 0;
                                     const timestamp = timestamps[idx] || (stableNow - (cpuData.length - 1 - idx) * 30000);
-                                    const parsedCpu = typeof cpuVal === 'string' ? (parseInt(cpuVal) || 0) : (Number(cpuVal) || 0);
-                                    const parsedMem = typeof memVal === 'string' ? (parseInt(memVal) || 0) : (Number(memVal) || 0);
+                                    const parsedCpu = typeof cpuVal === 'string' ? (Number.parseInt(cpuVal) || 0) : (Number(cpuVal) || 0);
+                                    const parsedMem = typeof memVal === 'string' ? (Number.parseInt(memVal) || 0) : (Number(memVal) || 0);
                                     
                                     // Calculate pre-formatted timeline tick strings
                                     const secondsBack = Math.round((stableNow - timestamp) / 1000);

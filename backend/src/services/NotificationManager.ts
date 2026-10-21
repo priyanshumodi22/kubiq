@@ -47,11 +47,11 @@ interface FormattedCard {
 
 export class NotificationManager {
   private static instance: NotificationManager;
-  private channels: Map<string, NotificationChannel> = new Map();
+  private readonly channels: Map<string, NotificationChannel> = new Map();
   private repository!: INotificationRepository;
-  private persistenceEnabled: boolean;
+  private readonly persistenceEnabled: boolean;
   public throttleMap = new Map<string, number>();
-  private transporters = new Map<string, ReturnType<typeof nodemailer.createTransport>>();
+  private readonly transporters = new Map<string, ReturnType<typeof nodemailer.createTransport>>();
 
   // Alert History & Maintenance Silence Mode
   private history: AlertHistoryEntry[] = [];

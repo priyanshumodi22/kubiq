@@ -3,17 +3,17 @@ import { clickhouseService } from './ClickhouseService';
 
 const parseCpu = (cpuStr: string) => {
     if (!cpuStr) return 0;
-    if (cpuStr.endsWith('n')) return parseInt(cpuStr) / 1000000;
-    if (cpuStr.endsWith('m')) return parseInt(cpuStr);
-    return parseInt(cpuStr) * 1000;
+    if (cpuStr.endsWith('n')) return Number.parseInt(cpuStr) / 1000000;
+    if (cpuStr.endsWith('m')) return Number.parseInt(cpuStr);
+    return Number.parseInt(cpuStr) * 1000;
 };
 
 const parseMemory = (memStr: string) => {
     if (!memStr) return 0;
-    if (memStr.endsWith('Ki')) return parseInt(memStr) / 1024;
-    if (memStr.endsWith('Mi')) return parseInt(memStr);
-    if (memStr.endsWith('Gi')) return parseInt(memStr) * 1024;
-    return parseInt(memStr) / (1024 * 1024);
+    if (memStr.endsWith('Ki')) return Number.parseInt(memStr) / 1024;
+    if (memStr.endsWith('Mi')) return Number.parseInt(memStr);
+    if (memStr.endsWith('Gi')) return Number.parseInt(memStr) * 1024;
+    return Number.parseInt(memStr) / (1024 * 1024);
 };
 
 export class KubernetesMetricsScraper {
@@ -25,7 +25,7 @@ export class KubernetesMetricsScraper {
             return;
         }
         
-        const scrapeIntervalSec = parseInt(process.env.APM_SCRAPE_INTERVAL_SECONDS || '60', 10);
+        const scrapeIntervalSec = Number.parseInt(process.env.APM_SCRAPE_INTERVAL_SECONDS || '60', 10);
         console.log(`KubernetesMetricsScraper: Starting background metric scraper (${scrapeIntervalSec}-second intervals).`);
         
         // Run immediately then on the interval

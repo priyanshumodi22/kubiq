@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { RoleDefinition } from '../types';
 import { builtinRoleDefinitions, RbacService } from './RbacService';

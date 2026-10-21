@@ -352,7 +352,7 @@ export function EditServiceModal({
                  min="1"
                  max="10"
                  value={retries}
-                 onChange={(e) => setRetries(parseInt(e.target.value) || 3)}
+                 onChange={(e) => setRetries(Number.parseInt(e.target.value) || 3)}
                  className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                  disabled={isSubmitting}
              />

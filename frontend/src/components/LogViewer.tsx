@@ -89,7 +89,7 @@ function renderFormattedLogContent(content: string) {
     return parts.length > 0 ? parts : content;
 }
 
-function LogVolumeHistogram({ logs }: { logs: LogLine[] }) {
+function LogVolumeHistogram({ logs }: Readonly<{ logs: LogLine[] }>) {
     if (!logs || logs.length === 0) return null;
 
     const bucketCount = 15;

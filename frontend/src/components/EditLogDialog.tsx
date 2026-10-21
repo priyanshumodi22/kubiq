@@ -15,7 +15,7 @@ export function EditLogDialog({
   onClose,
   onSuccess,
   service,
-}: EditLogDialogProps) {
+}: Readonly<EditLogDialogProps>) {
   const [logPath, setLogPath] = useState(service.logPath || '');
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);

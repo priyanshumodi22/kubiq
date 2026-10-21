@@ -102,7 +102,9 @@ export function useKubernetes() {
         try {
             const data = await apiClient.getKubernetesContexts();
             setContexts(data.contexts || []);
-        } catch (e) {}
+        } catch (error) {
+            console.warn('Kubernetes context discovery unavailable:', error);
+        }
     };
 
     const switchContext = async (contextName: string) => {

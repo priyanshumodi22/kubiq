@@ -83,9 +83,9 @@ export class MysqlSystemRepository implements ISystemRepository {
     return rows.map((row: any) => ({
       cpuLoad: row.cpu_load,
       memory: {
-        total: parseInt(row.memory_total),
-        used: parseInt(row.memory_used),
-        active: parseInt(row.memory_used) // Approximation if not stored
+        total: Number.parseInt(row.memory_total),
+        used: Number.parseInt(row.memory_used),
+        active: Number.parseInt(row.memory_used) // Approximation if not stored
       },
       uptime: 0, // Not stored in history currently
       disks: typeof row.disk_usage === 'string' ? JSON.parse(row.disk_usage) : row.disk_usage,

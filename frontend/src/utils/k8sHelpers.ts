@@ -2,14 +2,14 @@ import { KubeMetric } from '../hooks/useKubernetes';
 
 export function parseCpu(cpu: string): string {
     if (!cpu) return '—';
-    if (cpu.endsWith('n')) return `${Math.round(parseInt(cpu) / 1_000_000)}m`;
+    if (cpu.endsWith('n')) return `${Math.round(Number.parseInt(cpu) / 1_000_000)}m`;
     return cpu;
 }
 
 export function parseMemory(mem: string): string {
     if (!mem) return '—';
-    if (mem.endsWith('Ki')) return `${Math.round(parseInt(mem) / 1024)} Mi`;
-    if (mem.endsWith('Gi')) return `${(parseFloat(mem) * 1024).toFixed(0)} Mi`;
+    if (mem.endsWith('Ki')) return `${Math.round(Number.parseInt(mem) / 1024)} Mi`;
+    if (mem.endsWith('Gi')) return `${(Number.parseFloat(mem) * 1024).toFixed(0)} Mi`;
     if (mem.endsWith('Mi')) return mem;
     return mem;
 }
@@ -21,12 +21,12 @@ export function getMetricForPod(metrics: KubeMetric[], podName: string) {
     let totalMemMi = 0;
     m.containers.forEach(c => {
         const cpu = c.cpu;
-        if (cpu.endsWith('n')) totalCpuM += parseInt(cpu) / 1_000_000;
-        else if (cpu.endsWith('m')) totalCpuM += parseInt(cpu);
+        if (cpu.endsWith('n')) totalCpuM += Number.parseInt(cpu) / 1_000_000;
+        else if (cpu.endsWith('m')) totalCpuM += Number.parseInt(cpu);
         const mem = c.memory;
-        if (mem.endsWith('Ki')) totalMemMi += parseInt(mem) / 1024;
-        else if (mem.endsWith('Mi')) totalMemMi += parseFloat(mem);
-        else if (mem.endsWith('Gi')) totalMemMi += parseFloat(mem) * 1024;
+        if (mem.endsWith('Ki')) totalMemMi += Number.parseInt(mem) / 1024;
+        else if (mem.endsWith('Mi')) totalMemMi += Number.parseFloat(mem);
+        else if (mem.endsWith('Gi')) totalMemMi += Number.parseFloat(mem) * 1024;
     });
     return {
         cpu: `${Math.round(totalCpuM)}m`,

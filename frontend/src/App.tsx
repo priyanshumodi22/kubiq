@@ -12,7 +12,7 @@ import KubernetesDashboard from './pages/KubernetesDashboard';
 import { AuditLogViewer } from './components/AuditLogViewer';
 import SystemAdministration from './pages/SystemAdministration';
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children }: Readonly<{ children: React.ReactNode }>) {
   const { isAuthenticated, isLoading, authEnabled, nativeAuthEnabled } = useAuth();
 
   if (isLoading) {
@@ -50,7 +50,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function AdminRoute({ children }: { children: React.ReactNode }) {
+function AdminRoute({ children }: Readonly<{ children: React.ReactNode }>) {
   const { hasPermission, permissionsLoaded } = useAuth();
   if (!permissionsLoaded) return <div className="flex min-h-screen items-center justify-center bg-bg"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
   if (!hasPermission('system.access')) {
@@ -59,7 +59,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function PermissionRoute({ permission, children }: { permission: string; children: React.ReactNode }) {
+function PermissionRoute({ permission, children }: Readonly<{ permission: string; children: React.ReactNode }>) {
   const { hasPermission, permissionsLoaded } = useAuth();
   if (!permissionsLoaded) return <div className="flex min-h-screen items-center justify-center bg-bg"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
   return hasPermission(permission) ? <>{children}</> : <PermissionDeniedRedirect />;

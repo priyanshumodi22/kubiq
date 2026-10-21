@@ -13,7 +13,7 @@ interface K8sTerminalProps {
     containers: Array<{ name: string }>;
 }
 
-export default function K8sTerminal({ namespace, podName, containers }: K8sTerminalProps) {
+export default function K8sTerminal({ namespace, podName, containers }: Readonly<K8sTerminalProps>) {
     const [selectedContainer, setSelectedContainer] = useState<string>(
         containers[0]?.name || 'main'
     );
@@ -92,7 +92,9 @@ export default function K8sTerminal({ namespace, podName, containers }: K8sTermi
                         cols: term.cols,
                         rows: term.rows
                     });
-                } catch (e) {}
+                } catch (error) {
+                    console.warn('Terminal resize deferred until layout is ready:', error);
+                }
             };
 
             resizeObserver = new ResizeObserver(() => {

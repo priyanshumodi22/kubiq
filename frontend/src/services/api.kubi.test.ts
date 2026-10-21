@@ -16,6 +16,12 @@ beforeAll(async () => {
 });
 
 describe('kubi SSE client', () => {
+  it('joins multiline data frames without regex backtracking', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('event: evidence\ndata: {"value":\ndata: "ok"}\n\n')));
+    const events: unknown[] = [];
+    await apiClient.streamKubiMessage('c-1', 'test', (_event, data) => { events.push(data); });
+    expect(events).toEqual([{ value: 'ok' }]);
+  });
   it('awaits asynchronous completion and propagates handler failures', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('event: done\ndata: {}\n\n')));
     await expect(apiClient.streamKubiMessage('c-1', 'test', async () => {
@@ -37,7 +43,7 @@ describe('kubi SSE client', () => {
     apiClient.setToken('test-token');
     const events: Array<{ event: string; data: any }> = [];
 
-    await apiClient.streamKubiMessage('c-1', 'Which services are unhealthy?', (event, data) => events.push({ event, data }));
+    await apiClient.streamKubiMessage('c-1', 'Which services are unhealthy?', (event, data) => { events.push({ event, data }); });
 
     expect(events).toEqual([
       { event: 'answer_delta', data: { text: 'Healthy ' } },

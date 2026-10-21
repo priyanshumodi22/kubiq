@@ -41,7 +41,7 @@ router.get('/status', (_req, res) => {
     res.json({
         available: k8sService.available,
         context: k8sService.defaultContext,
-        scrapeInterval: parseInt(process.env.APM_SCRAPE_INTERVAL_SECONDS || '60', 10),
+        scrapeInterval: Number.parseInt(process.env.APM_SCRAPE_INTERVAL_SECONDS || '60', 10),
         clickhouseEnabled: clickhouseService.isConfigured()
     });
 });
@@ -231,8 +231,8 @@ router.get('/namespaces/:ns/pods/:podName/metrics/history', checkNamespaceAccess
         // Default to last 24 hours
         let since = new Date(Date.now() - 24 * 60 * 60 * 1000);
         if (req.query.hours) {
-            const h = parseInt(req.query.hours as string);
-            if (!isNaN(h) && h > 0) {
+            const h = Number.parseInt(req.query.hours as string);
+            if (!Number.isNaN(h) && h > 0) {
                 since = new Date(Date.now() - h * 60 * 60 * 1000);
             }
         }

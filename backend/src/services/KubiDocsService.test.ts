@@ -2,6 +2,10 @@ import { describe, expect, it } from '@jest/globals';
 import { KubiDocsService } from './KubiDocsService';
 
 describe('official kubiq documentation extraction', () => {
+  it('handles long malformed tag and whitespace runs without backtracking', () => {
+    const html = '<main><div class="docs-prose"><h2>Configuration</h2><p>kubiq configuration documentation ' + '<'.repeat(50000) + ' '.repeat(50000) + '</p></div></main>';
+    expect(KubiDocsService.extract(html, 'configuration')[0].text).toContain('Configuration');
+  });
   it('extracts article sections with official source anchors and excludes scripts', () => {
     const result = KubiDocsService.extract('<main><nav>Unrelated navigation</nav><div class="docs-prose max-w-none"><h2 id="authentication">Authentication</h2><p>kubiq supports native authentication and passkeys for users.</p><script>secretScript()</script></div></main><footer>Not article text</footer>', 'configuration');
     expect(result).toHaveLength(1);

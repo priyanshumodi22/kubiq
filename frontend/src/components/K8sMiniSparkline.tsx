@@ -5,7 +5,7 @@ export interface K8sMiniSparklineProps {
     color: string;
 }
 
-export function K8sMiniSparkline({ data, color }: K8sMiniSparklineProps) {
+export function K8sMiniSparkline({ data, color }: Readonly<K8sMiniSparklineProps>) {
     const chartData = data.map((val, idx) => ({ id: idx, value: val }));
     while (chartData.length < 5) {
         chartData.unshift({ id: -chartData.length, value: 0 });

@@ -1,0 +1,5 @@
+{
+  "coverage": null,
+  "analysisId": null,
+  "note": "Release is deliberately blocked until coverage reports are imported and an observed Sonar coverage baseline is reviewed and recorded. Do not replace null with an estimate."
+}

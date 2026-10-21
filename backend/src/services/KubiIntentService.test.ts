@@ -3,6 +3,11 @@ import { KubiIntentService } from './KubiIntentService';
 import { KubiProviderService } from './KubiProviderService';
 
 describe('kubi conversation planning', () => {
+  it('accepts fenced JSON but bounds oversized responses', () => {
+    const plan = { kind: 'answer', domains: ['services'], question: 'Which services are unhealthy?' };
+    expect(KubiIntentService.validate('```json\n' + JSON.stringify(plan) + '\n```', true).kind).toBe('answer');
+    expect(KubiIntentService.validate(' '.repeat(64001), true).kind).toBe('clarify');
+  });
   it('treats read as an exact username when that field is pending', async () => {
     const provider = jest.spyOn(KubiProviderService.prototype, 'complete');
     try {
@@ -12,7 +17,7 @@ describe('kubi conversation planning', () => {
       expect(provider).not.toHaveBeenCalled();
     } finally { provider.mockRestore(); }
   });
-  it.each(['not json', '{"kind":"answer","domains":["shell"],"question":"run it"}', '{"kind":"answer","domains":[]}'])('asks for clarification on invalid provider output', raw => {
+  it.each(['not json', '{"kind":"answer","domains":["shell"],"question":"run it"}', '{"kind":"answer","domains":[]}', '{"kind":["answer"],"domains":["services"],"question":"invalid kind"}'])('asks for clarification on invalid provider output', raw => {
     expect(KubiIntentService.validate(raw, true).kind).toBe('clarify');
   });
   it('enforces admin-only audit even when the model proposes it for a viewer', () => {

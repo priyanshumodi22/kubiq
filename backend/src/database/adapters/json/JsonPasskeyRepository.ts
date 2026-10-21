@@ -1,13 +1,13 @@
 
-import fs from 'fs/promises';
-import path from 'path';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { IPasskeyRepository } from '../../interfaces/IPasskeyRepository';
 import { Passkey } from '../../../types';
 
 export class JsonPasskeyRepository implements IPasskeyRepository {
-  private dataDir: string;
-  private filePath: string;
-  private passkeys: Map<string, Passkey>; // credentialId -> Passkey
+  private readonly dataDir: string;
+  private readonly filePath: string;
+  private readonly passkeys: Map<string, Passkey>; // credentialId -> Passkey
 
   constructor() {
     this.dataDir = process.env.DATA_DIR || './data';

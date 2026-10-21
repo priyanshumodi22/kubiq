@@ -346,7 +346,7 @@ export default function Dashboard() {
   );
 }
 
-function StatsCard({ label, value, color }: { label: string; value: number; color: string }) {
+function StatsCard({ label, value, color }: Readonly<{ label: string; value: number; color: string }>) {
   return (
     <div className="bg-bg-surface rounded-lg p-3 sm:p-4 border border-gray-800">
       <p className="text-xs sm:text-sm text-text-dim mb-1">{label}</p>

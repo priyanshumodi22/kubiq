@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { timingSafeEqual } from 'crypto';
+import { timingSafeEqual } from 'node:crypto';
 
 const configuredToken = (): string =>
   (process.env.KUBIQ_INGESTION_TOKEN || process.env.INGESTION_TOKEN || '').trim();

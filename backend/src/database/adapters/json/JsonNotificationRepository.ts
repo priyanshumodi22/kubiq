@@ -1,11 +1,11 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import { INotificationRepository } from '../../interfaces/INotificationRepository';
 import { NotificationChannel } from '../../../types';
 
 export class JsonNotificationRepository implements INotificationRepository {
-  private dataDir: string;
-  private channels: Map<string, NotificationChannel> = new Map();
+  private readonly dataDir: string;
+  private readonly channels: Map<string, NotificationChannel> = new Map();
 
   constructor() {
     this.dataDir = process.env.DATA_DIR || './data';

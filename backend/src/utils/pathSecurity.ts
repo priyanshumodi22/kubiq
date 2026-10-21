@@ -1,4 +1,4 @@
-import path from 'path';
+import path from 'node:path';
 
 // Blocklist approach to allow flexibility for user log directories while blocking sensitive system paths
 const NOT_ALLOWED_LOG_DIRECTORIES = [

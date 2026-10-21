@@ -4,7 +4,7 @@ export function parseTTLToSeconds(ttlStr: string | undefined, defaultSeconds: nu
     const match = ttlStr.trim().match(/^(\d+)\s*(s|m|h|d|w|hrs|days?|hours?|minutes?|seconds?)$/i);
     if (!match) return defaultSeconds;
     
-    const value = parseInt(match[1], 10);
+    const value = Number.parseInt(match[1], 10);
     const unit = match[2].toLowerCase();
     
     if (unit.startsWith('s')) return value;

@@ -34,7 +34,10 @@ export class KubiScopeService {
   }
 
   static fixedProductAnswer(question: string): string | null {
-    const normalized = question.normalize('NFKC').trim().toLowerCase().replace(/[’]/g, "'").replace(/[!?.]+$/, '').trim();
+    let normalized = question.normalize('NFKC').trim().toLowerCase().replaceAll('’', "'");
+    let end = normalized.length;
+    while (end > 0 && '!?.'.includes(normalized[end - 1])) end--;
+    normalized = normalized.slice(0, end).trim();
     if (/^(hi|hello|hey|hey there|good morning|good evening)([, ]+(kubi|bro|buddy|there))?$/.test(normalized)) return 'Hey! I’m kubi. Ask me about kubiq, its docs, or what’s happening in your monitored services.';
     if (/^(how are you|how are you doing|how's it going)[, ]*(kubi)?$/.test(normalized)) return 'Ready to help! What would you like to explore in kubiq?';
     if (/^(who's this|who is this|who are you|are you kubi|what is kubi|what are you)$/.test(normalized)) return 'I’m kubi, kubiq’s Pro read-only observability assistant. I help with kubiq’s docs and your permitted telemetry.';

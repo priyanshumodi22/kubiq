@@ -15,7 +15,7 @@ export function DeleteLogDialog({
   onClose,
   onSuccess,
   service,
-}: DeleteLogDialogProps) {
+}: Readonly<DeleteLogDialogProps>) {
   const [error, setError] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 

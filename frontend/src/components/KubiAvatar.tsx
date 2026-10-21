@@ -4,7 +4,7 @@ import { kubiAvatarStates, type KubiAvatarState } from './kubiAvatarState';
 type Props = { state?: KubiAvatarState; size?: number; className?: string; paused?: boolean };
 
 /** Original procedural kubi artwork. No images, WebGL, or animation dependencies. */
-export function KubiAvatar({ state = 'idle', size = 48, className = '', paused = false }: Props) {
+export function KubiAvatar({ state = 'idle', size = 48, className = '', paused = false }: Readonly<Props>) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef(state);
   const redrawRef = useRef<(() => void) | null>(null);
@@ -40,7 +40,7 @@ export function KubiAvatar({ state = 'idle', size = 48, className = '', paused =
       velocity += (60 * (target - gaze) - 9 * velocity) * dt;
       gaze = animate ? gaze + velocity * dt : current === 'searching' ? 7 : target;
       const hex = kubiAvatarStates[current].color;
-      const rgb = [1, 3, 5].map(offset => parseInt(hex.slice(offset, offset + 2), 16));
+      const rgb = [1, 3, 5].map(offset => Number.parseInt(hex.slice(offset, offset + 2), 16));
       color = color.map((value, index) => animate ? value + (rgb[index] - value) * (1 - Math.exp(-dt * 7)) : rgb[index]);
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const pixels = Math.round(size * dpr);

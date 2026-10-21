@@ -17,7 +17,7 @@ export default function ServiceCard({
   onDelete,
 
   isAdmin,
-}: ServiceCardProps) {
+}: Readonly<ServiceCardProps>) {
   const statusConfig = {
     healthy: { color: 'bg-green-500', label: 'Healthy' },
     unhealthy: { color: 'bg-red-500', label: 'Unhealthy' },

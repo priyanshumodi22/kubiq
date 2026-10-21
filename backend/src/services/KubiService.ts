@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { KubiEvidenceReference, KubiConversationMessage } from '../database/interfaces/IKubiConversationRepository';
 import { getUserFromReq } from '../middleware/auth';
@@ -31,7 +31,7 @@ const compact = (value: unknown, max = 12000) => {
 const hasWord = (question: string, words: string[]) => words.some(word => question.toLowerCase().includes(word));
 
 export class KubiService {
-  private provider = new KubiProviderService();
+  private readonly provider = new KubiProviderService();
 
   public getRequestContext(req: any): KubiRequestContext {
     const requested = req.headers['x-kubernetes-context'];

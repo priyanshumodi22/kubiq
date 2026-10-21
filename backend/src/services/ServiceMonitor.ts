@@ -3,14 +3,14 @@ import NodeCache from 'node-cache';
 import { ServiceConfig, HealthCheck, ServiceStatus, SystemConfig } from '../types';
 import mysql from 'mysql2/promise';
 import mongoose from 'mongoose';
-import net from 'net';
-import https from 'https';
-import tls from 'tls';
-import { URL } from 'url';
+import net from 'node:net';
+import https from 'node:https';
+import tls from 'node:tls';
+import { URL } from 'node:url';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { IServiceRepository } from '../database/interfaces/IServiceRepository';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { KubernetesService } from './KubernetesService';
 import { NotificationManager } from './NotificationManager';
 import { endpointToIcmpHost } from '../utils/icmpTarget';
@@ -19,18 +19,18 @@ const execFileAsync = promisify(execFile);
 
 export class ServiceMonitor {
   private static instance: ServiceMonitor;
-  private services: Map<string, ServiceStatus> = new Map();
-  private failureCounters: Map<string, number> = new Map();
+  private readonly services: Map<string, ServiceStatus> = new Map();
+  private readonly failureCounters: Map<string, number> = new Map();
   private repository!: IServiceRepository;
-  private cache: NodeCache;
-  private pollIntervals: Map<string, NodeJS.Timeout> = new Map();
+  private readonly cache: NodeCache;
+  private readonly pollIntervals: Map<string, NodeJS.Timeout> = new Map();
   private isRunning: boolean = false;
   private readonly maxHistorySize: number;
   private readonly pollInterval: number;
   private readonly requestTimeout: number;
   private readonly persistenceEnabled: boolean;
   private readonly dataDir: string;
-  private persistenceInterval?: NodeJS.Timeout;
+  private readonly persistenceInterval?: NodeJS.Timeout;
   private statusConfig: SystemConfig = {
     slug: null,
     dashboardTitle: 'System Status',
@@ -43,16 +43,16 @@ export class ServiceMonitor {
   private checkQueue: Array<() => void> = [];
 
   // --- Scalability: DB Connection Pools ---
-  private mysqlPools: Map<string, mysql.Pool> = new Map();
-  private mongoConnections: Map<string, mongoose.Connection> = new Map();
+  private readonly mysqlPools: Map<string, mysql.Pool> = new Map();
+  private readonly mongoConnections: Map<string, mongoose.Connection> = new Map();
 
   private constructor() {
-    this.maxHistorySize = parseInt(process.env.MAX_HISTORY_SIZE || '6000', 10);
-    this.pollInterval = parseInt(process.env.POLL_INTERVAL || '30000', 10);
-    this.requestTimeout = parseInt(process.env.HEALTH_CHECK_TIMEOUT || '5000', 10);
+    this.maxHistorySize = Number.parseInt(process.env.MAX_HISTORY_SIZE || '6000', 10);
+    this.pollInterval = Number.parseInt(process.env.POLL_INTERVAL || '30000', 10);
+    this.requestTimeout = Number.parseInt(process.env.HEALTH_CHECK_TIMEOUT || '5000', 10);
     this.persistenceEnabled = process.env.ENABLE_PERSISTENCE === 'true';
     this.dataDir = process.env.DATA_DIR || './data';
-    this.maxConcurrentChecks = parseInt(process.env.MAX_CONCURRENT_CHECKS || '10', 10);
+    this.maxConcurrentChecks = Number.parseInt(process.env.MAX_CONCURRENT_CHECKS || '10', 10);
 
     this.cache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
   }
@@ -351,9 +351,9 @@ export class ServiceMonitor {
   private checkTcp(endpoint: string): Promise<boolean> {
     return new Promise((resolve) => {
       const [host, portStr] = endpoint.split(':');
-      const port = parseInt(portStr);
+      const port = Number.parseInt(portStr);
 
-      if (!host || isNaN(port)) { resolve(false); return; }
+      if (!host || Number.isNaN(port)) { resolve(false); return; }
 
       const socket = new net.Socket();
       socket.setTimeout(this.requestTimeout);
@@ -368,7 +368,7 @@ export class ServiceMonitor {
     return new Promise((resolve) => {
       try {
         const u = new URL(urlStr);
-        const port = u.port ? parseInt(u.port, 10) : 443;
+        const port = u.port ? Number.parseInt(u.port, 10) : 443;
         const socket = tls.connect(
           { host: u.hostname, port, servername: u.hostname, rejectUnauthorized: false },
           () => { const cert = socket.getPeerCertificate(); socket.end(); resolve(cert); }
@@ -581,7 +581,7 @@ export class ServiceMonitor {
       healthyServices,
       unhealthyServices,
       unknownServices,
-      averageUptime: parseFloat((totalUptime / services.length).toFixed(2)),
+      averageUptime: Number.parseFloat((totalUptime / services.length).toFixed(2)),
       averageResponseTime: Math.round(totalResponseTime / services.length),
     };
   }
@@ -600,9 +600,9 @@ export class ServiceMonitor {
     service.uptime = service.history.length ? (successCount / service.history.length) * 100 : 100;
   }
 
-  private failingK8sPods: Map<string, { lastStatus: string; lastRestarts: number }> = new Map();
-  private monitoredPodStates: Map<string, { lastStatus: string; lastRestarts: number }> = new Map();
-  private reportedK8sAlerts: Set<string> = new Set();
+  private readonly failingK8sPods: Map<string, { lastStatus: string; lastRestarts: number }> = new Map();
+  private readonly monitoredPodStates: Map<string, { lastStatus: string; lastRestarts: number }> = new Map();
+  private readonly reportedK8sAlerts: Set<string> = new Set();
 
   public async checkK8sClusterAlerts(): Promise<void> {
     try {
@@ -673,8 +673,8 @@ export class ServiceMonitor {
 
       const nodes = await k8sService.getNodes(activeCtx);
       for (const node of nodes) {
-        const cpuUsed = parseFloat(node.cpuPercent || '0');
-        const memUsed = parseFloat(node.memoryPercent || '0');
+        const cpuUsed = Number.parseFloat(node.cpuPercent || '0');
+        const memUsed = Number.parseFloat(node.memoryPercent || '0');
 
         if (cpuUsed > 85 || memUsed > 85) {
           const alertKey = `node-${node.name}-${cpuUsed.toFixed(0)}-${memUsed.toFixed(0)}`;

@@ -18,6 +18,45 @@ export type KubiPlan = {
 
 const fallback = (): KubiPlan => ({ kind: 'clarify', question: '', domains: [], message: 'Could you tell me which part of kubiq you mean? You can choose below or describe it in your own words.', options: ['Services and uptime', 'Logs and traces', 'Kubernetes workloads', 'kubiq documentation'] });
 
+type ParsedPlan = Record<string, unknown> & { kind: KubiPlan['kind']; domains: KubiDomain[] };
+
+function isParsedPlan(value: unknown): value is ParsedPlan {
+  if (!value || typeof value !== 'object') return false;
+  const plan = value as Record<string, unknown>;
+  return typeof plan.kind === 'string' && ['answer', 'clarify', 'refuse'].includes(plan.kind)
+    && Array.isArray(plan.domains)
+    && plan.domains.every(domain => typeof domain === 'string' && KUBI_DOMAINS.includes(domain as KubiDomain));
+}
+
+function planText(value: unknown, limit: number): string {
+  if (typeof value !== 'string') return '';
+  return sanitizeKubiContent(value).slice(0, limit);
+}
+
+function planOptions(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const options = value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0 && item.length <= 100);
+  return [...new Set(options.map(item => sanitizeKubiContent(item)))].slice(0, 4);
+}
+
+function planIdentifier(value: unknown, pattern: RegExp): string | undefined {
+  if (typeof value !== 'string' || !pattern.test(value)) return undefined;
+  return value;
+}
+
+function clarificationSlot(plan: ParsedPlan, options: string[], message: string): KubiPlan['slot'] {
+  if (plan.slot === 'auditTarget' || plan.slot === 'namespace') return plan.slot;
+  if (plan.kind === 'clarify' && !options.length && plan.domains.includes('audit') && /\busername\b/i.test(message)) return 'auditTarget';
+  return undefined;
+}
+
+function missingPlanTarget(plan: ParsedPlan, question: string, namespace?: string, auditTarget?: string): KubiPlan | null {
+  if (plan.kind !== 'answer') return null;
+  if (plan.domains.includes('kubernetes') && !namespace) return { ...fallback(), question, message: 'Which Kubernetes namespace should I investigate? Type its name below.', options: [], slot: 'namespace' };
+  if (plan.userAccessHistory === true && plan.domains.includes('audit') && !auditTarget) return { ...fallback(), message: 'Whose kubiq access-change history would you like to check?', options: ['My account', 'A specific user', 'All users'] };
+  return null;
+}
+
 /** The model interprets conversation only. It cannot grant permissions or execute tools. */
 export class KubiIntentService {
   async plan(question: string, history: KubiConversationMessage[], canReadAudit: boolean): Promise<KubiPlan> {
@@ -41,19 +80,24 @@ Audit is ${canReadAudit ? 'available to this user through their assigned permiss
 
   static validate(raw: string, canReadAudit: boolean): KubiPlan {
     try {
-      const value = JSON.parse(raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, ''));
-      if (!['answer', 'clarify', 'refuse'].includes(value.kind) || !Array.isArray(value.domains) || value.domains.some((domain: unknown) => typeof domain !== 'string' || !KUBI_DOMAINS.includes(domain as KubiDomain))) return fallback();
+      if (raw.length > 64000) return fallback();
+      let jsonText = raw.trim();
+      if (jsonText.toLowerCase().startsWith('```json')) jsonText = jsonText.slice(7).trimStart();
+      else if (jsonText.startsWith('```')) jsonText = jsonText.slice(3).trimStart();
+      if (jsonText.endsWith('```')) jsonText = jsonText.slice(0, -3).trimEnd();
+      const value: unknown = JSON.parse(jsonText);
+      if (!isParsedPlan(value)) return fallback();
       if (value.domains.includes('audit') && !canReadAudit) return { kind: 'refuse', question: '', domains: [], message: 'Audit history is not included in your kubiq access. Please ask an administrator to check it for you.', options: [] };
-      const message = typeof value.message === 'string' ? sanitizeKubiContent(value.message).slice(0, 700) : '';
-      const question = typeof value.question === 'string' ? sanitizeKubiContent(value.question).slice(0, 2000) : '';
+      const message = planText(value.message, 700);
+      const question = planText(value.question, 2000);
       if (value.kind === 'answer' && (!question || !value.domains.length)) return fallback();
       if (value.kind !== 'answer' && !message) return fallback();
-      const options: string[] = Array.isArray(value.options) ? [...new Set<string>(value.options.filter((item: unknown): item is string => typeof item === 'string' && item.trim().length > 0 && item.length <= 100).map((item: string) => sanitizeKubiContent(item)))].slice(0, 4) : [];
-      const auditTarget = typeof value.auditTarget === 'string' && /^[\w.@+-]{1,100}$/.test(value.auditTarget) ? value.auditTarget : undefined;
-      const namespace = typeof value.namespace === 'string' && /^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$/.test(value.namespace) ? value.namespace : undefined;
-      if (value.kind === 'answer' && value.domains.includes('kubernetes') && !namespace) return { ...fallback(), question, message: 'Which Kubernetes namespace should I investigate? Type its name below.', options: [], slot: 'namespace' };
-      if (value.kind === 'answer' && value.userAccessHistory === true && value.domains.includes('audit') && !auditTarget) return { ...fallback(), message: 'Whose kubiq access-change history would you like to check?', options: ['My account', 'A specific user', 'All users'] };
-      const slot = value.slot === 'auditTarget' || value.slot === 'namespace' ? value.slot : value.kind === 'clarify' && !options.length && value.domains.includes('audit') && /\busername\b/i.test(message) ? 'auditTarget' : undefined;
+      const options = planOptions(value.options);
+      const auditTarget = planIdentifier(value.auditTarget, /^[\w.@+-]{1,100}$/);
+      const namespace = planIdentifier(value.namespace, /^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$/);
+      const missingTarget = missingPlanTarget(value, question, namespace, auditTarget);
+      if (missingTarget) return missingTarget;
+      const slot = clarificationSlot(value, options, message);
       return { kind: value.kind, question, domains: [...new Set<KubiDomain>(value.domains)].slice(0, 3), message, options: value.kind === 'clarify' ? options : [], auditTarget, userAccessHistory: value.userAccessHistory === true, namespace, slot };
     } catch { return fallback(); }
   }

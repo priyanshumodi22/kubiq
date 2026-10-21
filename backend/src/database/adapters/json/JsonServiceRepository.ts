@@ -1,13 +1,13 @@
-import fs from 'fs';
-import path from 'path';
-import crypto from 'crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
 import { IServiceRepository } from '../../interfaces/IServiceRepository';
 import { ServiceStatus, ServiceConfig, HealthCheck, SystemConfig } from '../../../types';
 
 export class JsonServiceRepository implements IServiceRepository {
-  private dataDir: string;
-  private servicesConfigPath: string;
-  private services: Map<string, ServiceStatus> = new Map();
+  private readonly dataDir: string;
+  private readonly servicesConfigPath: string;
+  private readonly services: Map<string, ServiceStatus> = new Map();
 
   async getSystemConfig(): Promise<SystemConfig> {
     const defaultConfig: SystemConfig = {
@@ -122,7 +122,7 @@ export class JsonServiceRepository implements IServiceRepository {
 
     // Add to history
     service.history.push(result);
-    const maxHistory = parseInt(process.env.MAX_HISTORY_SIZE || '100', 10);
+    const maxHistory = Number.parseInt(process.env.MAX_HISTORY_SIZE || '100', 10);
     if (service.history.length > maxHistory) {
       service.history.shift();
     }
@@ -172,8 +172,8 @@ export class JsonServiceRepository implements IServiceRepository {
             logSources: parts[5] && parts[5] !== 'undefined'
               ? JSON.parse(Buffer.from(parts[5], 'base64').toString('utf-8'))
               : undefined,
-            interval: parts[6] && parts[6] !== 'undefined' ? parseInt(parts[6]) : undefined,
-            retries: parts[7] && parts[7] !== 'undefined' ? parseInt(parts[7]) : undefined,
+            interval: parts[6] && parts[6] !== 'undefined' ? Number.parseInt(parts[6]) : undefined,
+            retries: parts[7] && parts[7] !== 'undefined' ? Number.parseInt(parts[7]) : undefined,
             currentStatus: 'unknown',
             history: []
           });

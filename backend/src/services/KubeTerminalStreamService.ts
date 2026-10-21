@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import * as k8s from '@kubernetes/client-node';
-import { PassThrough } from 'stream';
+import { PassThrough } from 'node:stream';
 import { KubernetesService } from './KubernetesService';
 import { canAccessKubernetesNamespace, getSocketUser } from '../middleware/auth';
 import { RbacRoleService } from './RbacRoleService';
@@ -17,7 +17,7 @@ export class KubeTerminalStreamService {
     private static instance: KubeTerminalStreamService;
     private io: Server | null = null;
     private kc: k8s.KubeConfig | null = null;
-    private sessions = new Map<string, TerminalSession>();
+    private readonly sessions = new Map<string, TerminalSession>();
 
     private constructor() {}
 

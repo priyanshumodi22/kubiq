@@ -2,7 +2,7 @@ import mysql, { Pool, RowDataPacket } from 'mysql2/promise';
 import { ITraceRepository, ISpan, IServiceMetrics } from '../../interfaces/ITraceRepository';
 
 export class MysqlTraceRepository implements ITraceRepository {
-    private pool: Pool;
+    private readonly pool: Pool;
     private isInitialized = false;
 
     constructor() {
@@ -11,7 +11,7 @@ export class MysqlTraceRepository implements ITraceRepository {
             user: process.env.DB_USER || 'root',
             password: process.env.DB_PASSWORD || 'root',
             database: process.env.DB_NAME || 'kubiq_db',
-            port: parseInt(process.env.DB_PORT || '3306', 10),
+            port: Number.parseInt(process.env.DB_PORT || '3306', 10),
             waitForConnections: true,
             connectionLimit: 10,
             queueLimit: 0,

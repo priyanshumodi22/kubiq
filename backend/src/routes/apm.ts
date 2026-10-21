@@ -282,11 +282,11 @@ apmIngestRouter.post('/v1/zipkin', async (req: Request, res: Response) => {
 apmAnalyticsRouter.get('/services', async (req: Request, res: Response) => {
     try {
         const timeRangeParam = Array.isArray(req.query.timeRangeMs) ? req.query.timeRangeMs[0] : req.query.timeRangeMs;
-        const timeRangeMs = parseInt(timeRangeParam as string) || 60 * 60 * 1000; // Default 1 hour
+        const timeRangeMs = Number.parseInt(timeRangeParam as string) || 60 * 60 * 1000; // Default 1 hour
 
         // Support exact boundaries (fromMs / toMs)
-        const fromMs = req.query.fromMs ? parseInt(req.query.fromMs as string, 10) : (Date.now() - timeRangeMs);
-        const toMs = req.query.toMs ? parseInt(req.query.toMs as string, 10) : Date.now();
+        const fromMs = req.query.fromMs ? Number.parseInt(req.query.fromMs as string, 10) : (Date.now() - timeRangeMs);
+        const toMs = req.query.toMs ? Number.parseInt(req.query.toMs as string, 10) : Date.now();
 
         const traceRepository = await DatabaseFactory.getTraceRepository();
         const metrics = await traceRepository.getServiceMetrics(fromMs, toMs);
@@ -339,14 +339,14 @@ apmAnalyticsRouter.get('/services/:serviceName/traces', async (req: Request, res
         const param = req.params.serviceName;
         const serviceName = Array.isArray(param) ? param[0] : param;
         const limitParam = req.query.limit;
-        const limit = limitParam ? parseInt(limitParam as string, 10) : 50;
+        const limit = limitParam ? Number.parseInt(limitParam as string, 10) : 50;
 
-        const minDurationMs = req.query.minDuration ? parseInt(req.query.minDuration as string, 10) : undefined;
+        const minDurationMs = req.query.minDuration ? Number.parseInt(req.query.minDuration as string, 10) : undefined;
         const errorOnly = req.query.errorOnly === 'true';
         const attributeSearch = req.query.search ? (req.query.search as string) : undefined;
         
-        const fromMs = req.query.fromMs ? parseInt(req.query.fromMs as string, 10) : undefined;
-        const toMs = req.query.toMs ? parseInt(req.query.toMs as string, 10) : undefined;
+        const fromMs = req.query.fromMs ? Number.parseInt(req.query.fromMs as string, 10) : undefined;
+        const toMs = req.query.toMs ? Number.parseInt(req.query.toMs as string, 10) : undefined;
 
         const traceRepository = await DatabaseFactory.getTraceRepository();
         const traces = await traceRepository.getRecentTraces(serviceName, limit, minDurationMs, errorOnly, attributeSearch, fromMs, toMs);
@@ -414,10 +414,10 @@ apmAnalyticsRouter.get('/traces/:traceId', async (req: Request, res: Response) =
  */
 apmAnalyticsRouter.get('/service-map', async (req: Request, res: Response) => {
     try {
-        const timeRangeMs = parseInt(req.query.timeRange as string) || 60 * 60 * 1000;
+        const timeRangeMs = Number.parseInt(req.query.timeRange as string) || 60 * 60 * 1000;
         
-        const fromMs = req.query.fromMs ? parseInt(req.query.fromMs as string, 10) : (Date.now() - timeRangeMs);
-        const toMs = req.query.toMs ? parseInt(req.query.toMs as string, 10) : Date.now();
+        const fromMs = req.query.fromMs ? Number.parseInt(req.query.fromMs as string, 10) : (Date.now() - timeRangeMs);
+        const toMs = req.query.toMs ? Number.parseInt(req.query.toMs as string, 10) : Date.now();
 
         const traceRepository = await DatabaseFactory.getTraceRepository();
 
@@ -445,7 +445,7 @@ apmAnalyticsRouter.get('/export', requirePermission('apm.export'), async (req: R
         const fromParam = req.query.from as string | undefined;
         const toParam = req.query.to as string | undefined;
         const serviceName = req.query.service as string | undefined;
-        const minDurationMs = req.query.minDuration ? parseInt(req.query.minDuration as string, 10) : undefined;
+        const minDurationMs = req.query.minDuration ? Number.parseInt(req.query.minDuration as string, 10) : undefined;
         const errorOnly = req.query.errorOnly === 'true';
         const spanNameSearch = req.query.search as string | undefined;
 

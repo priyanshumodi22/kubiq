@@ -5,6 +5,7 @@ import {
 } from '../../interfaces/IAuditLogRepository';
 import { AuditLogEntry } from '../../../services/AuditLogService';
 import { AuditLogModel } from '../../schemas/AuditLogSchema';
+import { newAuditId } from '../../../utils/auditId';
 
 export class MongoAuditLogRepository implements IAuditLogRepository {
   public async initialize(): Promise<void> {
@@ -13,7 +14,7 @@ export class MongoAuditLogRepository implements IAuditLogRepository {
 
   public async addAuditLog(entry: Omit<AuditLogEntry, 'id' | 'timestamp'>): Promise<AuditLogEntry> {
     const fullEntry: AuditLogEntry = {
-      id: `audit-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      id: newAuditId(),
       timestamp: new Date().toISOString(),
       ...entry,
     };

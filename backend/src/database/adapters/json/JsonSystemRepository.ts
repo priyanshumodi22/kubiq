@@ -1,17 +1,17 @@
 
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import { ISystemRepository, LicenseActivation, KubiAiConfigRecord, RbacConfigRecord } from '../../interfaces/ISystemRepository';
 import { SystemMetrics } from '../../../types';
 
 export class JsonSystemRepository implements ISystemRepository {
-  private dataDir: string;
-  private metricsPath: string;
-  private configPath: string;
-  private apmConfigPath: string;
-  private licenseActivationPath: string;
-  private kubiAiConfigPath: string;
-  private rbacConfigPath: string;
+  private readonly dataDir: string;
+  private readonly metricsPath: string;
+  private readonly configPath: string;
+  private readonly apmConfigPath: string;
+  private readonly licenseActivationPath: string;
+  private readonly kubiAiConfigPath: string;
+  private readonly rbacConfigPath: string;
 
   constructor() {
     this.dataDir = process.env.DATA_DIR || './data';

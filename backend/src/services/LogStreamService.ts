@@ -1,8 +1,8 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import * as chokidar from 'chokidar';
-import fs from 'fs';
-import path from 'path';
-import { EventEmitter } from 'events';
+import fs from 'node:fs';
+import path from 'node:path';
+import { EventEmitter } from 'node:events';
 import { glob } from 'glob';
 import { isPathSafe } from '../utils/pathSecurity';
 import { getSocketUser } from '../middleware/auth';
@@ -38,11 +38,11 @@ export class LogStreamService extends EventEmitter {
     private io: SocketIOServer | null = null;
 
     // Shared watchers — keyed by filePath / pattern, NOT by socket
-    private fileWatchers: Map<string, SharedFileWatcher> = new Map();
-    private dirWatchers: Map<string, SharedDirWatcher> = new Map();
+    private readonly fileWatchers: Map<string, SharedFileWatcher> = new Map();
+    private readonly dirWatchers: Map<string, SharedDirWatcher> = new Map();
 
     // Track each socket's active subscription for cleanup
-    private socketSubs: Map<string, SocketSub> = new Map();
+    private readonly socketSubs: Map<string, SocketSub> = new Map();
 
     private constructor() {
         super();

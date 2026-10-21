@@ -19,6 +19,24 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci --prefix backend
+      - run: npm ci --prefix frontend
+      - name: Generate coverage reports
+        run: |
+          npm run test:coverage --prefix backend
+          npm run test:coverage --prefix frontend
+          test -s backend/coverage/lcov.info
+          test -s frontend/coverage/lcov.info
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.sha }}
+          path: |
+            backend/coverage/lcov.info
+            frontend/coverage/lcov.info
+          if-no-files-found: error
       - name: Start Cloudflare Access adapter
         env:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
@@ -41,8 +59,20 @@ jobs:
             -Dsonar.projectKey=kubiq
             -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=600
-            -Dsonar.sources=backend/src,frontend/src,kubiq-apm
-            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/*.test.*,**/*.spec.*
+            -Dsonar.scm.revision=${{ github.sha }}
+            -Dsonar.projectVersion=${{ github.sha }}
+      - name: Verify strict release criteria
+        run: node .github/scripts/verify-sonar-analysis.cjs
+        env:
+          SONAR_HOST_URL: http://127.0.0.1:19000
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sonar-release-proof-${{ github.sha }}
+          path: .sonar-release-proof.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
       - name: Report scan outcome
         if: always()
         env:

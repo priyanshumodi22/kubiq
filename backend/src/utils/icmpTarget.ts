@@ -1,5 +1,5 @@
-import net from 'net';
-import { URL } from 'url';
+import net from 'node:net';
+import { URL } from 'node:url';
 
 /**
  * Normalizes legacy ICMP monitor endpoints into one safe ping argument.
@@ -25,7 +25,8 @@ export const endpointToIcmpHost = (endpoint: string): string | null => {
       host = candidate;
     }
 
-    host = host.replace(/^\[|\]$/g, '');
+    if (host.startsWith('[')) host = host.slice(1);
+    if (host.endsWith(']')) host = host.slice(0, -1);
     if (net.isIP(host)) return host;
     return host.length <= 253
       && /^(?=.{1,253}$)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/.test(host)

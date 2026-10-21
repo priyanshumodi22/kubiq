@@ -4,7 +4,7 @@ import { ServiceStatus, ServiceConfig, HealthCheck, SystemConfig } from '../../.
 
 export class MysqlServiceRepository implements IServiceRepository {
     private pool!: Pool;
-    private services: Map<string, ServiceStatus> = new Map();
+    private readonly services: Map<string, ServiceStatus> = new Map();
 
     async getSystemConfig(): Promise<SystemConfig> {
         const defaultConfig: SystemConfig = {
@@ -50,7 +50,7 @@ export class MysqlServiceRepository implements IServiceRepository {
     async initialize(): Promise<void> {
         this.pool = mysql.createPool({
             host: process.env.DB_HOST || 'localhost',
-            port: parseInt(process.env.DB_PORT || '3306'),
+            port: Number.parseInt(process.env.DB_PORT || '3306'),
             user: process.env.DB_USER || 'root',
             password: process.env.DB_PASS || '',
             database: process.env.DB_NAME || 'kubiq_db',

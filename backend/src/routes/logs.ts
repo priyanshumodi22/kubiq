@@ -1,6 +1,6 @@
 import { Request, Response, Router } from 'express';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { isPathSafe } from '../utils/pathSecurity';
 import { AICacheService } from '../services/AICacheService';
@@ -76,9 +76,9 @@ logRouter.get('/query', async (req: Request, res: Response) => {
         if (!serviceName) return res.status(400).json({ error: 'serviceName is required' });
         if (!fromMs || !toMs) return res.status(400).json({ error: 'fromMs and toMs are required' });
 
-        const from = new Date(parseInt(fromMs as string, 10));
-        const to = new Date(parseInt(toMs as string, 10));
-        const limitNum = limit ? parseInt(limit as string, 10) : 500;
+        const from = new Date(Number.parseInt(fromMs as string, 10));
+        const to = new Date(Number.parseInt(toMs as string, 10));
+        const limitNum = limit ? Number.parseInt(limit as string, 10) : 500;
 
         const repo = await DatabaseFactory.getLogRepository();
         const logs = await repo.queryLogs(serviceName as string, {

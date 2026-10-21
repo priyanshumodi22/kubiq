@@ -8,7 +8,7 @@ interface ApmConfigModalProps {
   onClose: () => void;
 }
 
-export function ApmConfigModal({ isOpen, onClose }: ApmConfigModalProps) {
+export function ApmConfigModal({ isOpen, onClose }: Readonly<ApmConfigModalProps>) {
   const [ignoredRoutesStr, setIgnoredRoutesStr] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
