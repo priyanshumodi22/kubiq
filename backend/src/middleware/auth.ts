@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import { DatabaseFactory } from '../database/DatabaseFactory';
-import { RbacService } from '../services/RbacService';
 import { RbacRoleService } from '../services/RbacRoleService';
 import axios from 'axios';
 import { createPublicKey } from 'node:crypto';
@@ -310,11 +309,9 @@ export const hasRole = (user: any, role: string): boolean => {
 };
 
 // Extend Express Request type
-declare global {
-  namespace Express {
-    interface Request {
-      user?: any;
-    }
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: any;
   }
 }
 

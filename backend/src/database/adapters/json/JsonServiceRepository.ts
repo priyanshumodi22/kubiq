@@ -201,16 +201,16 @@ export class JsonServiceRepository implements IServiceRepository {
   private saveServicesConfig(): void {
     const lines = ['# kubiq Services'];
     this.services.forEach(s => {
-      let headers = s.headers ? JSON.stringify(s.headers) : 'undefined';
-      let type = s.type || 'http';
-      let ignoreSSL = s.ignoreSSL || false;
-      let logPath = 'undefined'; // Deprecated, always write undefined
+      const headers = s.headers ? JSON.stringify(s.headers) : 'undefined';
+      const type = s.type || 'http';
+      const ignoreSSL = s.ignoreSSL || false;
+      const logPath = 'undefined'; // Deprecated, always write undefined
       // Use Base64 for logSources to avoid delimiter collision with pipe '|'
-      let logSources = s.logSources ? Buffer.from(JSON.stringify(s.logSources)).toString('base64') : 'undefined';
-      let interval = s.interval !== undefined ? s.interval : 'undefined';
-      let retries = s.retries !== undefined ? s.retries : 'undefined';
+      const logSources = s.logSources ? Buffer.from(JSON.stringify(s.logSources)).toString('base64') : 'undefined';
+      const interval = s.interval !== undefined ? s.interval : 'undefined';
+      const retries = s.retries !== undefined ? s.retries : 'undefined';
       // Format: name=endpoint|headers|type|ignoreSSL|logPath|logSources|interval|retries
-      let line = `${s.name}=${s.endpoint}|${headers}|${type}|${ignoreSSL}|${logPath}|${logSources}|${interval}|${retries}`;
+      const line = `${s.name}=${s.endpoint}|${headers}|${type}|${ignoreSSL}|${logPath}|${logSources}|${interval}|${retries}`;
       lines.push(line);
     });
     try {

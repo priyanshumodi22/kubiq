@@ -1,5 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
+import type { KeyboardEvent } from 'react';
 import { Check } from 'lucide-react';
+import { listboxIndex } from './listboxNavigation';
 
 interface ComboboxProps {
   value: string;
@@ -7,6 +9,8 @@ interface ComboboxProps {
   options: string[];
   placeholder?: string;
   className?: string;
+  id?: string;
+  label?: string;
 }
 
 export default function Combobox({
@@ -15,9 +19,16 @@ export default function Combobox({
   options,
   placeholder,
   className = '',
+  id,
+  label,
 }: Readonly<ComboboxProps>) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState(value);
+  const [active, setActive] = useState(-1);
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
+  const listId = `${inputId}-options`;
+  const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Sync search term with value prop when it changes externally
@@ -34,7 +45,7 @@ export default function Combobox({
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [wrapperRef, searchTerm, options]);
+  }, []);
 
   const filteredOptions = options.filter((option) =>
     option.toLowerCase().includes(searchTerm.toLowerCase())
@@ -43,20 +54,51 @@ export default function Combobox({
   const handleSelect = (option: string) => {
     onChange(option);
     setSearchTerm(option);
+    inputRef.current?.focus();
     setIsOpen(false);
   };
 
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    // Home/End remain native caret operations in an editable combobox.
+    const next = ['ArrowDown', 'ArrowUp'].includes(event.key)
+      ? listboxIndex(event.key, isOpen ? active : -1, filteredOptions.length) : undefined;
+    if (next !== undefined) {
+      event.preventDefault();
+      setActive(next);
+      setIsOpen(true);
+    } else if (event.key === 'Escape' && isOpen) {
+      event.preventDefault();
+      event.stopPropagation();
+      setIsOpen(false);
+    } else if (event.key === 'Enter' && isOpen && filteredOptions[active] !== undefined) {
+      event.preventDefault();
+      handleSelect(filteredOptions[active]);
+    }
+  };
+
   return (
-    <div ref={wrapperRef} className={`relative ${className}`}>
+    <div ref={wrapperRef} className={`relative ${className}`} onBlur={event => {
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setIsOpen(false);
+    }}>
       <div className="relative">
         <input
+          ref={inputRef}
+          id={inputId}
+          role="combobox"
+          aria-label={label ?? placeholder ?? 'Value'}
+          aria-autocomplete="list"
+          aria-expanded={isOpen && filteredOptions.length > 0}
+          aria-controls={isOpen && filteredOptions.length > 0 ? listId : undefined}
+          aria-activedescendant={isOpen && filteredOptions[active] !== undefined ? `${listId}-${encodeURIComponent(filteredOptions[active])}` : undefined}
           type="text"
           value={searchTerm}
           onChange={(e) => {
             setSearchTerm(e.target.value);
             onChange(e.target.value);
             setIsOpen(true);
+            setActive(-1);
           }}
+          onKeyDown={handleKeyDown}
           onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
           className="w-full px-3 py-1.5 text-xs bg-bg-surface rounded border border-gray-700 focus:border-primary focus:outline-none pr-8"
@@ -68,12 +110,17 @@ export default function Combobox({
       </div>
 
       {isOpen && filteredOptions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-bg-elevated border border-gray-700 rounded-md shadow-xl max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
+        <div id={listId} role="listbox" aria-label={label ?? placeholder ?? 'Suggestions'} className="absolute z-50 w-full mt-1 bg-bg-elevated border border-gray-700 rounded-md shadow-xl max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
           {filteredOptions.map((option) => (
             <button
               key={option}
+              id={`${listId}-${encodeURIComponent(option)}`}
+              type="button"
+              role="option"
+              aria-selected={value === option}
+              tabIndex={-1}
               onClick={() => handleSelect(option)}
-              className="w-full text-left px-3 py-1.5 text-xs text-text hover:bg-primary/20 hover:text-primary transition-colors flex items-center justify-between"
+              className={`w-full text-left px-3 py-1.5 text-xs text-text hover:bg-primary/20 hover:text-primary transition-colors flex items-center justify-between ${filteredOptions[active] === option ? 'outline outline-1 outline-primary' : ''}`}
             >
               <span>{option}</span>
               {value === option && <Check className="w-3 h-3 text-primary" />}

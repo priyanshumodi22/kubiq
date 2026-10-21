@@ -124,7 +124,9 @@ export class KubeTerminalStreamService {
                     if (data.cols && data.rows && typeof resizableConnection.resize === 'function') {
                         try {
                             resizableConnection.resize(data.cols, data.rows);
-                        } catch (e) {}
+                        } catch (e) {
+                            console.warn('Initial Kubernetes terminal resize failed.', e);
+                        }
                     }
 
                     this.sessions.set(socket.id, {
@@ -155,7 +157,9 @@ export class KubeTerminalStreamService {
                 if (session && session.connection && typeof session.connection.resize === 'function') {
                     try {
                         session.connection.resize(data.cols, data.rows);
-                    } catch (e) {}
+                    } catch (e) {
+                        console.warn('Kubernetes terminal resize failed.', e);
+                    }
                 }
             });
 
@@ -185,7 +189,9 @@ export class KubeTerminalStreamService {
                     session.connection.terminate();
                 }
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn('Kubernetes terminal connection close failed; destroying local streams.', e);
+        }
 
         session.stdin.destroy();
         session.stdout.destroy();

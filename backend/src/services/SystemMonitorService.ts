@@ -143,7 +143,6 @@ export class SystemMonitorService {
         // Simple Linear Regression: y = mx + b
         // x = timestamp, y = bytes used
         const regression = ss.linearRegression(points);
-        const line = ss.linearRegressionLine(regression);
         
         // Slope (m) = bytes per millisecond
         // If m <= 0, disk is cleaning up or static. No death date.

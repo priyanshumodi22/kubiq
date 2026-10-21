@@ -131,7 +131,7 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
       if (requestBody.trim()) {
         try {
           bodyData = JSON.parse(requestBody);
-        } catch (e) {
+        } catch {
           setCustomResult({
             status: 'error',
             message: 'Invalid JSON in request body',

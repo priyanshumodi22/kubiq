@@ -64,7 +64,7 @@ let KEYCLOAK_ORIGIN = '';
 if (process.env.KEYCLOAK_URL) {
   try {
     KEYCLOAK_ORIGIN = new URL(process.env.KEYCLOAK_URL).origin;
-  } catch (e) {
+  } catch {
     console.warn('⚠️ Invalid KEYCLOAK_URL format for CSP extraction:', process.env.KEYCLOAK_URL);
     KEYCLOAK_ORIGIN = process.env.KEYCLOAK_URL; // Fallback to full string if parse fails
   }
@@ -217,7 +217,7 @@ const startServer = async () => {
 
     // Initialize Kubernetes Service in the background — never blocks startup.
     // Routes already guard with k8sService.available before doing anything.
-    KubernetesService.getInstance().initialize().catch(() => { });
+    KubernetesService.getInstance().initialize().catch(error => console.warn('Background Kubernetes initialization failed.', error));
 
     // Initialize User Repository (triggers DB connection)
     await DatabaseFactory.getUserRepository();

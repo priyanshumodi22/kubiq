@@ -56,6 +56,7 @@ export class JsonSystemRepository implements ISystemRepository {
     try {
         return JSON.parse(fs.readFileSync(this.configPath, 'utf-8'));
     } catch (e) {
+        console.warn('Storage configuration could not be read; restricting allowed mounts.', e);
         return { allowedMounts: [] };
     }
   }
@@ -70,6 +71,7 @@ export class JsonSystemRepository implements ISystemRepository {
     try {
         return JSON.parse(fs.readFileSync(this.apmConfigPath, 'utf-8'));
     } catch (e) {
+        console.warn('APM configuration could not be read; using default ignored routes.', e);
         return { ignoredRoutes: ['/health', '/metrics', '/favicon.ico'] };
     }
   }

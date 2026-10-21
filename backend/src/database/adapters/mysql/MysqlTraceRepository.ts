@@ -189,7 +189,6 @@ export class MysqlTraceRepository implements ITraceRepository {
     }
 
     async getRecentTraceIdForService(serviceName: string): Promise<string | null> {
-        const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
         const [rows] = await this.pool.query<RowDataPacket[]>(
             `SELECT trace_id FROM apm_spans 
              WHERE service_name = ? 

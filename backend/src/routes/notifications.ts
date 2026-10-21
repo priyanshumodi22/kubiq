@@ -1,6 +1,5 @@
 import express from 'express';
 import { NotificationManager } from '../services/NotificationManager';
-import { NotificationChannel } from '../types';
 import { requirePermission, getUserFromReq } from '../middleware/auth';
 import { RbacRoleService } from '../services/RbacRoleService';
 import { AuditLogService } from '../services/AuditLogService';

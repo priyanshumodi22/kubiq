@@ -77,7 +77,7 @@ export class KubeLogStreamService {
                 if (podName) {
                     await this.startPodLogStream(socket, namespace, podName, container, tailLines);
                 } else if (deploymentName) {
-                    await this.startDeploymentLogStream(socket, namespace, deploymentName, container, tailLines);
+                    await this.startDeploymentLogStream(socket, namespace, deploymentName, container);
                 }
             });
 
@@ -103,8 +103,7 @@ export class KubeLogStreamService {
         socket: Socket,
         namespace: string,
         deploymentName: string,
-        container: string | undefined,
-        tailLines: number
+        container: string | undefined
     ) {
         const roomName = `k8s::${namespace}::deploy::${deploymentName}::${container ?? '_default_'}`;
         
@@ -169,7 +168,9 @@ export class KubeLogStreamService {
                 const podRes = await coreApi.readNamespacedPod({ name: podName, namespace });
                 targetContainer = podRes.spec?.containers[0]?.name;
             }
-        } catch (err) {}
+        } catch (err) {
+            console.warn('Kubernetes container discovery failed; trying the requested/default container.', err);
+        }
 
         const podRoomKey = `k8s::pod-unit::${namespace}::${podName}::${targetContainer ?? '_default_'}`;
 

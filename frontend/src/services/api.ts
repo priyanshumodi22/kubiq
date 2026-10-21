@@ -594,7 +594,7 @@ class ApiClient {
         available: response.data.available,
         context: context,
       };
-    } catch (e) {
+    } catch {
       return {
         message: `Context switched locally but status check failed`,
         available: false,

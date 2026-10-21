@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { IServiceRepository } from '../../interfaces/IServiceRepository';
 import { ServiceStatus, ServiceConfig, HealthCheck, SystemConfig } from '../../../types';
-import { ServiceModel, IServiceDocument } from '../../schemas/ServiceSchema';
+import { ServiceModel } from '../../schemas/ServiceSchema';
 import { SystemConfigModel } from '../../schemas/SystemConfigSchema';
 
 export class MongoServiceRepository implements IServiceRepository {

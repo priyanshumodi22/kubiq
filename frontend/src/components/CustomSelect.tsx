@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import type { KeyboardEvent } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
+import { listboxIndex } from './listboxNavigation';
 
 export type CustomSelectOption<T extends string> = {
   value: T;
@@ -27,7 +29,10 @@ export function CustomSelect<T extends string>({
   placement = 'bottom',
 }: Readonly<CustomSelectProps<T>>) {
   const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const listId = useId();
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const selected = options.find((option) => option.value === value) || options[0];
 
   useEffect(() => {
@@ -38,18 +43,47 @@ export function CustomSelect<T extends string>({
     return () => document.removeEventListener('mousedown', close);
   }, []);
 
+  const select = (next: T) => {
+    onChange(next);
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
+  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const next = listboxIndex(event.key, open ? active : options.findIndex(option => option.value === value), options.length);
+    if (next !== undefined) {
+      event.preventDefault();
+      setActive(next);
+      setOpen(true);
+    } else if (event.key === 'Escape' && open) {
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+    } else if (open && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault();
+      const option = options[active];
+      if (option) select(option.value);
+    }
+  };
+
   return (
-    <div ref={wrapperRef} className="relative">
+    <div ref={wrapperRef} className="relative" onBlur={event => {
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
+    }}>
       <button
+        ref={triggerRef}
         type="button"
+        role="combobox"
         aria-haspopup="listbox"
-        aria-expanded={open}
+        aria-expanded={open && !disabled}
+        aria-controls={open && !disabled ? listId : undefined}
+        aria-activedescendant={open && options[active] ? `${listId}-${encodeURIComponent(options[active].value)}` : undefined}
         aria-label={label}
         disabled={disabled}
-        onClick={() => setOpen((current) => !current)}
-        onKeyDown={(event) => {
-          if (event.key === 'Escape') setOpen(false);
+        onClick={() => {
+          setActive(Math.max(0, options.findIndex(option => option.value === value)));
+          setOpen(current => !current);
         }}
+        onKeyDown={handleKeyDown}
         className={`flex w-full items-center justify-between rounded-xl border border-white/10 bg-bg-surface text-left text-text transition hover:border-primary/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50 ${compact ? 'px-2.5 py-1.5' : 'px-3 py-3'}`}
       >
         <span className={compact ? 'text-xs font-medium' : 'text-sm font-medium'}>
@@ -59,8 +93,9 @@ export function CustomSelect<T extends string>({
           className={`h-4 w-4 shrink-0 text-text-dim transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
-      {open && (
+      {open && !disabled && (
         <div
+          id={listId}
           role="listbox"
           aria-label={label}
           className={`absolute z-40 w-full overflow-hidden rounded-xl border border-white/10 bg-bg-surface p-1 shadow-2xl shadow-black/40 ${placement === 'top' ? 'bottom-full mb-2' : 'mt-2'}`}
@@ -68,14 +103,13 @@ export function CustomSelect<T extends string>({
           {options.map((option) => (
             <button
               key={option.value}
+              id={`${listId}-${encodeURIComponent(option.value)}`}
               type="button"
               role="option"
+              tabIndex={-1}
               aria-selected={option.value === value}
-              onClick={() => {
-                onChange(option.value);
-                setOpen(false);
-              }}
-              className={`flex w-full items-center justify-between rounded-lg px-3 text-left transition ${compact ? 'py-2 text-xs' : 'py-2.5 text-sm'} ${option.value === value ? 'bg-primary/15 text-white' : 'text-text-dim hover:bg-white/5 hover:text-text'}`}
+              onClick={() => select(option.value)}
+              className={`flex w-full items-center justify-between rounded-lg px-3 text-left transition ${compact ? 'py-2 text-xs' : 'py-2.5 text-sm'} ${option.value === value ? 'bg-primary/15 text-white' : 'text-text-dim hover:bg-white/5 hover:text-text'} ${options[active]?.value === option.value ? 'outline outline-1 outline-primary' : ''}`}
             >
               <span>{option.label}</span>
               {option.value === value && <Check className="h-4 w-4 text-primary" />}

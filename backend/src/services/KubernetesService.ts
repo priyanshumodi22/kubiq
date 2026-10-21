@@ -179,7 +179,7 @@ export class KubernetesService {
         
         try {
             kubeConfig.setCurrentContext(ctx);
-        } catch (e) {
+        } catch {
             console.warn('Context not found in kubeconfig:', ctx);
         }
 
@@ -642,7 +642,7 @@ export class KubernetesService {
                 vpa.spec?.targetRef?.kind === kind
             );
         } catch (e) {
-            // VPA might not be installed, ignore errors
+            console.warn('VPA discovery unavailable; returning available HPA results.', e);
         }
 
         return result;

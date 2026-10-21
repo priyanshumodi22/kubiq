@@ -4,6 +4,8 @@ import { requirePermission, getUserFromReq } from '../middleware/auth';
 import { AuditLogService } from '../services/AuditLogService';
 import { maskServiceEndpoint } from '../utils/sensitiveData';
 import { RbacRoleService } from '../services/RbacRoleService';
+import { withoutRawLogConfig } from '../utils/serviceVisibility';
+import { startPollingStream } from '../utils/pollingStream';
 
 const router = Router();
 const monitor = ServiceMonitor.getInstance();
@@ -43,6 +45,7 @@ router.get('/', requirePermission('services.read'), async (req: Request, res: Re
 // GET /api/services/status - Get lightweight status only (no history)
 router.get('/status', requirePermission('services.read'), async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const canReadRawLogs = await RbacRoleService.hasPermission(req.user, 'logs.raw.read');
     const services = await Promise.all(monitor.getAllServices().map(async (service) => {
       const maskedService = await maskServiceEndpoint(service, req.user);
       const lastHistory =
@@ -53,8 +56,7 @@ router.get('/status', requirePermission('services.read'), async (req: Request, r
         currentStatus: maskedService.currentStatus,
         endpoint: maskedService.endpoint, // Ensure masked endpoint is returned if needed by UI
         type: maskedService.type,
-        logPath: service.logPath,
-        logSources: service.logSources, // New: Preserve multi-log sources in status update
+        ...(canReadRawLogs ? { logPath: service.logPath, logSources: service.logSources } : {}),
         lastCheck: lastHistory
           ? {
               timestamp: lastHistory.timestamp,
@@ -109,18 +111,10 @@ router.get('/stream', requirePermission('services.read'), async (req: Request, r
       };
     }));
 
-    res.write(`data: ${JSON.stringify({ services, stats: monitor.getStats() })}\n\n`);
+    return `data: ${JSON.stringify({ services, stats: monitor.getStats() })}\n\n`;
   };
 
-  // Send updates every 5 seconds
-  void sendUpdate();
-  const interval = setInterval(() => { void sendUpdate(); }, 5000);
-
-  // Cleanup on connection close
-  req.on('close', () => {
-    clearInterval(interval);
-    res.end();
-  });
+  startPollingStream(req, res, sendUpdate);
 });
 
 // GET /api/services/:name - Get specific service
@@ -140,8 +134,7 @@ router.get('/:name', requirePermission('services.read'), async (req: Request, re
     if (await RbacRoleService.hasPermission(req.user as any, 'logs.raw.read')) {
       return res.json(masked);
     }
-    const { logPath: _logPath, logSources: _logSources, ...safeService } = masked;
-    return res.json(safeService);
+    return res.json(withoutRawLogConfig(masked));
   } catch (error) {
     next(error);
   }

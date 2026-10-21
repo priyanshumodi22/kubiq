@@ -129,7 +129,9 @@ export class LogStreamService extends EventEmitter {
                  try {
                      const matches = await this.scanFiles(searchPattern, limit);
                      socket.emit('log:file_list', { files: matches });
-                 } catch (e) { /* ignore scan error here */ }
+                 } catch (e) {
+                     console.warn('Initial directory scan failed; retaining the requested file stream.', e);
+                 }
              }
              
              this.subscribeToDirWatcher(socket, searchPattern, limit);
@@ -186,7 +188,7 @@ export class LogStreamService extends EventEmitter {
 
         // Create a new shared watcher (first subscriber for this file)
         console.log(`📂 Creating shared file watcher: ${filePath}`);
-        let currentSize = fs.statSync(filePath).size;
+        const currentSize = fs.statSync(filePath).size;
 
         const watcher = chokidar.watch(filePath, {
             persistent: true,
@@ -345,7 +347,7 @@ export class LogStreamService extends EventEmitter {
                 if (shared.refCount <= 0) {
                     console.log(`🗑️  No subscribers left, closing file watcher: ${sub.filePath}`);
                     if (shared.flushTimer) clearTimeout(shared.flushTimer);
-                    shared.watcher.close();
+                    void shared.watcher.close().catch(error => console.warn('File watcher close failed.', error));
                     this.fileWatchers.delete(sub.filePath);
                 }
             }
@@ -362,7 +364,7 @@ export class LogStreamService extends EventEmitter {
                 if (shared.refCount <= 0) {
                     console.log(`🗑️  No subscribers left, closing dir watcher: ${sub.dirPattern}`);
                     if (shared.debounceTimer) clearTimeout(shared.debounceTimer);
-                    shared.watcher.close();
+                    void shared.watcher.close().catch(error => console.warn('Directory watcher close failed.', error));
                     this.dirWatchers.delete(sub.dirPattern);
                 }
             }

@@ -313,7 +313,7 @@ const Profile: React.FC = () => {
       success('Passkey renamed');
       setPasskeys(passkeys.map(pk => pk.id === passkeyToRename.id ? { ...pk, name: renameName } : pk));
       setPasskeyToRename(null);
-    } catch (err) {
+    } catch {
       error('Failed to rename passkey');
     } finally {
       setLoading(p => ({ ...p, passkeys: false }));
@@ -327,7 +327,7 @@ const Profile: React.FC = () => {
       await apiClient.deletePasskey(passkeyToDelete);
       success('Passkey removed');
       setPasskeys(passkeys.filter(pk => pk.id !== passkeyToDelete));
-    } catch (err) {
+    } catch {
       error('Failed to delete');
     } finally {
       setPasskeyToDelete(null);

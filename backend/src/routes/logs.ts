@@ -1,6 +1,5 @@
 import { Request, Response, Router } from 'express';
 import fs from 'node:fs';
-import path from 'node:path';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { isPathSafe } from '../utils/pathSecurity';
 import { AICacheService } from '../services/AICacheService';

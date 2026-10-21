@@ -248,8 +248,7 @@ export class ServiceMonitor {
     if (service.history.length > this.maxHistorySize) service.history.shift();
     this.updateStats(service);
 
-    if (oldStatus !== 'unknown' && oldStatus !== newStatus) {
-      const NotificationManager = require('../services/NotificationManager').NotificationManager;
+    if (oldStatus !== 'unknown' && newStatus !== 'unknown' && oldStatus !== newStatus) {
       const isDbService = service.type === 'mysql' || service.type === 'mongodb' || service.type === 'tcp' || /^(mongodb|mysql|postgres|redis|amqp)/i.test(service.endpoint || '');
       NotificationManager.getInstance().notifyStatusChange(
         serviceName,
@@ -277,7 +276,7 @@ export class ServiceMonitor {
     
     // Start K8s Cluster Alert Monitor (runs every 60s)
     const k8sInterval = setInterval(() => {
-      this.checkK8sClusterAlerts().catch(() => {});
+      this.checkK8sClusterAlerts().catch(error => console.warn('Kubernetes alert polling failed.', error));
     }, 60000);
     this.pollIntervals.set('__k8s_alert_monitor__', k8sInterval);
 
@@ -455,7 +454,7 @@ export class ServiceMonitor {
         : ['-c', '1', '-W', '2', host];
       await execFileAsync('ping', args);
       return true;
-    } catch (e) {
+    } catch {
       return false;
     }
   }
@@ -693,7 +692,7 @@ export class ServiceMonitor {
         }
       }
     } catch (e: any) {
-      // Keep background monitor resilient
+      console.warn('Kubernetes background alert monitor failed; retrying on the next poll.', e);
     }
   }
 }

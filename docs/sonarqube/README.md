@@ -40,6 +40,28 @@ revision, analysis ID, gate ERROR, coverage 10.7% and hotspot-review state.
 
 ## Release safety
 
+## Follow-up batch (awaiting checkpoint scan)
+
+- Backend ESLint: zero errors; warnings are still tracked, not suppressed.
+- Frontend ESLint: zero errors, but the strict command remains blocked by 170
+  explicit-any, 15 hook-dependency and two fast-refresh warnings.
+- Shared select/combobox keyboard navigation, Escape, focus return, blur,
+  editable free text and non-submitting option buttons have six regression tests.
+- Service status now enforces raw-log configuration permissions; three HTTP
+  tests verify denied/allowed projections and preservation of stored state.
+- Polling SSE now awaits one snapshot per client, prevents overlapping work,
+  catches failures and prevents late writes after close; four lifecycle tests
+  cover completion, failure, cancellation and reconnect.
+- Error middleware delegates to Express after headers have been sent.
+- ClickHouse dependency, edge drilldown and export methods no longer return
+  unconditional placeholder values. Parameterized query fixtures test windows,
+  service-name binding, export bounds/attributes and unavailable connections.
+  These fixtures do not substitute for a live ClickHouse integration test.
+- Local verification: 163 backend tests, 27 frontend tests and both builds pass.
+  New source changes are not counted as Sonar closures until rescanned.
+
+## Release safety
+
 Normal main pushes verify only. Production image publication is manual and
 requires a successful same-SHA Sonar workflow containing the strict release-proof
 artifact, with main still at that SHA. Release/package workflows use the same

@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { User, UserRole } from '../../types';
+import { User } from '../../types';
 
 export interface IUserDocument extends Omit<User, 'id'>, Document {
     _id: mongoose.Types.ObjectId;

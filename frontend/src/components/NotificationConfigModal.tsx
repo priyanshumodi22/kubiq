@@ -324,7 +324,7 @@ export function NotificationConfigModal({ isOpen, onClose }: Readonly<Notificati
             setIsLoading(true);
             const data = await apiClient.getNotificationChannels();
             setChannels(data);
-        } catch (err) {
+        } catch {
             setError('Failed to load notification channels');
         } finally {
             setIsLoading(false);
@@ -410,7 +410,7 @@ export function NotificationConfigModal({ isOpen, onClose }: Readonly<Notificati
                 enabled: !channel.enabled
             });
             addToast(`Channel ${!channel.enabled ? 'enabled' : 'disabled'}`, 'success');
-        } catch (err) {
+        } catch {
             // Revert on failure
             fetchChannels();
             addToast('Failed to update channel status', 'error');
@@ -432,7 +432,7 @@ export function NotificationConfigModal({ isOpen, onClose }: Readonly<Notificati
             setDeleteChannel(null);
             fetchChannels();
             addToast('Channel deleted', 'success');
-        } catch (err) {
+        } catch {
             setError('Failed to delete channel');
         }
     };

@@ -80,7 +80,7 @@ export class ClickhouseTraceRepository implements ITraceRepository {
     }
 
     // --- Analytics Methods ---
-    // For Phase 3 ingestion focus, some of these may return empty or mock until the full query builder is ported.
+    // Query values remain bound parameters, including service names and search text.
 
     async getServiceMetrics(fromMs: number, toMs: number): Promise<IServiceMetrics[]> {
         const client = clickhouseService.getClient();
@@ -149,8 +149,18 @@ export class ClickhouseTraceRepository implements ITraceRepository {
     }
 
     async getServiceDependencies(fromMs: number, toMs: number): Promise<IServiceDependency[]> {
-        // Advanced self-join query omitted for brevity during ingestion phase.
-        return [];
+        const rows = await this.queryRows<{ source: string; target: string; callCount: number | string; errorCount: number | string }>(`
+            SELECT p.serviceName AS source, c.serviceName AS target,
+                   count() AS callCount, countIf(c.statusCode = 2) AS errorCount
+            FROM ${clickhouseService.getDatabase()}.apmspans AS c
+            INNER JOIN ${clickhouseService.getDatabase()}.apmspans AS p
+                ON c.parentSpanId = p.spanId AND c.traceId = p.traceId
+            WHERE c.serviceName != p.serviceName
+                AND c.timestamp >= {from: DateTime} AND c.timestamp <= {to: DateTime}
+            GROUP BY p.serviceName, c.serviceName`, {
+            from: this.timestamp(new Date(fromMs)), to: this.timestamp(new Date(toMs)),
+        });
+        return rows.map(row => ({ ...row, callCount: Number(row.callCount), errorCount: Number(row.errorCount) }));
     }
 
     async getRecentTraceIdForService(serviceName: string): Promise<string | null> {
@@ -235,10 +245,51 @@ export class ClickhouseTraceRepository implements ITraceRepository {
     }
 
     async getRecentTraceIdForEdge(sourceName: string, targetName: string): Promise<string | null> {
-        return null;
+        const rows = await this.queryRows<{ traceId: string }>(`
+            SELECT c.traceId AS traceId
+            FROM ${clickhouseService.getDatabase()}.apmspans AS c
+            INNER JOIN ${clickhouseService.getDatabase()}.apmspans AS p
+                ON c.parentSpanId = p.spanId AND c.traceId = p.traceId
+            WHERE p.serviceName = {sourceName: String} AND c.serviceName = {targetName: String}
+                AND c.timestamp >= {from: DateTime}
+            ORDER BY c.timestamp DESC LIMIT 1`, {
+            sourceName, targetName, from: this.timestamp(new Date(Date.now() - 12 * 60 * 60 * 1000)),
+        });
+        return rows[0]?.traceId ?? null;
     }
 
-    async getSpansForExport(options: any): Promise<any[]> {
-        return [];
+    async getSpansForExport(options: Parameters<ITraceRepository['getSpansForExport']>[0]): Promise<ISpan[]> {
+        const filters: string[] = [];
+        const params: Record<string, string | number> = {};
+        const add = (condition: boolean, clause: string, name: string, value: string | number) => {
+            if (condition) { filters.push(clause); params[name] = value; }
+        };
+        add(!!options.serviceName, 'serviceName = {serviceName: String}', 'serviceName', options.serviceName ?? '');
+        add(!!options.fromTime, 'timestamp >= {from: DateTime}', 'from', options.fromTime ? this.timestamp(options.fromTime) : '');
+        add(!!options.toTime, 'timestamp <= {to: DateTime}', 'to', options.toTime ? this.timestamp(options.toTime) : '');
+        add((options.minDurationMs ?? 0) > 0, 'durationMs >= {minDuration: Float64}', 'minDuration', options.minDurationMs ?? 0);
+        add(!!options.spanNameSearch, 'name LIKE {search: String}', 'search', `%${options.spanNameSearch ?? ''}%`);
+        if (options.errorOnly) filters.push('statusCode = 2');
+        const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+        const rows = await this.queryRows<Omit<ISpan, 'attributes'> & { attributes: string }>(`
+            SELECT * FROM ${clickhouseService.getDatabase()}.apmspans ${where}
+            ORDER BY durationMs DESC LIMIT 2000`, params);
+        return rows.map(row => ({ ...row, attributes: JSON.parse(row.attributes || '{}') }));
+    }
+
+    private timestamp(date: Date): string {
+        return date.toISOString().replace('T', ' ').substring(0, 19);
+    }
+
+    private async queryRows<T>(query: string, query_params: Record<string, string | number>): Promise<T[]> {
+        const client = clickhouseService.getClient();
+        if (!client) return [];
+        try {
+            const result = await client.query({ query, query_params, format: 'JSONEachRow' });
+            return await result.json<T>();
+        } catch (error) {
+            console.error('ClickHouse trace query failed:', error);
+            return [];
+        }
     }
 }

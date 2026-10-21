@@ -94,7 +94,9 @@ router.get('/namespaces', async (req, res) => {
                 if (dbUser && dbUser.allowedNamespaces) {
                     allowed = dbUser.allowedNamespaces;
                 }
-            } catch {}
+            } catch (error) {
+                console.warn('Namespace scope refresh failed; using the authenticated user scope.', error);
+            }
         }
 
         if (!allowed) allowed = user.allowedNamespaces || ['apps', 'default'];
