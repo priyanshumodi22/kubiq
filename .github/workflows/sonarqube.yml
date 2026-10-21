@@ -1,0 +1,39 @@
+name: SonarQube release scan
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - name: Start Cloudflare Access adapter
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          node .github/scripts/sonar-access-proxy.cjs &
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:19000/api/system/status | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin).get("status") == "UP" else 1)' 2>/dev/null; then exit 0; fi
+            sleep 3
+          done
+          echo 'SonarQube is unavailable through Cloudflare Access.' >&2
+          exit 1
+      - name: Analyze kubiq
+        uses: SonarSource/sonarqube-scan-action@59db25f34e16620e48ab4bb9e4a5dce155cb5432 # v8.0.0
+        env:
+          SONAR_HOST_URL: http://127.0.0.1:19000
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=kubiq
+            -Dsonar.sources=backend/src,frontend/src,kubiq-apm
+            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/*.test.*,**/*.spec.*
