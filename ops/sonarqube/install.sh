@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 install -d -m 700 /var/lib/sonarqube-ops
-install -m 700 /tmp/sonar-ops.py /usr/local/sbin/sonar-ops
+install -m 700 "$(dirname "$0")/ops.py" /usr/local/sbin/sonar-ops
 for job in idle export backup; do
   case "$job" in
     idle) interval=60s ;;
