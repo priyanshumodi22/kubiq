@@ -7,13 +7,27 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Actual checkpoint scan: `2f73b35e24211b5c55d4f25afba7f39212c9ce68`, task
+`11f9a0be-3a40-4825-913c-79806a48bcbd`, analysis
+`1571c7e1-ac6e-42a0-82b0-ac4229db5f8f`.
+The quality gate failed; production publishing was skipped.
+`checkpoint-2f73b35.json` is the verification overlay for the original ledger:
+281 baseline findings explicitly CLOSED, 549 still OPEN and 11 TO_REVIEW.
+31 additional findings are also recorded, for 580 current open issues overall.
+The original ledger's edit-stage statuses are retained as history, not closure evidence.
+Subsequent ICMP helper extraction and whitespace modernization pass 149 backend
+tests, 21 frontend tests and both builds locally; they await the next scan and
+are not counted as additional verified closures.
+The format-3 archive and spreadsheet tab `Scan 2026-10-21 201625` include
+revision, analysis ID, gate ERROR, coverage 10.7% and hotspot-review state.
+
 - ESLint 9 flat config now loads in both applications. Lint reveals pre-existing
   unused variables, empty handlers, typing warnings and other remaining debt.
   Lint is intentionally not weakened to manufacture a passing release.
 - Jest/Vitest LCOV generation works. Initial observations before further tests:
   backend lines 18.43%, frontend lines 2.95%. These local percentages are NOT a
-  substitute for the Sonar combined metric; coverage-baseline.json stays null
-  until a real Sonar coverage import is reviewed.
+  substitute for the Sonar combined metric; coverage-baseline.json now records
+  the observed 10.7% combined metric from the checkpoint scan.
 - Mechanical fixes: node: imports, numeric methods, readonly members and props.
 - Correctness fixes: unconditional audit hooks with permission-gated requests,
   Promise-aware SSE callbacks, line-based SSE parsing, ICMP normalization,
@@ -44,11 +58,13 @@ Expected intermediate failures do not authorize publication.
    ignored exceptions, remaining typing/lint debt and justified hotspot reviews.
 2. Configure the fixed Sonar new-code baseline and a narrowly scoped Tailwind v4
    directive allowance. Do not disable the unknown-at-rule rule globally.
-3. Run checkpoint scans, import coverage, record the actual baseline and reconcile
-   all issue IDs. The local CLI is currently unauthenticated; no fresh scan,
-   server-side hotspot review or false-positive disposition has been performed.
-4. Extend and verify the VM Sheets exporter with revision, gate, coverage and
-   hotspot-review metadata, preserving previous tabs and exporting failed gates.
+3. Continue checkpoint scans and reconcile new findings as well as baseline IDs.
+   The local CLI is currently unauthenticated. The actual GitHub scan succeeded
+   in submitting analysis but failed its quality gate. No server-side safe-hotspot
+   reviews or false-positive dispositions have been performed.
+4. Preserve the verified format-3 Sheets exporter: original columns and tabs
+   remain intact, failed gates export correctly, and eight Linux operations tests
+   pass, including idle-policy and export-failure scenarios.
 5. Verify the CI release guard against real GitHub/Sonar API responses, test SDK
    ingestion fixtures, then perform the final same-revision scan and Flux rollout.
 
@@ -65,7 +81,7 @@ npm run build --prefix backend
 npm run build --prefix frontend
 ```
 
-This checkpoint does not authorize deployment. The null coverage baseline and
+This checkpoint does not authorize deployment. Missing new-code scope and
 unresolved findings must continue to block release. Consult the corresponding
 GitHub run for pushed revision and scan evidence; local tests alone are not a
 Sonar closure or production verification.

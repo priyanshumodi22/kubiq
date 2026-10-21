@@ -5,7 +5,36 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch, Mock
 
-ops = importlib.machinery.SourceFileLoader('sonar_ops_test', '/usr/local/sbin/sonar-ops').load_module()
+source = Path(__file__).with_name('ops.py')
+ops = importlib.machinery.SourceFileLoader('sonar_ops_test', str(source) if source.exists() else '/usr/local/sbin/sonar-ops').load_module()
+
+class ExportMetadataTests(unittest.TestCase):
+    def test_failed_quality_gate_is_exported_with_revision_and_original_columns(self):
+        task = 'ac87f101-0834-43a1-a03f-5de3cbcd5008'
+        metadata = {'task': task, 'analysisId': 'analysis', 'revision': 'a' * 40,
+                    'measures': {'alert_status': 'ERROR', 'coverage': '20', 'security_hotspots_reviewed': '50'}}
+        rows = [{'issue_id': 'issue', 'file': 'backend/src/test.ts', 'line': 1,
+                 'severity': 'MAJOR', 'status': 'OPEN', 'issue_type': 1, 'message': '=not a formula',
+                 'effort': 5, 'rule': 'typescript:S1', 'rule_name': 'Rule'}]
+        with tempfile.TemporaryDirectory() as folder, patch.object(ops, 'ROOT', Path(folder)), \
+             patch.object(ops, 'sql', side_effect=['0', task, ops.json.dumps(metadata), ops.json.dumps(rows)]), \
+             patch.object(ops, 'api') as sheets, patch.object(ops, 'upload') as upload:
+            ops.export()
+            request = ops.json.loads(sheets.call_args.args[1])
+            self.assertEqual(request['values'][0][0:3], ['Analysis task', 'Issue ID', 'File'])
+            self.assertEqual(request['values'][1][12:16], ['a' * 40, 'analysis', 'ERROR', '20'])
+            self.assertIn('valueInputOption=RAW', sheets.call_args.args[0])
+            report = ops.json.loads(upload.call_args.args[1])
+            self.assertEqual(report['schemaVersion'], 3)
+            self.assertEqual(report['metadata']['openIssues'], 1)
+            state = ops.json.loads((Path(folder) / 'export.json').read_text())
+            self.assertEqual(state['qualityGate'], 'ERROR')
+            self.assertEqual(state['format'], 3)
+
+    def test_invalid_task_cannot_be_interpolated_into_metadata_query(self):
+        with patch.object(ops, 'sql') as query:
+            with self.assertRaises(ValueError): ops.analysis_metadata("'; DROP TABLE issues; --")
+            query.assert_not_called()
 
 class IdlePolicyTests(unittest.TestCase):
     def simulate(self, queued=0, recent=False, failed_export=False, deadline=False, unhealthy=False):

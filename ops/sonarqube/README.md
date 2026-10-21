@@ -50,6 +50,15 @@ GCP Control reads a status-only object published each minute. Reports older than
 three minutes or from a previous boot show unavailable. Monitoring requests do
 not reset inactivity. The card stays read-only and keeps the k3s VM separate.
 
+Exports now use archive schema 3: `{schemaVersion, metadata, issues}`. Older
+array-format archives are retained unchanged. Spreadsheet reports preserve the
+original twelve columns and append commit SHA, analysis ID, quality gate,
+coverage, hotspot review percentage, open issue count and unreviewed hotspot
+count. A completed analysis with a failed quality gate is still exported.
+Export state is marked successful only after the Sheets write and archive upload;
+an export failure continues to prevent idle shutdown. Format-3 export was verified
+against analysis `1571c7e1-ac6e-42a0-82b0-ac4229db5f8f` (gate ERROR).
+
 Maintenance commands (via IAP SSH):
 
 ```sh

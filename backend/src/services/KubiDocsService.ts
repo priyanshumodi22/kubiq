@@ -21,7 +21,7 @@ const plainText = (html: string): string => {
   }
   return parts.join('').replaceAll('&nbsp;', ' ').replaceAll('&amp;', '&').replaceAll('&lt;', '<')
     .replaceAll('&gt;', '>').replaceAll('&quot;', '"').replaceAll('&#39;', "'").replaceAll('&#x27;', "'")
-    .split('\n').map(line => line.replace(/\s+/g, ' ').trim()).join('\n').trim();
+    .split('\n').map(line => line.replaceAll(/\s+/g, ' ').trim()).join('\n').trim();
 };
 
 /** Only published, allowlisted kubiq pages are fetched; never a user-provided URL. */

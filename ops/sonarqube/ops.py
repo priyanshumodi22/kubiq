@@ -78,6 +78,23 @@ def restore_check():
         # Only this freshly created disposable verification database is removed.
         sql('DROP DATABASE ' + name, 'postgres')
 
+def analysis_metadata(task):
+    if not re.fullmatch(r'[a-f0-9-]{36}', task):
+        raise ValueError('Unexpected analysis task identifier')
+    query = """SELECT json_build_object(
+      'task',a.uuid,'analysisId',s.uuid,'revision',s.revision,
+      'version',s.version,'analysisDate',s.analysis_date,
+      'measures',(SELECT json_object_agg(m.name,coalesce(p.text_value,p.value::text))
+        FROM project_measures p JOIN metrics m ON m.uuid=p.metric_uuid
+        WHERE p.analysis_uuid=s.uuid AND m.name IN
+          ('coverage','alert_status','security_hotspots_reviewed')))
+      FROM ce_activity a JOIN snapshots s ON s.uuid=a.analysis_uuid
+      WHERE a.uuid='%s' AND a.status='SUCCESS'""" % task
+    metadata = json.loads(sql(query))
+    if not isinstance(metadata, dict) or not metadata.get('analysisId'):
+        raise ValueError('Analysis metadata unavailable; export not marked complete')
+    return metadata
+
 def export():
     if int(sql('SELECT count(*) FROM ce_queue')):
         return
@@ -87,8 +104,9 @@ def export():
     previous = ROOT / 'export.json'
     if previous.exists():
         previous_value = json.loads(previous.read_text())
-        if previous_value.get('task') == task and previous_value.get('format') == 2:
+        if previous_value.get('task') == task and previous_value.get('format') == 3:
             return
+    metadata = analysis_metadata(task)
     query = """SELECT coalesce(json_agg(x), '[]') FROM (
       SELECT i.kee AS issue_id, c.path AS file, i.line, i.severity, i.status,
         i.issue_type, i.message, i.effort, i.rule_uuid, i.issue_creation_date,
@@ -97,13 +115,19 @@ def export():
       LEFT JOIN rules r ON r.uuid=i.rule_uuid ORDER BY c.path,i.line,i.kee
     ) x"""
     rows = json.loads(sql(query))
-    headers = ['Analysis task', 'Issue ID', 'File', 'Line', 'Severity', 'Status', 'Type', 'Message', 'Effort minutes', 'Rule', 'Rule name', 'SonarQube link']
+    metadata['openIssues'] = sum(row['status'] in ('OPEN', 'CONFIRMED') for row in rows)
+    metadata['unreviewedHotspots'] = sum(row['issue_type'] == 4 and row['status'] == 'TO_REVIEW' for row in rows)
+    measures = metadata.get('measures') or {}
+    headers = ['Analysis task', 'Issue ID', 'File', 'Line', 'Severity', 'Status', 'Type', 'Message', 'Effort minutes', 'Rule', 'Rule name', 'SonarQube link', 'Commit SHA', 'Analysis ID', 'Quality gate', 'Coverage %', 'Hotspots reviewed %', 'Open issues', 'Unreviewed hotspots']
     values = [headers]
     for row in rows:
         kind = {1: 'CODE_SMELL', 2: 'BUG', 3: 'VULNERABILITY', 4: 'SECURITY_HOTSPOT'}.get(row['issue_type'], str(row['issue_type']))
         values.append([task, row['issue_id'], row['file'] or '', row['line'] or '', row['severity'] or '', row['status'], kind,
                        row['message'] or '', row['effort'] or 0, row['rule'] or row['rule_uuid'], row['rule_name'] or '',
-                       'https://sonar.priyanshumodi.in/project/issues?id=kubiq&issues=' + row['issue_id']])
+                       'https://sonar.priyanshumodi.in/project/issues?id=kubiq&issues=' + row['issue_id'],
+                       metadata.get('revision') or 'Unavailable', metadata['analysisId'],
+                       measures.get('alert_status', 'Unavailable'), measures.get('coverage', 'Unavailable'),
+                       measures.get('security_hotspots_reviewed', 'Unavailable'), metadata['openIssues'], metadata['unreviewedHotspots']])
     # RAW input prevents issue messages or paths being interpreted as formulas.
     title = 'Scan ' + dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%d %H%M%S')
     base = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEET
@@ -111,8 +135,12 @@ def export():
     api(base + ':batchUpdate', json.dumps(body).encode(), 'POST')
     sheet_range = urllib.parse.quote("'" + title + "'!A1", safe='')
     api(base + '/values/' + sheet_range + '?valueInputOption=RAW', json.dumps({'values': values}).encode(), 'PUT')
-    upload('reports/' + task + '-' + str(int(time.time())) + '.json', json.dumps(rows).encode(), 'application/json')
-    mark('export.json', {'at': time.time(), 'task': task, 'issues': len(rows), 'tab': title, 'format': 2})
+    report = {'schemaVersion': 3, 'metadata': metadata, 'issues': rows}
+    upload('reports/' + task + '-' + str(int(time.time())) + '.json', json.dumps(report).encode(), 'application/json')
+    mark('export.json', {'at': time.time(), 'task': task, 'issues': len(rows), 'tab': title, 'format': 3,
+                         'revision': metadata.get('revision'), 'analysisId': metadata['analysisId'],
+                         'qualityGate': measures.get('alert_status'), 'coverage': measures.get('coverage'),
+                         'unreviewedHotspots': metadata['unreviewedHotspots']})
 
 def idle_check(dry=False):
     now = time.time()

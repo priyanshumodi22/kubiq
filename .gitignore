@@ -53,6 +53,7 @@ docs/*
 !docs/sonarqube/
 !docs/sonarqube/**
 .sonar-release-proof.json
+__pycache__/
 
 
 backend/test-mongo-fix.js
