@@ -1,7 +1,7 @@
 type SecretResource = {
   data?: Record<string, unknown>;
   stringData?: Record<string, unknown>;
-  metadata?: { annotations?: Record<string, string>; [key: string]: unknown };
+  metadata?: { annotations?: Record<string, string> };
 };
 
 const redactValues = (values: Record<string, unknown>): Record<string, string> =>

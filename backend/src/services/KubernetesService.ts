@@ -522,7 +522,7 @@ export class KubernetesService {
             const { coreApi } = this.getClients(ctx);
             const res = await coreApi.listNamespacedSecret({ namespace });
             // Redact secret data for safety before sending to frontend
-            return (res.items ?? []).map(secret => redactKubernetesSecret(secret));
+            return (res.items ?? []).map((secret: k8s.V1Secret) => redactKubernetesSecret(secret));
         } catch (e: any) {
             this.checkRbacError(e);
             console.error(`Error fetching secrets for namespace ${namespace}:`, e.message || e);
