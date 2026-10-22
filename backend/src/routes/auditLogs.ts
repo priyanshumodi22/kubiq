@@ -31,7 +31,7 @@ router.get('/export', requirePermission('audit.export'), async (req, res) => {
     const logs = await auditService.getLogs(limit, search);
 
     const escapeCsv = (str: any) => {
-      const s = String(str ?? '').replaceAll(/"/g, '""');
+      const s = String(str ?? '').replaceAll("\"", '""');
       return `"${s}"`;
     };
 

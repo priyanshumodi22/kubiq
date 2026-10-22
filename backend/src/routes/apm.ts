@@ -408,7 +408,7 @@ apmAnalyticsRouter.get('/export', requirePermission('apm.export'), async (req: R
             if (val === null || val === undefined) return '';
             const str = String(val);
             if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-                return `"${str.replaceAll(/"/g, '""')}"`;
+                return `"${str.replaceAll("\"", '""')}"`;
             }
             return str;
         };

@@ -298,6 +298,8 @@ Subsequent completed analyses:
 | `624585e` | 16 | `0ae3bc70-f159-4069-ad03-135d1ee167ac` | 319 | 23.0% | 0 |
 | `292f6e5` | 17, attempt 2 | `ea22e2cf-e65e-45be-85ad-f3113840f01b` | 318 | 23.1% | 0 |
 | `bff6049` | 18 | `0a89864e-8b9e-4080-bec1-1e990ea91222` | 308 | 23.3% | 0 |
+| `996fb43` | 19 | `f0412dd8-f949-4efe-b605-3f1dabe35ded` | 303 | 23.3% | 0 |
+| `fde0263` | 20 | `ec7a6591-b356-4b43-945c-1ce1710343b5` | 296 | 23.4% | 0 |
 
 Matching format-3 exports remain in the private backup bucket under `reports/`:
 `4550fc4b-64aa-45f1-8e3d-f570920514c2-1792689301.json`,
@@ -339,3 +341,25 @@ log retrieval now independently requires `logs.read`, with a denial regression
 test. The standard quality gate is ERROR; production remains held. A new
 misleading-indentation finding in the extracted APM collector is tracked and
 fixed in the next batch rather than accepted or excluded.
+
+Run 19 verifies all 12 global string-replacement findings closed. Seven new
+raw-literal modernization findings were reported by the analyzer; these are
+fixed in the following batch, not excluded. The checkpoint records 557 explicit
+baseline closures, 282 pending baseline findings, two safe reviews, and 57
+additional findings. Its export is
+`gs://priyanshu-apps-sonarqube-backups/reports/54ab1041-a712-4c33-8f03-bb5a6f0f616f-1792695843.json`.
+
+Verification for `fde0263` includes 241 backend tests, 77 frontend tests, both
+builds, three exact-commit release-gate tests, and three tests each for the Node
+and Python APM exporters. Both LCOV files were generated successfully. Backend
+lint reports zero errors and 370 warnings; frontend lint reports zero errors
+and 136 warnings and fails its zero-warning policy. These warnings remain
+work to complete; passing unit tests must not be mistaken for a clean CI gate.
+
+Run 20 confirms the raw-literal, APM guard, and SSL branch fixes: 565 original
+findings are explicitly CLOSED, 274 remain pending, and two are individually
+reviewed safe. There are 59 additional exported findings (including closed
+items). Current open issues total 296. Its archive is
+`gs://priyanshu-apps-sonarqube-backups/reports/cd5700de-2c59-44bc-95e5-dd2cc09f2f55-1792696060.json`.
+Seven literal-pattern follow-ups in CSV/XML escaping are addressed in the next
+batch; their closure is not inferred until a matching scan completes.
