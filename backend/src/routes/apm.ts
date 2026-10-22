@@ -4,6 +4,7 @@ import { ISpan } from '../database/interfaces/ITraceRepository';
 import { IngestionBufferService } from '../services/IngestionBufferService';
 import { requirePermission } from '../middleware/auth';
 import { requireIngestionAuth } from '../middleware/ingestionAuth';
+import { matchesIgnoredRoute, OtlpPayloadError, parseOtlpPayload } from '../utils/otlpPayload';
 
 export const apmIngestRouter = Router();
 export const apmAnalyticsRouter = Router();
@@ -74,93 +75,24 @@ async function getApmConfigCached(): Promise<{ ignoredRoutes: string[] }> {
     return cachedApmConfig!;
 }
 
-/**
- * Parses the nested OpenTelemetry JSON format into a flat array of ISpan objects.
- */
-function parseOtlpPayload(payload: any): ISpan[] {
-    const spans: ISpan[] = [];
-
-    if (!payload || !payload.resourceSpans) {
-        return spans;
-    }
-
-    for (const resourceSpan of payload.resourceSpans) {
-        // Extract service.name from resource attributes
-        let serviceName = 'unknown-service';
-        if (resourceSpan.resource?.attributes) {
-            const serviceNameAttr = resourceSpan.resource.attributes.find((attr: any) => attr.key === 'service.name');
-            if (serviceNameAttr && serviceNameAttr.value) {
-                serviceName = serviceNameAttr.value.stringValue || 'unknown-service';
-            }
-        }
-
-        if (!resourceSpan.scopeSpans) continue;
-
-        for (const scopeSpan of resourceSpan.scopeSpans) {
-            if (!scopeSpan.spans) continue;
-
-            for (const otelSpan of scopeSpan.spans) {
-                // Calculate duration in milliseconds from nano timestamps
-                const startNano = Number(otelSpan.startTimeUnixNano);
-                const endNano = Number(otelSpan.endTimeUnixNano);
-                const durationMs = (endNano - startNano) / 1000000;
-
-                // Parse attributes array into a key-value object
-                const attributes: Record<string, any> = {};
-                if (otelSpan.attributes) {
-                    for (const attr of otelSpan.attributes) {
-                        if (attr.value) {
-                            // Extract the value regardless of its type (stringValue, intValue, etc.)
-                            const valueKey = Object.keys(attr.value)[0];
-                            if (valueKey) {
-                                attributes[attr.key] = attr.value[valueKey];
-                            }
-                        }
-                    }
-                }
-
-                const span: ISpan = {
-                    traceId: otelSpan.traceId,
-                    spanId: otelSpan.spanId,
-                    parentSpanId: otelSpan.parentSpanId || null,
-                    serviceName,
-                    name: otelSpan.name,
-                    kind: otelSpan.kind,
-                    startTimeUnixNano: startNano,
-                    endTimeUnixNano: endNano,
-                    durationMs,
-                    statusCode: otelSpan.status?.code || 0,
-                    attributes,
-                };
-
-                spans.push(span);
-            }
-        }
-    }
-
-    return spans;
-}
 
 /**
  * POST /v1/traces
  * The standard OTLP HTTP JSON ingestion endpoint.
  */
 apmIngestRouter.post('/v1/traces', async (req: Request, res: Response) => {
+    if (!req.is('application/json')) {
+        res.status(415).json({ error: 'APM_UNSUPPORTED_ENCODING', message: 'Use OTLP HTTP JSON, or a Collector configured with JSON encoding.' });
+        return;
+    }
     try {
         const rawPayload = req.body;
-        console.log('--- Incoming OTLP Payload ---');
-        console.log(`Keys: ${Object.keys(rawPayload)}`);
 
         // 1. Flatten the massive OTLP JSON into flat span records
-        const spans = parseOtlpPayload(rawPayload);
-        console.log(`Parsed ${spans.length} spans from payload`);
+        const spans = parseOtlpPayload(rawPayload, MAX_SPANS_PER_REQUEST);
 
         if (spans.length === 0) {
             res.status(202).json({ message: 'No spans found in payload' });
-            return;
-        }
-        if (spans.length > MAX_SPANS_PER_REQUEST) {
-            res.status(413).json({ error: 'APM_BATCH_TOO_LARGE', message: `A maximum of ${MAX_SPANS_PER_REQUEST} spans is accepted per request.` });
             return;
         }
 
@@ -170,7 +102,7 @@ apmIngestRouter.post('/v1/traces', async (req: Request, res: Response) => {
         
         const traceIdsToDrop = new Set(
             spans
-              .filter(span => ignoredPaths.some(p => span.name.includes(p) || span.attributes?.['http.target']?.includes(p)))
+              .filter(span => matchesIgnoredRoute(span, ignoredPaths))
               .map(span => span.traceId)
         );
         
@@ -190,6 +122,10 @@ apmIngestRouter.post('/v1/traces', async (req: Request, res: Response) => {
         // 3. Return 202 Accepted (standard for OTLP receivers)
         res.status(202).end();
     } catch (error) {
+        if (error instanceof OtlpPayloadError) {
+            res.status(error.status).json({ error: error.status === 413 ? 'APM_BATCH_TOO_LARGE' : 'APM_INVALID_PAYLOAD', message: error.message });
+            return;
+        }
         console.error('Failed to ingest OTLP traces:', error);
         // Even if we fail, we often return 202 or 200 to clients so they don't block/retry infinitely
         // depending on strictness, but 500 is good for debugging right now
@@ -251,7 +187,7 @@ apmIngestRouter.post('/v1/zipkin', async (req: Request, res: Response) => {
         
         const traceIdsToDrop = new Set(
             spans
-              .filter(span => span.parentSpanId === null && ignoredPaths.some(p => span.name.includes(p) || span.attributes?.['http.target']?.includes(p)))
+              .filter(span => span.parentSpanId === null && matchesIgnoredRoute(span, ignoredPaths))
               .map(span => span.traceId)
         );
         

@@ -5,6 +5,9 @@ import { ToastContext } from './ToastContext';
 import type { ToastContextType, ToastType } from './ToastContext';
 
 interface Toast { id: number; message: string; type: ToastType }
+function withoutToast(id: number) {
+  return (previous: Toast[]) => previous.filter(toast => toast.id !== id);
+}
 function toastIcon(type: ToastType) {
   switch (type) {
     case 'success': return <CheckCircle className="w-5 h-5 text-green-500" />;
@@ -23,7 +26,7 @@ export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
     setToasts(previous => [...previous, { id, message, type }]);
     const timer = setTimeout(() => {
       timers.current.delete(id);
-      setToasts(previous => previous.filter(toast => toast.id !== id));
+      setToasts(withoutToast(id));
     }, 3000);
     timers.current.set(id, timer);
   }, []);
@@ -50,7 +53,7 @@ export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
   const removeToast = (id: number) => {
     clearTimeout(timers.current.get(id));
     timers.current.delete(id);
-    setToasts(previous => previous.filter(toast => toast.id !== id));
+    setToasts(withoutToast(id));
   };
 
   return (
@@ -58,15 +61,15 @@ export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
       {children}
       <div className="fixed bottom-4 right-4 z-100 flex flex-col gap-2">
         {toasts.map(toast => (
-          <div key={toast.id} role={toast.type === 'error' ? 'alert' : 'status'}
+          <output key={toast.id} role={toast.type === 'error' ? 'alert' : undefined}
             className="flex items-center gap-3 p-4 bg-gray-800 border border-gray-700 shadow-xl rounded-lg text-white min-w-[300px] animate-slide-in-right">
             {toastIcon(toast.type)}
-            <p className="grow text-sm">{toast.message}</p>
+            <span className="grow text-sm">{toast.message}</span>
             <button type="button" aria-label={`Dismiss ${toast.message}`} onClick={() => removeToast(toast.id)}
               className="text-gray-400 hover:text-white transition-colors">
               <X className="w-4 h-4" />
             </button>
-          </div>
+          </output>
         ))}
       </div>
     </ToastContext.Provider>

@@ -1,6 +1,6 @@
 const opentelemetry = require('@opentelemetry/sdk-node');
 const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
-const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
+const { KubiqExporter } = require('./exporter');
 
 // This script is meant to be run via `--require kubiq-apm/auto`
 console.log('[kubiq-apm] Initializing Auto-Instrumentation...');
@@ -9,24 +9,11 @@ console.log('[kubiq-apm] Initializing Auto-Instrumentation...');
 process.env.OTEL_BSP_MAX_EXPORT_BATCH_SIZE = process.env.OTEL_BSP_MAX_EXPORT_BATCH_SIZE || '50';
 process.env.OTEL_BSP_SCHEDULE_DELAY = process.env.OTEL_BSP_SCHEDULE_DELAY || '2000';
 
-const exporterUrl = process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || 'http://localhost:3001/api/apm/v1/traces';
+const exporterUrl = process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:3001/api/apm/v1/traces';
 const serviceName = process.env.OTEL_SERVICE_NAME || 'unknown-node-service';
 
-const exporterHeaders = Object.fromEntries(
-    (process.env.OTEL_EXPORTER_OTLP_HEADERS || '')
-        .split(',')
-        .map((header) => {
-            const separator = header.indexOf('=');
-            return separator === -1
-                ? []
-                : [header.slice(0, separator).trim(), header.slice(separator + 1).trim()];
-        })
-        .filter(([key, value]) => key && value)
-);
-
-const traceExporter = new OTLPTraceExporter({
+const traceExporter = new KubiqExporter({
     url: exporterUrl,
-    headers: exporterHeaders,
 });
 
 const sdk = new opentelemetry.NodeSDK({
@@ -45,7 +32,7 @@ process.on('SIGTERM', () => {
 
 try {
     sdk.start();
-    console.log(`[kubiq-apm] Successfully connected to ${exporterUrl} as '${serviceName}'`);
+    console.log(`[kubiq-apm] Instrumentation started; exporting to ${exporterUrl} as '${serviceName}'`);
 } catch (err) {
     console.error(`[kubiq-apm] Failed to start tracer:`, err);
 }

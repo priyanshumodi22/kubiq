@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
 import { X, ChevronDown, Check, Plus, Trash2, ShieldAlert } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { useServices } from '../hooks/useServices';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import { LogSource } from '../types';
+import { apiErrorMessage } from '../utils/apiErrorMessage';
 
 interface ConfigureLogModalProps {
   isOpen: boolean;
@@ -17,6 +18,10 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
   const { services } = useServices();
   const { hasPermission } = useAuth();
   const toast = useToast();
+  const fieldId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [draftService, setDraftService] = useState<string | null>(null);
   
   const canEdit = hasPermission('services.manage') && hasPermission('logs.raw.read');
   
@@ -61,6 +66,7 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
   useEffect(() => {
     if (isOpen) {
       setSelectedServiceName(preSelectedService || '');
+      setDraftService(null);
       // Log sources will be populated by the next effect
       setNewLabel('');
       setNewPath('');
@@ -73,9 +79,10 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
 
   // When Service Selected, populate existing
   useEffect(() => {
-    if (selectedServiceName && isOpen) {
+    if (selectedServiceName && isOpen && draftService !== selectedServiceName) {
       const svc = services.find(s => s.name === selectedServiceName);
       if (svc) {
+        setDraftService(selectedServiceName);
         // Handle migration from legacy logPath in UI
         if (svc.logSources && svc.logSources.length > 0) {
             setLogSources(svc.logSources);
@@ -83,11 +90,29 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
             setLogSources([]);
         }
       }
-    } else {
-        if (!selectedServiceName) setLogSources([]);
+    } else if (!selectedServiceName) {
+        setLogSources([]);
+        setDraftService(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedServiceName, isOpen]); 
+  }, [selectedServiceName, isOpen, services, draftService]);
+
+  useEffect(() => {
+    if (isDropdownOpen) inputRef.current?.focus();
+  }, [isDropdownOpen]);
+
+  const closeDropdown = () => {
+    setIsDropdownOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  const optionKeyDown = (event: React.KeyboardEvent, index: number) => {
+    if (event.key === 'Escape') { event.preventDefault(); closeDropdown(); }
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const direction = event.key === 'ArrowDown' ? 1 : -1;
+      optionRefs.current[(index + direction + filteredServices.length) % filteredServices.length]?.focus();
+    }
+  };
 
 
   if (!isOpen) return null;
@@ -98,7 +123,7 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
       setLogSources(prev => [
           ...prev, 
           {
-              id: Date.now().toString(),
+              id: Array.from(globalThis.crypto.getRandomValues(new Uint32Array(4)), value => value.toString(16).padStart(8, '0')).join(''),
               name: newLabel.trim(),
               path: newPath.trim(),
               fileLimit: newLimit ? Number.parseInt(newLimit) : undefined
@@ -115,6 +140,10 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canEdit) {
+      toast.warning('You do not have permission to perform this action.');
+      return;
+    }
     if (!selectedServiceName) {
         setError("Please select a service");
         return;
@@ -142,8 +171,8 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
       toast.success('Log configuration updated successfully');
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update log configuration');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to update log configuration'));
     } finally {
       setIsSubmitting(false);
     }
@@ -165,7 +194,7 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
                 </span>
             )}
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg">
+          <button type="button" aria-label="Close log configuration" onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -179,32 +208,36 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
 
           <div className="space-y-6">
             <div className="relative" ref={dropdownRef}>
-              <label className="block text-xs font-medium text-gray-400 ml-1 mb-1.5 uppercase tracking-wide">Select Service</label>
+              <label htmlFor={`${fieldId}-service`} className="block text-xs font-medium text-gray-400 ml-1 mb-1.5 uppercase tracking-wide">Select Service</label>
               
               {/* Custom Dropdown Trigger */}
-              <div 
+              <button type="button" id={`${fieldId}-service`} ref={triggerRef}
+                aria-expanded={isDropdownOpen} aria-controls={isDropdownOpen ? `${fieldId}-options` : undefined}
                 onClick={() => {
                     setIsDropdownOpen(!isDropdownOpen);
-                    if (!isDropdownOpen) {
-                        setTimeout(() => inputRef.current?.focus(), 50);
-                    }
                 }}
+                onKeyDown={event => { if (event.key === 'Escape') closeDropdown(); }}
                 className={`w-full bg-black/20 border ${isDropdownOpen ? 'border-primary/50 ring-2 ring-primary/20' : 'border-white/10'} rounded-xl py-3 px-4 text-white cursor-pointer flex items-center justify-between transition-all`}
               >
                   <span className={selectedServiceName ? 'text-white' : 'text-gray-500'}>
                       {selectedServiceObj ? `${selectedServiceObj.name} (${selectedServiceObj.endpoint})` : '-- Choose a Service --'}
                   </span>
                   <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-              </div>
+              </button>
 
               {/* Dropdown Menu */}
               {isDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-[#1d1f24] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                  <div id={`${fieldId}-options`} className="absolute top-full left-0 right-0 mt-2 bg-[#1d1f24] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                       <div className="p-2 border-b border-white/5">
                           <input
                                 ref={inputRef}
                                 type="text"
                                 placeholder="Search services..."
+                                aria-label="Search services"
+                                onKeyDown={event => {
+                                  if (event.key === 'Escape') { event.preventDefault(); closeDropdown(); }
+                                  if (event.key === 'ArrowDown') { event.preventDefault(); optionRefs.current[0]?.focus(); }
+                                }}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full bg-white/5 border border-transparent rounded-lg py-1.5 px-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:bg-white/10 transition-colors"
@@ -215,22 +248,24 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
                           {filteredServices.length === 0 ? (
                               <div className="py-3 text-center text-sm text-gray-500">No services found</div>
                           ) : (
-                              filteredServices.map(s => (
-                                  <div
+                              filteredServices.map((s, index) => (
+                                  <button type="button"
+                                      ref={element => { optionRefs.current[index] = element; }}
                                       key={s.name}
+                                      onKeyDown={event => optionKeyDown(event, index)}
                                       onClick={() => {
                                           setSelectedServiceName(s.name);
-                                          setIsDropdownOpen(false);
+                                          closeDropdown();
                                           setSearchQuery(''); 
                                       }}
-                                      className="flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer hover:bg-white/5 transition-colors group"
+                                      className="w-full text-left flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer hover:bg-white/5 focus-visible:outline focus-visible:outline-primary transition-colors group"
                                   >
-                                      <div className="min-w-0">
-                                          <div className="text-sm font-medium text-gray-200 group-hover:text-white truncate">{s.name}</div>
-                                          <div className="text-xs text-gray-500 truncate">{s.endpoint}</div>
-                                      </div>
+                                      <span className="min-w-0">
+                                          <span className="block text-sm font-medium text-gray-200 group-hover:text-white truncate">{s.name}</span>
+                                          <span className="block text-xs text-gray-500 truncate">{s.endpoint}</span>
+                                      </span>
                                       {selectedServiceName === s.name && <Check className="w-4 h-4 text-primary" />}
-                                  </div>
+                                  </button>
                               ))
                           )}
                       </div>
@@ -240,7 +275,7 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
 
             {/* Log Sources List */}
             <div>
-              <label className="block text-xs font-medium text-gray-400 ml-1 mb-2 uppercase tracking-wide">Configured Logs</label>
+              <h3 className="block text-xs font-medium text-gray-400 ml-1 mb-2 uppercase tracking-wide">Configured Logs</h3>
               
               <div className="space-y-2 mb-3">
                   {logSources.map((source) => (
@@ -255,6 +290,7 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
                           {canEdit && (
                             <button 
                                 type="button"
+                                aria-label={`Remove ${source.name}`}
                                 onClick={() => handleRemoveSource(source.id)}
                                 className="text-gray-500 hover:text-red-400 p-1.5 hover:bg-white/5 rounded-md transition-colors mt-0.5"
                             >
@@ -281,6 +317,7 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
                                 value={newLabel}
                                 onChange={(e) => setNewLabel(e.target.value)}
                                 placeholder="Label (e.g. Server)"
+                                aria-label="Log source label"
                                 className="w-full bg-white/5 border border-transparent rounded-lg py-2 px-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary/50 text-sm"
                             />
                         </div>
@@ -290,12 +327,14 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
                                 value={newPath}
                                 onChange={(e) => setNewPath(e.target.value)}
                                 placeholder="/path/to/logfile.log (or *.log)"
+                                aria-label="Log source path"
                                 className="w-full bg-white/5 border border-transparent rounded-lg py-2 px-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary/50 font-mono text-sm"
                             />
                         </div>
                         <div className="w-20">
                             <input
                                 type="number"
+                                aria-label="Log source file limit"
                                 min="1"
                                 max="50"
                                 value={newLimit}

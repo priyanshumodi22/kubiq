@@ -23,7 +23,7 @@ const requireRawLogAccessWhenConfigured = (req: Request, res: Response, next: Ne
 router.get('/', requirePermission('services.read'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const historyLimit = Number.parseInt(req.query.historyLimit as string) || 20;
-    const canReadRawLogs = await RbacRoleService.hasPermission(req.user as any, 'logs.raw.read');
+    const canReadRawLogs = await RbacRoleService.hasPermission(req.user, 'logs.raw.read');
     const services = await Promise.all(monitor.getAllServices().map(async (service) => {
       const maskedService = await maskServiceEndpoint(service, req.user);
       return {
@@ -85,7 +85,7 @@ router.get('/stream', requirePermission('services.read'), async (req: Request, r
 
   // Capture user from request closure
   const currentUser = req.user;
-  const canReadRawLogs = await RbacRoleService.hasPermission(currentUser as any, 'logs.raw.read');
+  const canReadRawLogs = await RbacRoleService.hasPermission(currentUser, 'logs.raw.read');
 
   // Send initial data
   const sendUpdate = async () => {
@@ -131,7 +131,7 @@ router.get('/:name', requirePermission('services.read'), async (req: Request, re
     }
 
     const masked = await maskServiceEndpoint(service, req.user);
-    if (await RbacRoleService.hasPermission(req.user as any, 'logs.raw.read')) {
+    if (await RbacRoleService.hasPermission(req.user, 'logs.raw.read')) {
       return res.json(masked);
     }
     return res.json(withoutRawLogConfig(masked));

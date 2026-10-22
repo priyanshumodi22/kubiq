@@ -9,7 +9,7 @@
         "exporter.js"
     ],
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "node --test exporter.test.cjs"
     },
     "dependencies": {
         "@opentelemetry/api": "^1.7.0",

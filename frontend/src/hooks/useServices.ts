@@ -82,8 +82,8 @@ export function useServices() {
       statusPending = true;
       try {
         applyStatus(await apiClient.getServicesStatus());
-      } catch (failure) {
-        if (current()) setError(errorMessage(failure, 'Failed to fetch status'));
+      } catch (error_) {
+        if (current()) setError(errorMessage(error_, 'Failed to fetch status'));
       } finally {
         statusPending = false;
       }
@@ -98,8 +98,8 @@ export function useServices() {
           setStats(data.stats);
           setError(null);
         }
-      } catch (failure) {
-        if (current()) setError(errorMessage(failure, 'Failed to fetch services'));
+      } catch (error_) {
+        if (current()) setError(errorMessage(error_, 'Failed to fetch services'));
       } finally {
         fullPending = false;
         if (current()) setLoading(false);
@@ -166,8 +166,8 @@ export function useServiceHistory(serviceName: string | null, limit?: number) {
         setHistory(data.history || []);
         setError(null);
       }
-    } catch (failure) {
-      if (generation === generationRef.current) setError(errorMessage(failure, 'Failed to fetch history'));
+    } catch (error_) {
+      if (generation === generationRef.current) setError(errorMessage(error_, 'Failed to fetch history'));
     } finally {
       if (generation === generationRef.current) setLoading(false);
     }

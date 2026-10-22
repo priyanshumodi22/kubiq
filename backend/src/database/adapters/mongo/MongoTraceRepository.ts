@@ -165,7 +165,7 @@ export class MongoTraceRepository implements ITraceRepository {
             .select('traceId')
             .lean();
 
-        return span ? (span as any).traceId : null;
+        return span ? span.traceId : null;
     }
 
     async getRecentTraces(serviceName: string, limit: number = 50, minDurationMs?: number, errorOnly?: boolean, attributeSearch?: string, fromMs?: number, toMs?: number): Promise<any[]> {
@@ -200,7 +200,7 @@ export class MongoTraceRepository implements ITraceRepository {
             { $limit: limit }
         ]);
 
-        return traces as any[];
+        return traces;
     }
 
     async getRecentTraceIdForEdge(source: string, target: string): Promise<string | null> {

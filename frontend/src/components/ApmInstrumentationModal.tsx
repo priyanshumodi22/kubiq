@@ -1,120 +1,41 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Copy, Check, Code2 } from 'lucide-react';
+import { COLLECTOR_CONFIG, INSTRUMENTATION_SNIPPETS } from '../utils/apmInstrumentation';
+import type { SDKLanguage } from '../utils/apmInstrumentation';
+import { useToast } from '../contexts/ToastContext';
 
 export interface ApmInstrumentationModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
-type SDKLanguage = 'node' | 'python' | 'go' | 'java';
 
-export function ApmInstrumentationModal({ isOpen, onClose }: ApmInstrumentationModalProps) {
+export function ApmInstrumentationModal({ isOpen, onClose }: Readonly<ApmInstrumentationModalProps>) {
     const [lang, setLang] = useState<SDKLanguage>('node');
     const [copied, setCopied] = useState(false);
+    const { error } = useToast();
+    const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => () => { if (copyTimer.current !== null) clearTimeout(copyTimer.current); }, []);
 
     if (!isOpen) return null;
 
-    const otlpEndpoint = 'http://<KUBIQ_HOST>:4318/v1/traces';
+    const current = INSTRUMENTATION_SNIPPETS[lang];
 
-    const snippets: Record<SDKLanguage, { title: string; filename: string; code: string; install: string }> = {
-        node: {
-            title: 'Node.js OpenTelemetry Auto-Instrumentation',
-            filename: 'tracing.js',
-            install: 'npm install --save @opentelemetry/sdk-node @opentelemetry/auto-instrumentations-node @opentelemetry/exporter-trace-otlp-proto',
-            code: `// tracing.js
-const { NodeSDK } = require('@opentelemetry/sdk-node');
-const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
-const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-proto');
-
-const sdk = new NodeSDK({
-  serviceName: 'my-express-service',
-  traceExporter: new OTLPTraceExporter({
-    url: '${otlpEndpoint}'
-  }),
-  instrumentations: [getNodeAutoInstrumentations()]
-});
-
-sdk.start();
-// Start your node app with: node -r ./tracing.js app.js`
-        },
-        python: {
-            title: 'Python OpenTelemetry Instrumentation',
-            filename: 'tracing.py',
-            install: 'pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-http opentelemetry-instrumentation-fastapi',
-            code: `# tracing.py
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.sdk.resources import RESOURCE_ATTRIBUTES, Resource
-
-resource = Resource.create({ "service.name": "my-python-service" })
-provider = TracerProvider(resource=resource)
-processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="${otlpEndpoint}"))
-provider.add_span_processor(processor)
-trace.set_tracer_provider(provider)
-
-# Run with: opentelemetry-instrument python app.py`
-        },
-        go: {
-            title: 'Go OpenTelemetry Instrumentation',
-            filename: 'tracer.go',
-            install: 'go get go.opentelemetry.io/otel go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp',
-            code: `package main
-
-import (
-	"context"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
-)
-
-func initTracer() (*sdktrace.TracerProvider, error) {
-	ctx := context.Background()
-	exporter, err := otlptracehttp.New(ctx,
-		otlptracehttp.WithEndpoint("<KUBIQ_HOST>:4318"),
-		otlptracehttp.WithInsecure(),
-	)
-	if err != nil { return nil, err }
-
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter),
-		sdktrace.WithResource(resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceNameKey.String("my-go-service"),
-		)),
-	)
-	otel.SetTracerProvider(tp)
-	return tp, nil
-}`
-        },
-        java: {
-            title: 'Java OpenTelemetry Agent (Zero Code)',
-            filename: 'javaagent-flags.sh',
-            install: 'wget https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/latest/download/opentelemetry-javaagent.jar',
-            code: `# Run Java App with OTel Agent:
-java -javaagent:opentelemetry-javaagent.jar \\
-     -Dotel.service.name=my-java-service \\
-     -Dotel.exporter.otlp.endpoint=${otlpEndpoint.replace('/v1/traces', '')} \\
-     -Dotel.exporter.otlp.protocol=http/protobuf \\
-     -jar my-app.jar`
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(`${current.install}\n\n${current.code}${lang === 'node' ? '' : '\n\n' + COLLECTOR_CONFIG}`);
+            setCopied(true);
+            if (copyTimer.current !== null) clearTimeout(copyTimer.current);
+            copyTimer.current = setTimeout(() => setCopied(false), 2000);
+        } catch {
+            error('Unable to copy the instrumentation guide. Copy the displayed configuration manually.');
         }
-    };
-
-    const current = snippets[lang];
-
-    const handleCopy = () => {
-        navigator.clipboard.writeText(`${current.install}\n\n${current.code}`);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
     };
 
     return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity" onClick={onClose} />
+            <button type="button" aria-label="Close instrumentation guide backdrop" className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity" onClick={onClose} />
             <div className="relative w-full max-w-3xl bg-[#111111] border border-gray-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
 
                 {/* Header */}
@@ -132,7 +53,7 @@ java -javaagent:opentelemetry-javaagent.jar \\
                             </p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
+                    <button type="button" aria-label="Close instrumentation guide" onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -179,12 +100,17 @@ java -javaagent:opentelemetry-javaagent.jar \\
                             {current.code}
                         </pre>
                     </div>
+                    {lang !== 'node' && <section className="space-y-2">
+                        <h4 className="text-gray-400 text-[10px] uppercase tracking-wider font-bold">3. Required local Collector configuration</h4>
+                        <p className="text-gray-400">Run a separate OpenTelemetry Collector with this configuration. Keep its receiver on loopback; it forwards authenticated JSON to kubiq over HTTPS.</p>
+                        <pre className="bg-[#181818] border border-gray-800 rounded-xl p-4 text-gray-200 overflow-x-auto text-[11px] leading-relaxed">{COLLECTOR_CONFIG}</pre>
+                    </section>}
                 </div>
 
                 {/* Footer */}
                 <div className="flex items-center justify-between p-4 border-t border-gray-800 bg-[#161616]">
                     <span className="text-[11px] text-gray-500 font-mono">
-                        OTLP HTTP Collector listening on <span className="text-primary font-bold">:4318/v1/traces</span>
+                        Direct kubiq ingestion: <span className="text-primary font-bold">/api/apm/v1/traces (HTTP JSON)</span>
                     </span>
                     <button onClick={onClose} className="px-5 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-xs font-medium transition-colors">
                         Close

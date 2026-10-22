@@ -99,6 +99,30 @@ passing. These edits are pending their own Sonar analysis, not verified closures
 
 ## Release safety
 
+Third verified checkpoint: commit `675dbef75e050f6602b49e40a2d62f4bc40d6b65`,
+analysis `8f9bcbb6-b42c-46a4-b62f-1378ec97f625`, task
+`2af8a30c-dbb8-4abd-b651-5bf059f4ace2`. The overlay records 374 CLOSED
+baseline findings and 467 pending, plus 43 additional findings. The current scan
+has 495 open issues and eight unreviewed hotspots, with 17.7% combined coverage.
+The quality gate remains ERROR. The preserved spreadsheet export is
+`Scan 2026-10-22 063605`. This is progress, not release approval.
+
+After that scan, the OTLP parser is split into typed, bounded decoding helpers.
+Sixteen HTTP ingestion tests cover genuine spans, trace-wide ignored routes,
+numeric attributes, malformed shapes/timestamps, backpressure, oversized batches
+and explicit rejection of unsupported protobuf. The prior numeric-attribute 500
+was reproduced before fixing it. The normalization contract preserves persisted
+identifiers and the existing numeric/string span-kind formats.
+The instrumentation dialog now documents authenticated JSON direct ingestion and
+an explicit private Collector bridge for protobuf SDKs. It no longer claims kubiq
+automatically listens on 4318. Three Node wrapper configuration/lifecycle tests,
+three Python wrapper tests, four guide tests and three log-dialog keyboard/draft
+tests are added; wrapper checks run in verification and manual scan CI.
+Local totals: 182 backend tests, 61 frontend tests, three Node wrapper tests and
+three Python wrapper tests pass, plus both application builds. These are not a
+live instrumented-client or Collector integration claim. Server-side reviews
+still require the expired Cloudflare/Sonar browser session to be restored.
+
 Normal main pushes verify only. Production image publication is manual and
 requires a successful same-SHA Sonar workflow containing the strict release-proof
 artifact, with main still at that SHA. Release/package workflows use the same

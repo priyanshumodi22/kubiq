@@ -15,9 +15,10 @@ def main():
 
     print("[kubiq-apm] Initializing Python Auto-Instrumentation...")
     
-    # Set default environment variables for kubiq if not provided
+    # The bundled Python exporter sends protobuf. A separately configured local
+    # Collector converts it to kubiq's HTTP JSON wire format.
     if "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT" not in os.environ:
-        os.environ["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"] = "http://localhost:3001/api/apm/v1/traces"
+        os.environ["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"] = "http://127.0.0.1:4318/v1/traces"
     
     if "OTEL_SERVICE_NAME" not in os.environ:
         os.environ["OTEL_SERVICE_NAME"] = "unknown-python-service"
@@ -27,6 +28,15 @@ def main():
         
     if "OTEL_EXPORTER_OTLP_PROTOCOL" not in os.environ:
         os.environ["OTEL_EXPORTER_OTLP_PROTOCOL"] = "http/protobuf"
+
+    os.environ.setdefault("OTEL_METRICS_EXPORTER", "none")
+    os.environ.setdefault("OTEL_LOGS_EXPORTER", "none")
+
+    endpoint = os.environ["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"]
+    protocol = os.environ.get("OTEL_EXPORTER_OTLP_TRACES_PROTOCOL", os.environ["OTEL_EXPORTER_OTLP_PROTOCOL"])
+    if "/api/apm/v1/traces" in endpoint and protocol != "http/json":
+        print("[kubiq-apm] kubiq accepts HTTP JSON, not protobuf. Configure a local Collector with encoding: json and point this SDK at that Collector. See the package README.")
+        sys.exit(1)
         
     # Apply conservative batch limits
     if "OTEL_BSP_MAX_EXPORT_BATCH_SIZE" not in os.environ:

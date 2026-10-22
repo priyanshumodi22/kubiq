@@ -24,6 +24,8 @@ jobs:
           node-version: '20'
       - run: npm ci --prefix backend
       - run: npm ci --prefix frontend
+      - run: python3 -m unittest discover -s kubiq-apm/python -p test_wrapper.py
+      - run: node --test kubiq-apm/node/exporter.test.cjs
       - name: Generate coverage reports
         run: |
           npm run test:coverage --prefix backend
