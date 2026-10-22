@@ -296,14 +296,16 @@ Subsequent completed analyses:
 | `adb8c68` | 14 | `9e833685-0e64-45b7-8d45-09284db51bbf` | 337 | 22.6% | 0 |
 | `3e07db6` | 15 | `f838abb0-4d37-4113-9c91-a973fd93ce7d` | 321 | 22.9% | 0 |
 | `624585e` | 16 | `0ae3bc70-f159-4069-ad03-135d1ee167ac` | 319 | 23.0% | 0 |
+| `292f6e5` | 17, attempt 2 | `ea22e2cf-e65e-45be-85ad-f3113840f01b` | 318 | 23.1% | 0 |
 
 Matching format-3 exports remain in the private backup bucket under `reports/`:
 `4550fc4b-64aa-45f1-8e3d-f570920514c2-1792689301.json`,
 `90d565ce-30b6-470c-9f43-0aaf1f530ca3-1792689736.json`, and
 `da41c988-507d-4821-9592-504a78ae1937-1792689905.json`, and
-`39b8a3e1-b8e4-4fa5-b72a-ebfcc5d080ad-1792690136.json`.
+`39b8a3e1-b8e4-4fa5-b72a-ebfcc5d080ad-1792690136.json`, and
+`cee4400b-4f07-47a4-aa45-0385692f2156-1792690703.json`.
 The matching checkpoint files account for all 841 original findings; the latest
-records 533 explicit closures, two individual safe reviews, and 306 pending
+records 534 explicit closures, two individual safe reviews, and 305 pending
 baseline findings, plus 49 findings introduced after the original baseline.
 
 Run 11 verifies all 20 redundant-assertion fixes. Run 14 verifies browser-global
@@ -316,6 +318,11 @@ Run 16 verifies that both the avatar frame renderer and raw Kubernetes resource
 handler are below the complexity limit. It also verifies shared Secret redaction
 for encoded values, plain `stringData`, and last-applied annotations. The helper
 preserves resource names, keys, and safe metadata without mutating its input.
+Run 17's first attempt timed out while uploading the report, so no new analysis
+or closure was inferred. Attempt 2 successfully uploaded the same source commit
+and verifies the Native session token-issuance refactor. All 228 backend and 77
+frontend tests passed. Standard quality gate is OK; the strict release criteria
+still fail because 318 issues and the new-code coverage requirements remain.
 
 Standard Sonar gate results can be OK while baseline issues remain. The strict
 release verifier and every checkpoint still reject release until the complete
