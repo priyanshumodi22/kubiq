@@ -14,6 +14,13 @@ const systemMonitor = SystemMonitorService.getInstance();
 const auditService = AuditLogService.getInstance();
 router.use(requirePermission('system.read'));
 
+function aiConfigurationErrorMessage(code: unknown): string {
+  if (code === 'KUBI_CONFIGURATION_ENCRYPTION_UNAVAILABLE') return 'kubi AI secure configuration is not initialized. Set KUBI_AI_CONFIG_ENCRYPTION_KEY first.';
+  if (code === 'KUBI_API_KEY_REQUIRED') return 'An API key is required for the first kubi AI configuration.';
+  if (code === 'KUBI_PROVIDER_INVALID' || code === 'KUBI_MODEL_INVALID') return 'Choose a supported provider and a valid model identifier.';
+  return 'Could not save kubi AI configuration.';
+}
+
 // GET /api/system/pro-status - Authenticated, non-secret license state for the UI
 router.get('/pro-status', async (_req, res) => {
   try {
@@ -50,11 +57,7 @@ router.put('/kubi-ai', requirePermission('kubi.configure'), async (req, res) => 
     res.json(config);
   } catch (error: any) {
     const code = error?.message;
-    const message = code === 'KUBI_CONFIGURATION_ENCRYPTION_UNAVAILABLE'
-      ? 'kubi AI secure configuration is not initialized. Set KUBI_AI_CONFIG_ENCRYPTION_KEY first.'
-      : code === 'KUBI_API_KEY_REQUIRED' ? 'An API key is required for the first kubi AI configuration.'
-      : code === 'KUBI_PROVIDER_INVALID' || code === 'KUBI_MODEL_INVALID' ? 'Choose a supported provider and a valid model identifier.'
-      : 'Could not save kubi AI configuration.';
+    const message = aiConfigurationErrorMessage(code);
     res.status(400).json({ message });
   }
 });

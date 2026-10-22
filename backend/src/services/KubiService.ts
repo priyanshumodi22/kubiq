@@ -15,6 +15,25 @@ import { KubiDomain, KubiPlan } from './KubiIntentService';
 
 type KubiRequestContext = { user: any; username: string; k8sContext: string };
 type KubiAnswer = { answer: string; evidence: KubiEvidenceReference[] };
+type TraceRepository = Awaited<ReturnType<typeof DatabaseFactory.getTraceRepository>>;
+
+function auditTarget(plan: KubiPlan | undefined, username: string): string | undefined {
+  if (plan?.auditTarget === '@self') return username;
+  if (plan?.auditTarget === '@all') return undefined;
+  return plan?.auditTarget;
+}
+type EvidenceCollection = {
+  question: string;
+  context: KubiRequestContext;
+  plan?: KubiPlan;
+  evidence: Array<{ reference: KubiEvidenceReference; payload: unknown }>;
+  maxTools: number;
+  maxResults: number;
+  normalized: string;
+  traceId?: string;
+  services: ReturnType<ServiceMonitor['getAllServices']>;
+  service?: ReturnType<ServiceMonitor['getAllServices']>[number];
+};
 
 const MAX_LOG_LINES = 50;
 const MAX_POD_LOG_LINES = 50;
@@ -91,12 +110,34 @@ export class KubiService {
     const services = ServiceMonitor.getInstance().getAllServices();
     const service = [...services].sort((a, b) => b.name.length - a.name.length).find(item => normalized.includes(item.name.toLowerCase()));
 
+    const collection: EvidenceCollection = { question, context, plan, evidence, maxTools, maxResults, normalized, traceId, services, service };
+    await this.collectServiceHealth(collection);
+    await this.collectServiceLogs(collection);
+    await this.collectApmTelemetry(collection);
+    await this.collectSystemHealth(collection);
+    await this.collectNotificationHistory(collection);
+    await this.collectClusterInventory(collection);
+    await this.collectAuditHistory(collection);
+
+    if (!evidence.length && !plan) {
+      evidence.push({ reference: { type: 'service', label: 'kubiq service overview', href: '/dashboard?tab=services' }, payload: services.slice(0, maxResults).map(item => ({ name: item.name, currentStatus: item.currentStatus, type: item.type })) });
+    }
+    return evidence;
+  }
+
+  private async collectServiceHealth(collection: EvidenceCollection): Promise<void> {
+    const { question, context, evidence, maxResults, services, service, plan } = collection;
+    const selected = (domain: KubiDomain, legacy: boolean) => plan ? plan.domains.includes(domain) : legacy;
     if (selected('services', Boolean(hasWord(question, ['service', 'uptime', 'down', 'unhealthy', 'incident', 'status']) || service)) && await this.can(context.user, 'services.read')) {
       const safeServices = services.slice(0, maxResults).map(item => ({ name: item.name, type: item.type, currentStatus: item.currentStatus,
         history: (item.history || []).slice(-10).map(history => ({ timestamp: history.timestamp, success: history.success, status: history.status, responseTime: history.responseTime })) }));
       evidence.push({ reference: { type: 'service', label: service ? `Service: ${service.name}` : 'Service health', href: '/dashboard?tab=services' }, payload: safeServices });
     }
+  }
 
+  private async collectServiceLogs(collection: EvidenceCollection): Promise<void> {
+    const { question, context, evidence, maxTools, maxResults, service, plan } = collection;
+    const selected = (domain: KubiDomain, legacy: boolean) => plan ? plan.domains.includes(domain) : legacy;
     if (selected('logs', hasWord(question, ['log', 'error', 'exception', 'stack trace'])) && service && evidence.length < maxTools && await this.can(context.user, 'logs.read')) {
       try {
         const repository = await DatabaseFactory.getLogRepository();
@@ -107,45 +148,55 @@ export class KubiService {
         evidence.push({ reference: { type: 'logs', label: `Logs unavailable: ${service.name}`, href: '/logs' }, payload: { unavailable: true, reason: error?.message || 'Log repository unavailable' } });
       }
     }
+  }
 
-    if (selected('apm', hasWord(question, ['trace', 'apm', 'latency', 'slow', 'database', 'query'])) && DatabaseFactory.isApmSupported() && evidence.length < maxTools && await this.can(context.user, 'apm.read')) {
+  private async collectApmTelemetry(collection: EvidenceCollection): Promise<void> {
+    const { question, context, evidence, maxTools, normalized, traceId, service, plan } = collection;
+    const selected = (domain: KubiDomain, legacy: boolean) => plan ? plan.domains.includes(domain) : legacy;
+    if (!selected('apm', hasWord(question, ['trace', 'apm', 'latency', 'slow', 'database', 'query'])) || !DatabaseFactory.isApmSupported() || evidence.length >= maxTools || !await this.can(context.user, 'apm.read')) return;
       try {
         const repository = await DatabaseFactory.getTraceRepository();
         const now = Date.now();
         const metrics = await repository.getServiceMetrics(now - 60 * 60 * 1000, now);
         const traceDetails = traceId ? await repository.getTraceDetails(traceId) : [];
         const selectedService = service?.name || traceDetails[0]?.serviceName || metrics.find(item => normalized.includes(item.serviceName.toLowerCase()))?.serviceName;
-        const traces = selectedService ? await repository.getRecentTraces(selectedService, 20, hasWord(question, ['slow', 'latency']) ? 250 : undefined, hasWord(question, ['error', 'fail']) || undefined, undefined, now - 60 * 60 * 1000, now) : [];
+        const minDuration = hasWord(question, ['slow', 'latency']) ? 250 : undefined;
+        const traces = selectedService ? await repository.getRecentTraces(selectedService, 20, minDuration, hasWord(question, ['error', 'fail']) || undefined, undefined, now - 60 * 60 * 1000, now) : [];
         const payload: Record<string, unknown> = { metrics, traces, ...(traceDetails.length ? { traceDetails } : {}) };
-        if (hasWord(question, ['slow', 'database', 'query'])) {
-          const spans = await repository.getSpansForExport({
-            serviceName: selectedService,
-            fromTime: new Date(now - 60 * 60 * 1000),
-            toTime: new Date(now),
-            minDurationMs: 250,
-            spanNameSearch: 'db',
-          });
-          const canReadRawSql = await this.can(context.user, 'database.sql.read');
-          payload.slowDatabaseSpans = spans.slice(0, maxResults).map(span => {
-            const safe = redactKubiValue(span);
-            if (!canReadRawSql && safe?.attributes) {
-              delete safe.attributes['db.statement'];
-              delete safe.attributes['db.query.text'];
-              delete safe.attributes['sql.query'];
-            }
-            return safe;
-          });
-        }
+        await this.collectSlowDatabaseSpans(collection, repository, selectedService, now, payload);
         evidence.push({ reference: { type: 'trace', label: selectedService ? `APM: ${selectedService}` : 'APM service metrics', href: selectedService ? `/apm?service=${encodeURIComponent(selectedService)}` : '/apm' }, payload });
-        if (!service && selectedService && traceDetails.length && hasWord(question, ['log', 'error', 'exception', 'stack trace']) && evidence.length < maxTools) {
-          const logs = await (await DatabaseFactory.getLogRepository()).queryLogs(selectedService, { from: new Date(now - 60 * 60 * 1000), to: new Date(now), limit: Math.min(MAX_LOG_LINES, maxResults) });
-          evidence.push({ reference: { type: 'logs', label: `Trace-correlated logs: ${selectedService}`, href: `/logs?service=${encodeURIComponent(selectedService)}` }, payload: logs });
-        }
+        await this.collectTraceCorrelatedLogs(collection, selectedService, traceDetails.length, now);
       } catch (error: any) {
         evidence.push({ reference: { type: 'trace', label: 'APM unavailable', href: '/apm' }, payload: { unavailable: true, reason: error?.message || 'APM repository unavailable' } });
       }
-    }
+  }
 
+  private async collectSlowDatabaseSpans(collection: EvidenceCollection, repository: TraceRepository, selectedService: string | undefined, now: number, payload: Record<string, unknown>): Promise<void> {
+    if (!hasWord(collection.question, ['slow', 'database', 'query'])) return;
+    const spans = await repository.getSpansForExport({ serviceName: selectedService, fromTime: new Date(now - 60 * 60 * 1000), toTime: new Date(now), minDurationMs: 250, spanNameSearch: 'db' });
+    const canReadRawSql = await this.can(collection.context.user, 'database.sql.read');
+    payload.slowDatabaseSpans = spans.slice(0, collection.maxResults).map(span => {
+      const safe = redactKubiValue(span);
+      if (!canReadRawSql && safe?.attributes) {
+        delete safe.attributes['db.statement'];
+        delete safe.attributes['db.query.text'];
+        delete safe.attributes['sql.query'];
+      }
+      return safe;
+    });
+  }
+
+  private async collectTraceCorrelatedLogs(collection: EvidenceCollection, selectedService: string | undefined, traceCount: number, now: number): Promise<void> {
+    const { question, context, service, evidence, maxTools, maxResults } = collection;
+    if (service || !selectedService || !traceCount || !hasWord(question, ['log', 'error', 'exception', 'stack trace']) || evidence.length >= maxTools) return;
+    if (!await this.can(context.user, 'logs.read')) return;
+    const logs = await (await DatabaseFactory.getLogRepository()).queryLogs(selectedService, { from: new Date(now - 60 * 60 * 1000), to: new Date(now), limit: Math.min(MAX_LOG_LINES, maxResults) });
+    evidence.push({ reference: { type: 'logs', label: `Trace-correlated logs: ${selectedService}`, href: `/logs?service=${encodeURIComponent(selectedService)}` }, payload: logs });
+  }
+
+  private async collectSystemHealth(collection: EvidenceCollection): Promise<void> {
+    const { question, context, evidence, maxTools, plan } = collection;
+    const selected = (domain: KubiDomain, legacy: boolean) => plan ? plan.domains.includes(domain) : legacy;
     if (selected('system', hasWord(question, ['cpu', 'memory', 'disk', 'system health', 'resource'])) && evidence.length < maxTools && await this.can(context.user, 'system.read')) {
       try {
         evidence.push({ reference: { type: 'system', label: 'System health', href: '/dashboard?tab=system' }, payload: await SystemMonitorService.getInstance().getLiveStats() });
@@ -153,7 +204,11 @@ export class KubiService {
         evidence.push({ reference: { type: 'system', label: 'System health unavailable', href: '/dashboard?tab=system' }, payload: { unavailable: true, reason: error?.message } });
       }
     }
+  }
 
+  private async collectNotificationHistory(collection: EvidenceCollection): Promise<void> {
+    const { question, context, evidence, maxTools, maxResults, plan } = collection;
+    const selected = (domain: KubiDomain, legacy: boolean) => plan ? plan.domains.includes(domain) : legacy;
     if (selected('notifications', hasWord(question, ['notification', 'alert', 'delivery', 'webhook', 'email'])) && evidence.length < maxTools && await this.can(context.user, 'notifications.read')) {
       try {
         const history = NotificationManager.getInstance().getHistory(maxResults);
@@ -165,18 +220,26 @@ export class KubiService {
         evidence.push({ reference: { type: 'notification-history', label: 'Notification history unavailable', href: '/notifications' }, payload: { unavailable: true, reason: error?.message || 'Notification history unavailable' } });
       }
     }
+  }
 
+  private async collectClusterInventory(collection: EvidenceCollection): Promise<void> {
+    const { question, context, plan, evidence, maxTools, maxResults } = collection;
+    const selected = (domain: KubiDomain, legacy: boolean) => plan ? plan.domains.includes(domain) : legacy;
     if (selected('kubernetes', hasWord(question, ['kubernetes', 'k8s', 'pod', 'deployment', 'namespace', 'cluster', 'container'])) && evidence.length < maxTools && await this.can(context.user, 'kubernetes.read')) {
       await this.collectKubernetesEvidence(question, context, evidence, maxResults, plan?.namespace);
     }
+  }
 
+  private async collectAuditHistory(collection: EvidenceCollection): Promise<void> {
+    const { question, context, plan, evidence, maxTools, maxResults } = collection;
+    const selected = (domain: KubiDomain, legacy: boolean) => plan ? plan.domains.includes(domain) : legacy;
     if (selected('audit', hasWord(question, ['audit', 'who changed', 'activity history'])) && evidence.length < maxTools) {
       if (!await this.can(context.user, 'audit.read')) {
         evidence.push({ reference: { type: 'audit', label: 'Audit access restricted', href: '/audit-logs' }, payload: { permissionDenied: true, message: 'Audit history requires the audit.read permission, including own-account history.' } });
-        return evidence;
+        return;
       }
       try {
-        const target = plan?.auditTarget === '@self' ? context.username : plan?.auditTarget === '@all' ? undefined : plan?.auditTarget;
+        const target = auditTarget(plan, context.username);
         const filters = { ...(plan?.userAccessHistory ? { action: 'AUTH_ROLE_CHANGE' } : {}), ...(target ? { target: `user/${target}` } : {}) };
         const logs = await (await DatabaseFactory.getAuditLogRepository()).getAuditLogs(maxResults + 1, undefined, filters);
         evidence.push({
@@ -187,11 +250,6 @@ export class KubiService {
         evidence.push({ reference: { type: 'audit', label: 'Audit history unavailable', href: '/audit-logs' }, payload: { unavailable: true, reason: error?.message || 'Audit repository unavailable' } });
       }
     }
-
-    if (!evidence.length && !plan) {
-      evidence.push({ reference: { type: 'service', label: 'kubiq service overview', href: '/dashboard?tab=services' }, payload: services.slice(0, maxResults).map(item => ({ name: item.name, currentStatus: item.currentStatus, type: item.type })) });
-    }
-    return evidence;
   }
 
   private async can(user: any, permission: string): Promise<boolean> {

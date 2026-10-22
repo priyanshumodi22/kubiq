@@ -10,6 +10,11 @@ const MAX_LOG_BATCH = (() => {
     return Number.isSafeInteger(value) && value > 0 ? value : 500;
 })();
 
+function logTimestamp(entry: { date?: number; timestamp?: string }): Date {
+    if (entry.date) return new Date(entry.date * 1000);
+    return entry.timestamp ? new Date(entry.timestamp) : new Date();
+}
+
 /**
  * POST /api/telemetry/logs
  * Custom ingestion endpoint designed for the kubiq-agent (FluentBit).
@@ -51,7 +56,7 @@ telemetryRouter.post('/logs', (req: Request, res: Response) => {
                 sourceName,
                 level: entry.level || 'INFO',
                 message: entry.message || entry.log || JSON.stringify(entry),
-                timestamp: entry.date ? new Date(entry.date * 1000) : (entry.timestamp ? new Date(entry.timestamp) : new Date())
+                timestamp: logTimestamp(entry)
             };
         });
 

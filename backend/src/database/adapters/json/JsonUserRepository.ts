@@ -26,9 +26,10 @@ export class JsonUserRepository implements IUserRepository {
         const users = JSON.parse(fileContent);
         let migrated = false;
         users.forEach((user: User) => {
+          const fallbackRoles = user.role ? [user.role] : ['kubiq-viewer'];
           const roles = Array.isArray(user.roles) && user.roles.length
             ? [...new Set(user.roles.map(role => String(role).trim()).filter(Boolean))]
-            : user.role ? [user.role] : ['kubiq-viewer'];
+            : fallbackRoles;
           const normalized: User = { ...user, role: roles[0], roles };
           migrated ||= user.role !== normalized.role || JSON.stringify(user.roles || []) !== JSON.stringify(roles);
           this.users.set(normalized.id, normalized);

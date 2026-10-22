@@ -30,17 +30,20 @@ export function ConfirmDialog({
     danger: {
       icon: <Trash2 className="w-5 h-5 text-red-500" />,
       button: "bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20",
-      gradient: "from-red-500/20 to-transparent"
+      gradient: "from-red-500/20 to-transparent",
+      iconColor: 'text-red-500'
     },
     warning: {
       icon: <AlertTriangle className="w-5 h-5 text-yellow-500" />,
       button: "bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 border border-yellow-500/20",
-      gradient: "from-yellow-500/20 to-transparent"
+      gradient: "from-yellow-500/20 to-transparent",
+      iconColor: 'text-yellow-500'
     },
     info: {
       icon: <Info className="w-5 h-5 text-blue-500" />,
       button: "bg-primary hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20",
-      gradient: "from-blue-500/20 to-transparent"
+      gradient: "from-blue-500/20 to-transparent",
+      iconColor: 'text-blue-500'
     }
   };
 
@@ -56,7 +59,7 @@ export function ConfirmDialog({
 
         {/* Content */}
         <div className="p-6 text-center">
-            <div className={`mx-auto w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4 ${type === 'danger' ? 'text-red-500' : type === 'warning' ? 'text-yellow-500' : 'text-blue-500'}`}>
+            <div className={`mx-auto w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4 ${style.iconColor}`}>
                 {style.icon}
             </div>
             

@@ -22,8 +22,20 @@ jest.mock('./NotificationManager', () => ({ NotificationManager: { getInstance: 
 import { KubiService } from './KubiService';
 import { KubiProviderService } from './KubiProviderService';
 import { KubiDocsService } from './KubiDocsService';
+import { RbacRoleService } from './RbacRoleService';
 
 describe('kubi read-only evidence collection', () => {
+  it('requires logs.read before following an APM trace into correlated logs', async () => {
+    serviceMonitor.getAllServices.mockReturnValue([]);
+    traceRepository.getTraceDetails.mockResolvedValue([{ serviceName: 'payments' }]);
+    const permissions = jest.spyOn(RbacRoleService, 'hasPermission').mockImplementation(async (_user, permission) => permission === 'apm.read');
+    try {
+      const evidence = await (new KubiService() as any).collectEvidence('Show error trace 0123456789abcdef', { user: {}, username: 'apm-reader', k8sContext: 'cluster' });
+      expect(evidence.map((item: any) => item.reference.type)).toEqual(['trace']);
+      expect(logRepository.queryLogs).not.toHaveBeenCalled();
+    } finally { permissions.mockRestore(); }
+  });
+
   it('routes user namespace changes to filtered audit records without querying Kubernetes', async () => {
     const provider = jest.spyOn(KubiProviderService.prototype, 'stream').mockResolvedValue('Audit result');
     auditRepository.getAuditLogs.mockResolvedValue([{ user: 'admin', action: 'AUTH_ROLE_CHANGE', target: 'user/viewer', details: 'Updated allowed namespaces to: apps' }]);

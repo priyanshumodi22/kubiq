@@ -24,7 +24,8 @@ export const builtinRoleDefinitions: RoleDefinition[] = [
 export class RbacService {
   static userRoles(user?: Pick<User, 'role' | 'roles'> | { role?: string; roles?: string[] } | null): string[] {
     const roles = user?.roles?.filter(Boolean) || [];
-    return roles.length > 0 ? [...new Set(roles)] : user?.role ? [user.role] : [];
+    if (roles.length > 0) return [...new Set(roles)];
+    return user?.role ? [user.role] : [];
   }
 
   static effectivePermissions(user: Pick<User, 'role' | 'roles'> | { role?: string; roles?: string[] }, roleDefinitions = builtinRoleDefinitions): Set<PermissionKey> {
