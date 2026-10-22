@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, type AxiosResponse } from 'axios';
 import NodeCache from 'node-cache';
 import { ServiceConfig, HealthCheck, ServiceStatus, SystemConfig } from '../types';
 import mysql from 'mysql2/promise';
@@ -11,11 +11,19 @@ import { DatabaseFactory } from '../database/DatabaseFactory';
 import { IServiceRepository } from '../database/interfaces/IServiceRepository';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { KubernetesService } from './KubernetesService';
+import { KubernetesService, type KubePod } from './KubernetesService';
 import { NotificationManager } from './NotificationManager';
 import { endpointToIcmpHost } from '../utils/icmpTarget';
 
 const execFileAsync = promisify(execFile);
+function reportNotificationFailure(error_: unknown): void {
+  console.warn('Background monitor notification failed.', error_);
+}
+function checkFailureMessage(error_: unknown): string {
+  if (error_ && typeof error_ === 'object' && 'message' in error_
+    && typeof error_.message === 'string' && error_.message) return error_.message;
+  return 'Check Failed';
+}
 
 export class ServiceMonitor {
   private static instance: ServiceMonitor;
@@ -24,6 +32,7 @@ export class ServiceMonitor {
   private repository!: IServiceRepository;
   private readonly cache: NodeCache;
   private readonly pollIntervals: Map<string, NodeJS.Timeout> = new Map();
+  private readonly initialPollTimeouts: Map<string, NodeJS.Timeout> = new Map();
   private isRunning: boolean = false;
   private readonly maxHistorySize: number;
   private readonly pollInterval: number;
@@ -40,7 +49,7 @@ export class ServiceMonitor {
   // --- Scalability: Semaphore (Concurrency Limiter) ---
   private readonly maxConcurrentChecks: number;
   private activeChecks: number = 0;
-  private checkQueue: Array<() => void> = [];
+  private checkQueue: Array<{ acquire: () => void; cancel: () => void }> = [];
 
   // --- Scalability: DB Connection Pools ---
   private readonly mysqlPools: Map<string, mysql.Pool> = new Map();
@@ -88,13 +97,13 @@ export class ServiceMonitor {
 
   // --- Semaphore: acquire a slot before running a check ---
   private acquireSemaphore(): Promise<() => void> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const tryAcquire = () => {
         if (this.activeChecks < this.maxConcurrentChecks) {
           this.activeChecks++;
           resolve(() => this.releaseSemaphore());
         } else {
-          this.checkQueue.push(tryAcquire);
+          this.checkQueue.push({ acquire: tryAcquire, cancel: () => reject(new Error('Monitoring stopped before the queued check started')) });
         }
       };
       tryAcquire();
@@ -105,7 +114,7 @@ export class ServiceMonitor {
     this.activeChecks--;
     if (this.checkQueue.length > 0) {
       const next = this.checkQueue.shift()!;
-      next();
+      next.acquire();
     }
   }
 
@@ -128,94 +137,74 @@ export class ServiceMonitor {
     let check: HealthCheck;
 
     try {
-      if (service.type === 'tcp') {
-        const success = await this.checkTcp(service.endpoint);
-        check = {
-          status: success ? 200 : 0,
-          responseTime: Date.now() - startTime,
-          timestamp: Date.now(),
-          success,
-          error: success ? undefined : 'Connection Refused',
-        };
-      } else if (service.type === 'mysql') {
-        const success = await this.checkMysql(service.endpoint);
-        check = {
-          status: success ? 200 : 0,
-          responseTime: Date.now() - startTime,
-          timestamp: Date.now(),
-          success,
-          error: success ? undefined : 'Connection Failed',
-        };
-      } else if (service.type === 'mongodb') {
-        const success = await this.checkMongo(service.endpoint);
-        check = {
-          status: success ? 200 : 0,
-          responseTime: Date.now() - startTime,
-          timestamp: Date.now(),
-          success,
-          error: success ? undefined : 'Connection Failed',
-        };
-      } else if (service.type === 'icmp') {
-        const success = await this.checkIcmp(service.endpoint);
-        check = {
-          status: success ? 200 : 0,
-          responseTime: Date.now() - startTime,
-          timestamp: Date.now(),
-          success,
-          error: success ? undefined : 'Ping Failed',
-        };
-      } else {
-        // HTTP/HTTPS Default
-        const isHttps = service.endpoint.startsWith('https:');
-        const httpsAgent = isHttps
-          ? new https.Agent({ rejectUnauthorized: !service.ignoreSSL, keepAlive: false })
-          : undefined;
-
-        const response = await axios.get(service.endpoint, {
-          timeout: this.requestTimeout,
-          maxRedirects: 0,
-          validateStatus: () => true,
-          headers: service.headers || {},
-          httpsAgent,
-        });
-
-        if (isHttps) {
-          let cert: any = response.request?.res?.socket?.getPeerCertificate?.();
-          if ((!cert || Object.keys(cert).length === 0) && response.status < 400) {
-            try {
-              cert = await this.checkTlsRaw(service.endpoint);
-            } catch (tlsErr) {
-              console.warn(`TLS Fallback Failed for ${service.name}`, tlsErr);
-            }
-          }
-          if (cert && cert.valid_to) {
-            service.sslExpiry = new Date(cert.valid_to);
-          }
-        }
-
-        const success = response.status >= 200 && response.status < 400;
-        check = {
-          status: response.status,
-          responseTime: Date.now() - startTime,
-          timestamp: Date.now(),
-          success,
-          error: success ? undefined : `Status Code: ${response.status}`,
-        };
-      }
+      check = await this.performServiceCheck(service, startTime);
 
       await this.updateServiceState(service, check);
       return check;
-    } catch (error: any) {
+    } catch (error_) {
       check = {
         status: 0,
         responseTime: Date.now() - startTime,
         timestamp: Date.now(),
         success: false,
-        error: error.message || 'Check Failed',
+        error: checkFailureMessage(error_),
       };
       await this.updateServiceState(service, check);
       return check;
     }
+  }
+
+  private connectionResult(success: boolean, startTime: number, failureMessage: string): HealthCheck {
+    return {
+      status: success ? 200 : 0,
+      responseTime: Date.now() - startTime,
+      timestamp: Date.now(),
+      success,
+      error: success ? undefined : failureMessage,
+    };
+  }
+
+  private async performServiceCheck(service: ServiceStatus, startTime: number): Promise<HealthCheck> {
+    switch (service.type) {
+      case 'tcp': return this.connectionResult(await this.checkTcp(service.endpoint), startTime, 'Connection Refused');
+      case 'mysql': return this.connectionResult(await this.checkMysql(service.endpoint), startTime, 'Connection Failed');
+      case 'mongodb': return this.connectionResult(await this.checkMongo(service.endpoint), startTime, 'Connection Failed');
+      case 'icmp': return this.connectionResult(await this.checkIcmp(service.endpoint), startTime, 'Ping Failed');
+      default: return this.checkHttp(service, startTime);
+    }
+  }
+
+  private async updateCertificateExpiry(service: ServiceStatus, response: AxiosResponse): Promise<void> {
+    let cert = response.request?.res?.socket?.getPeerCertificate?.();
+    if ((!cert || Object.keys(cert).length === 0) && response.status < 400) {
+      try {
+        cert = await this.checkTlsRaw(service.endpoint);
+      } catch (tlsErr) {
+        console.warn(`TLS Fallback Failed for ${service.name}`, tlsErr);
+      }
+    }
+    if (cert?.valid_to) service.sslExpiry = new Date(cert.valid_to);
+  }
+
+  private async checkHttp(service: ServiceStatus, startTime: number): Promise<HealthCheck> {
+    const isHttps = service.endpoint.startsWith('https:');
+    const httpsAgent = isHttps ? new https.Agent({ rejectUnauthorized: !service.ignoreSSL, keepAlive: false }) : undefined;
+    const response = await axios.get(service.endpoint, {
+      timeout: this.requestTimeout,
+      maxRedirects: 0,
+      validateStatus: () => true,
+      headers: service.headers || {},
+      httpsAgent,
+    });
+    if (isHttps) await this.updateCertificateExpiry(service, response);
+    const success = response.status >= 200 && response.status < 400;
+    return {
+      status: response.status,
+      responseTime: Date.now() - startTime,
+      timestamp: Date.now(),
+      success,
+      error: success ? undefined : `Status Code: ${response.status}`,
+    };
   }
 
   private async updateServiceState(service: ServiceStatus, check: HealthCheck): Promise<void> {
@@ -243,7 +232,7 @@ export class ServiceMonitor {
     }
 
     service.lastCheck = check;
-    service.currentStatus = newStatus as 'healthy' | 'unhealthy' | 'unknown';
+    service.currentStatus = newStatus;
     service.history.push(check);
     if (service.history.length > this.maxHistorySize) service.history.shift();
     this.updateStats(service);
@@ -259,7 +248,7 @@ export class ServiceMonitor {
           responseTime: check.responseTime,
           statusCode: check.status
         }
-      );
+      ).catch(reportNotificationFailure);
     }
 
     try {
@@ -289,6 +278,8 @@ export class ServiceMonitor {
 
     this.pollIntervals.forEach(interval => clearInterval(interval));
     this.pollIntervals.clear();
+    this.initialPollTimeouts.forEach(timeout => clearTimeout(timeout));
+    this.initialPollTimeouts.clear();
 
     // Clean up MySQL pools
     this.mysqlPools.forEach((pool, key) =>
@@ -303,10 +294,14 @@ export class ServiceMonitor {
     this.mongoConnections.clear();
 
     // Drain semaphore queue
+    this.checkQueue.forEach(check => check.cancel());
     this.checkQueue = [];
-    this.activeChecks = 0;
+    // In-flight checks still release their own slots in finally. Resetting the
+    // counter here would make it negative and break the next start's bound.
 
-    if (this.repository) this.repository.close();
+    if (this.repository) {
+      this.repository.close().catch(error_ => console.warn('Failed to close the service repository.', error_));
+    }
     console.log('🛑 Service Monitoring Stopped');
   }
 
@@ -320,13 +315,17 @@ export class ServiceMonitor {
     const effectiveInterval = service?.interval || this.pollInterval;
 
     const runCheck = () => {
+      if (!this.isRunning || !this.services.has(serviceName)) return;
       this.checkServiceHealthWithSemaphore(serviceName).catch(console.error);
     };
 
     // Jitter: randomize the initial check within [0, effectiveInterval]
     // Staggers checks across time to prevent thundering herd on startup
     const jitter = Math.floor(Math.random() * effectiveInterval);
-    setTimeout(runCheck, jitter);
+    this.initialPollTimeouts.set(serviceName, setTimeout(() => {
+      this.initialPollTimeouts.delete(serviceName);
+      runCheck();
+    }, jitter));
 
     const interval = setInterval(runCheck, effectiveInterval);
     this.pollIntervals.set(serviceName, interval);
@@ -363,7 +362,7 @@ export class ServiceMonitor {
     });
   }
 
-  private checkTlsRaw(urlStr: string): Promise<any> {
+  private checkTlsRaw(urlStr: string): Promise<tls.PeerCertificate | null> {
     return new Promise((resolve) => {
       try {
         const u = new URL(urlStr);
@@ -474,6 +473,8 @@ export class ServiceMonitor {
     // Restart polling so interval/endpoint changes take effect immediately
     if (this.isRunning) {
       clearInterval(this.pollIntervals.get(name));
+      clearTimeout(this.initialPollTimeouts.get(name));
+      this.initialPollTimeouts.delete(name);
       this.pollIntervals.delete(name);
       this.startPolling(name);
     }
@@ -484,6 +485,8 @@ export class ServiceMonitor {
   public async deleteService(name: string): Promise<void> {
     await this.repository.deleteService(name);
     this.services.delete(name);
+    clearTimeout(this.initialPollTimeouts.get(name));
+    this.initialPollTimeouts.delete(name);
     if (this.pollIntervals.has(name)) {
       clearInterval(this.pollIntervals.get(name));
       this.pollIntervals.delete(name);
@@ -603,96 +606,81 @@ export class ServiceMonitor {
   private readonly monitoredPodStates: Map<string, { lastStatus: string; lastRestarts: number }> = new Map();
   private readonly reportedK8sAlerts: Set<string> = new Set();
 
+  private notifyPodDegraded(namespace: string, pod: KubePod, restarts: number): void {
+    const title = `Deployment degraded: ${namespace}/${pod.name}`;
+    const message = `State: Pod ${pod.status} (Restarts: ${restarts})\nTarget: ${namespace}/${pod.name}\nNamespace: ${namespace}\nNode: ${pod.nodeName || 'N/A'}`;
+    NotificationManager.getInstance().notifyCustomAlert(title, message, {
+      'State': `Pod status is ${pod.status}`,
+      'Target': `${namespace}/${pod.name}`,
+      'Restarts': `${restarts}`,
+      'Namespace': namespace,
+      'Node': pod.nodeName || 'N/A',
+    }).catch(reportNotificationFailure);
+  }
+
+  private processPodAlert(namespace: string, pod: KubePod): void {
+    const key = `${namespace}/${pod.name}`;
+    const status = String(pod.status || '').toLowerCase();
+    const restarts = pod.restarts || 0;
+    const state = { lastStatus: pod.status, lastRestarts: restarts };
+    if (status.includes('completed') || status.includes('succeeded')) {
+      this.failingK8sPods.delete(key);
+      this.monitoredPodStates.set(key, state);
+      return;
+    }
+    const isFailing = ['crashloop', 'error', 'oomkilled', 'imagepull', 'backoff', 'evicted', 'failed']
+      .some(reason => status.includes(reason));
+    const previous = this.monitoredPodStates.get(key);
+    const isNewRestart = previous !== undefined && restarts > previous.lastRestarts;
+    this.monitoredPodStates.set(key, state);
+    if (isFailing || isNewRestart) {
+      const active = this.failingK8sPods.get(key);
+      if (active?.lastStatus === pod.status && active.lastRestarts === restarts) return;
+      this.failingK8sPods.set(key, state);
+      this.notifyPodDegraded(namespace, pod, restarts);
+      return;
+    }
+    if (this.failingK8sPods.delete(key)) {
+      NotificationManager.getInstance().notifyStatusChange(key, 'healthy', undefined, {
+        'State': `Pod returned to healthy Running state (Restarts: ${restarts})`,
+        'Namespace': namespace,
+        'Node': pod.nodeName || 'N/A',
+      }).catch(reportNotificationFailure);
+    }
+  }
+
+  private processNodeAlert(node: { name: string; cpuPercent?: string; memoryPercent?: string }): void {
+    const cpuUsed = Number.parseFloat(node.cpuPercent || '0');
+    const memUsed = Number.parseFloat(node.memoryPercent || '0');
+    if (!(cpuUsed > 85 || memUsed > 85)) return;
+    const key = `node-${node.name}-${cpuUsed.toFixed(0)}-${memUsed.toFixed(0)}`;
+    if (this.reportedK8sAlerts.has(key)) return;
+    this.reportedK8sAlerts.add(key);
+    const title = `K8s Node Resource Warning: ${node.name}`;
+    const message = `State: High Resource Utilization\nNode CPU Usage: ${cpuUsed.toFixed(1)}%\nNode Memory Usage: ${memUsed.toFixed(1)}%\nThreshold: 85%`;
+    NotificationManager.getInstance().notifyCustomAlert(title, message, {
+      'State': `High Resource Utilization (CPU: ${cpuUsed.toFixed(1)}%, Mem: ${memUsed.toFixed(1)}%)`,
+      'Target': node.name,
+      'CPU Usage': `${cpuUsed.toFixed(1)}%`,
+      'Memory Usage': `${memUsed.toFixed(1)}%`,
+      'Threshold': '85%',
+    }).catch(reportNotificationFailure);
+  }
+
   public async checkK8sClusterAlerts(): Promise<void> {
     try {
-      const k8sService = KubernetesService.getInstance();
-      if (!k8sService.available) return;
-
-      const activeCtx = k8sService.defaultContext || (k8sService.getKubeConfig()?.getCurrentContext()) || '';
-      const namespaces = await k8sService.getNamespaces(activeCtx);
-
-      for (const ns of namespaces) {
-        const pods = await k8sService.getPods(activeCtx, ns);
-        for (const pod of pods) {
-          const podKey = `${ns}/${pod.name}`;
-          const status = String(pod.status || '').toLowerCase();
-          const restarts = pod.restarts || 0;
-
-          // Exclude completed jobs/hook pods (e.g., helm-install-traefik, batch jobs)
-          const isCompleted = status.includes('completed') || status.includes('succeeded');
-          if (isCompleted) {
-            if (this.failingK8sPods.has(podKey)) {
-              this.failingK8sPods.delete(podKey);
-            }
-            this.monitoredPodStates.set(podKey, { lastStatus: pod.status, lastRestarts: restarts });
-            continue;
-          }
-
-          const isFailing = status.includes('crashloop') || 
-                            status.includes('error') || 
-                            status.includes('oomkilled') || 
-                            status.includes('imagepull') || 
-                            status.includes('backoff') ||
-                            status.includes('evicted') ||
-                            status.includes('failed');
-
-          const previousMonitored = this.monitoredPodStates.get(podKey);
-          // Restart increased ONLY if we have seen this pod in a previous poll and restarts count went up
-          const isNewRestart = previousMonitored ? restarts > previousMonitored.lastRestarts : false;
-          const isCurrentlyDegraded = isFailing || isNewRestart;
-
-          // Update baseline state for future poll comparisons
-          this.monitoredPodStates.set(podKey, { lastStatus: pod.status, lastRestarts: restarts });
-
-          if (isCurrentlyDegraded) {
-            const activeAlert = this.failingK8sPods.get(podKey);
-            if (!activeAlert || activeAlert.lastStatus !== pod.status || activeAlert.lastRestarts !== restarts) {
-              this.failingK8sPods.set(podKey, { lastStatus: pod.status, lastRestarts: restarts });
-              const title = `Deployment degraded: ${ns}/${pod.name}`;
-              const message = `State: Pod ${pod.status} (Restarts: ${restarts})\nTarget: ${ns}/${pod.name}\nNamespace: ${ns}\nNode: ${pod.nodeName || 'N/A'}`;
-              NotificationManager.getInstance().notifyCustomAlert(title, message, {
-                'State': `Pod status is ${pod.status}`,
-                'Target': `${ns}/${pod.name}`,
-                'Restarts': `${restarts}`,
-                'Namespace': ns,
-                'Node': pod.nodeName || 'N/A'
-              });
-            }
-          } else if (this.failingK8sPods.has(podKey)) {
-            // Pod was failing previously, but has now returned to clean Running state!
-            this.failingK8sPods.delete(podKey);
-            NotificationManager.getInstance().notifyStatusChange(`${ns}/${pod.name}`, 'healthy', undefined, {
-              'State': `Pod returned to healthy Running state (Restarts: ${restarts})`,
-              'Namespace': ns,
-              'Node': pod.nodeName || 'N/A'
-            });
-          }
-        }
+      const cluster = KubernetesService.getInstance();
+      if (!cluster.available) return;
+      const context = cluster.defaultContext || cluster.getKubeConfig()?.getCurrentContext() || '';
+      const namespaces = await cluster.getNamespaces(context);
+      for (const namespace of namespaces) {
+        const pods = await cluster.getPods(context, namespace);
+        for (const pod of pods) this.processPodAlert(namespace, pod);
       }
-
-      const nodes = await k8sService.getNodes(activeCtx);
-      for (const node of nodes) {
-        const cpuUsed = Number.parseFloat(node.cpuPercent || '0');
-        const memUsed = Number.parseFloat(node.memoryPercent || '0');
-
-        if (cpuUsed > 85 || memUsed > 85) {
-          const alertKey = `node-${node.name}-${cpuUsed.toFixed(0)}-${memUsed.toFixed(0)}`;
-          if (!this.reportedK8sAlerts.has(alertKey)) {
-            this.reportedK8sAlerts.add(alertKey);
-            const title = `K8s Node Resource Warning: ${node.name}`;
-            const message = `State: High Resource Utilization\nNode CPU Usage: ${cpuUsed.toFixed(1)}%\nNode Memory Usage: ${memUsed.toFixed(1)}%\nThreshold: 85%`;
-            NotificationManager.getInstance().notifyCustomAlert(title, message, {
-              'State': `High Resource Utilization (CPU: ${cpuUsed.toFixed(1)}%, Mem: ${memUsed.toFixed(1)}%)`,
-              'Target': node.name,
-              'CPU Usage': `${cpuUsed.toFixed(1)}%`,
-              'Memory Usage': `${memUsed.toFixed(1)}%`,
-              'Threshold': '85%'
-            });
-          }
-        }
-      }
-    } catch (e: any) {
-      console.warn('Kubernetes background alert monitor failed; retrying on the next poll.', e);
+      const nodes = await cluster.getNodes(context);
+      for (const node of nodes) this.processNodeAlert(node);
+    } catch (error_) {
+      console.warn('Kubernetes background alert monitor failed; retrying on the next poll.', error_);
     }
   }
 }

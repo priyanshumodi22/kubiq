@@ -123,6 +123,34 @@ three Python wrapper tests pass, plus both application builds. These are not a
 live instrumented-client or Collector integration claim. Server-side reviews
 still require the expired Cloudflare/Sonar browser session to be restored.
 
+The monitor refactor has 12 characterization/lifecycle tests covering retry
+thresholds, recovery, TLS settings, persistence failure, semaphore release and
+serialization, Kubernetes alert deduplication/completed jobs/resource thresholds,
+and failed-poll recovery. Tests reproduced delayed checks running after stop and
+queued promises left unsettled by stop; both cancellation paths are repaired.
+In-flight checks retain ownership of their semaphore slots until their finally
+blocks release them. HTTP checking, protocol dispatch, certificate extraction,
+pod alerts and node alerts are now separate cohesive helpers. Notification failures
+are handled without changing the non-blocking delivery order. The final Sonar
+scan is still required to verify complexity reductions and remaining findings.
+
+Authorization regression tests additionally reproduced stale Native administrator
+claims remaining usable after role revocation, deleted/disabled accounts retaining
+access, and an empty HTTP namespace list accidentally granting arbitrary namespace
+access. Native requests and Socket.IO authentication now load current account roles
+and scope from persistence, fail closed on account lookup failure, and reject
+deleted/disabled users. Explicitly empty namespace lists grant no namespace access
+in either HTTP or socket checks. Existing default scopes apply only when no list
+is configured. Keycloak's stored namespace policy is now shared by HTTP and socket
+checks; lookup failures deny access rather than falling back to a broader scope.
+The added tests also cover SSE query credentials, duplicate-query rejection,
+expired/wrong-provider tokens and stored-policy lookup failures. These changes
+still need their checkpoint scan and production acceptance before deployment.
+Current local verification: 205 backend tests, 61 frontend tests, both builds,
+and the three exact-commit release-gate tests pass. Frontend lint still correctly
+blocks release with 129 explicit-any and 12 hook-dependency warnings; neither
+those rules nor the Sonar gate has been weakened.
+
 Normal main pushes verify only. Production image publication is manual and
 requires a successful same-SHA Sonar workflow containing the strict release-proof
 artifact, with main still at that SHA. Release/package workflows use the same
