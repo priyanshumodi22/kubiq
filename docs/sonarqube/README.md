@@ -222,3 +222,20 @@ This checkpoint does not authorize deployment. Missing new-code scope and
 unresolved findings must continue to block release. Consult the corresponding
 GitHub run for pushed revision and scan evidence; local tests alone are not a
 Sonar closure or production verification.
+
+Fifth verified checkpoint: commit `84068ad9c50e0093e7c206388e3987af968b8921`,
+analysis `90f1720f-4535-4506-8f04-e7910593abfd`, task
+`a91a6804-9959-450a-9bd0-e13017899284`. The exact-revision export records 421
+original findings CLOSED and 420 pending, plus 45 additional findings. The
+current analysis has 438 open issues, five unreviewed hotspots, 22.4% combined
+coverage and gate ERROR. GitHub run `39807352718` completed the analysis and
+failed on the enforced quality gate as expected. The format-3 archive is
+`gs://priyanshu-apps-sonarqube-backups/reports/a91a6804-9959-450a-9bd0-e13017899284-1792684000.json`.
+No release proof or production image was published.
+
+This checkpoint verifies the shared log-level parser and monotonic live-log
+identities. JSON fields such as `"level":"error"` are now parsed as their value
+instead of the field name, and both log viewers no longer use pseudo-random
+numbers as React item identities. Exact-revision verification passed 224 backend
+tests, 74 frontend tests and both builds. Coverage increased from 21.3% to 22.4%,
+which is now the regression floor; it remains far below the 80% new-code target.

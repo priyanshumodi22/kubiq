@@ -14,6 +14,7 @@ import { promisify } from 'node:util';
 import { KubernetesService, type KubePod } from './KubernetesService';
 import { NotificationManager } from './NotificationManager';
 import { endpointToIcmpHost } from '../utils/icmpTarget';
+import { randomInt } from 'node:crypto';
 
 const execFileAsync = promisify(execFile);
 function reportNotificationFailure(error_: unknown): void {
@@ -321,7 +322,7 @@ export class ServiceMonitor {
 
     // Jitter: randomize the initial check within [0, effectiveInterval]
     // Staggers checks across time to prevent thundering herd on startup
-    const jitter = Math.floor(Math.random() * effectiveInterval);
+    const jitter = randomInt(effectiveInterval);
     this.initialPollTimeouts.set(serviceName, setTimeout(() => {
       this.initialPollTimeouts.delete(serviceName);
       runCheck();

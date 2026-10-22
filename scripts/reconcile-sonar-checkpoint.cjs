@@ -11,6 +11,7 @@ const verifiedRevisions = {
   '29644d8e65d2f619a90742638a96a7e8a98781eb': [163, 27],
   '675dbef75e050f6602b49e40a2d62f4bc40d6b65': [169, 54],
   '0f53ca2313ab0d0940637172b0ec98c9d793bdba': [205, 61],
+  '84068ad9c50e0093e7c206388e3987af968b8921': [224, 74],
 };
 const checks = verifiedRevisions[report.metadata.revision];
 assert.ok(checks, 'Record actual local verification for this exact revision before importing its scan.');
@@ -34,4 +35,10 @@ const checkpoint = {
   releaseEligible: false,
 };
 const output = JSON.stringify(checkpoint, null, 2) + '\n';
-process.stdout.write(`*** Begin Patch\n*** Add File: D:/Coding/kubiq-product/kubiq/docs/sonarqube/checkpoint-${report.metadata.revision.slice(0, 7)}.json\n` + output.split('\n').filter((line, index, lines) => index < lines.length - 1).map(line => '+' + line).join('\n') + '\n*** End Patch\n');
+if (process.argv[2] === '--write') {
+  const outputPath = process.argv[3];
+  assert.ok(outputPath?.startsWith('docs/sonarqube/checkpoint-'));
+  fs.writeFileSync(outputPath, output);
+} else {
+  process.stdout.write(`*** Begin Patch\n*** Add File: D:/Coding/kubiq-product/kubiq/docs/sonarqube/checkpoint-${report.metadata.revision.slice(0, 7)}.json\n` + output.split('\n').filter((line, index, lines) => index < lines.length - 1).map(line => '+' + line).join('\n') + '\n*** End Patch\n');
+}

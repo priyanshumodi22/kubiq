@@ -3,6 +3,11 @@ import { kubiAvatarStates, type KubiAvatarState } from './kubiAvatarState';
 
 type Props = { state?: KubiAvatarState; size?: number; className?: string; paused?: boolean };
 
+function randomBlinkDelay(): number {
+  const value = crypto.getRandomValues(new Uint32Array(1))[0] / 0x1_0000_0000;
+  return 2.2 + value * 3.2;
+}
+
 /** Original procedural kubi artwork. No images, WebGL, or animation dependencies. */
 export function KubiAvatar({ state = 'idle', size = 48, className = '', paused = false }: Readonly<Props>) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -25,7 +30,7 @@ export function KubiAvatar({ state = 'idle', size = 48, className = '', paused =
     let time = 0;
     let gaze = 0;
     let velocity = 0;
-    let blinkAt = 2.2 + Math.random() * 3.2;
+    let blinkAt = randomBlinkDelay();
     let color = [59, 130, 246];
     const canAnimate = () => !paused && !motionQuery.matches && visible && !document.hidden;
 
@@ -74,7 +79,7 @@ export function KubiAvatar({ state = 'idle', size = 48, className = '', paused =
       ctx.fillStyle = 'rgba(237,248,255,0.8)';
       ctx.beginPath(); ctx.moveTo(81, 49); ctx.lineTo(90, 44); ctx.lineTo(99, 49); ctx.lineTo(90, 54); ctx.closePath(); ctx.fill();
       const blinking = animate && time >= blinkAt && time < blinkAt + 0.12;
-      if (time >= blinkAt + 0.12) blinkAt = time + 2.2 + Math.random() * 3.2;
+      if (time >= blinkAt + 0.12) blinkAt = time + randomBlinkDelay();
       ctx.fillStyle = signal; ctx.strokeStyle = signal; ctx.lineWidth = 6; ctx.lineCap = 'round';
       for (let i = 0; i < 2; i++) {
         const x = 68 + i * 32 + gaze;

@@ -148,7 +148,6 @@ describe('monitor result, retry and cancellation contracts', () => {
 
   test('does not execute a delayed startup check after monitoring stops', async () => {
     jest.useFakeTimers();
-    jest.spyOn(Math, 'random').mockReturnValue(0.5);
     const request = jest.spyOn(axios, 'get').mockResolvedValue({ status: 503 });
     monitor.start();
     monitor.stop();
