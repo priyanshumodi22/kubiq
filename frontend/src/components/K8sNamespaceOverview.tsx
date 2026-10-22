@@ -4,6 +4,12 @@ import { timeAgo } from '../utils/k8sHelpers';
 import { apiClient } from '../services/api';
 import { K8sAiDiagnosticModal } from './K8sAiDiagnosticModal';
 import { AiStatusOrb } from './AiStatusOrb';
+import type { KubeEvent } from '../hooks/useKubernetes';
+
+function quotaBarColor(percent: number): string {
+    if (percent > 90) return 'bg-red-500';
+    return percent > 75 ? 'bg-yellow-500' : 'bg-primary';
+}
 
 export interface K8sNamespaceOverviewProps {
     selectedNamespace?: string;
@@ -47,7 +53,7 @@ function K8sMiniSparkline({ values, color }: Readonly<{ values: number[]; color:
 
 export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onSelectItem }: Readonly<K8sNamespaceOverviewProps>) {
     const [quotasData, setQuotasData] = useState<{ quotas: any[]; limitRanges: any[]; rbacForbidden?: boolean }>({ quotas: [], limitRanges: [] });
-    const [selectedEventForAi, setSelectedEventForAi] = useState<any | null>(null);
+    const [selectedEventForAi, setSelectedEventForAi] = useState<KubeEvent | null>(null);
 
     const targetNs = selectedNamespace || data?.pods?.[0]?.namespace || data?.deployments?.[0]?.namespace;
 
@@ -135,9 +141,9 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Pod Health Card */}
                 <div
-                    onClick={() => onSwitchTab('pods')}
                     className="bg-bg-surface/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:border-primary/30 hover:bg-bg-surface/60 cursor-pointer transition-all duration-300 group relative overflow-hidden"
                 >
+                    <button type="button" aria-label="View pods" onClick={() => onSwitchTab('pods')} className="absolute inset-0 z-10 rounded-2xl focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2" />
                     <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors" />
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Pods Health</h3>
@@ -200,9 +206,9 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
 
                 {/* Deployments Health Card */}
                 <div
-                    onClick={() => onSwitchTab('deployments')}
                     className="bg-bg-surface/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:border-blue-500/30 hover:bg-bg-surface/60 cursor-pointer transition-all duration-300 group relative overflow-hidden"
                 >
+                    <button type="button" aria-label="View deployments" onClick={() => onSwitchTab('deployments')} className="absolute inset-0 z-10 rounded-2xl focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2" />
                     <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-colors" />
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Deployments</h3>
@@ -255,15 +261,18 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Other Resources</h3>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div onClick={() => onSwitchTab('services')} className="bg-black/20 p-2.5 rounded-xl border border-white/3 hover:border-primary/20 cursor-pointer transition-colors">
+                        <div className="relative bg-black/20 p-2.5 rounded-xl border border-white/3 hover:border-primary/20 cursor-pointer transition-colors">
+                            <button type="button" aria-label="View services" onClick={() => onSwitchTab('services')} className="absolute inset-0 rounded-xl focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2" />
                             <span className="text-[10px] text-gray-500 uppercase font-mono block">Services</span>
                             <span className="text-lg font-mono font-bold text-white">{services.length}</span>
                         </div>
-                        <div onClick={() => onSwitchTab('configmaps')} className="bg-black/20 p-2.5 rounded-xl border border-white/3 hover:border-primary/20 cursor-pointer transition-colors">
+                        <div className="relative bg-black/20 p-2.5 rounded-xl border border-white/3 hover:border-primary/20 cursor-pointer transition-colors">
+                            <button type="button" aria-label="View ConfigMaps" onClick={() => onSwitchTab('configmaps')} className="absolute inset-0 rounded-xl focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2" />
                             <span className="text-[10px] text-gray-500 uppercase font-mono block">ConfigMaps</span>
                             <span className="text-lg font-mono font-bold text-white">{configMaps.length}</span>
                         </div>
-                        <div onClick={() => onSwitchTab('secrets')} className="bg-black/20 p-2.5 rounded-xl border border-white/3 hover:border-primary/20 cursor-pointer transition-colors col-span-2">
+                        <div className="relative bg-black/20 p-2.5 rounded-xl border border-white/3 hover:border-primary/20 cursor-pointer transition-colors col-span-2">
+                            <button type="button" aria-label="View secrets" onClick={() => onSwitchTab('secrets')} className="absolute inset-0 rounded-xl focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2" />
                             <span className="text-[10px] text-gray-500 uppercase font-mono block">Secrets (Encrypted)</span>
                             <span className="text-lg font-mono font-bold text-white">{secrets.length}</span>
                         </div>
@@ -301,13 +310,13 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {quotasData.quotas.map((q: any, i: number) => {
+                        {quotasData.quotas.map((q: any) => {
                             const hard = q.hard || {};
                             const used = q.used || {};
                             const keys = Array.from(new Set([...Object.keys(hard), ...Object.keys(used)]));
 
                             return (
-                                <div key={i} className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-3">
+                                <div key={`${q.namespace}/${q.name}`} className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-3">
                                     <div className="flex items-center justify-between">
                                         <span className="text-xs font-bold text-primary font-mono">{q.name}</span>
                                         <span className="text-[10px] text-gray-500 uppercase font-mono">{q.namespace}</span>
@@ -321,7 +330,7 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
                                             const numH = Number.parseFloat(hVal);
                                             if (!Number.isNaN(numU) && !Number.isNaN(numH) && numH > 0) pct = Math.min(100, Math.round((numU / numH) * 100));
 
-                                            const barColor = pct > 90 ? 'bg-red-500' : pct > 75 ? 'bg-yellow-500' : 'bg-primary';
+                                            const barColor = quotaBarColor(pct);
 
                                             return (
                                                 <div key={k} className="space-y-1">
@@ -440,15 +449,15 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
                             <span className="text-xs font-mono">No warning alerts active in this namespace!</span>
                         </div>
                     ) : (
-                        warningEvents.slice(0, 6).map((ev: any, i: number) => (
+                        warningEvents.slice(0, 6).map((ev: KubeEvent) => (
                             <div
-                                key={i}
+                                key={ev.name}
                                 className="px-5 py-3 flex items-start gap-3 hover:bg-white/2 transition-colors group justify-between"
                             >
                                 <div
-                                    onClick={() => onSelectItem({ type: 'events', data: ev })}
-                                    className="flex-1 min-w-0 overflow-hidden cursor-pointer"
+                                    className="relative flex-1 min-w-0 overflow-hidden cursor-pointer"
                                 >
+                                    <button type="button" aria-label={`View event ${ev.reason} for ${ev.involvedObject}`} onClick={() => onSelectItem({ type: 'events', data: ev })} className="absolute inset-0 z-10 rounded focus-visible:outline-2 focus-visible:outline-primary focus-visible:-outline-offset-2" />
                                     <div className="flex items-center gap-2 mb-1">
                                         <span className="text-[9px] font-bold text-orange-400 bg-orange-400/10 border border-orange-500/20 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
                                             {ev.reason}
