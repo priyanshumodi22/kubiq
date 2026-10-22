@@ -69,14 +69,14 @@ export class JsonAuditLogRepository implements IAuditLogRepository {
     filters?: AuditLogFilters
   ): Promise<AuditLogEntry[]> {
     let filtered = this.memoryLogs;
-    if (search && search.trim()) {
+    if (search?.trim()) {
       const q = search.toLowerCase();
       filtered = filtered.filter(
         (l) =>
           l.user.toLowerCase().includes(q) ||
           l.action.toLowerCase().includes(q) ||
           l.target.toLowerCase().includes(q) ||
-          (l.details && l.details.toLowerCase().includes(q))
+          l.details?.toLowerCase().includes(q)
       );
     }
     if (filters?.action) filtered = filtered.filter((entry) => entry.action === filters.action);

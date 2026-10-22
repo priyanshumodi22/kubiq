@@ -113,8 +113,7 @@ export async function validateLicenseKey(licenseKey: string): Promise<boolean> {
     if (!normalizedKey || !organizationId || !benefitId) return false;
 
     if (
-        cachedValidation &&
-        cachedValidation.key === normalizedKey &&
+        cachedValidation?.key === normalizedKey &&
         cachedValidation.organizationId === organizationId &&
         cachedValidation.benefitId === benefitId &&
         cachedValidation.expiresAt > Date.now()

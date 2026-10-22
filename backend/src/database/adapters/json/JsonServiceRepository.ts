@@ -116,7 +116,7 @@ export class JsonServiceRepository implements IServiceRepository {
 
     service.lastCheck = result;
     service.currentStatus = result.success ? 'healthy' : 'unhealthy';
-    if (extraData && extraData.sslExpiry !== undefined) {
+    if (extraData?.sslExpiry !== undefined) {
       service.sslExpiry = extraData.sslExpiry;
     }
 

@@ -78,7 +78,7 @@ export class MongoServiceRepository implements IServiceRepository {
       }
     };
 
-    if (extraData && extraData.sslExpiry !== undefined) {
+    if (extraData?.sslExpiry !== undefined) {
       update.$set.sslExpiry = extraData.sslExpiry;
     }
 

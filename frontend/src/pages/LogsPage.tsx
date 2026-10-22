@@ -68,7 +68,7 @@ export default function LogsPage() {
         
         // If the deleted service was selected, deselect it
         // If the deleted service was selected, deselect it
-        if (deleteLogService && deleteLogService.name === selectedServiceName) {
+        if (deleteLogService?.name === selectedServiceName) {
              setSelectedServiceName(null);
         }
         

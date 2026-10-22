@@ -596,7 +596,7 @@ export class KubernetesService {
                 default: return { error: `Unsupported resource type: ${resourceType}` };
             }
             
-            if (res && res.metadata?.managedFields) {
+            if (res?.metadata?.managedFields) {
                 delete res.metadata.managedFields;
             }
             return res;

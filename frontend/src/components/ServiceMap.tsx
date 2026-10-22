@@ -232,8 +232,8 @@ export default function ServiceMap({ dependencies, onNodeClick, onEdgeClick, onP
                 className="bg-black/20"
                 minZoom={0.2}
                 colorMode="dark"
-                onNodeClick={(_, node) => onNodeClick && onNodeClick(node.id)}
-                onEdgeClick={(_, edge) => onEdgeClick && onEdgeClick(edge.source, edge.target)}
+                onNodeClick={(_, node) => onNodeClick?.(node.id)}
+                onEdgeClick={(_, edge) => onEdgeClick?.(edge.source, edge.target)}
                 onPaneClick={onPaneClick}
             >
                 <Background color="#374151" gap={16} size={1} />

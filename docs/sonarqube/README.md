@@ -256,3 +256,19 @@ hotspots. The two remaining review tasks are compatibility-sensitive: the
 persisted MD5 service identifier and the Teams MessageCard schema identifier.
 They must be reviewed with rationale in SonarQube; neither is silently excluded
 or changed in a way that would migrate stored identifiers.
+
+Seventh verified checkpoint: commit `c711a841f67d2fcb8220867023821e0dbe00e044`,
+analysis `1efbc778-caeb-4c19-a344-3a7c539a0b6a`, task
+`654cd280-ece7-44be-ade7-fff865187c8f`. The exact-revision export records 435
+original findings CLOSED and 406 pending, plus 47 additional findings. The
+current analysis has 425 open issues, zero unreviewed hotspots, 22.4% combined
+coverage and gate ERROR. GitHub run number 9 completed the analysis and failed
+on the enforced quality gate as expected. The format-3 archive is
+`gs://priyanshu-apps-sonarqube-backups/reports/654cd280-ece7-44be-ade7-fff865187c8f-1792684769.json`.
+No release proof or production image was published.
+
+This checkpoint verifies the nullish fallback cleanup without changing valid
+falsy values, closes the numeric-separator regression, and records both
+compatibility-sensitive hotspots as reviewed safe with explicit SonarQube
+rationale. SonarQube now reports 100% hotspot review coverage and no remaining
+hotspot review tasks.

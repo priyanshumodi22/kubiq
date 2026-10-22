@@ -106,7 +106,7 @@ export class KubiAiConfigService {
     if (!apiKey && existing && existing.provider !== provider) {
       throw new Error('KUBI_API_KEY_REQUIRED');
     }
-    if (!apiKey && !existing && (!bootstrap || bootstrap.provider !== provider)) {
+    if (!apiKey && !existing && bootstrap?.provider !== provider) {
       throw new Error('KUBI_API_KEY_REQUIRED');
     }
     const encryptedApiKey = apiKey

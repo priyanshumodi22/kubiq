@@ -147,14 +147,14 @@ export class KubeTerminalStreamService {
 
             socket.on('k8s:terminal:input', (data: { text: string }) => {
                 const session = this.sessions.get(socket.id);
-                if (session && session.stdin) {
+                if (session?.stdin) {
                     session.stdin.write(data.text);
                 }
             });
 
             socket.on('k8s:terminal:resize', (data: { cols: number, rows: number }) => {
                 const session = this.sessions.get(socket.id);
-                if (session && session.connection && typeof session.connection.resize === 'function') {
+                if (typeof session?.connection?.resize === 'function') {
                     try {
                         session.connection.resize(data.cols, data.rows);
                     } catch (e) {

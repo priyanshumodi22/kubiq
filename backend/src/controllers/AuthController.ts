@@ -25,7 +25,7 @@ export class AuthController {
       const repo = await DatabaseFactory.getUserRepository();
       const user = await repo.findByUsername(username);
 
-      if (!user || !user.passwordHash) {
+      if (!user?.passwordHash) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
@@ -264,7 +264,7 @@ export class AuthController {
           const repo = await DatabaseFactory.getUserRepository();
           const user = await repo.findById(userId);
 
-          if (!user || !user.passwordHash) {
+          if (!user?.passwordHash) {
               return res.status(404).json({ message: 'User not found' });
           }
 

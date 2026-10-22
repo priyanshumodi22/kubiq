@@ -52,7 +52,7 @@ export class MongoSystemRepository implements ISystemRepository {
     async getStorageConfig(): Promise<{ allowedMounts: string[] }> {
         await this.initialize();
         const doc = await SystemPreferencesModel.findOne({ key: this.configKey }).lean();
-        if (doc && doc.value) {
+        if (doc?.value) {
             return doc.value;
         }
         return { allowedMounts: [] };
@@ -70,7 +70,7 @@ export class MongoSystemRepository implements ISystemRepository {
     async getApmConfig(): Promise<{ ignoredRoutes: string[] }> {
         await this.initialize();
         const doc = await SystemPreferencesModel.findOne({ key: this.apmConfigKey }).lean();
-        if (doc && doc.value) {
+        if (doc?.value) {
             return doc.value;
         }
         return { ignoredRoutes: ['/health', '/metrics', '/favicon.ico'] };

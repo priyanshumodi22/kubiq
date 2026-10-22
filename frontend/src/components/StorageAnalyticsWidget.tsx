@@ -231,7 +231,7 @@ export const StorageAnalyticsWidget = () => {
                                         </div>
                                         
                                     {/* Prediction Warning */}
-                                    {prediction && prediction.trend === 'growing' && prediction.daysRemaining < 365 && (
+                                    {prediction?.trend === 'growing' && prediction.daysRemaining < 365 && (
                                         <div className={`mt-3 flex flex-col p-3 rounded ${prediction.isCritical ? 'bg-red-500/10 text-red-200 border border-red-500/20' : 'bg-blue-500/10 text-blue-200 border border-blue-500/20'}`}>
                                             <div className="flex items-center mb-1">
                                                 <AlertTriangle className="w-4 h-4 mr-2 shrink-0" />

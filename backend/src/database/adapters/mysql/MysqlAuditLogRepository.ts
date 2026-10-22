@@ -80,7 +80,7 @@ export class MysqlAuditLogRepository implements IAuditLogRepository {
     const params: any[] = [];
 
     const conditions: string[] = [];
-    if (search && search.trim()) {
+    if (search?.trim()) {
       conditions.push('(user LIKE ? OR action LIKE ? OR target LIKE ? OR details LIKE ?)');
       const term = `%${search.trim()}%`;
       params.push(term, term, term, term);

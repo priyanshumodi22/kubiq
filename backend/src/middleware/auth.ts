@@ -242,7 +242,7 @@ export const requireRole = (...requiredRoles: string[]) => {
     }
 
     const user = req.user;
-    if (!user || !user.roles) {
+    if (!user?.roles) {
       return res.status(403).json({
         error: 'Forbidden',
         message: 'No roles found for user',
@@ -340,7 +340,7 @@ declare module 'express-serve-static-core' {
 }
 
 export const getUserFromReq = (req: any): string => {
-  if (!req || !req.user) return 'admin';
+  if (!req?.user) return 'admin';
   return req.user.username || req.user.preferred_username || req.user.name || req.user.email || req.user.sub || 'admin';
 };
 

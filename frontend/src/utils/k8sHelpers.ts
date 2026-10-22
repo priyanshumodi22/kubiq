@@ -16,7 +16,7 @@ export function parseMemory(mem: string): string {
 
 export function getMetricForPod(metrics: KubeMetric[], podName: string) {
     const m = metrics.find(m => m.name === podName);
-    if (!m || !m.containers.length) return { cpu: '—', memory: '—' };
+    if (!m?.containers.length) return { cpu: '—', memory: '—' };
     let totalCpuM = 0;
     let totalMemMi = 0;
     m.containers.forEach(c => {

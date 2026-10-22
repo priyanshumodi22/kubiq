@@ -293,7 +293,7 @@ export class MysqlServiceRepository implements IServiceRepository {
         if (!service) return;
 
         // Update in-memory state
-        if (extraData && extraData.sslExpiry !== undefined) {
+        if (extraData?.sslExpiry !== undefined) {
             service.sslExpiry = extraData.sslExpiry;
         }
 
@@ -315,7 +315,7 @@ export class MysqlServiceRepository implements IServiceRepository {
             );
 
             // Update current status in services table
-            if (extraData && extraData.sslExpiry !== undefined) {
+            if (extraData?.sslExpiry !== undefined) {
                 await this.pool.execute(
                     'UPDATE services SET current_status = ?, updated_at = NOW(), ssl_expiry = ? WHERE id = ?',
                     [result.success ? 'healthy' : 'unhealthy', extraData.sslExpiry, serviceId]

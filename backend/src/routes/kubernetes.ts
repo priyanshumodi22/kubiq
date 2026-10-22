@@ -91,7 +91,7 @@ router.get('/namespaces', async (req, res) => {
             try {
                 const repo = await DatabaseFactory.getUserRepository();
                 const dbUser = await repo.findById(userId);
-                if (dbUser && dbUser.allowedNamespaces) {
+                if (dbUser?.allowedNamespaces) {
                     allowed = dbUser.allowedNamespaces;
                 }
             } catch (error) {

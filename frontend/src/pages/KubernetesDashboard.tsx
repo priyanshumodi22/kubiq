@@ -83,7 +83,7 @@ export default function KubernetesDashboard() {
         if (!name) return '';
         if (name === 'inClusterContext' || name === 'inCluster') {
             const matchingCtx = contexts.find(c => c.name === name);
-            if (matchingCtx && matchingCtx.cluster && matchingCtx.cluster !== 'inClusterContext') {
+            if (matchingCtx?.cluster && matchingCtx.cluster !== 'inClusterContext') {
                 return matchingCtx.cluster;
             }
             return 'In-Cluster Kubernetes';

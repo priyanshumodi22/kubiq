@@ -119,7 +119,7 @@ export function K8sDetailPanel({
     }, [item, namespace, activeTab]);
 
     useEffect(() => {
-        if (item && item.type && activeTab === 'yaml') {
+        if (item?.type && activeTab === 'yaml') {
             setLoadingYaml(true);
             const isClusterScoped = ['nodes', 'persistentvolumes', 'storageclasses'].includes(item.type);
             const resourceName = item.data.name || item.data.metadata?.name;

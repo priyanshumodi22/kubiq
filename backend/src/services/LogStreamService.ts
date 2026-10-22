@@ -124,7 +124,7 @@ export class LogStreamService extends EventEmitter {
         }
 
         // 2. Set up shared directory watcher for glob patterns
-        if (searchPattern && searchPattern.includes('*')) {
+        if (searchPattern?.includes('*')) {
              if (!isPathGlob) {
                  try {
                      const matches = await this.scanFiles(searchPattern, limit);

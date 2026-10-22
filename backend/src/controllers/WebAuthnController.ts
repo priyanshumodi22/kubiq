@@ -199,7 +199,7 @@ export class WebAuthnController {
       // We need to find the SPECIFIC passkey used (credential ID is in body.id)
       const passkey = await passkeyRepo.findById(body.id);
 
-      if (!passkey || passkey.userId !== user.id) {
+      if (passkey?.userId !== user.id) {
         return res.status(400).json({ error: 'Credential not associated with this user' });
       }
 

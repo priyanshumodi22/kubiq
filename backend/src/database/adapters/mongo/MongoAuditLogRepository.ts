@@ -29,7 +29,7 @@ export class MongoAuditLogRepository implements IAuditLogRepository {
     filters?: AuditLogFilters
   ): Promise<AuditLogEntry[]> {
     let query: any = {};
-    if (search && search.trim()) {
+    if (search?.trim()) {
       const escaped = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(escaped, 'i');
       query = {
