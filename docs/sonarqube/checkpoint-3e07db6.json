@@ -1,0 +1,4931 @@
+{
+  "schemaVersion": 1,
+  "evidence": {
+    "task": "da41c988-507d-4821-9592-504a78ae1937",
+    "analysisId": "f838abb0-4d37-4113-9c91-a973fd93ce7d",
+    "revision": "3e07db6ff08b113a339050ef2d0ee05e4e458184",
+    "version": "3e07db6ff08b113a339050ef2d0ee05e4e458184",
+    "analysisDate": 1792689827838,
+    "measures": {
+      "coverage": "22.90000000000000000000",
+      "security_hotspots_reviewed": "100.00000000000000000000",
+      "alert_status": "OK"
+    },
+    "openIssues": 321,
+    "unreviewedHotspots": 0
+  },
+  "archiveFormat": 3,
+  "rationale": "Only explicit CLOSED status in the matching completed analysis is counted as fixed. Reviewed-safe status requires an individual recorded review with matching issue ID, file, rule and REVIEWED status. Missing and open findings remain pending.",
+  "regressionChecks": [
+    "backend Jest: 224 tests passed",
+    "frontend Vitest: 77 tests passed",
+    "backend TypeScript build passed",
+    "frontend TypeScript/Vite build passed"
+  ],
+  "baselineDispositions": [
+    {
+      "id": "175ffb6e-abb1-4dbf-924f-9b5f0d842a5a",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "916512ab-4d25-4da6-8d67-2dedee985de9",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "c74cae49-f49c-4102-8af6-441a18235d27",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "f8e74116-cb7c-4fba-b7a7-9d480a9da2d1",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "8e8eb5dd-3208-4477-98ce-1019fbc51f42",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "b2dcadbb-ea5b-4cd4-90da-3b11bb140ea1",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "243c174a-fc0e-4a13-ae56-24728550e852",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "7c317fe6-8a38-49a3-8e8c-dad33abcb24f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "1b8eab0c-572a-44e7-9eb8-1d0686b20919",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "c0279f83-b226-44ad-9b9b-937dd9c235a0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "f9264013-c49f-46a1-8334-3e6ba976c0ce",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "7a12eed7-5927-4b43-9620-3d8abf31539c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "58d03651-b3dd-4aba-bfad-942d94cce056",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0415b73b-d3b2-4e68-924e-d631ee60c4ba",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "822216a7-67e8-4b5d-87c2-f986fbead1f8",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "bd670360-f204-41c9-8cb8-1542da4ef354",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "28d2deb8-0ba6-41d4-8290-61c8e36d3333",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "6c34da33-149a-43ff-a9f4-0048e039b886",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "37c22dd2-c2ff-4e3c-bee0-4913add8e905",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "4e2d5dbc-5bd6-4c6a-8b37-5e3a1df10a58",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "fda5042b-3c9b-4802-ad6e-df0d24b8b760",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "7543c93b-0cf8-4ac3-9430-71cc52c7cc81",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "57f8e121-f31a-4c88-95e0-e1db833a9728",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "049e84ec-1f6f-4c17-b61c-81e61d2f91b2",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "68574900-1eac-4d4d-b5c7-538b51a8ce8d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "3d06d303-9cbc-4aa0-8043-5f9c9b2dd51c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "6362ca59-e1c1-4256-aebe-b29f9c03f69f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d89875a6-aeab-4a40-b909-9a41f3c72d5c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "537a4fb4-b9e7-4030-800f-6e3e015031ba",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "6f705395-e37b-40cd-b6c1-8fcef1aac1db",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "29629e33-a75c-40d9-a458-fc37422210b0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "b1cad855-01ed-427a-a1e8-eac113acb757",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0a40c4ce-ff21-42c8-90ba-ff5531df9ec8",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "2d1881ee-92be-4c06-ac8d-30348b83cf5e",
+      "status": "reviewed_safe",
+      "sonarStatus": "REVIEWED",
+      "rationale": "MD5 derives a deterministic non-secret service ID from the service name. It is not a password, signature, authentication token or integrity check. Retaining it preserves persisted service references.",
+      "tests": [
+        "Repository compatibility and authorization regression tests passed; inspected the hash input and consumers."
+      ],
+      "verificationScan": "f838abb0-4d37-4113-9c91-a973fd93ce7d"
+    },
+    {
+      "id": "59dcecf6-0bce-4d36-87b4-6a8f98084a13",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "239d6479-a0a8-4655-a498-c5ea9985cc71",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "432d92a8-28ac-4e7a-90e2-fb817a182616",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "8cb5f483-480c-40e2-a8fe-76e0d1f6ac84",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "b2bb2b64-dc08-4764-8628-39b9dfd7139b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "305b0e91-26e2-477b-a520-5190241d7540",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "b00edd0a-4282-4b42-8ef9-da592d1ba6f5",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "482e05a7-86c0-4883-9194-0e889f77b8c7",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "66d52e40-a64e-4330-96f8-8f889396ad67",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a6f1972d-82d3-49fb-84b9-5f8318d8bee7",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "22565544-dd86-4b7c-888e-c735690201b3",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "1d233357-6c83-4624-b432-1485bfa9dbe5",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d518faea-35ba-44e0-83d6-a9474b2007c8",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "3dc1c258-b8d4-4862-b30a-c8e719704cfb",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "2a3dd477-7ddb-4a34-ab95-2feb1ef98e3f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "bea3346d-ed56-4ef7-ae83-431fe95c9db5",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9ca8eb8c-4552-44e3-9002-b6854b517d83",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "2835e7d8-68c4-4804-8b0f-cf5b428e8691",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "708d6bbb-f856-4da2-9902-caf9f1fac2c1",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "befe9047-4740-4e32-90f9-4cfb6f5354bd",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "81ced773-7c38-461e-9ac4-f48dbf752117",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d3b1fe3e-f72f-4eac-8908-5a2b930f5561",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "024e4a4d-2341-4c16-be09-fe12c02cb49a",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "941b4812-cb4f-4be8-9723-da5b57cbd71e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ba957886-4c7d-4197-9c1e-e42090dc521f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5ead5d23-17ed-4b95-a616-7df96895ca11",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "4c93506c-0993-4e9d-b44b-3d83702e5f04",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "6c725479-742e-4ac4-807f-7328ce56ba13",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "6d0bf13b-8647-429d-97e5-6ba597d39014",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "acce4df3-83c0-4b92-8670-83c23773fc18",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "049f59a8-7d32-4359-a9fe-74bee3285636",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "417ee5aa-56eb-4ca6-bd0c-30fa09d1bcae",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5dc47952-2deb-42c8-9322-02811312ae7c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "3464b7d2-7437-45a1-97eb-19a0862e0f84",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "2a5d74a7-3da3-4751-81a5-cfa1147b897c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "88693217-187a-4848-9985-28b19d34e250",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "b8f0f026-4cf7-4813-bfc6-bfb9acd58bbe",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "876a0dff-e378-4fd8-9019-ad33a0c872d5",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d212e35d-2784-4e80-889a-f558fd60fe37",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "21f07c4d-4617-436c-8ff4-f81113685ecb",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "6a14a21c-481e-4dd3-ad00-545ecde90248",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a45a1846-e6ec-4697-8016-477bda7c880d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "535a27ee-93a5-4b26-a216-96656387610b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "bbc3de96-d3c0-483c-a288-9c4fd3f0e0b0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d71c57d0-1e4b-4d24-b035-66d76e2b5dfb",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "1b591dd0-af53-411c-8ae3-738b9af0389c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "123bd029-5558-4780-974e-3c789b7d92c3",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "43e555e8-10d2-491e-b560-9bc5ca716d15",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "616dff6e-51fc-4501-8f5a-636b919a9b05",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "3fc7434c-cdb9-4833-9c16-a6c54c2b1b11",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "737c7593-9f0d-41bc-aa6e-494f48045b48",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "1cbcdb4b-f953-44ee-bbee-0258d43f531b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "edde7a4a-302a-4eb7-b909-adbdc029442c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "defaee77-e620-4cb0-a2a6-a5b787fb9b70",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "78177197-9804-4f1f-b3d9-17abef237f26",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0ec38f84-f604-415c-a397-36ebf425dc26",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a32f34b8-9cb6-4930-9f9d-2438b734224c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "44ad97af-f96a-43ef-9f9b-a300876289d8",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0cf4caf4-0938-4653-a5a8-b03b436390d6",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "65e86e7d-f1c8-40fb-bc6d-d2fe911a61a3",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ba923d9c-9d3b-4169-bb31-91208f92dcb0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "472fa12d-5fc7-474b-a06e-2bee7b96b81d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5b66d383-7045-4849-875c-9f5ab2089734",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "3640f5cc-6efb-46be-9a1b-603eaf100e65",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a39b2265-5554-4dbe-b793-b719a9b8b23e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5e33ade3-eede-4e9d-a930-b60d1da33140",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "31e43852-6a30-4c82-a287-2558674b0987",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "57e64605-b5d5-4f72-a29b-106cdd6dd551",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "2bded642-3c5c-4ad8-bb24-8bba5ef3750e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0ffc00a0-ec60-4a92-b125-2596f94b1977",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "4c3e9b13-3034-4bad-84db-6deb0a4ca20b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "43440c43-e244-4c14-a5f8-7c1c86dd635f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "cdf9a992-f2be-4ce2-a6a3-fd5ddd22a722",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a335b50c-c5c2-4133-b945-6d6424dde069",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "2a9e2af8-0010-4b1e-8b17-e54b8a65e4f8",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a48b22eb-09a7-4a26-b78c-fbc933d71cdc",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "448e8f76-4677-4c08-9c72-2078dc876517",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "6c128283-9944-410e-9cc8-58fd6b85e26d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "608270ed-1e4c-43c5-9c64-c25b2377fc91",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "236989bd-577b-49b3-9025-9e59c4bec570",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ed1a4e09-aec9-4e00-b152-d7ffffd77f80",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "95716215-249b-4aff-b0dc-a1959cc69d2b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "481753f3-7963-4ff6-9961-6e4f7c0ad73f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "baf3ffaf-8121-4ed1-af99-ec610fab410f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "fd0fa870-40cc-4aa9-91e1-2c4174d2af10",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d62a6ab9-8fd2-4319-9ba8-c74b13d4708e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "7bf5775e-8833-4200-a92a-ad29042a159d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ecd041f4-e7c5-4fba-a49c-5af3e2bee0e0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "7317cd43-8d1f-4e99-a7b8-14c1883b6908",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "7032ba5c-1cc8-41ae-8868-de43d807eb90",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "01a6e0fe-70ea-4dcc-87b8-9eef48148fd8",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "d544f27e-b1ca-4073-a613-e961cea8cf78",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ae755206-1654-4680-93b8-c6e0b7dedc96",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "deec316e-307d-497f-9e6c-e03cbefbca97",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "87e08ad3-69fd-4d56-8183-c6156d1d18a5",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "8bf9a9da-1682-4457-8a66-42d75756b146",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "e1aeb3da-bc55-4ab5-a444-da9b372a84d5",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "65c056f3-3e23-48a7-965c-af8838ac715b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "6a36e622-f5ba-4c57-bc39-506eda45f10b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "cd8f3d08-6637-4bf9-a61a-8e06b5ed7c16",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "78fdfdbc-24fc-4334-890f-bf64cd81a242",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "2ec4b117-3281-4de9-8962-afc8e2b34a25",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "b5f56b87-c8e8-4902-8d0b-04249eded45e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "8536a5c6-37c9-4868-9642-1195a7c61be2",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "27c9d66c-6c45-470d-906a-3e91041df8c4",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "3f4c716f-15bd-4a0c-84ef-c70192a52a82",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5f6356dc-2acf-4f50-a8d1-90d0c6646245",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "616bf369-7503-49ce-acab-29a4b6be5c8d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "56d8de65-4ccb-4a0f-a643-102d830f6961",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "82af3e30-9ab6-433b-867c-6285406ada53",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "8bd97bde-56f7-4059-8e5b-b310c866dabf",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "a6f24dab-1a06-40cd-98e3-b1ba3e3854dd",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "16554133-5627-42db-90fd-b8b6c1ddec48",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5c34b118-d354-4f13-b79f-51feccadb5ea",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "24829421-3281-4a5b-9e5e-c2a1e8038049",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "6920cb53-06ab-4618-acba-3f72e4d8c8b4",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5bda87e2-33e4-419f-a335-1d9e0b34890b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a924c225-8829-4c9f-b869-b51ffd26b25f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "56a4b5df-d844-4f89-85aa-bde96459d42f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "09def0e8-b011-4473-a521-1bb76693d4a5",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "5ef8c05f-54e6-43ed-be60-cfbfb480981c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "00caed5c-8924-4e2d-8315-b60e8623fa74",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "16a6baf0-39e4-4daf-b28d-e79fe8b5894b",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "d494e779-9714-4db4-b28f-21726bb3c0f2",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "18c47604-db06-4d00-8e71-15809c567697",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "f40b5616-1c45-4cdc-959e-125103b37f72",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "897b10c1-891f-451d-be2a-1df51455f568",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "58f19b0a-7350-49fe-91a6-0000b2464a45",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "b4e85576-876c-4314-8395-bf281beccfc8",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d8169a73-f880-4f04-9c6b-2d39575cbb4d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "6874ff4f-5f8e-4d74-9060-794bd808a1ad",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "7c63a116-9b0c-407f-b73f-4f1047c06d65",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0efad67d-2ef6-4037-ad5f-dd965afec705",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "3d0719ea-4ac0-4276-a080-7557e5abe604",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "0614e73c-c57d-47b2-86e9-7f7cf9b93029",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "38e987af-3ff5-4db1-8dde-b56b7cd68013",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "2379a60c-e510-4d88-ac0a-acc4006d2ac9",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "760b801f-6d2d-4f31-ac41-1a9ef460d0ae",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "a4e27372-754b-4f60-91d5-3f6e852ccd1f",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "c388492c-082b-4296-993f-4541fd128564",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "8aa15858-fc86-4d4e-b3cf-28a97aa48053",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "bc8f7b23-a8d8-4518-aa48-ff801e4c569a",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "6fc02959-55ff-4985-8dc3-4828b56a01cd",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a0d13ad9-f33b-48e0-af32-1eb2e2b93e23",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "b88d3ca9-cbd1-4d4e-863c-8e2a7a9d536c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "61a4bc3f-3bca-470e-8c6f-45b1766c6e37",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "b3b3cc7c-92a6-4c48-8d87-f14ab9adfd96",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "1a66a48c-2b57-4a90-9c8d-a04314d7492a",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "c5389af1-baf5-407d-b75a-5d546e1bd8a1",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "cbe55363-440b-4675-a273-02905244c065",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a5840360-2b5e-47d5-a0fb-9f487f4d5085",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "95adcb38-bc97-4208-8314-7b348ae4bfd3",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "19409292-93c5-42d6-b746-0d6b084da212",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9dedfa53-c78e-415b-babc-705847cce93a",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "03e18626-7232-43a0-9cac-e32bc03aeac6",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9c29fcb2-4b07-42cf-89a4-32ce19bf395e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "b3129a94-30cc-4e3e-8929-c65ca2af1507",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "401d7ab4-d8be-44a1-a0e0-aefc75fa3503",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0fdfb134-795e-4508-b0cd-f737fe6153d8",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a91e6a6c-39d9-4bf5-b4d8-ab39be70aaff",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "976aeb89-356d-447a-a3a6-0938b29b1c1c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "4f212fc9-7336-424d-817c-b36c5a7f553d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "2e5075bc-0480-4d74-947c-7592b2124ed9",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "e542dd42-76ba-4e9a-86f9-8e924f79f851",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "fdd228b9-9e2f-4df5-a56f-3fe67fa46080",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "1091fb82-f7bd-4691-9b1d-7ec121ef9975",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "4f358f30-0585-4629-8d9c-615ca639f5d4",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "49794896-8b17-4503-9ec0-380db1fcd13c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "1d4e55ea-1a7f-4556-aa6e-74ac97fdbc1d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "86ba6727-49b5-4c12-a151-6745a3c634bf",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "bc222b79-bbc9-491a-b5f6-4604bead228f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a4d9efc7-455f-47ce-af44-8f7c0681512c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "dee0c756-c3c3-41fd-a3fd-94a802dccaf6",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "4d13cd29-5505-4856-bc18-64695f81ab97",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "f0a0a2e9-deab-4adf-8d8d-5954c4475ccc",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "4c24affc-0b4d-48e9-95dc-e7f57ade534c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5d459e4e-1fb1-42e8-874f-cdfb059550d0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "957efc22-aa93-4944-acfd-3cea58a8c53d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "11827769-f588-4cc7-a514-60da866c1155",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "48a5fdef-3717-4353-891d-0d95754b4fea",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "ef5a90b1-fd1c-4d15-9183-13f2ae969ca7",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "bc91c111-f9ba-4765-9b8f-b3765054a50e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "3253702a-c9ff-446e-898f-e4e1c86ee1de",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5f158ac3-4965-4dad-b68d-e4bba599fafa",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "8d060560-c092-41a3-b13d-3b0b6da136b0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "697270f8-1a2f-406d-9fc0-7c16d53e7e98",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a57cba22-65cc-4ec5-80ff-3ac6a9172ec0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a44603f4-a2cf-4f56-ae9d-b12a93c4e06e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "2e92aec0-4596-40b7-bef2-9e18a752d760",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "68454dfd-05ee-47dc-b943-85e3f2ed6e5d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "538017c5-4d1a-4658-a95c-99649f4b44b5",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "84785fab-5c96-4da2-8028-8067521c4e09",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "579be6cc-ee98-4d33-8c0b-674ba1133678",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "c7450ba8-493f-4bcb-8d95-7efb9b45b120",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a056891e-2053-4e5c-be4a-a4a1752c5fa3",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a341bbb8-aea3-4463-aa09-cae9dd127ee1",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "2ce36288-abe4-4c1a-b949-62e5ecc2a2c2",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "52c42ef8-0936-4756-8881-898b9b0abe43",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "e1d8df8f-1539-4c52-b689-abff87b4d6aa",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "c653f4f4-d8be-4eb4-857d-f85ddb2ab683",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "502a4166-d1a9-41b3-805c-59c0cd0e9685",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "27278e81-9793-4295-925a-ee3064526ac9",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0e8ffb5f-2e3e-490e-9887-28948e73c451",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "10b1008a-9b5d-443b-b4fa-a7d2748702e1",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "1e6f9a62-bf50-4016-a941-86bb00cc71fd",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "3959446f-30e2-4f38-8c6c-92c07f74f3aa",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "476a0516-12f9-4724-abbb-c47fb2bb0458",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "7a792d6d-4171-4b2e-a616-a6b1249e3f67",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "8d60e83d-11c3-4bab-8c23-5147f200a43b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9313576f-ad6c-44f6-a1c3-30436b9a201f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d88006d4-d719-413f-b4ed-ce3fe23284f8",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "e44430db-e026-4b52-b0fd-d2819515e7e6",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "f84f6636-b5e5-4f21-a37a-685f56eb0865",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "fa8cde5c-19f7-4a03-8547-b84a2a0b6bc8",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "fc4a75f7-a307-47d8-8438-5792064993b6",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "26ba5550-7413-4a6a-ae20-d35da8d5e6f1",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "931e36bb-ba8e-4162-aa21-8c5d567731e3",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "8a937eb1-32c8-4266-b2de-93321c23de86",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "adb3fab0-ac99-41a5-8e5f-2c1b7dc00e8f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "1453d6a1-84c1-4d12-863b-9147b556f003",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "ca4185ad-88ff-4edd-958a-cc3babec2ca0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "bf985e24-23c8-4fec-91d6-f4c8f06a9f2e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "40fdf101-5540-4948-9a64-9f725cde974b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a4d202f4-8373-4e6b-934d-275d1f7d1690",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "3d91d3a6-d820-440b-9f1c-ceae1e3e28b8",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "40c48933-9bca-415d-8cc2-f40831355619",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "bbd73f21-d7b5-491a-b554-ffbffe646016",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "10184294-69a7-473d-bd9d-2d0b9b35a059",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "a314dd3d-4180-48a6-9bb2-da43cbdd4c70",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "042c9fc3-8833-4c95-8263-48ddda6a1bfd",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "1b9a0378-c63f-4ddb-a2a4-8bf221757307",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "f99d8d7f-aa9a-4c67-9df6-dba817359ea0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "787e1dc9-bf4e-4142-9915-a19a2888bd02",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5303dad5-cf96-4176-ac11-5083589d1b97",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "951fd719-4462-4986-9aa1-94e73072a562",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "cda880de-16c4-4dec-a5e9-abb063fdeef8",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "6407f53e-d822-4678-8045-e6e607a05f9f",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "becb3b4b-c210-4aa6-bc30-d92f64fffbb5",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "2b550c34-3dcd-4204-8a81-9032258a7cad",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "4e2e13dd-7114-44e7-b02a-80ea4c50c051",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ff1b6b36-b169-4008-ba54-ff2ddc992bcd",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0f57fdd1-3bac-4cdb-ab51-430343f14a7c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "6499a344-9534-485b-869e-7d5e29211c62",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "f6f4fc20-1212-4f6e-89d8-81d4e0bc9399",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a0f1263e-13a6-4109-9a81-741cc8eea905",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "82e101e9-0ebc-4d14-99f5-d512a6db0c16",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "4c431a4a-7b8b-4712-9e0b-eed5ec3acdf6",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "cc05049e-524b-42be-9197-6fd9f41f522e",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "29d3b093-0e11-4be5-8355-7ea04a9fe867",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "6cc481c6-03c2-4426-ad2d-58ceec1488cd",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a2001f24-323c-4d4d-a44f-42bfc5863fa6",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "23bf8984-7aa0-4ca7-b759-25ffacb0d317",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "6e40232b-c7f2-40cc-9557-a04a67fbb812",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "4ad3cac0-2979-4a38-9ce4-d03e861ca21b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5f3fa4b1-0c68-4776-895e-c67f48fe56f3",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "fba2d9fc-571f-45dd-99f7-02fdef5d466e",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "55e5b51c-b726-4dc0-8fad-eaedaa8a4542",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "c3536488-cc93-4c36-9ec5-e7fa3b429744",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "cb8f9c94-2b25-42b6-abaf-a74c6421a2ce",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "95936602-34d0-4773-b0c5-b426a922b275",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "4d3560be-a192-45a8-b621-44dbb566c688",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "29a2d3fa-5b72-445b-bc9e-bfaff2b3bd92",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "f9a2b2f3-4a10-4a3e-9e52-db8ff5f638fe",
+      "status": "reviewed_safe",
+      "sonarStatus": "REVIEWED",
+      "rationale": "The MessageCard @context is a schema identifier, not a network transport destination. The webhook URL is supplied separately. Retaining the identifier preserves Teams MessageCard compatibility.",
+      "tests": [
+        "NotificationManager regression tests passed; inspected the MessageCard payload and outbound webhook target."
+      ],
+      "verificationScan": "f838abb0-4d37-4113-9c91-a973fd93ce7d"
+    },
+    {
+      "id": "9d90696b-a862-4f2b-9308-35d2816f9704",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "732322ab-53ce-4ae6-9232-baa2b00dcd4d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "3ef6d2e6-c20d-4676-8669-95a4b002588a",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "f9981cb5-a34d-4263-8ff4-75bc9afb7253",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "85aa293f-ce3f-4dae-a208-6b468f9c4b72",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "71f17a1c-cea0-4246-b30a-0d58064250e1",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "01ae0e2f-e6ac-41b7-9355-9f12c031fd35",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ccb2aac1-3726-428f-ab20-f54ba5e3cdea",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a544b77c-fe56-4e71-b49f-a69e93f7ae24",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "fcd4d27d-ecf3-411a-8ed4-b5658217c269",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "10600f1f-9322-44dd-abc5-da4393c03c6e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9de63cc2-0799-4b50-9c58-42b4c353fa66",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a434ec59-819b-41e5-8ebd-acb14140d87e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "f50cde3c-0db0-4dc8-8f6f-7af2a5d175ce",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "110028d7-6f5d-4be5-b848-18ac7a67a110",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "01e0842d-a6d0-4c4c-8606-6490e7d3e897",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "967d6e77-1310-4202-9e68-8de6115564a9",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "8a9b08cf-44b9-46f8-be29-85802efe9e29",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0e5bc4c9-f15a-4831-8c6e-bdf827524c02",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "17aee2c9-f11a-4b3d-8311-de2e471c3e01",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "4dc3b708-e182-4d00-8f07-197330d2d249",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "54e1d8dc-e4f2-451f-ac74-4ed7452f8c43",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "15869321-0915-458e-9dc9-0ea038bc45c4",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "aaecd79c-65ba-45b4-b148-9f600dac8f4c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9354ced6-6bcb-4a68-abac-413532f9da5b",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "4cd1c389-6341-477f-8a7b-d412f8942141",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "c1f7f341-693c-4843-b251-020e8e3022c7",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ddc573ff-5643-44d0-b673-4cd224101ebb",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "575dfa7c-8b62-42e5-bde7-8152253acb33",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "98fa080a-0cfb-4683-ae3c-0a7421cc609d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "f2f8f2c9-be55-4728-9f61-3cabe67a24de",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "40403475-5645-48e5-b963-0e712ed95d5a",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0b03b042-bc0c-418a-a725-c21a55603f62",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d00d0c9d-3c77-4e70-bb77-6875b2a48552",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "cb81129a-cd2c-46e2-9a1f-676033513722",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a51c6ec6-fdee-4976-af87-fb8c9a842979",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0b740b99-7baf-4584-b2e3-bae76315cc2c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "dcd8841d-3a3e-48ae-a7d7-dab927096a96",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "32eb7d94-f130-432a-befa-d0df957a9a33",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "dc8319dd-328c-4573-8b97-e864219320dd",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9851a485-1329-418d-9db4-bcedf11a4e70",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "44455acd-1b92-435b-b34b-5416df840425",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "111c8972-1d06-4bb6-9a15-30a8ed775038",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "73a52709-fc71-4d8e-9840-1ce6886d3cc5",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "8f92dc39-044c-4a86-892d-18987f9011dd",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "300f0299-5fc1-441f-aee5-292a1ec5853e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "4a491149-bfa1-49a4-b3c2-4ea6aa679f91",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "6d576794-8125-45b7-9d00-9c46c22756e4",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "fb6b8b13-b5c2-4413-ac31-a1d532a341bf",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "02dc3573-53d5-423b-b9ca-0674f1ce566f",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "a067b2ba-bac3-4ba8-899b-5d19c5ee2ede",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d58eb4ad-c941-45e9-926a-c66b2f24b831",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "509ef8d1-bf1f-4d8e-842a-bd15d91d8796",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "46a1700b-4ca9-4857-854d-5ed0976fdc2a",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "e067e862-d24d-49d3-a458-3309d71c9d66",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "0e117477-5da2-4ed9-a5f2-3e472b99821e",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "4214701e-19a9-49e6-9c23-f9f4070e9627",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "c29db1a4-384c-4cb3-a5e5-137775c251d5",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9a5d1108-6e09-469b-98b1-80dfe0aa9e4a",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "7b31f3e4-151e-414e-b216-d1a6e2ee7e66",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "2f6b4a1e-30af-4322-a658-0699170028ed",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "331d48ea-a538-4b9e-84d8-5836e92fbd99",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "fbf52cb7-a146-4027-b7f5-37b00267f4d9",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "caddcdc3-6259-48a1-8509-53136021daeb",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "973a3bd7-ad17-472f-854e-7c583862da73",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "7b4a47a9-4068-447f-b9b7-7c807e27eb42",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "84632991-707c-46a0-994c-12f21230795c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5c5aa17a-fd2e-47c0-8ef6-4e5bc8942059",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "fc05ed42-140e-4367-b975-0c5b55ad7ee0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "c73fe3f4-a61a-4274-9fcf-5ab55c6b753e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "e4d11f63-ba0e-49ba-8d9c-2548fc3d1dd4",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "444e3e4a-0f01-4f5e-80c6-35d226c779dc",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "749c3cf5-e9d4-49d9-a8fe-c2e4b2db122d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "726c615d-67e2-4ce3-b66b-3e1b023630f9",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "ec142e95-22fa-491d-ac76-f03ce1f537ab",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "b0260bd8-7aaa-4792-8e02-d7dd8e3902a4",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "3153615e-5b97-4198-8277-0895f82e97ed",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "ef95ca55-acf2-46bb-ab9a-aa32b02c9d86",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "cc6f7223-c35b-4378-9093-d80f78d9266b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d28d1948-7f1f-49c7-b0b9-2372dce68c8d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "06ca4251-a157-4b21-b2db-c5059e66cbed",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ed298731-c148-42d3-9339-ee9d1c56441d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "2199fbb6-854c-4fda-b1a5-4536172804ea",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "6eb13ba9-1c58-4a1a-94b6-d58ccdfdf775",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "7fc66930-108e-4ae5-b7fc-1dc295f14f85",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "20c9538f-4fd6-4ae4-b7f6-535fa41fd689",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "76a2362f-8324-40cd-966b-6867a7d4d32c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9380e0db-f36f-4bc1-923f-bf89df5c5ad0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "553d76e9-aed8-4bbb-805f-72b453fe9c15",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "6020fbbe-56fb-44da-8804-22586c84d68e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "03fd1ce9-1e78-4fae-add9-582ce339cf30",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d91d9e42-93b6-4b47-87b1-1416c8743651",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "3720fe05-f126-4144-89ba-ca02d7ea17cf",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "2359f835-76de-4692-9d0e-495fa8ee14d6",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "e10af62b-da84-4305-b3eb-b8d9f328d35d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "8aa9d2f0-c1cc-4cce-8cee-eaf289468154",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "320ccc03-480a-4f62-ae92-082d5a44c7f5",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "fc703038-e348-4461-8d1c-0f643a7e794c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0bc988aa-aaab-4215-ba4d-0c5d80184f6f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ffa18675-3ec4-4d81-9c5b-a4ab8fd508eb",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "c6966f46-8585-496a-8440-edfb9ed1af84",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "db5ce55a-dd80-4b64-8ee8-a7bcbc074768",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "69112450-e668-499b-a106-ca0e9c506f56",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "85f769d8-b4e1-402c-8986-8e8617851b92",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "132fe2d9-8987-4d0e-b0d0-66d5e5bdd381",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "b58ab8e8-cf20-4512-875f-cc92aea41b47",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "f335c5da-301a-4d83-bdf1-a450f7fa8cd3",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "e7b2a343-535e-4e7b-be83-e4a0586dc6fd",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "887ba205-be31-4ffd-b6f5-17ab76a43a6b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "8fe6a216-6461-4018-86cb-6cbb75d95c6c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "22646573-54f1-4c01-8d62-ac22e99648db",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "f57a13ef-bcde-4f8a-9c2a-640554215cdf",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "c19c3593-88b4-4c55-a800-7345bfe93301",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0220305e-9859-498e-a3bb-4d89b770f9cb",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a776c9a6-eb9a-4ce6-b737-bdd84527377b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "6030c44c-507e-4ae1-bfee-3db38ece8e46",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5bb0a4eb-cc8c-4dd8-9442-48ee9a17408e",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "c2d1cdee-e307-4cf2-8034-c2cd29f5103d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ad54bb1a-6af5-4fa7-9f62-ca9235ff93b5",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "43f6b967-8835-4240-b761-ad011cc86f90",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "078602e1-aab1-4148-a1e8-2fb5ba73fa0b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "93103fb6-3990-41bf-94d0-37f823bb3654",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "86e82f78-f8c2-4daf-bd46-7641da078b00",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "1197378b-e657-4fdd-bc6e-ad5f9428be6d",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "300a7d14-cb87-44fb-807d-66fcb73ad887",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "ce9fa42a-6758-49db-a452-e3e890f7b216",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "792f1062-8969-4c60-ae4c-fd5798c93f62",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "770627aa-8c9f-432f-a339-f3309fce6863",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5a19adc2-15a8-4b35-bfe4-dbabedcde067",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "49596c93-bbc2-4420-ac81-54a1e3f37a8d",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "869ce61d-fd4a-4ac6-b8a4-7fb1bf61c5ed",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "94f9c2e6-16f1-400e-9b29-ca4843b0a3d2",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "c6c2bf81-976a-4bba-8c0f-8c6867bd8aed",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "3f1fec67-fb85-4a44-b216-7c126ac257cb",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "de359621-ae8a-49e5-8669-9d3df597497c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "ab2f49f9-6b69-4f3b-9e54-3555b262cbfc",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "ee2c20a0-1659-4fe7-9d6b-e6c66208d083",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "eec10d90-5d59-434b-b903-e845fdbd3587",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "004f36f5-a40e-42e5-9a09-ae4d8134c3e3",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "bdaabdad-eb3a-4901-8839-416b4ae09db7",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "13819ac2-edea-4772-a9ef-66c1fbdc4009",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "f8d1a82a-1da5-4043-9272-b8293e505dfa",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "14238ce2-5ec9-4988-87f6-9d6d9532686b",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "ab1e47cd-e97b-4c95-8837-bee3021ca626",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "7260b473-d964-4833-861d-6380f2b1904e",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "0fdccb1c-6b4e-4dec-8146-eeae880e6205",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "37a999b1-d59f-44cc-9e1d-ce3af1da9e5d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "57096023-4673-4258-b200-1e5d93ca10b7",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0152d86c-4748-49f1-bebe-dc16bbe340b4",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "49cd2cc3-a281-4385-856c-4ec347517e51",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "b4820991-3216-4a4f-af1b-0c8ec1f89221",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "c057dd69-8c06-47aa-91b7-b6c6f0ef900c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "fa111839-5a2d-4b76-818a-cef079e9984f",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "2f171ebb-883f-475d-a19e-cf4d1d1d8fb4",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "b2746b38-238b-4b9c-a070-92be20cf8507",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9aa73e77-a72f-4921-98af-676375f08a1e",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "b9917bb9-02e5-4d20-9861-2f1d470b0483",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "aa70ff34-aa25-4aaf-9129-6f7e8aa621c2",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "dda71cf1-2729-4ba1-9497-a410c6ba5700",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "4d4ffb20-46fe-42e3-8d30-c4df7a68b545",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "adcdf287-f86b-439e-b8c2-5c2607154b16",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "e800f591-b185-4892-b65e-521acd79e274",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "830c98e0-ff3f-4e35-a43f-db9286e3c587",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "f6bd2da0-a4cb-4563-8298-fdcaf428a02d",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "9d18a29f-8b7f-458e-8d62-33e29a784757",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "af57a458-3bb5-462d-9811-d16a11378be5",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "de755c9c-4c1d-48ca-8532-9a967fecac38",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "e088d13c-86c7-4aac-9487-97c950a64ea6",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "1b79ec34-8ca3-4db5-806d-869945d05ad6",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "d53e747b-46ee-4d51-8c7d-02288630e25c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "353617be-4e19-4093-b585-e9fe7f8c7ad8",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "8231b138-9875-401a-ae34-e676dd460265",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "f3ba8205-b7f6-4be1-beca-033c851ca6f0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "6799048b-2efb-4fed-be4c-4b80bc76c92e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "26ff3f58-1d08-44a9-b444-bdad15274671",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "882dfa96-4c0e-431f-810b-49c96d0bcd84",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "b7c49ac6-4455-4052-a4a7-997a0d64d780",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "839521a0-398b-48ad-a43f-f94c364e15dc",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "34a86355-4b4f-445d-8a14-ee760d26829c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a2b38d44-9d08-4fdc-b261-41f85d960ef9",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "6f76c452-f519-4606-a6ec-05696810c960",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "4bec46f0-88ff-41eb-8ac9-deaf9488a67c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "f7d2ca58-d8ca-48aa-82ca-fd76dc6f6b32",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "d4478979-3680-4788-8c13-219d284c39a3",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "76a19814-8cb7-4192-ab65-60f0bbf41af4",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "069e1687-7e05-452f-a6f0-3c24df005243",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "667775a7-817b-4d5a-87ac-8e5f736f848f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "f0f440a7-a663-4c6e-b85a-0296c382c7e1",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "327ada00-170b-4d7a-9c46-2617a2c8d346",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a9d7deb3-b5b5-4a74-8b2f-1753ac25897f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "88ac40dc-6352-4d9e-9c22-c350776a2e8a",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0bbc2cd3-9db4-4b07-8367-7fe5d814a3d5",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "452b36a8-3abe-4ff6-bc52-c0d4fb71bdb7",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "be09e1b9-30b3-40b6-a7ea-3a23a132e6e2",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "87f2131a-16dc-474d-b61d-bda726ba332f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0f22d538-2ba4-45d9-854d-663065020fa9",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "08cee25b-b96a-41c8-9022-6554bf61d6d0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "06285b8d-f756-42cc-97e9-a27c5623cf2a",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "96079aee-b009-451b-9e41-d789c671a18a",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "f89a4022-06eb-4a8f-aa79-2b2a1eed20a8",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "635dc34e-c94b-47a1-ac77-bd6236ca90f9",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9acc8708-67d9-4dfe-839e-92c33ee6098e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "19fa2944-dd94-48a4-b5fe-6ba228c25145",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5c3e5ae5-ed7c-4d95-b4bb-022ed895acd0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "b516d463-91c1-4ffb-9356-488e5176cab8",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "cff7a4dc-1bfd-4174-a223-2616a9650306",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "48f7d2ec-291c-48a4-b8df-007bbafa5843",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "c6690d74-53e9-4b93-8a66-774636005174",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "67b1b24b-b07d-46df-a9da-1c6721895209",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "e589491c-bff8-4960-9335-1d702a6b6f22",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ebf4d1c9-a749-4b46-9790-3c7af7027a87",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "f1b69a3e-758e-45d7-b8fd-7a8fbbee3896",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5246640a-276c-4222-af4d-2d8a1c29c6b5",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "14152874-0c67-49d2-a433-1a8374ef4e3a",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "6ff808f6-26c2-4217-b51f-4b8fe36a1d5b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "6d494101-f73e-4fee-9dcf-2fb46c49b8fb",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0a3e082a-1967-4c9a-8730-cbe16243e6e9",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "2eb5f2cb-5ed6-42f6-a605-fc911db7f7dc",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "99ddc534-179d-4e9f-aa9e-27083a64971f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "e6e6a15f-1f98-42a7-bc20-1db2da97d0e0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "6d5cb285-98de-47dc-bd8d-544284ada462",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "46dd0171-2c5a-47c4-98e8-8611ffa64309",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9b9a187b-b232-4731-9dcb-856b69ef71c6",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "2cf29616-9c60-479a-ba94-7dc24cdd6c79",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "fe06d9e4-4f3e-407f-b339-e63dfe21b34e",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "85237afb-9d06-4ea4-a2f9-5823644b1d7c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "8ae43434-44d3-47ce-ae8e-d1267d4a6de1",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "e4a5d215-468b-4864-b8fc-27ca26ef9ff1",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "3c7e6f0e-b721-48b3-bc9c-8dfbc9385113",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "b1d7847f-480a-4f26-b7d8-a7e49c6d784e",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "521a32fb-7971-47e1-8687-075faf2219ae",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "873b3fad-e81a-48a6-9008-5c2e29deed74",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "37a7ca95-c502-4124-858f-a39b84666862",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "031f76c4-4bde-4c06-a436-de5c49a12d0f",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "05802414-e93c-4bdd-8bb6-d7b6b67054e4",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "9fdc69f1-8cb0-4189-8261-e3a6e50ba28b",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "b98efb0d-5256-4cfb-8ee5-96460603657c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "f3ace644-ee36-4e09-acef-4a8ee866bccd",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "c122e762-400a-407b-a5a4-28cdf2ac3d4c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "961b49d8-af56-44f0-88d2-c0f77bf9754f",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "c625c290-1d82-4cf3-ac55-247d68159d02",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "52c1ff60-d018-4e25-becb-b2455f3c1e60",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "b315a44e-9883-41e9-9716-06c428299ec6",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "44f844b3-9a30-436e-97e3-0298ee27afab",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "cfc5841b-45a9-459b-a327-f2353ebcb0e8",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "cb0d167d-5e55-4c1e-a0e8-d5e6a6fc4108",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "54a586bf-8003-4ef5-b576-e928807191c7",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "e0b0f575-dc32-4672-b29d-fc94ad9833f7",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "285b4689-e04d-4c14-8cbb-3069ae6ea4aa",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "ff082959-f4d0-4e0f-b5f1-b5d256253225",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "3a8d78d4-f683-4293-9413-aa0663c16185",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "485b2c09-4605-4a0e-a97a-37f0eef8d907",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9726f66a-9816-4deb-ba76-dba145657b3a",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "e4efc0a5-5a07-462b-90c5-356d61008a1d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "b6ad51f3-fac9-4a99-a3b5-cbf241fd350a",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9ca52322-e644-4cc7-8648-efb5199e4d30",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "dbfb3e8f-158f-447d-9f76-20bbccec8322",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "06f211d5-61bb-4356-9858-503fd5fe8a91",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "55de7a94-d22b-4d50-abfd-47e4c288fe00",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "62d5963d-b140-4afb-8509-229a52d0cc70",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "d72d350c-175a-45b5-ab60-dd960b30f253",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "2290582e-f097-44e2-9e18-822daed97743",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d56921e9-f509-4e0a-82d3-9b7bcc1344bb",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "58bb29ee-9992-4eaf-95dd-2f5f24b0018d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "31875b7e-349d-4bc1-b47a-7b94aa9a1491",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "1470d8c9-9bbd-4e14-b60c-a40bb14cde90",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a3570681-ce3d-44e1-ba46-d143001e165e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "07d6935e-221e-4771-95f6-9d540911b65b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "56854c1e-85f1-429f-a999-1c83d5a4c1c0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "e78e3b81-349e-4e3e-a5f4-2f5a14ade538",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "3d2b5b82-f5de-4685-b028-28c4d81cfa3b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "43f314d5-0f8d-4b7f-8fdb-3a246db2b5bd",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9704c5d0-50cc-4156-ab19-a306343185cd",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "04165e91-f4e4-4d73-9f73-91c66a3a18b2",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ac60ee86-8cdc-4e34-9b15-e9061ba622d5",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d37d4332-f4c1-4d3e-b678-b186614fa486",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "254f95af-53c3-4cf2-a0f8-b3c7d6f83b87",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "ba7754fd-8eee-4e2a-9126-ba571f82e6f5",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "de941025-0272-4181-8114-fbc923931a89",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "fc4eac3d-bbe5-400d-b90d-31a5394da4b2",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0998288e-b3fc-49bd-8e32-df02c31c6c22",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "1da69be4-b0e1-47db-9b51-69b6b69064cc",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "7308ef4e-0cfd-4b6a-b5a5-eb542ada2d57",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "b14d3c02-4e3a-4450-98ef-f6722c0d866a",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "bf7d66e5-f0ff-4ce0-b61a-4293a984fd4f",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "4a18bf6b-c7db-48f5-8e7b-21e9943c8308",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "95e48328-c998-4a2b-b16d-1a655a8e252a",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "69bbeeaa-3f3d-4cf8-a72b-aa34a751674a",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "15529598-5534-43ab-843e-fe49bf288190",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "2d28d93c-9737-49dc-919a-3fb93c9f28dd",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "bd617da9-587e-4f21-833b-82f552eec5b2",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "aa635c12-e5f7-495b-b23e-ad3fc2321ed2",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0c55edfe-c0c6-4575-808d-8c524cf31393",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "e9e88298-af81-4bc1-a886-8d1561b932b7",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "fd38a7a3-6b76-4c17-83d6-8483430ffac0",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "159d5da8-b4f8-4383-969f-2228e94678e8",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "b00b170e-941f-4d87-a053-196ec3b6c369",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0d8394ee-e1fe-464f-8e96-e6f2e9f6b64a",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "62c1f02d-9a2d-431a-a01b-13c64f728361",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "f67685e0-c409-40da-ab73-c6616288a370",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "47e4ca45-7d56-4dd1-aa24-db48140aface",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "3f84a169-e6b6-40c7-8304-a4f60b502de1",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "f94a3aa5-c1df-44dc-8a76-c3fef683c152",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "4e6e720c-c40d-484c-9cfe-4ce634f2726a",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9d835b6c-615d-4511-9d2a-b512bd954520",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "2642f09f-0276-4058-b848-c2f9bfe28532",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "da0c9185-bf27-40ea-8adb-7271a2067901",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "39982279-5859-4ead-95a4-c5c087098145",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "fa091224-2c6a-4dbe-839b-155f291ee7f6",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "ba3d06c3-89f1-422d-9397-0628a5919ea7",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "159f6519-0f70-4ce7-81d4-b1124d649cf7",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "2f259695-76ec-45c7-8418-c7a1d5bc1282",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "7cfc5367-db3d-44f2-b9cc-128ae1042981",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a5ba119d-5df3-4710-869a-1e9ca5e1a330",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "dc958757-8d6e-42d0-b39c-9ca01150f245",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "26da8d1c-89bc-4a8f-ac59-a78f9f9a0f83",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "bc34a22e-e040-47f6-a7d4-bb244a37a310",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d266dd06-2c14-4bb0-9652-709884b6d25b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "7b11bd92-8a8b-4aec-9f0a-1cea2b8d2010",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "7b05e709-6f29-4701-a582-8cc735079aee",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "240f2a2e-0795-423f-822e-cd59f3b9353e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ceec1ab5-1617-45a4-92e3-587b13072618",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9d0603a2-78e1-4abe-b945-fa8f22d7ca24",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "f0ec52b5-4ae4-426d-8d5c-de248d731380",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "00a97214-face-4c23-ba7d-25672beba296",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9631e9c5-c77e-48e0-91c0-d3d243445a80",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "b1e3e5bd-3c31-4b2f-8a08-20c1bac61a6e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "dcb8bffc-6f7e-47ff-9a96-4834c0dce67f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d0d6791a-d728-44fa-9c47-b718ebd661fd",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "aa02068f-09c1-4ddf-8be7-860015532440",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "3e04c33e-5bfa-48e2-9030-7bec1e651df1",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "3444e3fb-518b-4886-bad5-a10e41137b41",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "7a5ed383-e8c4-4bd3-a709-c06c4d948c31",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d7423f72-0f5c-4f84-9312-8c6e8e0eaf5c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "27eb67a3-00d6-4e41-818e-0dd3cc291f2b",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "60b34392-54fe-464f-85f9-e32d5dfa4b3c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "52559e82-9155-4aa0-aedb-d87dae1959a4",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "d3231697-6da4-4b77-b609-73c8449688fd",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "9b9c4f83-f7d2-4dd7-8f67-8be2b3ec7267",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "931cde09-b042-4be3-b24f-fe8161259c14",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "fef99857-d46a-4f94-8aa8-3bb39079f442",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "0d0e0824-0578-40dd-a6bb-177164320e8e",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "93c3badb-5345-4637-b6b3-68daf86c6979",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "33303701-4a0e-48d9-bc2e-7a2cc22bf440",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5e70a052-956d-4788-997b-b1681f84e311",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "79f5492f-400b-4e56-81aa-84bc3eb9b9f3",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "31bdab8b-7d61-4eb1-9cc6-b9889a0a2dbd",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "b661da70-4aa9-4eb7-a765-d3477b68d6ee",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "7f201451-482f-40e3-aee7-4fee24c26233",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "ccbfe825-3bbe-4dc9-a66c-4695cdf3fa13",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "7572b686-50fb-432b-a92e-2c32fa2529ec",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "7b0478ce-b288-4c3c-a459-94e77442203c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "df255f05-9755-4022-9cf2-7d08344f12f5",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "be211654-c18a-4332-8552-d3468badd1e2",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "2486ef2c-4cc6-4d1f-acaa-befd5a96ee6c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d718b175-ced8-4f45-b03b-1985c909ae23",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "2644a335-6672-42dc-acde-4f0f8a0de746",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "0fba95a5-e7c9-4071-b2cb-dfd345d96240",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "a709506d-d654-4829-9287-d306af393c1d",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "ba087fde-b972-4f64-8d09-a1fbb162446d",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "ebf76a24-ba78-4da3-868c-f850e0d2ad81",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "895f94c1-3371-4fa1-a22a-48c918c284fc",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "44e533fc-7f40-4089-b804-3d0aab999ace",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "b16f98a2-23ff-4245-8aac-083a5bc1b019",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "e686449e-991a-4486-a176-d46e2c98c207",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "ba419b46-b472-4c43-aecc-7e6c30088518",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "fd388c5c-4b94-42cf-8276-ca7962534e09",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0b98d29c-9a12-4c82-99f8-8b39c725f51e",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "18a78a27-389d-4a2e-8894-4272f1df2fa0",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "a26308e7-c35f-41a9-aa4f-7880a47f8947",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "889af0d3-5fbb-4839-aaf8-cc032b480277",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "de6f259a-7ee5-49db-802c-74bd1b01b2df",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "862c49c5-d555-4262-9dc0-8dc72795313c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "52c626d9-95f0-4126-85b8-b265e3a88b5c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a741a1e9-2e94-4bfd-9762-e3dff22eca83",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "1008d77a-4dd5-44a9-9f65-f59a1d57aa73",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "74d9fb2e-4082-42d7-8f5f-19cbd63acb3a",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0a0c9cbc-73d1-4a37-ba3c-9abc13f1dac2",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "7c7fc659-24a6-4e15-9d31-f85972116ef2",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "e2bc8bbe-58ab-45a0-920a-e7b622632942",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "cc61a2ab-3f22-4c2a-a98f-c0f4b0f84f07",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "f0d15a38-29ea-4b36-8c4c-202f2ae8114a",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "9ac402a6-1355-4df3-a82f-a5608c0e3823",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "72902055-d083-4576-a49d-3a3b22babc08",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "869226d7-2742-4100-99ba-13a3cf6f2995",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "6433da90-7b5e-4a5e-88c3-19d4e681ad1c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "6362d72c-0d76-45cf-8bc7-cd8bee494b9d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "633af97b-6def-44b2-9270-5052616b9ffa",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "89468576-aff0-493d-8d0f-9932c3d26782",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "f10c31e5-e424-49fd-9995-c9a652e40d0d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "c30ae99a-7802-41f2-a6b9-74a3e14ce14e",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "7ae4d0fc-6750-4226-8c2d-46de0de0213a",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0dd8de7c-b69b-4718-91cd-57446eda8cd5",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "69a32726-669e-401e-969c-ba21fe868ea7",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "017b9ebf-46a4-49a8-bd1b-c9686bae4217",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "74f8d92f-7d50-438f-a088-9bd614dddca4",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "2c12e7c2-9f01-4159-9ce3-e2f3242c4c8d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d6197632-6419-48cd-8495-f1eff3383692",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "0266f060-e12d-4dec-94b9-14e28dffd0c2",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "4fe187ca-81f6-4d29-aae0-eb74dae84010",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5d10cd29-2990-4a00-a6f4-d876f263889d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "fb65d478-2f7e-46d4-867b-40d06ff477dd",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "f7d2df70-2c90-4952-a889-ca19b79b22f6",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "90ca91b0-17fd-40c0-a0ef-26c9a5afb8a0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "1b12a44f-9018-42ce-b657-8399a3e64f07",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "6239783b-fa22-47f8-933f-d6368ed1d7ba",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ebdb0581-7f5c-486c-b024-f4463941688e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ab76cf89-9cbb-41b0-9298-dface62f1728",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "9c1b3824-bcf1-4fb7-bf03-adc5c839ee18",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "1f7e68ec-e226-42e9-9a60-cabcee008f6c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "3b3ccb12-4c25-4632-9ea8-f41a163a17e7",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "37508581-4132-467a-9e15-2176b766fd6f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "69fe3585-67e5-4307-958b-0bb8fa9f7a1b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "26d440e9-1a0b-4a8e-a66e-027c52adf7b9",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "47c4ade3-ca03-49d0-a44a-bc70006a6f02",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "e0adb0b8-bfaf-48f3-8809-094b5cba70ea",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ca1227cd-70f4-461b-b9c6-b86d049fea7d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "c5e20870-3d38-40b6-bedd-c5a2dccbdec1",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ebd3cc8c-51a6-41c0-9c9f-0db3e7abe1c3",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "89cd8e94-7a09-4bc1-9d36-748b2dbe906d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "678cb4dd-a3f2-4c8c-a614-0e53c3a95404",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "e987e38f-29ec-4066-a5bb-0f7591364ae2",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "40b1158a-1de3-4ffc-bb18-a6baf0115abb",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "2e0b849a-4a29-4ebb-96b9-eb15b4a21349",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "bd8ddd98-f342-4200-969b-64da5f64f883",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "78912a51-6e35-408f-b232-6198d381d83c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "d6a962c0-4b95-47dd-87ff-a5db116a2e45",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "c66b8f22-7581-4751-bf46-c70556318ebd",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "7202f1ee-b2c5-45ee-8b03-bcaddf7d7df1",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "316f1589-196c-459e-9f56-fc78e977e7d9",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "d53f4507-4c5e-4d5f-8fbb-efbbd20c80fb",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "17c63c62-eab6-4b47-bf1f-70e2ae8f9f92",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "4731249d-f467-4f22-bd56-4a7f00509981",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "217a7819-bd42-4de4-8995-c3b8fffa5ad5",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "9d527bcf-3796-4ba2-baa7-155083986115",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "6b420890-0577-4661-bbe6-8cf0fb47dc89",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "10cece86-d06c-4be2-9e1e-f16f4df1c533",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "bbedd838-5fee-4693-be04-24ae0b584d5f",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "90ac7b8b-4d60-4bdc-9a1c-0412766db1fb",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "14164ccb-5b9c-4044-84ae-e61a15456ece",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "d94778d9-b7b1-4a4f-9d37-747298c88159",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "475d4daf-690f-4771-a6a1-6ae36fa67193",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "43ea3d7c-e79f-45f4-9e61-06ac979dbd45",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "bc3bfb99-8d7e-4680-a198-7fd5785f881c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "12caaecd-bfdb-4326-b20f-782203f35371",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "28d6111f-e367-415b-a1df-8148d7b4cc88",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "464834e3-de0a-4685-b164-86780f489a4c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "84211065-d3fc-4406-8249-876e73bbe6ee",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "89edbf2f-bbf7-47ef-b9ed-8f1f46b781f2",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "cbb2219b-45b1-42a2-8b0a-a1a943baf47a",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "4b85befc-fd6f-4c54-87e9-047447ded582",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "90c464ff-d17b-4869-9a7e-faf0a0568a78",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "b994d19b-fb8b-4186-8fa4-45c77e33afcb",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "6b0a1e29-c07b-4db6-b039-8e1b461b94eb",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "9baa92ec-5442-461b-834c-8572af59b16c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "8ec55441-445b-4697-bdce-2136ac33f75f",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "afdb166f-e043-4073-9f60-89e8510870bf",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "8fe21946-616b-4177-83ad-8125adfb4497",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "9d05f71c-9493-4dff-a179-401bcb749300",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "be29baba-b35b-400f-abf0-24697bb17a4c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "b5169970-c0fb-470c-ab74-2bbc5dfbcb90",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "311783c0-17c9-4a83-8870-131f9a283946",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "8dd4db6d-a69a-4325-a025-2787de4b3dda",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "43058915-71bd-4719-b2b5-301db0ddb6fd",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "eb6fdcc7-9966-46f2-a452-65586cffde31",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "1f25748c-bc6d-424c-a778-1dee43ffb719",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "eb45c994-fcf5-4921-b623-892b9e706421",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "160cfc38-ed12-4f2c-93d3-147084565147",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "259ca756-9349-4c08-b756-6a72fbac2b69",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "dce09b58-e710-4a0c-912c-698a17df186d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "e0e0778c-c9a8-49ad-aea5-0e8c9d50868a",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "a8a05aea-3ea8-48a1-af44-88bc9c2b5236",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "eb4b7879-cc77-4bb7-ad19-460aa37bc818",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "6b0e7814-d23e-4c2e-9c87-928986f122cc",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "5c08e4e4-09b9-409c-b97c-00592506f796",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "9de327d3-c262-4a21-81d4-158dc545d850",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "45752fca-e15e-4061-b5c6-7f534f308e91",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "991362aa-6912-4614-8ab1-912dfe64729a",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "10270ff1-68dc-4cca-9407-7649d8bb92ae",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "94c1e2c4-3586-4d96-b9b9-bfe0cc1a7c15",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a2ac4c35-4b8c-46f5-957c-6360e6bb9da4",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "79229903-d941-42a7-ba64-b3f048b22f5c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "31669547-dd6e-4545-8e4f-ca3e4b4bd954",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "3415b278-2beb-4d62-abbf-3aaa082f4c67",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "b8a8c727-37ba-4076-bed5-36c6830f56ff",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "5acd1106-7f84-4519-9c64-300a7b0cafb9",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "f7ff8b16-4f48-4c8a-8582-a5f28be99121",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "1e51f0c1-e9da-4ebe-b1fe-3091ced38f17",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "eb0f5d9e-bdef-4e49-bcda-67cb32d9daea",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "40018168-4cbb-4275-81ec-a09d2c61b113",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "4cade44a-9c2a-458f-863c-85249f63f92d",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "8ae414b3-91de-45ba-83f1-364b222897e1",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "87498f40-e6fc-4b72-bf8c-cb6078e30f27",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "541c264d-1b7e-445b-aeb7-b13173eb6170",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "3dcc2e8f-f26a-486e-87b1-16c1df9992a6",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "05bb1046-614f-40f7-b545-53e547739133",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "0b95bc3a-3df4-435a-8fa1-cff623f6f1f0",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "dc7e7256-b451-41e8-a889-7778a1db8a69",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "22e7bcd4-939a-44de-9556-bc95d6ffa6dc",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "ebab1c26-a8e8-46b5-b6f9-c4ee688ce30e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "7af101e0-1286-465d-868e-376384791d5c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "fa7e560d-ffc4-4475-94ab-4232b2c92471",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "10f0dcfe-4f3f-49ac-b636-619ff0b6baae",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "935cbc8a-cc8a-4cf0-976e-d7e816554207",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "cfd613da-c6e7-42c2-b01d-012b6827781c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "9b727fc2-51c4-46f9-ab8e-6b702753da72",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "c3a0bbbb-6224-42d1-a431-82d36ad9ff5d",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "85e28540-1bdc-44c9-8fc3-98de5094cfae",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "e269d292-af7b-4cb3-b899-556039448772",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5eeb3747-52b7-4bae-9641-1dd7528bc3d6",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "36fdeff2-b2ce-4df1-b04d-22464cc91626",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "9b6b22ad-3898-4eec-8357-fc89e0e1552e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "09e6c813-0aa0-4fc4-be61-c75bd9a07bae",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "df5b2524-eada-4ed0-a978-945aa63bd085",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "c1e77ed0-6ca9-4181-b784-1713749ce2a4",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "63512f0e-676d-4884-ae1b-c1a73fd69ece",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "32b7a3e8-1a84-4abb-a1ec-3b2e26bc816c",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "0219affa-357c-4b6f-a711-4f01fd33fe56",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "7b2228b9-b91c-431f-a963-e83c5fe572f6",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "88077429-d373-4387-a675-738fb359b442",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "2e4b1f1e-6351-4868-ba4b-a931b2f4bd48",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "0b826d87-9bb3-4db1-975d-97b656fac35b",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "2c0f3153-fed3-4319-934e-9059b14efc6a",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "ff487b1f-a5cc-48d7-aa82-e85ee2af717a",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "db432321-5820-49c7-994e-68fcc9f7fa5c",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "006e89bc-b38b-48ae-a5b2-66322dd440ec",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "2984cdd2-3cff-4a35-8af6-598633b62f0f",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "a6637b71-cd86-40cd-81f7-7caf399cd47b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "02f0ff67-bdf3-4250-a554-d300746ee77e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "826cfb7e-9957-432b-99e9-763b5d5d8c9a",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "22f0ae36-5a5c-4527-aff2-1517d0fd4054",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "2328b25e-fd02-4549-9ecd-15d29b311804",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "447b0ef5-a062-4f67-8340-3b3374d139aa",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "d99a63c1-2910-4cee-a8a2-f4fdb628b875",
+      "status": "pending",
+      "sonarStatus": "OPEN"
+    },
+    {
+      "id": "b861a4ac-d774-4915-a5c8-76ce2f321ff6",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "b57dbe21-991b-4506-9508-e930ba9f4488",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "c3215336-8a40-46c4-8f0a-b03464080e67",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "4c9503bb-b3be-43d2-b9a5-b2e2a714cb00",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "e8f87f2e-6c04-411f-8a9f-c4ae071420d5",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "5c3bd3a9-757c-4eee-b8ba-114d490fe3a8",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "8e3f34d5-0dbe-40cb-8548-b927f7e2bc2e",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "e56e121f-5a3d-44eb-843e-bae60b8b3b9b",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "23749566-7d0e-4689-8d87-49ef5ccccbda",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    },
+    {
+      "id": "298c72b8-a182-49e6-81b0-0b88f7841f15",
+      "status": "verified_fixed",
+      "sonarStatus": "CLOSED"
+    }
+  ],
+  "additionalFindings": [
+    {
+      "issue_id": "7c9c4c9c-a011-4a57-8032-364de9063e10",
+      "file": "backend/src/database/adapters/mongo/MongoTraceRepository.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "This assertion is unnecessary since it does not change the type of the expression.",
+      "effort": 1,
+      "rule_uuid": "3ba2005e-1938-4ee4-ab21-d3637a348b73",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S4325",
+      "rule_name": "Redundant casts and non-null assertions should be avoided"
+    },
+    {
+      "issue_id": "80c9aeee-4794-4bca-b354-db34c6591339",
+      "file": "backend/src/database/adapters/mongo/MongoTraceRepository.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "This assertion is unnecessary since it does not change the type of the expression.",
+      "effort": 1,
+      "rule_uuid": "3ba2005e-1938-4ee4-ab21-d3637a348b73",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S4325",
+      "rule_name": "Redundant casts and non-null assertions should be avoided"
+    },
+    {
+      "issue_id": "55379550-e016-44b0-a9b6-dafa786d2545",
+      "file": "backend/src/database/adapters/mysql/MysqlServiceRepository.ts",
+      "line": 318,
+      "severity": "MINOR",
+      "status": "OPEN",
+      "issue_type": 1,
+      "message": "Unexpected negated condition.",
+      "effort": 2,
+      "rule_uuid": "727541dd-4426-4583-b3ca-d77b6e3e88be",
+      "issue_creation_date": 1792685053000,
+      "rule": "typescript:S7735",
+      "rule_name": "Negated conditions should be avoided when an else clause is present"
+    },
+    {
+      "issue_id": "ecfef374-a2e0-4cca-9c2c-7f1ec076bd5f",
+      "file": "backend/src/database/adapters/mysql/MysqlServiceRepository.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "This assertion is unnecessary since it does not change the type of the expression.",
+      "effort": 1,
+      "rule_uuid": "3ba2005e-1938-4ee4-ab21-d3637a348b73",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S4325",
+      "rule_name": "Redundant casts and non-null assertions should be avoided"
+    },
+    {
+      "issue_id": "0a1aca66-7b55-448d-b3da-1fb2ebba175c",
+      "file": "backend/src/middleware/auth.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "This assertion is unnecessary since it does not change the type of the expression.",
+      "effort": 1,
+      "rule_uuid": "3ba2005e-1938-4ee4-ab21-d3637a348b73",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S4325",
+      "rule_name": "Redundant casts and non-null assertions should be avoided"
+    },
+    {
+      "issue_id": "0c3f1177-454f-42d4-9e26-647a553f7b6a",
+      "file": "backend/src/middleware/auth.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "This assertion is unnecessary since it does not change the type of the expression.",
+      "effort": 1,
+      "rule_uuid": "3ba2005e-1938-4ee4-ab21-d3637a348b73",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S4325",
+      "rule_name": "Redundant casts and non-null assertions should be avoided"
+    },
+    {
+      "issue_id": "c73ab7c0-4120-4f5e-8481-09df6ee7a7d0",
+      "file": "backend/src/middleware/auth.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "This assertion is unnecessary since it does not change the type of the expression.",
+      "effort": 1,
+      "rule_uuid": "3ba2005e-1938-4ee4-ab21-d3637a348b73",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S4325",
+      "rule_name": "Redundant casts and non-null assertions should be avoided"
+    },
+    {
+      "issue_id": "d8b16ddb-dace-4d81-9f77-d39e48b9f88e",
+      "file": "backend/src/middleware/auth.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator.",
+      "effort": 5,
+      "rule_uuid": "4d980f34-90a4-4b17-9d29-0cae2f6a0fa9",
+      "issue_creation_date": 1792653690000,
+      "rule": "typescript:S6606",
+      "rule_name": "Nullish coalescing should be preferred"
+    },
+    {
+      "issue_id": "eb7374c6-9541-413f-84fa-50fe570f99f2",
+      "file": "backend/src/routes/apm.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "This assertion is unnecessary since it does not change the type of the expression.",
+      "effort": 1,
+      "rule_uuid": "3ba2005e-1938-4ee4-ab21-d3637a348b73",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S4325",
+      "rule_name": "Redundant casts and non-null assertions should be avoided"
+    },
+    {
+      "issue_id": "07d8df71-3a1b-4c96-b737-b4d42d63cabe",
+      "file": "backend/src/routes/kubernetes.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "This assertion is unnecessary since it does not change the type of the expression.",
+      "effort": 1,
+      "rule_uuid": "3ba2005e-1938-4ee4-ab21-d3637a348b73",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S4325",
+      "rule_name": "Redundant casts and non-null assertions should be avoided"
+    },
+    {
+      "issue_id": "20861295-3178-4db5-92a9-9d2aac32d98f",
+      "file": "backend/src/routes/kubernetes.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "This assertion is unnecessary since it does not change the type of the expression.",
+      "effort": 1,
+      "rule_uuid": "3ba2005e-1938-4ee4-ab21-d3637a348b73",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S4325",
+      "rule_name": "Redundant casts and non-null assertions should be avoided"
+    },
+    {
+      "issue_id": "88fc63a3-ef51-4c9b-93d6-5c9c9821997b",
+      "file": "backend/src/routes/kubi.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "This assertion is unnecessary since it does not change the type of the expression.",
+      "effort": 1,
+      "rule_uuid": "3ba2005e-1938-4ee4-ab21-d3637a348b73",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S4325",
+      "rule_name": "Redundant casts and non-null assertions should be avoided"
+    },
+    {
+      "issue_id": "ed50428c-e322-4ff7-934e-78f7c331d683",
+      "file": "backend/src/routes/kubi.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "This assertion is unnecessary since it does not change the type of the expression.",
+      "effort": 1,
+      "rule_uuid": "3ba2005e-1938-4ee4-ab21-d3637a348b73",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S4325",
+      "rule_name": "Redundant casts and non-null assertions should be avoided"
+    },
+    {
+      "issue_id": "839216ea-9608-460a-9fd7-5a0ddc67d975",
+      "file": "backend/src/routes/services.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "This assertion is unnecessary since it does not change the type of the expression.",
+      "effort": 1,
+      "rule_uuid": "3ba2005e-1938-4ee4-ab21-d3637a348b73",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S4325",
+      "rule_name": "Redundant casts and non-null assertions should be avoided"
+    },
+    {
+      "issue_id": "9c7bd37b-408c-463b-8a5d-a6289ecac72a",
+      "file": "backend/src/routes/services.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "This assertion is unnecessary since it does not change the type of the expression.",
+      "effort": 1,
+      "rule_uuid": "3ba2005e-1938-4ee4-ab21-d3637a348b73",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S4325",
+      "rule_name": "Redundant casts and non-null assertions should be avoided"
+    },
+    {
+      "issue_id": "d586d235-2d55-44f9-802b-82be7f57ff6e",
+      "file": "backend/src/routes/services.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "This assertion is unnecessary since it does not change the type of the expression.",
+      "effort": 1,
+      "rule_uuid": "3ba2005e-1938-4ee4-ab21-d3637a348b73",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S4325",
+      "rule_name": "Redundant casts and non-null assertions should be avoided"
+    },
+    {
+      "issue_id": "aab764a3-4d8b-4bf1-9a14-04d4d1addb30",
+      "file": "backend/src/routes/users.ts",
+      "line": 31,
+      "severity": "MINOR",
+      "status": "OPEN",
+      "issue_type": 1,
+      "message": "'req.query.search || ''' may use Object's default stringification format ('[object Object]') when stringified.",
+      "effort": 5,
+      "rule_uuid": "2c58cc75-f860-498f-83f7-980f1c12e0d3",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S6551",
+      "rule_name": "Objects and classes converted or coerced to strings should define a \"toString()\" method"
+    },
+    {
+      "issue_id": "75dbc523-ad68-48f1-bb1b-43cd89ae9c1c",
+      "file": "backend/src/routes/users.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "This assertion is unnecessary since it does not change the type of the expression.",
+      "effort": 1,
+      "rule_uuid": "3ba2005e-1938-4ee4-ab21-d3637a348b73",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S4325",
+      "rule_name": "Redundant casts and non-null assertions should be avoided"
+    },
+    {
+      "issue_id": "93dc8fe4-a71d-4877-af53-ed3e5bfe4471",
+      "file": "backend/src/routes/users.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "This assertion is unnecessary since it does not change the type of the expression.",
+      "effort": 1,
+      "rule_uuid": "3ba2005e-1938-4ee4-ab21-d3637a348b73",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S4325",
+      "rule_name": "Redundant casts and non-null assertions should be avoided"
+    },
+    {
+      "issue_id": "ff7bf2ec-c266-4e5a-ba95-1a7835800537",
+      "file": "backend/src/routes/users.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "This assertion is unnecessary since it does not change the type of the expression.",
+      "effort": 1,
+      "rule_uuid": "3ba2005e-1938-4ee4-ab21-d3637a348b73",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S4325",
+      "rule_name": "Redundant casts and non-null assertions should be avoided"
+    },
+    {
+      "issue_id": "a6f186e3-6fe4-423a-9622-e9117f743542",
+      "file": "backend/src/services/KubeLogStreamService.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "Prefer using nullish coalescing operator (`??=`) instead of an assignment expression, as it is simpler to read.",
+      "effort": 5,
+      "rule_uuid": "4d980f34-90a4-4b17-9d29-0cae2f6a0fa9",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S6606",
+      "rule_name": "Nullish coalescing should be preferred"
+    },
+    {
+      "issue_id": "0ec26e4e-e1ca-4c4b-948e-481d947bf745",
+      "file": "backend/src/services/KubiDocsService.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "Prefer `String#replaceAll()` over `String#replace()`.",
+      "effort": 5,
+      "rule_uuid": "75668e98-2f56-4339-a176-d9bc7ffd9079",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S7781",
+      "rule_name": "Strings should use \"replaceAll()\" instead of \"replace()\" with global regex"
+    },
+    {
+      "issue_id": "bd781ef7-38ad-445d-864d-f3433f8b7b85",
+      "file": "backend/src/services/LogStreamService.ts",
+      "line": 244,
+      "severity": "CRITICAL",
+      "status": "OPEN",
+      "issue_type": 1,
+      "message": "Refactor this code to not nest functions more than 4 levels deep.",
+      "effort": 20,
+      "rule_uuid": "0842b2db-a800-4984-b520-e018c8309da6",
+      "issue_creation_date": 1792684646000,
+      "rule": "typescript:S2004",
+      "rule_name": "Functions should not be nested too deeply"
+    },
+    {
+      "issue_id": "265c6011-20fa-445e-9598-b36fe525f635",
+      "file": "backend/src/services/LogStreamService.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "Prefer using nullish coalescing operator (`??=`) instead of an assignment expression, as it is simpler to read.",
+      "effort": 5,
+      "rule_uuid": "4d980f34-90a4-4b17-9d29-0cae2f6a0fa9",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S6606",
+      "rule_name": "Nullish coalescing should be preferred"
+    },
+    {
+      "issue_id": "6dc2f1eb-ad6b-4583-8dfa-4fa8038020b6",
+      "file": "backend/src/utils/icmpTarget.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "Use the \"RegExp.exec()\" method instead.",
+      "effort": 5,
+      "rule_uuid": "27b97d84-0b33-4b0d-952c-715c4d468736",
+      "issue_creation_date": 1792615176000,
+      "rule": "typescript:S6594",
+      "rule_name": "\"RegExp.exec()\" should be preferred over \"String.match()\""
+    },
+    {
+      "issue_id": "d1905dd0-700c-40b4-b638-17bc99ea9415",
+      "file": "backend/src/utils/icmpTarget.ts",
+      "line": null,
+      "severity": "CRITICAL",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "Refactor this function to reduce its Cognitive Complexity from 17 to the 15 allowed.",
+      "effort": 7,
+      "rule_uuid": "1a3f3b37-f366-4498-8574-6fdf8ae964fe",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S3776",
+      "rule_name": "Cognitive Complexity of functions should not be too high"
+    },
+    {
+      "issue_id": "807087f8-d812-4aa9-9dc0-5a08c19094cf",
+      "file": "frontend/src/components/Combobox.tsx",
+      "line": 115,
+      "severity": "MAJOR",
+      "status": "OPEN",
+      "issue_type": 1,
+      "message": "Use <select size=...>, <select multiple=...>, or <datalist> instead of the \"listbox\" role to ensure accessibility across all devices.",
+      "effort": 5,
+      "rule_uuid": "7cbfd69d-822e-4052-a30a-da9c7125aa56",
+      "issue_creation_date": 1792615176000,
+      "rule": "typescript:S6819",
+      "rule_name": "Prefer tag over ARIA role"
+    },
+    {
+      "issue_id": "f11474e2-ce31-4bd7-b564-67a3ed40d8a7",
+      "file": "frontend/src/components/Combobox.tsx",
+      "line": 117,
+      "severity": "MAJOR",
+      "status": "OPEN",
+      "issue_type": 1,
+      "message": "Use <option> instead of the \"option\" role to ensure accessibility across all devices.",
+      "effort": 5,
+      "rule_uuid": "7cbfd69d-822e-4052-a30a-da9c7125aa56",
+      "issue_creation_date": 1792615176000,
+      "rule": "typescript:S6819",
+      "rule_name": "Prefer tag over ARIA role"
+    },
+    {
+      "issue_id": "0e4fbf81-e3fa-48e2-a7c3-cdc217947638",
+      "file": "frontend/src/components/Combobox.tsx",
+      "line": null,
+      "severity": "MAJOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "Extract this nested ternary operation into an independent statement.",
+      "effort": 5,
+      "rule_uuid": "6ef29b30-fe31-48ef-b3bb-dcdca7fc0413",
+      "issue_creation_date": 1792615176000,
+      "rule": "typescript:S3358",
+      "rule_name": "Ternary operators should not be nested"
+    },
+    {
+      "issue_id": "3682d2f8-d89a-435c-aee8-bc231711c2f3",
+      "file": "frontend/src/components/Combobox.tsx",
+      "line": null,
+      "severity": "MAJOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element.",
+      "effort": 5,
+      "rule_uuid": "29d96d89-13d2-4f06-987f-8390cd8f1685",
+      "issue_creation_date": 1792615176000,
+      "rule": "typescript:S6848",
+      "rule_name": "Non-interactive DOM elements should not have an interactive handler"
+    },
+    {
+      "issue_id": "2172045e-d1e2-422e-a632-c14dec887ef4",
+      "file": "frontend/src/components/CustomSelect.tsx",
+      "line": 70,
+      "severity": "MAJOR",
+      "status": "OPEN",
+      "issue_type": 1,
+      "message": "Use <input list=...>, <input list=...>, <input list=...>, <input list=...>, <input list=...>, <input list=...>, or <select multiple=...> instead of the \"combobox\" role to ensure accessibility across all devices.",
+      "effort": 5,
+      "rule_uuid": "7cbfd69d-822e-4052-a30a-da9c7125aa56",
+      "issue_creation_date": 1792615176000,
+      "rule": "typescript:S6819",
+      "rule_name": "Prefer tag over ARIA role"
+    },
+    {
+      "issue_id": "8092417a-73ee-4431-9258-d50dd384ace7",
+      "file": "frontend/src/components/CustomSelect.tsx",
+      "line": null,
+      "severity": "MAJOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element.",
+      "effort": 5,
+      "rule_uuid": "29d96d89-13d2-4f06-987f-8390cd8f1685",
+      "issue_creation_date": 1792615176000,
+      "rule": "typescript:S6848",
+      "rule_name": "Non-interactive DOM elements should not have an interactive handler"
+    },
+    {
+      "issue_id": "621250b1-d174-41f5-afc8-092368ec98ff",
+      "file": "frontend/src/components/K8sDetailPanel.tsx",
+      "line": 285,
+      "severity": "MINOR",
+      "status": "OPEN",
+      "issue_type": 1,
+      "message": "Prefer `.at(…)` over `[….length - index]`.",
+      "effort": 5,
+      "rule_uuid": "5444cc30-0d2e-46d5-be38-0ebde1c523b1",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S7755",
+      "rule_name": "Complex index access patterns should be replaced with \".at()\" method"
+    },
+    {
+      "issue_id": "a7456804-1379-47f0-8354-abc11164e4c7",
+      "file": "frontend/src/components/K8sDetailPanel.tsx",
+      "line": 329,
+      "severity": "MINOR",
+      "status": "OPEN",
+      "issue_type": 1,
+      "message": "Prefer `.at(…)` over `[….length - index]`.",
+      "effort": 5,
+      "rule_uuid": "5444cc30-0d2e-46d5-be38-0ebde1c523b1",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S7755",
+      "rule_name": "Complex index access patterns should be replaced with \".at()\" method"
+    },
+    {
+      "issue_id": "1e4a5bb7-df90-40a1-bdd7-72f24c76e070",
+      "file": "frontend/src/components/K8sDetailPanel.tsx",
+      "line": 333,
+      "severity": "MINOR",
+      "status": "OPEN",
+      "issue_type": 1,
+      "message": "Prefer `.at(…)` over `[….length - index]`.",
+      "effort": 5,
+      "rule_uuid": "5444cc30-0d2e-46d5-be38-0ebde1c523b1",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S7755",
+      "rule_name": "Complex index access patterns should be replaced with \".at()\" method"
+    },
+    {
+      "issue_id": "c01c5cfb-63c5-422d-ab99-766de0b667aa",
+      "file": "frontend/src/components/K8sDetailPanel.tsx",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "Prefer using nullish coalescing operator (`??`) instead of a ternary expression, as it is simpler to read.",
+      "effort": 5,
+      "rule_uuid": "4d980f34-90a4-4b17-9d29-0cae2f6a0fa9",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S6606",
+      "rule_name": "Nullish coalescing should be preferred"
+    },
+    {
+      "issue_id": "3ef611ec-cf4a-4ef4-a49d-412cdec54708",
+      "file": "frontend/src/components/KubiAvatar.tsx",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "Invalid group length in numeric value.",
+      "effort": 2,
+      "rule_uuid": "101f66f6-5d74-4fc5-be6f-6a8055ac6f4f",
+      "issue_creation_date": 1792684240000,
+      "rule": "typescript:S7749",
+      "rule_name": "Numeric literals should use consistent digit grouping with separators"
+    },
+    {
+      "issue_id": "9484c1d0-43bc-4a42-ae3b-217749f41ce0",
+      "file": "frontend/src/components/KubiPanel.tsx",
+      "line": 208,
+      "severity": "MINOR",
+      "status": "OPEN",
+      "issue_type": 1,
+      "message": "Prefer `.at(…)` over `[….length - index]`.",
+      "effort": 5,
+      "rule_uuid": "5444cc30-0d2e-46d5-be38-0ebde1c523b1",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S7755",
+      "rule_name": "Complex index access patterns should be replaced with \".at()\" method"
+    },
+    {
+      "issue_id": "ab65dba9-1c5f-4d44-9829-c5e4ffa0298a",
+      "file": "frontend/src/contexts/ToastProvider.tsx",
+      "line": null,
+      "severity": "CRITICAL",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "Refactor this code to not nest functions more than 4 levels deep.",
+      "effort": 20,
+      "rule_uuid": "0842b2db-a800-4984-b520-e018c8309da6",
+      "issue_creation_date": 1792649022000,
+      "rule": "typescript:S2004",
+      "rule_name": "Functions should not be nested too deeply"
+    },
+    {
+      "issue_id": "b9d42532-4ae9-4b48-87b4-d268fdb01760",
+      "file": "frontend/src/contexts/ToastProvider.tsx",
+      "line": null,
+      "severity": "MAJOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "Use <output> instead of the \"status\" role to ensure accessibility across all devices.",
+      "effort": 5,
+      "rule_uuid": "7cbfd69d-822e-4052-a30a-da9c7125aa56",
+      "issue_creation_date": 1792649022000,
+      "rule": "typescript:S6819",
+      "rule_name": "Prefer tag over ARIA role"
+    },
+    {
+      "issue_id": "74131b5a-d75d-4bc5-ae06-87561f3e545e",
+      "file": "frontend/src/hooks/useServices.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "The catch parameter `failure` should be named `error_`.",
+      "effort": 5,
+      "rule_uuid": "fac52b92-a702-412c-873c-dd146df82032",
+      "issue_creation_date": 1792650859000,
+      "rule": "typescript:S7718",
+      "rule_name": "Error parameters in catch clauses should follow a consistent naming convention"
+    },
+    {
+      "issue_id": "a39bd9ae-4875-4fa5-bd6c-dc79b8ab492c",
+      "file": "frontend/src/hooks/useServices.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "The catch parameter `failure` should be named `error_`.",
+      "effort": 5,
+      "rule_uuid": "fac52b92-a702-412c-873c-dd146df82032",
+      "issue_creation_date": 1792650859000,
+      "rule": "typescript:S7718",
+      "rule_name": "Error parameters in catch clauses should follow a consistent naming convention"
+    },
+    {
+      "issue_id": "fba09c81-7a25-4ce9-8e45-d494b4b996e7",
+      "file": "frontend/src/hooks/useServices.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "The catch parameter `failure` should be named `error_`.",
+      "effort": 5,
+      "rule_uuid": "fac52b92-a702-412c-873c-dd146df82032",
+      "issue_creation_date": 1792650859000,
+      "rule": "typescript:S7718",
+      "rule_name": "Error parameters in catch clauses should follow a consistent naming convention"
+    },
+    {
+      "issue_id": "1845183c-27b7-427e-898f-61fd5937391b",
+      "file": "frontend/src/pages/KubernetesDashboard.tsx",
+      "line": 93,
+      "severity": "MINOR",
+      "status": "OPEN",
+      "issue_type": 1,
+      "message": "Prefer `.at(…)` over `[….length - index]`.",
+      "effort": 5,
+      "rule_uuid": "5444cc30-0d2e-46d5-be38-0ebde1c523b1",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S7755",
+      "rule_name": "Complex index access patterns should be replaced with \".at()\" method"
+    },
+    {
+      "issue_id": "729efdfa-8626-4245-a7cd-48d53563a65f",
+      "file": "frontend/src/pages/KubernetesDashboard.tsx",
+      "line": 100,
+      "severity": "MINOR",
+      "status": "OPEN",
+      "issue_type": 1,
+      "message": "Prefer `.at(…)` over `[….length - index]`.",
+      "effort": 5,
+      "rule_uuid": "5444cc30-0d2e-46d5-be38-0ebde1c523b1",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S7755",
+      "rule_name": "Complex index access patterns should be replaced with \".at()\" method"
+    },
+    {
+      "issue_id": "5d662d71-e4a1-4a36-bcc9-6f39cdf1ca67",
+      "file": "frontend/src/pages/LogsPage.tsx",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "This assertion is unnecessary since the receiver accepts the original type of the expression.",
+      "effort": 1,
+      "rule_uuid": "3ba2005e-1938-4ee4-ab21-d3637a348b73",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S4325",
+      "rule_name": "Redundant casts and non-null assertions should be avoided"
+    },
+    {
+      "issue_id": "eb688a52-e0ef-41aa-9b26-4438abf17345",
+      "file": "frontend/src/pages/LogsPage.tsx",
+      "line": null,
+      "severity": "MAJOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "Prefer using an optional chain expression instead, as it's more concise and easier to read.",
+      "effort": 5,
+      "rule_uuid": "e13d4ed4-3041-4dfc-b819-a66cea756a3b",
+      "issue_creation_date": 1792613605000,
+      "rule": "typescript:S6582",
+      "rule_name": "Optional chaining should be preferred"
+    },
+    {
+      "issue_id": "16d7ccbf-b3e4-4b95-94be-1a601f27146f",
+      "file": "frontend/src/services/api.ts",
+      "line": 51,
+      "severity": "MINOR",
+      "status": "OPEN",
+      "issue_type": 1,
+      "message": "Compare with `undefined` directly instead of using `typeof`.",
+      "effort": 2,
+      "rule_uuid": "07e6fd7c-b3b0-4341-a1a2-f50e1cbdd6ef",
+      "issue_creation_date": 1792689607000,
+      "rule": "typescript:S7741",
+      "rule_name": "\"typeof\" should not be used to check for \"undefined\""
+    },
+    {
+      "issue_id": "cb0ead1c-cf23-49fc-9b14-51b02a0fbb1e",
+      "file": "frontend/src/utils/apmInstrumentation.ts",
+      "line": null,
+      "severity": "MINOR",
+      "status": "CLOSED",
+      "issue_type": 1,
+      "message": "`String.raw` should be used to avoid escaping `\\`.",
+      "effort": 5,
+      "rule_uuid": "1cd14d99-8e9b-43d8-a3aa-840c4fddf12c",
+      "issue_creation_date": 1792652008000,
+      "rule": "typescript:S7780",
+      "rule_name": "String literals with escaped backslashes should use `String.raw` template literals"
+    }
+  ],
+  "releaseEligible": false
+}

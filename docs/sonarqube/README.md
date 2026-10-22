@@ -287,3 +287,36 @@ This checkpoint verifies the optional-chaining batch across authentication,
 repositories, Kubernetes, streaming, license validation, and frontend event
 handlers. The batch preserved all 224 backend and 74 frontend tests and both
 production builds while closing 28 open findings.
+
+Subsequent completed analyses:
+
+| Commit | Run | Analysis ID | Open issues | Coverage | Hotspots to review |
+|---|---:|---|---:|---:|---:|
+| `9dc562e` | 11 | `9b08a843-f5e6-4ea4-9047-da14dc26fa31` | 377 | 22.4% | 0 |
+| `adb8c68` | 14 | `9e833685-0e64-45b7-8d45-09284db51bbf` | 337 | 22.6% | 0 |
+| `3e07db6` | 15 | `f838abb0-4d37-4113-9c91-a973fd93ce7d` | 321 | 22.9% | 0 |
+| `624585e` | 16 | `0ae3bc70-f159-4069-ad03-135d1ee167ac` | 319 | 23.0% | 0 |
+
+Matching format-3 exports remain in the private backup bucket under `reports/`:
+`4550fc4b-64aa-45f1-8e3d-f570920514c2-1792689301.json`,
+`90d565ce-30b6-470c-9f43-0aaf1f530ca3-1792689736.json`, and
+`da41c988-507d-4821-9592-504a78ae1937-1792689905.json`, and
+`39b8a3e1-b8e4-4fa5-b72a-ebfcc5d080ad-1792690136.json`.
+The matching checkpoint files account for all 841 original findings; the latest
+records 533 explicit closures, two individual safe reviews, and 306 pending
+baseline findings, plus 49 findings introduced after the original baseline.
+
+Run 11 verifies all 20 redundant-assertion fixes. Run 14 verifies browser-global
+modernization and the first avatar rendering extraction. Runs 12 and 13 stopped
+before analysis because the API-client origin fallback test failed without the
+developer's DNS environment variables; `adb8c68` fixes that fallback and makes
+the test explicitly clear those variables. Run 15 verifies all 16 namespace
+overview findings closed, including native keyboard controls and stable keys.
+Run 16 verifies that both the avatar frame renderer and raw Kubernetes resource
+handler are below the complexity limit. It also verifies shared Secret redaction
+for encoded values, plain `stringData`, and last-applied annotations. The helper
+preserves resource names, keys, and safe metadata without mutating its input.
+
+Standard Sonar gate results can be OK while baseline issues remain. The strict
+release verifier and every checkpoint still reject release until the complete
+remediation criteria are met. No production image or release proof was published.

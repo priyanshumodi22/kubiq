@@ -28,6 +28,10 @@ for (const item of checkpoint.baselineDispositions) {
   if (item.status === 'verified_fixed') {
     assert.equal(item.sonarStatus, 'CLOSED');
     assert.ok(checkpoint.evidence.analysisId && checkpoint.evidence.revision && checkpoint.regressionChecks.length && checkpoint.rationale);
+  } else if (item.status === 'reviewed_safe') {
+    assert.equal(item.sonarStatus, 'REVIEWED');
+    assert.equal(item.verificationScan, checkpoint.evidence.analysisId);
+    assert.ok(item.rationale && item.tests?.length, 'Safe reviews require individual rationale and verification.');
   } else assert.equal(item.status, 'pending');
   checkpointCounts[item.status] = (checkpointCounts[item.status] || 0) + 1;
 }
