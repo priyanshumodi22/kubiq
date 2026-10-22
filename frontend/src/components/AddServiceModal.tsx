@@ -1,5 +1,6 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useId } from 'react';
+import { apiErrorMessage } from '../utils/apiErrorMessage';
 import { createPortal } from 'react-dom';
 import { X, Server, Link as LinkIcon, AlertCircle, Database, Activity, ChevronDown, Terminal } from 'lucide-react';
 import { apiClient } from '../services/api';
@@ -13,6 +14,7 @@ interface AddServiceModalProps {
 type MonitorType = 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp';
 
 export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalProps) {
+  const formId = useId();
   const [name, setName] = useState('');
   const [type, setType] = useState<MonitorType>('http');
   const [endpoint, setEndpoint] = useState('');
@@ -99,8 +101,8 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
       resetForm();
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create service');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to create service'));
     } finally {
       setIsSubmitting(false);
     }
@@ -138,6 +140,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
         <div className="flex items-center justify-between p-6 pb-4">
           <h2 className="text-xl font-bold bg-linear-to-r from-white to-gray-400 bg-clip-text text-transparent">Add New Service</h2>
           <button
+            type="button" aria-label="Close add service dialog"
             onClick={handleClose}
             className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
           >
@@ -157,12 +160,13 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
           <div className="space-y-4">
              {/* Monitor Type Selector */}
              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-gray-400 ml-1">
+                <label htmlFor={`${formId}-type`} className="block text-sm font-medium text-gray-400 ml-1">
                   Monitor Type
                 </label>
                 <div className="relative">
                    <button
                      ref={typeTriggerRef}
+                     id={`${formId}-type`}
                      type="button"
                      onClick={() => {
                        if (!isTypeOpen && typeTriggerRef.current) {
@@ -210,7 +214,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
              )}
 
             <div className="space-y-1.5">
-              <label htmlFor="serviceName" className="block text-sm font-medium text-gray-400 ml-1">
+              <label htmlFor={`${formId}-name`} className="block text-sm font-medium text-gray-400 ml-1">
                 Friendly Name
               </label>
               <div className="relative group">
@@ -218,7 +222,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
                   <Server className="w-5 h-5" />
                 </div>
                 <input
-                  id="serviceName"
+                  id={`${formId}-name`}
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -233,8 +237,9 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
             {type === 'tcp' && (
                 <div className="flex gap-3">
                     <div className="space-y-1.5 flex-1">
-                        <label className="block text-sm font-medium text-gray-400 ml-1">Hostname</label>
+                        <label htmlFor={`${formId}-host`} className="block text-sm font-medium text-gray-400 ml-1">Hostname</label>
                         <input
+                            id={`${formId}-host`}
                             type="text"
                             value={hostname}
                             onChange={(e) => setHostname(e.target.value)}
@@ -244,8 +249,9 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
                         />
                     </div>
                     <div className="space-y-1.5 w-1/3">
-                        <label className="block text-sm font-medium text-gray-400 ml-1">Port</label>
+                        <label htmlFor={`${formId}-port`} className="block text-sm font-medium text-gray-400 ml-1">Port</label>
                         <input
+                            id={`${formId}-port`}
                             type="number"
                             value={port}
                             onChange={(e) => setPort(e.target.value)}
@@ -261,7 +267,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
             {type !== 'tcp' && (
                 <div className="space-y-1.5">
                   <label
-                    htmlFor="serviceEndpoint"
+                    htmlFor={`${formId}-endpoint`}
                     className="block text-sm font-medium text-gray-400 ml-1"
                   >
                     {type === 'http' ? 'Endpoint URL' : 'Connection String'}
@@ -272,7 +278,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
                       {type === 'http' ? <LinkIcon className="w-5 h-5" /> : <Database className="w-5 h-5" />}
                     </div>
                     <input
-                      id="serviceEndpoint"
+                      id={`${formId}-endpoint`}
                       type="text"
                       value={endpoint}
                       onChange={(e) => setEndpoint(e.target.value)}
@@ -296,10 +302,11 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
 
           {/* Check Interval — Custom Dropdown (portal-rendered to escape overflow-hidden) */}
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-400 ml-1">Check Interval</label>
+            <label htmlFor={`${formId}-interval`} className="block text-sm font-medium text-gray-400 ml-1">Check Interval</label>
             <div className="relative">
               <button
                 ref={triggerRef}
+                id={`${formId}-interval`}
                 type="button"
                 onClick={() => {
                   if (!isIntervalOpen && triggerRef.current) {
@@ -326,8 +333,9 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
           </div>
 
           <div className="space-y-1.5">
-             <label className="block text-sm font-medium text-gray-400 ml-1">Retries before alerting</label>
+             <label htmlFor={`${formId}-retries`} className="block text-sm font-medium text-gray-400 ml-1">Retries before alerting</label>
              <input
+                 id={`${formId}-retries`}
                  type="number"
                  min="1"
                  max="10"

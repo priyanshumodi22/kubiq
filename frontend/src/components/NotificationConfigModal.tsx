@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
+import { apiErrorMessage } from '../utils/apiErrorMessage';
 import { createPortal } from 'react-dom';
 import { X, Trash2, Bell, Check, AlertCircle, Send, Pencil, ChevronDown, Info, RefreshCw } from 'lucide-react';
 import { apiClient } from '../services/api';
@@ -35,6 +36,12 @@ interface NotificationChannel {
     };
 }
 
+type ChannelInput = Omit<NotificationChannel, 'id'>;
+interface NotificationHistory {
+    id: string; delivered: boolean; title: string; timestamp: number;
+    channelName: string; channelType: string; target?: string; error?: string;
+}
+
 // Reusable Form Component
 function ChannelForm({
     initialValues,
@@ -43,13 +50,14 @@ function ChannelForm({
     isLoading
 }: Readonly<{
     initialValues?: Partial<NotificationChannel>,
-    onSubmit: (data: any) => void,
+    onSubmit: (data: ChannelInput) => void,
     onCancel?: () => void,
     isLoading: boolean
 }>) {
+    const formId = useId();
     const [name, setName] = useState(initialValues?.name || '');
     const [type, setType] = useState<'webhook' | 'email'>(initialValues?.type || 'webhook');
-    const [config, setConfig] = useState<any>(initialValues?.config || {});
+    const [config, setConfig] = useState<NotificationChannel['config']>(initialValues?.config || {});
     const [events, setEvents] = useState(initialValues?.events || { up: true, down: true });
 
     // Custom Dropdown State
@@ -58,7 +66,7 @@ function ChannelForm({
     const typePanelRef = React.useRef<HTMLDivElement>(null);
     const [typeRect, setTypeRect] = useState<{ top: number, left: number, width: number } | null>(null);
 
-    const channelTypes = [
+    const channelTypes: { value: NotificationChannel['type']; label: string; icon: React.ReactNode }[] = [
         { value: 'webhook', label: 'Webhook (Slack/Teams/Discord)', icon: <Send className="w-4 h-4" /> },
         { value: 'email', label: 'Email (SMTP)', icon: <Bell className="w-4 h-4" /> },
     ];
@@ -85,8 +93,9 @@ function ChannelForm({
         <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                 <div>
-                    <label className={labelClasses}>Friendly Name</label>
+                    <label htmlFor={`${formId}-name`} className={labelClasses}>Friendly Name</label>
                     <input
+                        id={`${formId}-name`}
                         type="text"
                         required
                         value={name}
@@ -97,10 +106,11 @@ function ChannelForm({
                 </div>
 
                 <div>
-                    <label className={labelClasses}>Channel Type</label>
+                    <label htmlFor={`${formId}-type`} className={labelClasses}>Channel Type</label>
                     <div className="relative">
                         <button
                             ref={typeTriggerRef}
+                            id={`${formId}-type`}
                             type="button"
                             onClick={() => {
                                 if (typeTriggerRef.current) {
@@ -134,7 +144,7 @@ function ChannelForm({
                         <button
                             key={opt.value}
                             type="button"
-                            onClick={() => { setType(opt.value as any); setIsTypeOpen(false); }}
+                            onClick={() => { setType(opt.value); setIsTypeOpen(false); }}
                             className={`w-full text-left px-4 py-3 text-sm transition-colors hover:bg-white/5 flex items-center gap-3 ${type === opt.value ? 'bg-primary/10 text-primary' : 'text-gray-300'
                                 }`}
                         >
@@ -151,10 +161,11 @@ function ChannelForm({
             <div className="p-5 rounded-2xl bg-white/2 border border-white/5 space-y-5">
                 {type === 'webhook' && (
                     <div className="space-y-1 animate-in fade-in slide-in-from-left-2 duration-300">
-                        <label className={labelClasses}>Webhook URL</label>
+                        <label htmlFor={`${formId}-webhook`} className={labelClasses}>Webhook URL</label>
                         <div className="relative">
                             <input
                                 type="url"
+                                id={`${formId}-webhook`}
                                 required
                                 value={config.webhookUrl || ''}
                                 onChange={e => setConfig({ ...config, webhookUrl: e.target.value })}
@@ -174,8 +185,9 @@ function ChannelForm({
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
-                                <label className={labelClasses}>Sender Name</label>
+                                <label htmlFor={`${formId}-sender-name`} className={labelClasses}>Sender Name</label>
                                 <input
+                                    id={`${formId}-sender-name`}
                                     type="text"
                                     value={config.senderName || ''}
                                     onChange={e => setConfig({ ...config, senderName: e.target.value })}
@@ -184,8 +196,9 @@ function ChannelForm({
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className={labelClasses}>Sender Email</label>
+                                <label htmlFor={`${formId}-sender-email`} className={labelClasses}>Sender Email</label>
                                 <input
+                                    id={`${formId}-sender-email`}
                                     type="text"
                                     value={config.senderEmail || ''}
                                     onChange={e => setConfig({ ...config, senderEmail: e.target.value })}
@@ -196,8 +209,9 @@ function ChannelForm({
                         </div>
 
                         <div className="space-y-1">
-                            <label className={labelClasses}>Recipient Email(s)</label>
+                            <label htmlFor={`${formId}-recipient`} className={labelClasses}>Recipient Email(s)</label>
                             <input
+                                id={`${formId}-recipient`}
                                 type="text"
                                 value={config.email || ''}
                                 onChange={e => setConfig({ ...config, email: e.target.value })}
@@ -209,8 +223,9 @@ function ChannelForm({
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
-                                <label className={labelClasses}>SMTP Host</label>
+                                <label htmlFor={`${formId}-smtp-host`} className={labelClasses}>SMTP Host</label>
                                 <input
+                                    id={`${formId}-smtp-host`}
                                     type="text"
                                     required
                                     value={config.smtpHost || ''}
@@ -220,8 +235,9 @@ function ChannelForm({
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className={labelClasses}>SMTP Port</label>
+                                <label htmlFor={`${formId}-smtp-port`} className={labelClasses}>SMTP Port</label>
                                 <input
+                                    id={`${formId}-smtp-port`}
                                     type="number"
                                     required
                                     value={config.smtpPort || 587}
@@ -233,8 +249,9 @@ function ChannelForm({
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
-                                <label className={labelClasses}>Username</label>
+                                <label htmlFor={`${formId}-username`} className={labelClasses}>Username</label>
                                 <input
+                                    id={`${formId}-username`}
                                     type="text"
                                     value={config.smtpUser || ''}
                                     onChange={e => setConfig({ ...config, smtpUser: e.target.value })}
@@ -242,8 +259,9 @@ function ChannelForm({
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className={labelClasses}>Password</label>
+                                <label htmlFor={`${formId}-password`} className={labelClasses}>Password</label>
                                 <input
+                                    id={`${formId}-password`}
                                     type="password"
                                     value={config.smtpPass || ''}
                                     onChange={e => setConfig({ ...config, smtpPass: e.target.value })}
@@ -256,18 +274,18 @@ function ChannelForm({
             </div>
 
             <div className="flex flex-wrap items-center gap-6 px-1">
-                <div className="flex items-center gap-3 group cursor-pointer" onClick={() => setEvents({ ...events, up: !events.up })}>
-                    <div className={`w-5 h-5 rounded border transition-all duration-200 flex items-center justify-center ${events.up ? 'bg-primary border-primary shadow-lg shadow-primary/20' : 'bg-black/40 border-white/10 group-hover:border-white/20'}`}>
+                <button type="button" aria-pressed={events.up} className="flex items-center gap-3 group cursor-pointer" onClick={() => setEvents({ ...events, up: !events.up })}>
+                    <span className={`w-5 h-5 rounded border transition-all duration-200 flex items-center justify-center ${events.up ? 'bg-primary border-primary shadow-lg shadow-primary/20' : 'bg-black/40 border-white/10 group-hover:border-white/20'}`}>
                         {events.up && <Check className="w-3.5 h-3.5 text-black font-bold" />}
-                    </div>
+                    </span>
                     <span className="text-sm text-gray-300">Notify when <span className="text-success font-medium">UP ✅</span></span>
-                </div>
-                <div className="flex items-center gap-3 group cursor-pointer" onClick={() => setEvents({ ...events, down: !events.down })}>
-                    <div className={`w-5 h-5 rounded border transition-all duration-200 flex items-center justify-center ${events.down ? 'bg-primary border-primary shadow-lg shadow-primary/20' : 'bg-black/40 border-white/10 group-hover:border-white/20'}`}>
+                </button>
+                <button type="button" aria-pressed={events.down} className="flex items-center gap-3 group cursor-pointer" onClick={() => setEvents({ ...events, down: !events.down })}>
+                    <span className={`w-5 h-5 rounded border transition-all duration-200 flex items-center justify-center ${events.down ? 'bg-primary border-primary shadow-lg shadow-primary/20' : 'bg-black/40 border-white/10 group-hover:border-white/20'}`}>
                         {events.down && <Check className="w-3.5 h-3.5 text-black font-bold" />}
-                    </div>
+                    </span>
                     <span className="text-sm text-gray-300">Notify when <span className="text-error font-medium">DOWN 🔴</span></span>
-                </div>
+                </button>
             </div>
 
             <div className="flex justify-end items-center gap-4 pt-4 border-t border-white/5">
@@ -307,7 +325,7 @@ export function NotificationConfigModal({ isOpen, onClose }: Readonly<Notificati
     const [deleteChannel, setDeleteChannel] = useState<{ id: string, name: string } | null>(null);
 
     // Alert History & Maintenance Silence State
-    const [historyLogs, setHistoryLogs] = useState<any[]>([]);
+    const [historyLogs, setHistoryLogs] = useState<NotificationHistory[]>([]);
     const [maintenanceConfig, setMaintenanceConfig] = useState<{ maintenanceMode: boolean; mutedNamespaces: string[]; mutedServices: string[] }>({
         maintenanceMode: false,
         mutedNamespaces: [],
@@ -357,7 +375,7 @@ export function NotificationConfigModal({ isOpen, onClose }: Readonly<Notificati
         }
     }, [isOpen]);
 
-    const handleCreate = async (data: any) => {
+    const handleCreate = async (data: ChannelInput) => {
         if (!isAdmin) {
             addToast('Access Denied: Only admins can create channels', 'error');
             return;
@@ -370,14 +388,14 @@ export function NotificationConfigModal({ isOpen, onClose }: Readonly<Notificati
             await fetchChannels();
             setActiveTab('list');
             addToast('Channel created successfully!', 'success');
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to create channel');
+        } catch (err) {
+            setError(apiErrorMessage(err, 'Failed to create channel'));
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleUpdate = async (id: string, data: any) => {
+    const handleUpdate = async (id: string, data: ChannelInput) => {
         if (!isAdmin) {
             addToast('Access Denied: Only admins can update channels', 'error');
             return;
@@ -389,8 +407,8 @@ export function NotificationConfigModal({ isOpen, onClose }: Readonly<Notificati
             await fetchChannels();
             setEditingChannelId(null);
             addToast('Channel updated successfully!', 'success');
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to update channel');
+        } catch (err) {
+            setError(apiErrorMessage(err, 'Failed to update channel'));
         } finally {
             setIsLoading(false);
         }
@@ -442,8 +460,8 @@ export function NotificationConfigModal({ isOpen, onClose }: Readonly<Notificati
             await apiClient.testNotificationChannel(id);
             addToast('Test notification sent! 🚀', 'success');
             fetchHistory();
-        } catch (err: any) {
-            addToast(`Test failed: ${err.response?.data?.message}`, 'error');
+        } catch (err) {
+            addToast(`Test failed: ${apiErrorMessage(err, 'Unable to send test notification')}`, 'error');
         }
     };
 

@@ -65,7 +65,8 @@ function PermissionRoute({ permission, children }: Readonly<{ permission: string
   return hasPermission(permission) ? <>{children}</> : <PermissionDeniedRedirect />;
 }
 
-import { ToastProvider, useToast } from './contexts/ToastContext';
+import { useToast } from './contexts/ToastContext';
+import { ToastProvider } from './contexts/ToastProvider';
 
 import Profile from './pages/Profile';
 

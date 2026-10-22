@@ -1,10 +1,12 @@
 import { useAuth } from '../contexts/AuthContext';
 import { User, Lock, Mail, UserPlus, ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useId } from 'react';
+import { apiErrorMessage } from '../utils/apiErrorMessage';
 import { useNavigate, Link } from 'react-router-dom';
 import Footer from '../components/Footer';
 
 export default function Register() {
+    const formId = useId();
     const { registerNative } = useAuth();
     const navigate = useNavigate();
     const [username, setUsername] = useState('');
@@ -35,8 +37,8 @@ export default function Register() {
             await registerNative({ username, email, password });
             setSuccess(true);
             setTimeout(() => navigate('/login'), 2000);
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Registration failed');
+        } catch (err) {
+            setError(apiErrorMessage(err, 'Registration failed'));
             setSubmitting(false);
         }
     };
@@ -71,11 +73,13 @@ export default function Register() {
                             )}
 
                             <div className="space-y-2">
-                                <label className="text-sm text-text-dim">Username</label>
+                                <label htmlFor={`${formId}-username`} className="text-sm text-text-dim">Username</label>
                                 <div className="relative">
                                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                     <input
                                         type="text"
+                                        id={`${formId}-username`}
+                                        autoComplete="username"
                                         value={username}
                                         onChange={e => setUsername(e.target.value)}
                                         className="w-full bg-black/20 border border-gray-700 rounded-lg py-2.5 pl-10 pr-4 text-text focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
@@ -86,11 +90,13 @@ export default function Register() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm text-text-dim">Email (Optional)</label>
+                                <label htmlFor={`${formId}-email`} className="text-sm text-text-dim">Email (Optional)</label>
                                 <div className="relative">
                                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                     <input
                                         type="email"
+                                        id={`${formId}-email`}
+                                        autoComplete="email"
                                         value={email}
                                         onChange={e => setEmail(e.target.value)}
                                         className="w-full bg-black/20 border border-gray-700 rounded-lg py-2.5 pl-10 pr-4 text-text focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
@@ -100,12 +106,14 @@ export default function Register() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm text-text-dim">Password</label>
+                                <label htmlFor={`${formId}-password`} className="text-sm text-text-dim">Password</label>
                                 <div className="relative">
                                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                     <input
                                         type="password"
                                         value={password}
+                                        id={`${formId}-password`}
+                                        autoComplete="new-password"
                                         onChange={e => setPassword(e.target.value)}
                                         className="w-full bg-black/20 border border-gray-700 rounded-lg py-2.5 pl-10 pr-4 text-text focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                                         placeholder="Min 6 characters"
@@ -115,12 +123,14 @@ export default function Register() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm text-text-dim">Confirm Password</label>
+                                <label htmlFor={`${formId}-confirm`} className="text-sm text-text-dim">Confirm Password</label>
                                 <div className="relative">
                                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                     <input
                                         type="password"
                                         value={confirmPassword}
+                                        id={`${formId}-confirm`}
+                                        autoComplete="new-password"
                                         onChange={e => setConfirmPassword(e.target.value)}
                                         className="w-full bg-black/20 border border-gray-700 rounded-lg py-2.5 pl-10 pr-4 text-text focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                                         placeholder="Confirm password"

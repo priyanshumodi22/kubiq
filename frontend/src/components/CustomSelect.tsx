@@ -66,9 +66,7 @@ export function CustomSelect<T extends string>({
   };
 
   return (
-    <div ref={wrapperRef} className="relative" onBlur={event => {
-      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
-    }}>
+    <div ref={wrapperRef} className="relative">
       <button
         ref={triggerRef}
         type="button"
@@ -84,6 +82,9 @@ export function CustomSelect<T extends string>({
           setOpen(current => !current);
         }}
         onKeyDown={handleKeyDown}
+        onBlur={event => {
+          if (!wrapperRef.current?.contains(event.relatedTarget as Node | null)) setOpen(false);
+        }}
         className={`flex w-full items-center justify-between rounded-xl border border-white/10 bg-bg-surface text-left text-text transition hover:border-primary/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50 ${compact ? 'px-2.5 py-1.5' : 'px-3 py-3'}`}
       >
         <span className={compact ? 'text-xs font-medium' : 'text-sm font-medium'}>
@@ -107,6 +108,9 @@ export function CustomSelect<T extends string>({
               type="button"
               role="option"
               tabIndex={-1}
+              onBlur={event => {
+                if (!wrapperRef.current?.contains(event.relatedTarget as Node | null)) setOpen(false);
+              }}
               aria-selected={option.value === value}
               onClick={() => select(option.value)}
               className={`flex w-full items-center justify-between rounded-lg px-3 text-left transition ${compact ? 'py-2 text-xs' : 'py-2.5 text-sm'} ${option.value === value ? 'bg-primary/15 text-white' : 'text-text-dim hover:bg-white/5 hover:text-text'} ${options[active]?.value === option.value ? 'outline outline-1 outline-primary' : ''}`}

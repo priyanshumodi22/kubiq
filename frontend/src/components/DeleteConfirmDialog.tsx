@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { apiErrorMessage } from '../utils/apiErrorMessage';
 import { Trash2, X } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { createPortal } from 'react-dom';
@@ -29,8 +30,8 @@ export function DeleteConfirmDialog({
       await apiClient.deleteService(serviceName);
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete service');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to delete service'));
     } finally {
       setIsDeleting(false);
     }
@@ -50,6 +51,7 @@ export function DeleteConfirmDialog({
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-24 bg-linear-to-br from-red-500/20 to-transparent blur-3xl opacity-20" />
 
         <button
+          type="button" aria-label="Close delete service dialog"
           onClick={handleClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
         >

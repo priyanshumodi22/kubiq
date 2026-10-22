@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
+import { apiErrorMessage } from '../utils/apiErrorMessage';
 import { Edit2 } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { ServiceStatus } from '../types';
@@ -16,6 +17,7 @@ export function EditLogDialog({
   onSuccess,
   service,
 }: Readonly<EditLogDialogProps>) {
+  const pathId = useId();
   const [logPath, setLogPath] = useState(service.logPath || '');
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -50,9 +52,9 @@ export function EditLogDialog({
       );
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setError(err.response?.data?.message || 'Failed to update log configuration');
+      setError(apiErrorMessage(err, 'Failed to update log configuration'));
     } finally {
       setIsSaving(false);
     }
@@ -88,8 +90,9 @@ export function EditLogDialog({
 
         {/* Input */}
         <div className="w-full mb-6 text-left">
-           <label className="text-xs font-medium text-gray-500 ml-1 mb-1.5 block">Log File Path</label>
+           <label htmlFor={pathId} className="text-xs font-medium text-gray-500 ml-1 mb-1.5 block">Log File Path</label>
            <input
+             id={pathId}
              type="text"
              value={logPath}
              onChange={(e) => setLogPath(e.target.value)}

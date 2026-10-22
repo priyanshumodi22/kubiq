@@ -12,7 +12,13 @@ for (const finding of ledger.findings) {
   counts[finding.status] = (counts[finding.status] || 0) + 1;
 }
 console.log(JSON.stringify({ total: ledger.findings.length, statuses: counts }));
-const checkpoint = require('../docs/sonarqube/checkpoint-2f73b35.json');
+const fs = require('node:fs');
+const path = require('node:path');
+const directory = path.join(__dirname, '../docs/sonarqube');
+const checkpoints = fs.readdirSync(directory).filter(name => /^checkpoint-[a-f0-9]{7}\.json$/.test(name))
+  .map(name => JSON.parse(fs.readFileSync(path.join(directory, name), 'utf8')));
+const checkpoint = checkpoints.sort((a, b) => b.evidence.analysisDate - a.evidence.analysisDate)[0];
+assert.ok(checkpoint, 'At least one actual analysis checkpoint is required.');
 assert.equal(checkpoint.baselineDispositions.length, 841);
 assert.equal(new Set(checkpoint.baselineDispositions.map(item => item.id)).size, 841);
 const baselineIds = new Set(ledger.findings.map(item => item.id));

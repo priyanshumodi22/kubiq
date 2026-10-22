@@ -60,8 +60,9 @@ export default function Combobox({
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     // Home/End remain native caret operations in an editable combobox.
+    const current = isOpen ? active : -1;
     const next = ['ArrowDown', 'ArrowUp'].includes(event.key)
-      ? listboxIndex(event.key, isOpen ? active : -1, filteredOptions.length) : undefined;
+      ? listboxIndex(event.key, current, filteredOptions.length) : undefined;
     if (next !== undefined) {
       event.preventDefault();
       setActive(next);
@@ -77,9 +78,7 @@ export default function Combobox({
   };
 
   return (
-    <div ref={wrapperRef} className={`relative ${className}`} onBlur={event => {
-      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setIsOpen(false);
-    }}>
+    <div ref={wrapperRef} className={`relative ${className}`}>
       <div className="relative">
         <input
           ref={inputRef}
@@ -99,6 +98,9 @@ export default function Combobox({
             setActive(-1);
           }}
           onKeyDown={handleKeyDown}
+          onBlur={event => {
+            if (!wrapperRef.current?.contains(event.relatedTarget as Node | null)) setIsOpen(false);
+          }}
           onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
           className="w-full px-3 py-1.5 text-xs bg-bg-surface rounded border border-gray-700 focus:border-primary focus:outline-none pr-8"
@@ -119,6 +121,9 @@ export default function Combobox({
               role="option"
               aria-selected={value === option}
               tabIndex={-1}
+              onBlur={event => {
+                if (!wrapperRef.current?.contains(event.relatedTarget as Node | null)) setIsOpen(false);
+              }}
               onClick={() => handleSelect(option)}
               className={`w-full text-left px-3 py-1.5 text-xs text-text hover:bg-primary/20 hover:text-primary transition-colors flex items-center justify-between ${filteredOptions[active] === option ? 'outline outline-1 outline-primary' : ''}`}
             >

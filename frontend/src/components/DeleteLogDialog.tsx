@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { apiErrorMessage } from '../utils/apiErrorMessage';
 import { Trash2 } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { ServiceStatus } from '../types';
@@ -37,9 +38,9 @@ export function DeleteLogDialog({
       );
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setError(err.response?.data?.message || 'Failed to remove log configuration');
+      setError(apiErrorMessage(err, 'Failed to remove log configuration'));
     } finally {
       setIsDeleting(false);
     }

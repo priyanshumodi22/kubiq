@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { apiErrorMessage } from '../utils/apiErrorMessage';
 import { CheckCircle2, KeyRound, Loader2, Save, ShieldCheck } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
@@ -25,10 +26,7 @@ export function KubiAiSettings() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
 
-  useEffect(() => {
-    void load();
-  }, []);
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const config = await apiClient.getKubiAiConfiguration();
       if (config.provider) setProvider(config.provider);
@@ -41,7 +39,9 @@ export function KubiAiSettings() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [error]);
+
+  useEffect(() => { void load(); }, [load]);
 
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -56,8 +56,8 @@ export function KubiAiSettings() {
       setManaged(config.managedInKubiq);
       setApiKey('');
       success('kubi AI configuration saved. The API key is encrypted and will not be shown again.');
-    } catch (err: any) {
-      error(err.response?.data?.message || 'Could not save kubi AI settings.');
+    } catch (err) {
+      error(apiErrorMessage(err, 'Could not save kubi AI settings.'));
     } finally {
       setSaving(false);
     }
@@ -69,8 +69,8 @@ export function KubiAiSettings() {
       const result = await apiClient.testKubiAiConfiguration();
       if (result.ok) success('Provider test succeeded.');
       else error('Provider test failed.');
-    } catch (err: any) {
-      error(err.response?.data?.message || 'Provider test failed.');
+    } catch (err) {
+      error(apiErrorMessage(err, 'Provider test failed.'));
     } finally {
       setTesting(false);
     }

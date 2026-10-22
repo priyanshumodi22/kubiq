@@ -3,7 +3,7 @@ import { URL } from 'node:url';
 
 const endpointHost = (value: string): string | null => {
   if (value.includes('://')) return new URL(value).hostname;
-  if (value.startsWith('[')) return value.match(/^\[([^\]]+)\](?::\d+)?$/)?.[1] ?? null;
+  if (value.startsWith('[')) return /^\[([^\]]+)\](?::\d+)?$/.exec(value)?.[1] ?? null;
   if (!value.includes(':') || net.isIP(value) === 6) return value;
   const [candidate, port, extra] = value.split(':');
   if (!candidate || extra !== undefined || !/^\d{1,5}$/.test(port)) return null;

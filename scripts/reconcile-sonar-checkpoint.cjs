@@ -6,7 +6,12 @@ const ledger = require('../docs/sonarqube/baseline-ledger.json');
 const report = JSON.parse(fs.readFileSync(0, 'utf8').replace(/^\uFEFF/, ''));
 assert.equal(report.schemaVersion, 3);
 assert.match(report.metadata.revision, /^[a-f0-9]{40}$/);
-assert.equal(report.metadata.revision, '2f73b35e24211b5c55d4f25afba7f39212c9ce68', 'This checkpoint records tests for this exact revision only.');
+const verifiedRevisions = {
+  '2f73b35e24211b5c55d4f25afba7f39212c9ce68': [147, 21],
+  '29644d8e65d2f619a90742638a96a7e8a98781eb': [163, 27],
+};
+const checks = verifiedRevisions[report.metadata.revision];
+assert.ok(checks, 'Record actual local verification for this exact revision before importing its scan.');
 assert.ok(report.metadata.analysisId && report.metadata.task);
 const current = new Map(report.issues.map(issue => [issue.issue_id, issue]));
 assert.equal(current.size, report.issues.length, 'Duplicate exported IDs');
@@ -21,10 +26,10 @@ const checkpoint = {
   evidence: report.metadata,
   archiveFormat: 3,
   rationale: 'Only explicit CLOSED status in the matching completed analysis is counted as fixed. Missing findings and open findings remain pending. No safe review or false-positive acceptance is inferred.',
-  regressionChecks: ['backend Jest: 147 tests passed', 'frontend Vitest: 21 tests passed', 'backend TypeScript build passed', 'frontend TypeScript/Vite build passed'],
+  regressionChecks: [`backend Jest: ${checks[0]} tests passed`, `frontend Vitest: ${checks[1]} tests passed`, 'backend TypeScript build passed', 'frontend TypeScript/Vite build passed'],
   baselineDispositions: dispositions,
   additionalFindings: added,
   releaseEligible: false,
 };
 const output = JSON.stringify(checkpoint, null, 2) + '\n';
-process.stdout.write('*** Begin Patch\n*** Add File: D:/Coding/kubiq-product/kubiq/docs/sonarqube/checkpoint-2f73b35.json\n' + output.split('\n').filter((line, index, lines) => index < lines.length - 1).map(line => '+' + line).join('\n') + '\n*** End Patch\n');
+process.stdout.write(`*** Begin Patch\n*** Add File: D:/Coding/kubiq-product/kubiq/docs/sonarqube/checkpoint-${report.metadata.revision.slice(0, 7)}.json\n` + output.split('\n').filter((line, index, lines) => index < lines.length - 1).map(line => '+' + line).join('\n') + '\n*** End Patch\n');

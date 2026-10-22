@@ -38,9 +38,24 @@ revision, analysis ID, gate ERROR, coverage 10.7% and hotspot-review state.
 - Tests cover permission transitions, multiline SSE, ICMP inputs, large strings,
   cache identity, audit IDs, missing scanner evidence and stale release commits.
 
-## Release safety
+## Second checkpoint and subsequent work
+The second checkpoint has now completed for `29644d8e65d2f619a90742638a96a7e8a98781eb`:
+analysis `505dc0eb-efe5-4edb-8432-87a3a490ef5b`, task
+`deb98d0c-43e4-4cb2-a56a-30c003a2182f`, failed quality gate.
+`checkpoint-29644d8.json` records 309 closed baseline findings, 521 baseline OPEN
+and 11 baseline TO_REVIEW, plus 36 OPEN and two CLOSED additional findings.
+The spreadsheet tab is `Scan 2026-10-21 204103`; observed coverage is 12.4%.
+The coverage floor has been raised to that measured value. New control findings
+from this scan are being remediated or individually assessed, not suppressed.
 
-## Follow-up batch (awaiting checkpoint scan)
+Subsequent local changes (not yet covered by that scan) include stable toast
+context actions, collision-free transient IDs, timer cleanup, typed API error
+messages, and form label associations. The toast regression tests first reproduced
+the prior duplicate-ID/context-identity faults, then passed with the fixes.
+Local frontend verification now passes 41 tests, including service/login/register
+label associations and notification form interactions. The new form IDs are
+unique when multiple instances render together. Both application builds pass;
+frontend lint warnings and final browser/visual acceptance remain outstanding.
 
 - Backend ESLint: zero errors; warnings are still tracked, not suppressed.
 - Frontend ESLint: zero errors, but the strict command remains blocked by 170

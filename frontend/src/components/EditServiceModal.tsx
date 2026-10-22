@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
+import { apiErrorMessage } from '../utils/apiErrorMessage';
 import { createPortal } from 'react-dom';
 import { X, ChevronDown, Activity, Link as LinkIcon, Database, Terminal } from 'lucide-react';
 import { apiClient } from '../services/api';
@@ -32,6 +33,7 @@ export function EditServiceModal({
   currentRetries,
   type: initialType = 'http',
 }: EditServiceModalProps): React.ReactNode {
+  const formId = useId();
   const [type, setType] = useState<MonitorType>(initialType);
   const [endpoint, setEndpoint] = useState('');
   const [hostname, setHostname] = useState('');
@@ -147,8 +149,8 @@ export function EditServiceModal({
       toast.success('Service updated successfully');
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update service');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to update service'));
     } finally {
       setIsSubmitting(false);
     }
@@ -169,6 +171,7 @@ export function EditServiceModal({
         <div className="flex items-center justify-between p-6 pb-4">
           <h2 className="text-xl font-bold bg-linear-to-r from-white to-gray-400 bg-clip-text text-transparent">Edit Service</h2>
           <button
+            type="button" aria-label="Close edit service dialog"
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
           >
@@ -187,12 +190,13 @@ export function EditServiceModal({
           <div className="space-y-4">
              {/* Monitor Type Selector */}
              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-gray-400 ml-1">
+                <label htmlFor={`${formId}-type`} className="block text-sm font-medium text-gray-400 ml-1">
                   Monitor Type
                 </label>
                 <div className="relative">
                    <button
                      ref={typeTriggerRef}
+                     id={`${formId}-type`}
                      type="button"
                      onClick={() => {
                        if (!isTypeOpen && typeTriggerRef.current) {
@@ -240,10 +244,11 @@ export function EditServiceModal({
              )}
 
              <div>
-                <label className="block text-sm font-medium text-gray-400 ml-1 mb-1.5">
+                <label htmlFor={`${formId}-name`} className="block text-sm font-medium text-gray-400 ml-1 mb-1.5">
                   Service Name
                 </label>
                 <input
+                  id={`${formId}-name`}
                   type="text"
                   value={serviceName}
                   className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-gray-400 cursor-not-allowed"
@@ -255,8 +260,9 @@ export function EditServiceModal({
              {type === 'tcp' ? (
                 <div className="flex gap-3">
                     <div className="space-y-1.5 flex-1">
-                        <label className="block text-sm font-medium text-gray-400 ml-1">Hostname</label>
+                        <label htmlFor={`${formId}-host`} className="block text-sm font-medium text-gray-400 ml-1">Hostname</label>
                         <input
+                            id={`${formId}-host`}
                             type="text"
                             value={hostname}
                             onChange={(e) => setHostname(e.target.value)}
@@ -265,8 +271,9 @@ export function EditServiceModal({
                         />
                     </div>
                     <div className="space-y-1.5 w-1/3">
-                        <label className="block text-sm font-medium text-gray-400 ml-1">Port</label>
+                        <label htmlFor={`${formId}-port`} className="block text-sm font-medium text-gray-400 ml-1">Port</label>
                         <input
+                            id={`${formId}-port`}
                             type="number"
                             value={port}
                             onChange={(e) => setPort(e.target.value)}
@@ -277,10 +284,11 @@ export function EditServiceModal({
                 </div>
             ) : (
                 <div className="space-y-1.5">
-                    <label className="block text-sm font-medium text-gray-400 ml-1">
+                    <label htmlFor={`${formId}-endpoint`} className="block text-sm font-medium text-gray-400 ml-1">
                         {type === 'http' ? 'Endpoint URL | headers (optional)' : 'Connection String'}
                     </label>
                     <input
+                        id={`${formId}-endpoint`}
                         type="text"
                         value={endpoint}
                         onChange={(e) => setEndpoint(e.target.value)}
@@ -298,12 +306,12 @@ export function EditServiceModal({
                             <div className="flex items-center space-x-2 pt-2">
                                 <input
                                     type="checkbox"
-                                    id="ignoreSSL"
+                                    id={`${formId}-ignore-ssl`}
                                     checked={ignoreSSL}
                                     onChange={(e) => setIgnoreSSL(e.target.checked)}
                                     className="w-4 h-4 rounded border-gray-600 bg-black/20 text-primary focus:ring-primary/50 cursor-pointer"
                                 />
-                                <label htmlFor="ignoreSSL" className="text-sm text-gray-400 cursor-pointer select-none">
+                                <label htmlFor={`${formId}-ignore-ssl`} className="text-sm text-gray-400 cursor-pointer select-none">
                                     Ignore SSL/TLS Certificate Errors (Self-Signed)
                                 </label>
                             </div>
@@ -316,10 +324,11 @@ export function EditServiceModal({
 
           {/* Check Interval — Custom Dropdown (portal-rendered to escape overflow-hidden) */}
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-400 ml-1">Check Interval</label>
+            <label htmlFor={`${formId}-interval`} className="block text-sm font-medium text-gray-400 ml-1">Check Interval</label>
             <div className="relative">
               <button
                 ref={triggerRef}
+                id={`${formId}-interval`}
                 type="button"
                 onClick={() => {
                   if (!isIntervalOpen && triggerRef.current) {
@@ -346,8 +355,9 @@ export function EditServiceModal({
           </div>
 
           <div className="space-y-1.5">
-             <label className="block text-sm font-medium text-gray-400 ml-1">Retries before alerting</label>
+             <label htmlFor={`${formId}-retries`} className="block text-sm font-medium text-gray-400 ml-1">Retries before alerting</label>
              <input
+                 id={`${formId}-retries`}
                  type="number"
                  min="1"
                  max="10"

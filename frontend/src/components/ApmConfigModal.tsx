@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import { X, Settings, AlertCircle, Save } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { apiClient } from '../services/api';
@@ -13,14 +13,9 @@ export function ApmConfigModal({ isOpen, onClose }: Readonly<ApmConfigModalProps
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { addToast } = useToast();
+  const routesId = useId();
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchConfig();
-    }
-  }, [isOpen]);
-
-  const fetchConfig = async () => {
+  const fetchConfig = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await apiClient.getApmConfig();
@@ -34,7 +29,11 @@ export function ApmConfigModal({ isOpen, onClose }: Readonly<ApmConfigModalProps
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [addToast]);
+
+  useEffect(() => {
+    if (isOpen) void fetchConfig();
+  }, [isOpen, fetchConfig]);
 
   const handleSave = async () => {
     try {
@@ -60,7 +59,7 @@ export function ApmConfigModal({ isOpen, onClose }: Readonly<ApmConfigModalProps
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div 
+      <button type="button" aria-label="Close APM configuration"
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
@@ -78,6 +77,7 @@ export function ApmConfigModal({ isOpen, onClose }: Readonly<ApmConfigModalProps
             </div>
           </div>
           <button 
+            type="button" aria-label="Close APM configuration"
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
           >
@@ -97,13 +97,14 @@ export function ApmConfigModal({ isOpen, onClose }: Readonly<ApmConfigModalProps
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label htmlFor={routesId} className="block text-sm font-medium text-gray-300 mb-2">
               Ignored HTTP Routes
             </label>
             {isLoading ? (
               <div className="animate-pulse bg-gray-800 h-10 rounded-lg w-full"></div>
             ) : (
               <input
+                id={routesId}
                 type="text"
                 value={ignoredRoutesStr}
                 onChange={(e) => setIgnoredRoutesStr(e.target.value)}

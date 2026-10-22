@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ExternalLink, Globe, Layout, Clock, Save } from 'lucide-react';
 import { apiClient } from '../services/api';
@@ -10,6 +10,7 @@ interface StatusPageConfigModalProps {
 }
 
 export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModalProps) {
+  const formId = useId();
   const [slug, setSlug] = useState('');
   const [title, setTitle] = useState('System Status');
   const [refreshInterval, setRefreshInterval] = useState(300);
@@ -96,7 +97,7 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
               <div className="space-y-4">
                  {/* Title Input */}
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-400 ml-1">
+                  <label htmlFor={`${formId}-title`} className="block text-sm font-medium text-gray-400 ml-1">
                     Page Title
                   </label>
                   <div className="relative group">
@@ -106,6 +107,7 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
                      <input
                       type="text"
                       value={title}
+                      id={`${formId}-title`}
                       onChange={(e) => setTitle(e.target.value)}
                       className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
                       placeholder="e.g. System Status"
@@ -116,7 +118,7 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
 
                 {/* Slug Input */}
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-400 ml-1">
+                  <label htmlFor={`${formId}-slug`} className="block text-sm font-medium text-gray-400 ml-1">
                     URL Slug
                   </label>
                   <div className="flex rounded-xl overflow-hidden border border-white/10 group focus-within:ring-2 focus-within:ring-primary/50 focus-within:border-primary/50 transition-all">
@@ -127,6 +129,7 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
                      <input
                        type="text"
                        value={slug}
+                       id={`${formId}-slug`}
                        onChange={(e) => setSlug(e.target.value)}
                        className="flex-1 bg-black/20 px-3 py-3 text-white placeholder:text-gray-600 focus:outline-none min-w-0"
                        placeholder="my-status-page"
@@ -137,7 +140,7 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
 
                 {/* Refresh Interval */}
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-400 ml-1">
+                  <label htmlFor={`${formId}-refresh`} className="block text-sm font-medium text-gray-400 ml-1">
                     Refresh Interval (seconds)
                   </label>
                   <div className="relative group">
@@ -147,6 +150,7 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
                      <input
                       type="number"
                       value={refreshInterval}
+                      id={`${formId}-refresh`}
                       onChange={(e) => setRefreshInterval(Number.parseInt(e.target.value) || 300)}
                       min="10"
                       className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all appearance-none"

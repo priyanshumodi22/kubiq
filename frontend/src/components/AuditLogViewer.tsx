@@ -60,7 +60,7 @@ export function AuditLogViewer() {
 
     useEffect(() => {
         if (canReadAudit) void fetchLogs();
-    }, [fetchLogs]);
+    }, [canReadAudit, fetchLogs]);
 
     if (!canReadAudit) return <Navigate to="/dashboard" replace />;
 
