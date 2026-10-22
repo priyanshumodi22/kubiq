@@ -3,6 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import { KubiReaderAuth } from './KubiReaderAuth';
+import { redactKubernetesSecret } from '../utils/kubernetesSecret';
 
 export interface KubeContainer {
     name: string;
@@ -521,19 +522,7 @@ export class KubernetesService {
             const { coreApi } = this.getClients(ctx);
             const res = await coreApi.listNamespacedSecret({ namespace });
             // Redact secret data for safety before sending to frontend
-            return (res.items ?? []).map((secret: any) => {
-                const redactedData: any = {};
-                const data = secret.data;
-                if (data) {
-                    for (const key of Object.keys(data)) {
-                        redactedData[key] = '***REDACTED***';
-                    }
-                }
-                return {
-                    ...secret,
-                    data: redactedData
-                };
-            });
+            return (res.items ?? []).map(secret => redactKubernetesSecret(secret));
         } catch (e: any) {
             this.checkRbacError(e);
             console.error(`Error fetching secrets for namespace ${namespace}:`, e.message || e);
@@ -555,19 +544,7 @@ export class KubernetesService {
                 case 'configmaps': res = await coreApi.readNamespacedConfigMap({ name, namespace }); break;
                 case 'secrets': {
                     res = await coreApi.readNamespacedSecret({ name, namespace });
-                    if (res) {
-                        // Redact data
-                        if (res.data) {
-                            const secretData = res.data;
-                            for (const key of Object.keys(secretData)) {
-                                secretData[key] = '***REDACTED***';
-                            }
-                        }
-                        // Scrub last-applied-configuration annotation to prevent leaks
-                        if (res.metadata?.annotations?.['kubectl.kubernetes.io/last-applied-configuration']) {
-                            delete res.metadata.annotations['kubectl.kubernetes.io/last-applied-configuration'];
-                        }
-                    }
+                    if (res) res = redactKubernetesSecret(res);
                     break;
                 }
                 case 'nodes': res = await coreApi.readNode({ name }); break;
