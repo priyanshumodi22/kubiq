@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId, useCallback } from 'react';
+import { isAxiosError } from 'axios';
 import { createPortal } from 'react-dom';
 import { Virtuoso } from 'react-virtuoso';
 import { Search, Clock, Filter, RefreshCw, AlertCircle, X, ChevronDown, Copy } from 'lucide-react';
@@ -29,15 +30,35 @@ const LEVEL_COLORS: Record<string, string> = {
 };
 
 interface CustomSelectProps {
+    id: string;
     value: string | number;
-    onChange: (val: any) => void;
+    onChange: (val: string | number) => void;
     options: { label: string; value: string | number }[];
     disabled?: boolean;
 }
 
-const CustomSelect: React.FC<CustomSelectProps> = ({ value, onChange, options, disabled }) => {
+const CustomSelect = ({ id, value, onChange, options, disabled }: Readonly<CustomSelectProps>) => {
     const [isOpen, setIsOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+    useEffect(() => {
+        if (isOpen && !disabled) {
+            const selected = Math.max(0, options.findIndex(option => option.value === value));
+            optionRefs.current[selected]?.focus();
+        }
+    }, [isOpen, disabled, options, value]);
+    const close = () => { setIsOpen(false); triggerRef.current?.focus(); };
+    const handleOptionKey = (event: React.KeyboardEvent, index: number) => {
+        if (event.key === 'Escape') { event.preventDefault(); close(); }
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            const direction = event.key === 'ArrowDown' ? 1 : -1;
+            optionRefs.current[(index + direction + options.length) % options.length]?.focus();
+        }
+        if (event.key === 'Home') { event.preventDefault(); optionRefs.current[0]?.focus(); }
+        if (event.key === 'End') { event.preventDefault(); optionRefs.current[options.length - 1]?.focus(); }
+    };
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -54,6 +75,12 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ value, onChange, options, d
     return (
         <div ref={wrapperRef} className="relative w-full min-w-[140px]">
             <button
+                id={id} type="button" ref={triggerRef}
+                aria-expanded={isOpen && !disabled} aria-controls={isOpen && !disabled ? `${id}-options` : undefined}
+                onKeyDown={event => {
+                    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); setIsOpen(true); }
+                    if (event.key === 'Escape') close();
+                }}
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 className={`w-full flex items-center justify-between bg-[#0d0d0d] border border-gray-700 text-sm rounded-md px-3 py-1.5 text-gray-200 focus:border-blue-500 focus:outline-none transition-colors ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-gray-600'}`}
                 disabled={disabled}
@@ -63,15 +90,18 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ value, onChange, options, d
             </button>
             
             {isOpen && !disabled && (
-                <div className="absolute top-full left-0 w-full mt-1 bg-[#1d1f24] border border-gray-700 rounded-md shadow-xl z-50 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700">
-                    {options.map((opt) => (
+                <div id={`${id}-options`} className="absolute top-full left-0 w-full mt-1 bg-[#1d1f24] border border-gray-700 rounded-md shadow-xl z-50 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700">
+                    {options.map((opt, index) => (
                         <button
+                            type="button" aria-pressed={value === opt.value}
+                            ref={element => { optionRefs.current[index] = element; }}
+                            onKeyDown={event => handleOptionKey(event, index)}
                             key={opt.value}
                             onClick={() => {
                                 onChange(opt.value);
-                                setIsOpen(false);
+                                close();
                             }}
-                            className={`w-full text-left px-3 py-1.5 text-xs flex items-center transition-colors hover:bg-white/5 ${
+                            className={`w-full text-left px-3 py-1.5 text-xs flex items-center transition-colors hover:bg-white/5 focus-visible:outline focus-visible:outline-primary ${
                                 value === opt.value ? 'text-blue-400 font-medium' : 'text-gray-300'
                             }`}
                         >
@@ -85,6 +115,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ value, onChange, options, d
 };
 
 export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
+    const fieldId = useId();
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [loading, setLoading] = useState(false);
     const [sources, setSources] = useState<string[]>([]);
@@ -102,33 +133,11 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const [recentSummaryData, setRecentSummaryData] = useState<{ summary: string, timestamp: number } | null>(null);
 
-    useEffect(() => {
-        fetchSources();
-        handleSearch(); // initial search
-        
-        // Fetch recent AI summary
-        if (!serviceName) return;
-        apiClient.getRecentSummary(serviceName)
-            .then(res => {
-                if (res.available) {
-                    setRecentSummaryData(res.summary);
-                } else {
-                    setRecentSummaryData(null);
-                }
-            })
-            .catch(err => console.error('Failed to fetch recent summary', err));
-    }, [serviceName]);
+    const searchGeneration = useRef(0);
+    const serviceGeneration = useRef(0);
 
-    const fetchSources = async () => {
-        try {
-            const data = await apiClient.getLogSources(serviceName);
-            setSources(data);
-        } catch (err) {
-            console.error('Failed to fetch sources:', err);
-        }
-    };
-
-    const handleSearch = async () => {
+    const handleSearch = useCallback(async () => {
+        const generation = ++searchGeneration.current;
         setLoading(true);
         setSummary(null);
         try {
@@ -146,20 +155,46 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
             if (searchQuery.trim()) params.append('search', searchQuery.trim());
 
             const data = await apiClient.queryLogs(params);
-            setLogs(data);
+            if (generation === searchGeneration.current) setLogs(data);
         } catch (err) {
             console.error('Failed to fetch logs:', err);
         } finally {
-            setLoading(false);
+            if (generation === searchGeneration.current) setLoading(false);
         }
-    };
+    }, [serviceName, timeRange, level, source, searchQuery]);
+
+    const latestSearch = useRef(handleSearch);
+    useEffect(() => { latestSearch.current = handleSearch; }, [handleSearch]);
+    const invalidateRequests = useCallback(() => {
+        searchGeneration.current++;
+        serviceGeneration.current++;
+    }, []);
+    useEffect(() => {
+        let active = true;
+        setLogs([]);
+        setSummarizing(false);
+        setSources([]);
+        setRecentSummaryData(null);
+        void latestSearch.current();
+        apiClient.getLogSources(serviceName).then(data => {
+            if (active) setSources(data);
+        }).catch(error_ => console.error('Failed to fetch sources:', error_));
+        if (serviceName) {
+            apiClient.getRecentSummary(serviceName).then(data => {
+                if (active) setRecentSummaryData(data.available ? data.summary : null);
+            }).catch(error_ => console.error('Failed to fetch recent summary', error_));
+        }
+        return () => { active = false; invalidateRequests(); };
+    }, [serviceName, invalidateRequests]);
 
     const handleSummarize = async () => {
         if (logs.length === 0) return;
+        const generation = serviceGeneration.current;
         setSummarizing(true);
         try {
             // Send only the last 200 logs to prevent massive payloads and 413 errors
             const data = await apiClient.summarizeLogs(logs.slice(-200), serviceName);
+            if (generation !== serviceGeneration.current) return;
 
             setShowSummaryModal(true);
             if (data.summary) {
@@ -167,10 +202,11 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
             } else {
                 setSummary('Failed to generate summary.');
             }
-        } catch (err: any) {
+        } catch (err) {
+            if (generation !== serviceGeneration.current) return;
             console.error('Summarize error:', err);
 
-            if (err.response?.status === 402 || err.response?.data?.error === 'NO_LICENSE' || err.response?.data?.error === 'INVALID_LICENSE') {
+            if (isAxiosError<{ error?: string }>(err) && (err.response?.status === 402 || ['NO_LICENSE', 'INVALID_LICENSE'].includes(err.response?.data?.error || ''))) {
                 setShowUpgradeModal(true);
                 return;
             }
@@ -178,7 +214,7 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
             setShowSummaryModal(true);
             setSummary('Error communicating with summarization service.');
         } finally {
-            setSummarizing(false);
+            if (generation === serviceGeneration.current) setSummarizing(false);
         }
     };
 
@@ -187,10 +223,11 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
             {/* Filters Header */}
             <div className="bg-[#111111] border-b border-gray-800 p-4 flex flex-wrap gap-4 items-end z-10">
                 <div className="flex-1 min-w-[200px]">
-                    <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1">
+                    <label htmlFor={`${fieldId}-search`} className="block text-xs text-gray-400 mb-1 flex items-center gap-1">
                         <Search className="w-3 h-3" /> Search Text
                     </label>
                     <input
+                        id={`${fieldId}-search`}
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
@@ -201,10 +238,11 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
                 </div>
 
                 <div>
-                    <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1">
+                    <label htmlFor={`${fieldId}-time`} className="block text-xs text-gray-400 mb-1 flex items-center gap-1">
                         <Clock className="w-3 h-3" /> Time Range
                     </label>
                     <CustomSelect 
+                        id={`${fieldId}-time`}
                         value={timeRange}
                         onChange={(val) => setTimeRange(Number(val))}
                         options={[
@@ -217,10 +255,11 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
                 </div>
 
                 <div>
-                    <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1">
+                    <label htmlFor={`${fieldId}-level`} className="block text-xs text-gray-400 mb-1 flex items-center gap-1">
                         <Filter className="w-3 h-3" /> Level
                     </label>
                     <CustomSelect 
+                        id={`${fieldId}-level`}
                         value={level}
                         onChange={(val) => setLevel(String(val))}
                         options={[
@@ -234,8 +273,9 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
                 </div>
 
                 <div>
-                    <label className="block text-xs text-gray-400 mb-1">Source</label>
+                    <label htmlFor={`${fieldId}-source`} className="block text-xs text-gray-400 mb-1">Source</label>
                     <CustomSelect 
+                        id={`${fieldId}-source`}
                         value={source}
                         onChange={(val) => setSource(String(val))}
                         disabled={sources.length === 0}

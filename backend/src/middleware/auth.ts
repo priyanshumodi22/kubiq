@@ -138,7 +138,7 @@ async function resolveNamespaceScope(user: NamespaceUser | null | undefined): Pr
 export const canAccessKubernetesNamespace = async (user: NamespaceUser | null | undefined, namespace: unknown): Promise<boolean> => {
   const requested = typeof namespace === 'string' ? namespace.trim().toLowerCase() : '';
   if (!requested || requested === 'all' || requested === '*') return false;
-  if (await RbacRoleService.hasPermission(user || {}, 'kubernetes.namespaces.all')) return true;
+  if (await RbacRoleService.hasPermission(user ?? {}, 'kubernetes.namespaces.all')) return true;
   try {
     const allowed = await resolveNamespaceScope(user);
     return allowed.some(value => String(value).trim().toLowerCase() === requested);

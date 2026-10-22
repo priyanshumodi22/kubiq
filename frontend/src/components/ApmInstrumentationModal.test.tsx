@@ -11,6 +11,10 @@ beforeEach(() => { vi.clearAllMocks(); mocks.copy.mockResolvedValue(undefined); 
 afterEach(cleanup);
 
 describe('APM instrumentation wire-format guidance', () => {
+  it('keeps Java shell continuations as one literal backslash per line', () => {
+    expect(INSTRUMENTATION_SNIPPETS.java.code).toContain('\\\n');
+    expect(INSTRUMENTATION_SNIPPETS.java.code).not.toContain('\\\\\n');
+  });
   it('uses JSON and ingestion authentication for the direct Node endpoint', () => {
     const snippet = INSTRUMENTATION_SNIPPETS.node;
     expect(snippet.install).toContain('@opentelemetry/exporter-trace-otlp-http');

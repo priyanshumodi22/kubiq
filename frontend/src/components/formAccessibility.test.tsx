@@ -9,10 +9,11 @@ import Register from '../pages/Register';
 
 const mocks = vi.hoisted(() => ({
   createChannel: vi.fn(),
+  register: vi.fn(),
   toast: { success: vi.fn(), error: vi.fn(), addToast: vi.fn() },
 }));
 vi.mock('../contexts/ToastContext', () => ({ useToast: () => mocks.toast }));
-vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ hasPermission: () => true, isAuthenticated: false, isLoading: false, authEnabled: false, nativeAuthEnabled: true, loginNative: vi.fn(), registerNative: vi.fn() }) }));
+vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ hasPermission: () => true, isAuthenticated: false, isLoading: false, authEnabled: false, nativeAuthEnabled: true, loginNative: vi.fn(), registerNative: mocks.register }) }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn(), Link: ({ children }: { children: import('react').ReactNode }) => <span>{children}</span> }));
 vi.mock('./Footer', () => ({ default: () => null }));
 vi.mock('../services/api', () => ({ apiClient: {
@@ -23,6 +24,16 @@ vi.mock('../services/api', () => ({ apiClient: {
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 describe('form control names and identities', () => {
+  it('matches the backend minimum password length instead of advertising six characters', () => {
+    const view = render(<Register />);
+    const password = view.getByLabelText('Password', { exact: true });
+    expect(password.getAttribute('minlength')).toBe('12');
+    fireEvent.change(password, { target: { value: 'short123' } });
+    fireEvent.change(view.getByLabelText('Confirm Password'), { target: { value: 'short123' } });
+    fireEvent.submit(view.container.querySelector('form')!);
+    expect(view.getByText('Password must be at least 12 characters')).toBeTruthy();
+    expect(mocks.register).not.toHaveBeenCalled();
+  });
   it('associates service labels and keeps IDs unique across multiple forms', () => {
     const view = render(<><AddServiceModal isOpen onClose={vi.fn()} onSuccess={vi.fn()} /><AddServiceModal isOpen onClose={vi.fn()} onSuccess={vi.fn()} /></>);
     expect(view.getAllByLabelText('Friendly Name')).toHaveLength(2);

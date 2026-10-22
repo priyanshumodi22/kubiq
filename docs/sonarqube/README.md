@@ -99,6 +99,32 @@ passing. These edits are pending their own Sonar analysis, not verified closures
 
 ## Release safety
 
+Fourth verified checkpoint: commit `0f53ca2313ab0d0940637172b0ec98c9d793bdba`,
+analysis `ba15c557-1dc4-4ed4-b120-017ba1990e2e`, task
+`3e1b7251-4fdf-4f69-bce3-94baed93e73c`. Its overlay records 402 explicitly
+CLOSED baseline findings and 439 pending, plus 45 additional findings. The scan
+has 457 open issues, seven unreviewed hotspots, 21.3% combined coverage and gate
+ERROR. Both SDK wrapper checks and coverage generation passed in GitHub Actions;
+the analysis step failed its quality gate. Sheets tab `Scan 2026-10-22 072316`
+and its archived JSON preserve the exact revision and result. No release proof
+artifact or production image was published.
+
+Changes after that checkpoint add named, keyboard-operable log-search filters,
+request generations that reject stale log/source/summary responses, registration
+guidance matching the backend's 12-character password minimum, and behavior-preserving
+regex/string modernization. A regression test reproduced deeply nested secrets
+being returned verbatim when kubi redaction reached its depth bound; the bound now
+returns a truncation marker. Existing evidence tests continue to pass.
+Current local verification is 218 backend tests, 67 frontend tests and both builds.
+Frontend lint has zero errors but still 127 explicit-any and 11 hook-dependency
+warnings; strict CI remains blocked. These post-checkpoint changes await analysis.
+
+For the pending Tailwind v4 allowance, SonarSource documents CSS S4662's
+`ignoreAtRules` rule parameter. Configure only the applicable Tailwind directives
+in a project-specific CSS profile after verifying the pinned analyzer's parameter;
+keep S4662 enabled. Do not use file exclusions or disable unknown-at-rule checking.
+Reference: https://github.com/SonarSource/SonarJS/blob/master/docs/rule-configuration-patterns.md
+
 Third verified checkpoint: commit `675dbef75e050f6602b49e40a2d62f4bc40d6b65`,
 analysis `8f9bcbb6-b42c-46a4-b62f-1378ec97f625`, task
 `2af8a30c-dbb8-4abd-b651-5bf059f4ace2`. The overlay records 374 CLOSED

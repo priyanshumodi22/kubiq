@@ -31,13 +31,13 @@ export class KubiDocsService {
   private static pending: Promise<void> | undefined;
 
   static extract(html: string, slug: string): Passage[] {
-    const safe = html.replace(/<(script|style|noscript)\b[^>]*>[\s\S]*?<\/\1>/gi, '');
-    const article = safe.match(/<div[^>]*class="[^"]*docs-prose[^"]*"[^>]*>([\s\S]*?)(?:<\/main>|$)/i)?.[1];
+    const safe = html.replaceAll(/<(script|style|noscript)\b[^>]*>[\s\S]*?<\/\1>/gi, '');
+    const article = /<div[^>]*class="[^"]*docs-prose[^"]*"[^>]*>([\s\S]*?)(?:<\/main>|$)/i.exec(safe)?.[1];
     if (!article) return [];
     return article.split(/(?=<h2\b)/i).map(section => {
-      const heading = section.match(/<h2\b[^>]*>([\s\S]*?)<\/h2>/i);
-      const anchor = section.match(/<h2\b[^>]*id="([a-z0-9-]+)"/i)?.[1];
-      return { title: heading ? plainText(heading[1]) : slug.replace(/-/g, ' '), href: `${ORIGIN}/docs/${slug}${anchor ? `#${anchor}` : ''}`, text: plainText(section).slice(0, 8000) };
+      const heading = /<h2\b[^>]*>([\s\S]*?)<\/h2>/i.exec(section);
+      const anchor = /<h2\b[^>]*id="([a-z0-9-]+)"/i.exec(section)?.[1];
+      return { title: heading ? plainText(heading[1]) : slug.replaceAll('-', ' '), href: `${ORIGIN}/docs/${slug}${anchor ? `#${anchor}` : ''}`, text: plainText(section).slice(0, 8000) };
     }).filter(item => item.text.length > 30);
   }
 

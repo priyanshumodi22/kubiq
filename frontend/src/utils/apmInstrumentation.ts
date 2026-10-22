@@ -102,14 +102,14 @@ func initTracer(ctx context.Context) (*sdktrace.TracerProvider, error) {
   java: {
     title: 'Java agent via a local OpenTelemetry Collector', filename: 'javaagent-flags.sh',
     install: 'Download opentelemetry-javaagent.jar from the official OpenTelemetry Java instrumentation releases and verify its checksum.',
-    code: `# Start the Collector below first; kubiq itself does not expose port 4318.
-java -javaagent:opentelemetry-javaagent.jar \\
-  -Dotel.service.name=my-java-service \\
-  -Dotel.traces.exporter=otlp \\
-  -Dotel.metrics.exporter=none \\
-  -Dotel.logs.exporter=none \\
-  -Dotel.exporter.otlp.traces.endpoint=http://127.0.0.1:4318/v1/traces \\
-  -Dotel.exporter.otlp.protocol=http/protobuf \\
+    code: String.raw`# Start the Collector below first; kubiq itself does not expose port 4318.
+java -javaagent:opentelemetry-javaagent.jar \
+  -Dotel.service.name=my-java-service \
+  -Dotel.traces.exporter=otlp \
+  -Dotel.metrics.exporter=none \
+  -Dotel.logs.exporter=none \
+  -Dotel.exporter.otlp.traces.endpoint=http://127.0.0.1:4318/v1/traces \
+  -Dotel.exporter.otlp.protocol=http/protobuf \
   -jar my-app.jar`,
   },
 };

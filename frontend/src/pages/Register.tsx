@@ -27,8 +27,8 @@ export default function Register() {
         }
 
         // Basic complexity check
-        if (password.length < 6) {
-            setError("Password must be at least 6 characters");
+        if (password.length < 12) {
+            setError("Password must be at least 12 characters");
             return;
         }
 
@@ -116,7 +116,8 @@ export default function Register() {
                                         autoComplete="new-password"
                                         onChange={e => setPassword(e.target.value)}
                                         className="w-full bg-black/20 border border-gray-700 rounded-lg py-2.5 pl-10 pr-4 text-text focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                                        placeholder="Min 6 characters"
+                                        placeholder="Min 12 characters"
+                                        minLength={12}
                                         required
                                     />
                                 </div>

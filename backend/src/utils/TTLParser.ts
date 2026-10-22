@@ -1,7 +1,7 @@
 export function parseTTLToSeconds(ttlStr: string | undefined, defaultSeconds: number = 7 * 24 * 60 * 60): number {
     if (!ttlStr) return defaultSeconds;
     
-    const match = ttlStr.trim().match(/^(\d+)\s*(s|m|h|d|w|hrs|days?|hours?|minutes?|seconds?)$/i);
+    const match = /^(\d+)\s*(s|m|h|d|w|hrs|days?|hours?|minutes?|seconds?)$/i.exec(ttlStr.trim());
     if (!match) return defaultSeconds;
     
     const value = Number.parseInt(match[1], 10);
