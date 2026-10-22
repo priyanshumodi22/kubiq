@@ -153,7 +153,7 @@ export default function LogsPage() {
                                         {service.logPath}
                                     </div>
                                 </div>
-                                {service.status === 'down' && (
+                                {service.currentStatus === 'unhealthy' && (
                                     <AlertCircle className="w-3 h-3 text-red-500 mr-2" />
                                 )}
                                 

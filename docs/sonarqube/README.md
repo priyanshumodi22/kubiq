@@ -67,6 +67,18 @@ Verification passes 163 backend tests and 48 frontend tests. Backend lint has ze
 errors; frontend has zero errors but still 139 explicit-any and 12 hook warnings.
 These changes require their own scan before any additional closure is claimed.
 
+The next batch adds cryptographic identifiers for new notification channels and
+history entries, preserving all stored IDs. Five tests cover same-millisecond
+identity collisions, suppression, retries, Teams metadata and emoji normalization.
+An HTTP regression test reproduced a private-log-path leak in the primary service
+list; the permission projection now covers that route as well as status/detail.
+The monitoring hook now authenticates Native SSE sessions using the REST token
+and base path, validates stream snapshots, deduplicates fallback polling, prevents
+overlapping requests, fences stale responses, and strips cached paths on permission
+revocation. Six hook tests cover these lifecycle cases and history selection races.
+Local verification passes 169 backend and 54 frontend tests, with both builds
+passing. These edits are pending their own Sonar analysis, not verified closures.
+
 - Backend ESLint: zero errors; warnings are still tracked, not suppressed.
 - Frontend ESLint: zero errors, but the strict command remains blocked by 170
   explicit-any, 15 hook-dependency and two fast-refresh warnings.

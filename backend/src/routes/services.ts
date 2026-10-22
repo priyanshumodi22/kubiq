@@ -27,7 +27,7 @@ router.get('/', requirePermission('services.read'), async (req: Request, res: Re
     const services = await Promise.all(monitor.getAllServices().map(async (service) => {
       const maskedService = await maskServiceEndpoint(service, req.user);
       return {
-        ...maskedService,
+        ...(canReadRawLogs ? maskedService : withoutRawLogConfig(maskedService)),
         ...(canReadRawLogs ? { logPath: service.logPath, logSources: service.logSources } : {}),
         history: (service.history || []).slice(-historyLimit),
       };

@@ -21,7 +21,7 @@ describe('service raw-log permission boundary over HTTP', () => {
   });
   afterAll(async () => { await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())); });
 
-  test.each(['/status', '/api'])('%s omits raw paths for readers without the permission', async path => {
+  test.each(['', '/status', '/api'])('%s omits raw paths for readers without the permission', async path => {
     const response = await fetch(`${origin}/services${path}`);
     expect(response.status).toBe(200);
     const body = await response.json();

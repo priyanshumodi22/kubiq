@@ -38,7 +38,7 @@ interface NotificationChannel {
 
 type ChannelInput = Omit<NotificationChannel, 'id'>;
 interface NotificationHistory {
-    id: string; delivered: boolean; title: string; timestamp: number;
+    id: string; delivered: boolean; title: string; timestamp: string;
     channelName: string; channelType: string; target?: string; error?: string;
 }
 

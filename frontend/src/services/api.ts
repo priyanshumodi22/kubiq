@@ -321,12 +321,12 @@ class ApiClient {
   }
 
   // Service endpoints
-  async getServices() {
+  async getServices(): Promise<import('../types').ServicesResponse> {
     const response = await this.client.get('/api/services');
     return response.data;
   }
 
-  async getServicesStatus() {
+  async getServicesStatus(): Promise<import('../types').ServicesStatusResponse> {
     const response = await this.client.get('/api/services/status');
     return response.data;
   }
@@ -336,7 +336,7 @@ class ApiClient {
     return response.data;
   }
 
-  async getServiceHistory(name: string, limit?: number) {
+  async getServiceHistory(name: string, limit?: number): Promise<{ name: string; history: import('../types').HealthCheck[]; count: number }> {
     const params = limit ? { limit } : {};
     const response = await this.client.get(`/api/services/${name}/history`, { params });
     return response.data;

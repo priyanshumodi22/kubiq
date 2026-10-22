@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import axios from 'axios';
+import { randomUUID } from 'node:crypto';
 import { NotificationChannel } from '../types';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { INotificationRepository } from '../database/interfaces/INotificationRepository';
@@ -102,7 +103,7 @@ export class NotificationManager {
       console.log(`🔔 Added notification channel: ${newChannel.name}`);
       return newChannel;
     } else {
-      const id = Date.now().toString();
+      const id = randomUUID();
       const newChannel: NotificationChannel = { ...channel, id };
       this.channels.set(id, newChannel);
       return newChannel;
@@ -217,7 +218,7 @@ export class NotificationManager {
     const isWarning = lowerTitle.includes('warning') || lowerTitle.includes('degraded');
     const status: 'healthy' | 'unhealthy' | 'warning' | 'info' = isUnhealthy ? 'unhealthy' : isWarning ? 'warning' : 'info';
 
-    const cleanTitle = title.replace(/^[\u{1F300}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F680}-\u{1F6FF}\u{26A0}-\u{26FF}]\s*/u, '');
+    const cleanTitle = title.replace(/^[\u{1F300}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}]\s*/u, '');
 
     const details: Record<string, string> = { ...extraDetails };
     if (message) {
@@ -225,7 +226,7 @@ export class NotificationManager {
       lines.forEach(line => {
         const parts = line.split(':');
         if (parts.length >= 2) {
-          const key = parts[0].replace(/^[\u{1F300}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F680}-\u{1F6FF}\u{26A0}-\u{26FF}]\s*/u, '').trim();
+          const key = parts[0].replace(/^[\u{1F300}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}]\s*/u, '').trim();
           const val = parts.slice(1).join(':').trim();
           if (key && val && key.toLowerCase() !== 'time') {
             details[key] = val;
@@ -261,7 +262,7 @@ export class NotificationManager {
     const status = isHealthy ? 'healthy' : 'unhealthy';
 
     await this.sendAlertCard(channel, {
-      title: title.replace(/^[\u{1F300}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F680}-\u{1F6FF}\u{26A0}-\u{26FF}]\s*/u, ''),
+      title: title.replace(/^[\u{1F300}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}]\s*/u, ''),
       status,
       details: {
         'State': message
@@ -313,6 +314,21 @@ export class NotificationManager {
     }
   }
 
+  private historyEntry(channel: NotificationChannel, payload: AlertPayload, target: string, delivered: boolean, error?: string): AlertHistoryEntry {
+    return {
+      id: `${Date.now()}-${randomUUID()}`,
+      timestamp: new Date().toISOString(),
+      title: payload.title,
+      status: payload.status,
+      channelId: channel.id,
+      channelName: channel.name,
+      channelType: channel.type,
+      delivered,
+      ...(error ? { error } : {}),
+      target: target || undefined,
+    };
+  }
+
   private async sendAlertCard(channel: NotificationChannel, payload: AlertPayload): Promise<void> {
     const formattedCard = this.formatCard(payload);
     const targetName = payload.target || payload.serviceName || '';
@@ -321,18 +337,7 @@ export class NotificationManager {
     const isTestCall = payload.isTest === true || payload.title.toLowerCase().includes('test alert');
     if (!isTestCall && this.isMuted(targetName, namespace)) {
       console.log(`🔇 Alert suppressed by Maintenance Silence Mode for channel ${channel.name}`);
-      this.recordHistory({
-        id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
-        timestamp: new Date().toISOString(),
-        title: payload.title,
-        status: payload.status,
-        channelId: channel.id,
-        channelName: channel.name,
-        channelType: channel.type,
-        delivered: false,
-        error: 'Suppressed by Maintenance Silence Mode',
-        target: targetName || namespace || undefined
-      });
+      this.recordHistory(this.historyEntry(channel, payload, targetName || namespace, false, 'Suppressed by Maintenance Silence Mode'));
       return;
     }
 
@@ -345,31 +350,10 @@ export class NotificationManager {
         }
       }, 3);
 
-      this.recordHistory({
-        id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
-        timestamp: new Date().toISOString(),
-        title: payload.title,
-        status: payload.status,
-        channelId: channel.id,
-        channelName: channel.name,
-        channelType: channel.type,
-        delivered: true,
-        target: targetName || namespace || undefined
-      });
+      this.recordHistory(this.historyEntry(channel, payload, targetName || namespace, true));
     } catch (error: any) {
       console.error(`❌ Failed to send card notification to ${channel.name}:`, error.message);
-      this.recordHistory({
-        id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
-        timestamp: new Date().toISOString(),
-        title: payload.title,
-        status: payload.status,
-        channelId: channel.id,
-        channelName: channel.name,
-        channelType: channel.type,
-        delivered: false,
-        error: error.message || 'Delivery failed',
-        target: targetName || namespace || undefined
-      });
+      this.recordHistory(this.historyEntry(channel, payload, targetName || namespace, false, error.message || 'Delivery failed'));
     }
   }
 

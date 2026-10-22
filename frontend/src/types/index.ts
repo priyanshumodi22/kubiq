@@ -27,7 +27,7 @@ export interface HealthCheck {
 }
 
 export interface ServiceStatus {
-  id: string; // backend returns 'id'
+  id?: string; // Lightweight status snapshots do not include the persisted ID.
   name: string;
   endpoint: string;
   type?: 'http' | 'tcp' | 'icmp' | 'mysql' | 'mongodb';
@@ -50,7 +50,22 @@ export interface Stats {
   healthyServices: number;
   unhealthyServices: number;
   unknownServices: number;
-  isRunning: boolean;
+  averageUptime: number;
+  averageResponseTime: number;
+}
+
+export interface ServicesResponse {
+  services: ServiceStatus[];
+  stats: Stats;
+}
+
+export interface ServiceStatusUpdate extends Omit<ServiceStatus, 'history' | 'lastCheck'> {
+  lastCheck: HealthCheck | null;
+}
+
+export interface ServicesStatusResponse {
+  services: ServiceStatusUpdate[];
+  stats: Stats;
 }
 
 export interface DiskInfo {
