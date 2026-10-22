@@ -18,7 +18,7 @@ const IDENTITY_PATTERNS = [
   /\bhow do(es)? (you|kubi|kubiq) work\b/i,
 ];
 
-const termPattern = (term: string) => new RegExp(`(?:^|[^a-z0-9])${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=$|[^a-z0-9])`, 'i');
+const termPattern = (term: string) => new RegExp(`(?:^|[^a-z0-9])${term.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=$|[^a-z0-9])`, 'i');
 
 export const KUBI_SCOPE_RESPONSE = "I can help with kubiq—its product, creator, services, logs, APM, Kubernetes, alerts, audit history, and permitted telemetry. I can't answer general questions or act as a coding assistant.";
 

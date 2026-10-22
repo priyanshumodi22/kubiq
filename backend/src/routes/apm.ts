@@ -408,7 +408,7 @@ apmAnalyticsRouter.get('/export', requirePermission('apm.export'), async (req: R
             if (val === null || val === undefined) return '';
             const str = String(val);
             if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-                return `"${str.replace(/"/g, '""')}"`;
+                return `"${str.replaceAll(/"/g, '""')}"`;
             }
             return str;
         };
@@ -449,7 +449,7 @@ apmAnalyticsRouter.get('/export', requirePermission('apm.export'), async (req: R
         const svcLabel = serviceName ? `_${serviceName}` : '_all-services';
         const durLabel = minDurationMs ? `_gt${minDurationMs}ms` : '';
         const errLabel = errorOnly ? '_errors' : '';
-        const dateLabel = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+        const dateLabel = new Date().toISOString().slice(0, 19).replaceAll(/[:.]/g, '-');
         const filename = `slow-queries${svcLabel}${durLabel}${errLabel}_${dateLabel}.csv`;
 
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');

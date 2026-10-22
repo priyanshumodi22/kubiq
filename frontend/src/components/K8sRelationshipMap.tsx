@@ -377,7 +377,7 @@ export function K8sRelationshipMap({
 
                         <button
                             onClick={() => {
-                                const escapeXml = (str: string) => (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                                const escapeXml = (str: string) => (str || '').replaceAll(/&/g, '&amp;').replaceAll(/</g, '&lt;').replaceAll(/>/g, '&gt;').replaceAll(/"/g, '&quot;');
                                 const minW = Math.max(width, 1200);
                                 const minH = Math.max(height, 800);
                                 let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${minW}" height="${minH}" viewBox="0 0 ${minW} ${minH}" style="background-color: #0d0d0d; font-family: system-ui, -apple-system, sans-serif;">\n`;

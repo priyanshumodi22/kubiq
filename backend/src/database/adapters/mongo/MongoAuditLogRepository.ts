@@ -30,7 +30,7 @@ export class MongoAuditLogRepository implements IAuditLogRepository {
   ): Promise<AuditLogEntry[]> {
     let query: any = {};
     if (search?.trim()) {
-      const escaped = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escaped = search.trim().replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(escaped, 'i');
       query = {
         $or: [{ user: regex }, { action: regex }, { target: regex }, { details: regex }],
@@ -80,7 +80,7 @@ export class MongoAuditLogRepository implements IAuditLogRepository {
 
   private queryForSearch(search?: string): any {
     if (!search?.trim()) return {};
-    const escaped = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escaped = search.trim().replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(escaped, 'i');
     return { $or: [{ user: regex }, { action: regex }, { target: regex }, { details: regex }] };
   }

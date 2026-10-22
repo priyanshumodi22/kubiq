@@ -343,7 +343,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
 
     const exportBufferedLogs = () => {
         const csv = ['Timestamp,Level,Message', ...logs.map(log => {
-            const field = (value: string) => `"${value.replace(/"/g, '""')}"`;
+            const field = (value: string) => `"${value.replaceAll(/"/g, '""')}"`;
             return `${field(new Date(log.id).toISOString())},${field(log.level)},${field(log.content)}`;
         })].join('\n');
         const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
