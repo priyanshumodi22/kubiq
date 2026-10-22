@@ -11,6 +11,9 @@ vi.mock('axios', () => ({
 let apiClient: typeof import('./api').apiClient;
 
 beforeAll(async () => {
+  // Exercise the origin fallback even when a developer has backend DNS in .env.
+  vi.stubEnv('VITE_BACKEND_DNS', '');
+  vi.stubEnv('VITE_API_BASE_URL', '');
   vi.stubGlobal('window', { location: { origin: 'http://localhost:5173' } });
   ({ apiClient } = await import('./api'));
 });
