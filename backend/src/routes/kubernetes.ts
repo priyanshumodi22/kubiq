@@ -77,7 +77,7 @@ router.get('/namespaces', async (req, res) => {
         if (!k8sService.available) return res.json([]);
         const clusterNamespaces = await k8sService.getNamespaces(getContext(req));
         
-        const user = req.user as any;
+        const user = req.user;
         // Cluster-wide namespace visibility is an explicit permission.
         if (await RbacRoleService.hasPermission(user || {}, 'kubernetes.namespaces.all')) {
             return res.json(clusterNamespaces);
@@ -271,7 +271,7 @@ router.get('/yaml/:type/:name', async (req, res) => {
     try {
         if (isSecretResourceType(req.params.type)) return res.status(403).json({ error: 'RBAC_FORBIDDEN', message: 'Cluster-scoped Secret access is not available.' });
         if (!k8sService.available) return res.status(503).json({ message: 'K8s not available' });
-        const raw = await k8sService.getResourceRaw(getContext(req), '', (req.params.type as string), (req.params.name as string));
+        const raw = await k8sService.getResourceRaw(getContext(req), '', req.params.type, req.params.name);
         if (!raw) return res.status(404).json({ message: 'Not found' });
         res.json(raw);
     } catch (e: any) {

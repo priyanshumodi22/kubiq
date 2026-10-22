@@ -340,7 +340,7 @@ export default function StatusPage() {
                                                  <span className="flex items-center gap-2">
                                                      Operational
                                                      <span className="text-text-dim font-normal border-l border-gray-700 pl-2 ml-1 text-[10px] font-mono">
-                                                         ~{Math.round(bar.avgResponse!)}ms
+                                                         ~{Math.round(bar.avgResponse)}ms
                                                      </span>
                                                  </span>
                                              ) : (
@@ -355,9 +355,9 @@ export default function StatusPage() {
                                              )}
                                           </div>
                                           <div className="text-text-dim font-mono mb-0 text-[10px] uppercase tracking-wider">
-                                             {new Date(bar.timestamp!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                             {new Date(bar.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                              {' - '}
-                                             {new Date(bar.timestamp! + binSize).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                             {new Date(bar.timestamp + binSize).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                           </div>
                                        </div>
                                        {/* Arrow */}

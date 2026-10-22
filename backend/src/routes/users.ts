@@ -73,7 +73,7 @@ router.post('/', authMiddleware, requirePermission('users.manage'), async (req: 
 const updateRoles = async (req: Request, res: Response, rawRoles: unknown) => {
   try {
     const { id } = req.params;
-    const requestingUserId = (req.user as any)?.sub;
+    const requestingUserId = req.user?.sub;
     const roles = normalizeRoles(rawRoles);
 
     if (requestingUserId === id) {
@@ -134,7 +134,7 @@ router.put('/:id/roles', authMiddleware, requirePermission('users.manage'), asyn
 router.delete('/:id', authMiddleware, requirePermission('users.manage'), async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const requestingUserId = (req.user as any)?.sub;
+        const requestingUserId = req.user?.sub;
 
         if (requestingUserId === id) {
             return res.status(400).json({ message: 'Cannot delete your own account' });
@@ -182,7 +182,7 @@ router.put('/:id/status', authMiddleware, requirePermission('users.manage'), asy
     try {
         const { id } = req.params;
         const { enabled } = req.body;
-        const requestingUserId = (req.user as any)?.sub;
+        const requestingUserId = req.user?.sub;
 
         if (requestingUserId === id && enabled === false) {
              return res.status(400).json({ message: 'Cannot disable your own account' });

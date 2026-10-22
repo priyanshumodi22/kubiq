@@ -160,7 +160,7 @@ export class MysqlServiceRepository implements IServiceRepository {
                 id: row.id.toString(), // Fix: Include ID
                 name: row.name,
                 endpoint: row.endpoint,
-                type: row.type as any || 'http',
+                type: row.type || 'http',
                 headers: typeof row.headers === 'string' ? JSON.parse(row.headers) : (row.headers || undefined),
                 ignoreSSL: Boolean(row.ignore_ssl),
                 sslExpiry: row.ssl_expiry ? new Date(row.ssl_expiry) : null,

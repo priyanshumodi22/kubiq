@@ -72,7 +72,7 @@ async function getApmConfigCached(): Promise<{ ignoredRoutes: string[] }> {
         cachedApmConfig = await systemRepo.getApmConfig();
         lastApmConfigFetch = now;
     }
-    return cachedApmConfig!;
+    return cachedApmConfig;
 }
 
 
@@ -324,7 +324,7 @@ apmAnalyticsRouter.get('/edges/:source/:target/recent-trace', async (req: Reques
 apmAnalyticsRouter.get('/traces/:traceId', async (req: Request, res: Response) => {
     try {
         const traceIdParam = Array.isArray(req.params.traceId) ? req.params.traceId[0] : req.params.traceId;
-        const traceId = traceIdParam as string;
+        const traceId = traceIdParam;
         const traceRepository = await DatabaseFactory.getTraceRepository();
         const spans = await traceRepository.getTraceDetails(traceId);
 

@@ -342,7 +342,7 @@ export class KubernetesService {
                 version: 'v1beta1',
                 namespace,
                 plural: 'pods',
-            }) as any;
+            });
             const items = res?.items ?? [];
             return items.map((m: any) => ({
                 name: m.metadata?.name ?? '—',
@@ -523,7 +523,7 @@ export class KubernetesService {
             // Redact secret data for safety before sending to frontend
             return (res.items ?? []).map((secret: any) => {
                 const redactedData: any = {};
-                const data = (secret as any).data;
+                const data = secret.data;
                 if (data) {
                     for (const key of Object.keys(data)) {
                         redactedData[key] = '***REDACTED***';
@@ -558,7 +558,7 @@ export class KubernetesService {
                     if (res) {
                         // Redact data
                         if (res.data) {
-                            const secretData = res.data as any;
+                            const secretData = res.data;
                             for (const key of Object.keys(secretData)) {
                                 secretData[key] = '***REDACTED***';
                             }
@@ -590,7 +590,7 @@ export class KubernetesService {
                         plural: 'verticalpodautoscalers',
                         name
                     });
-                    res = (response as any).body ? (response as any).body : response;
+                    res = response.body ? response.body : response;
                     break;
                 }
                 default: return { error: `Unsupported resource type: ${resourceType}` };
@@ -634,7 +634,7 @@ export class KubernetesService {
                 version: 'v1',
                 namespace,
                 plural: 'verticalpodautoscalers'
-            }) as any;
+            });
             
             const allVpas = vpaRes?.items || [];
             result.vpa = allVpas.filter((vpa: any) => 

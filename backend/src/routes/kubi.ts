@@ -15,7 +15,7 @@ const auditLog = AuditLogService.getInstance();
 const activeUsers = new Set<string>();
 const requestTimestamps = new Map<string, number[]>();
 
-const getUserId = (req: Request) => String((req.user as any)?.sub || (req.user as any)?.id || getUserFromReq(req));
+const getUserId = (req: Request) => String(req.user?.sub || req.user?.id || getUserFromReq(req));
 const sanitizeInput = (value: unknown) => typeof value === 'string' ? value.trim().slice(0, 4000) : '';
 const sendEvent = (res: Response, event: string, data: unknown) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 
