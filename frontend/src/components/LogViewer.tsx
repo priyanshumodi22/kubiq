@@ -222,7 +222,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
         if (!isOpen) return;
 
         // Path should include context path if configured, usually handle by io() generic
-        const backendUrl = import.meta.env.VITE_BACKEND_DNS || window.location.origin;
+        const backendUrl = import.meta.env.VITE_BACKEND_DNS || globalThis.location.origin;
         const contextPath = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
 
         const socket = io(backendUrl, {

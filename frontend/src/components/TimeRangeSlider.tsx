@@ -51,12 +51,12 @@ export function TimeRangeSlider({ minMs, maxMs, value, onChange }: Readonly<Time
             setIsDragging(null);
         };
 
-        window.addEventListener('pointermove', handlePointerMove);
-        window.addEventListener('pointerup', handlePointerUp);
+        globalThis.addEventListener('pointermove', handlePointerMove);
+        globalThis.addEventListener('pointerup', handlePointerUp);
 
         return () => {
-            window.removeEventListener('pointermove', handlePointerMove);
-            window.removeEventListener('pointerup', handlePointerUp);
+            globalThis.removeEventListener('pointermove', handlePointerMove);
+            globalThis.removeEventListener('pointerup', handlePointerUp);
         };
     }, [isDragging, minMs, maxMs, fromMs, toMs, onChange]);
 

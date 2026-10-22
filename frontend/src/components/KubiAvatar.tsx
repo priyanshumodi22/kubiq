@@ -23,7 +23,7 @@ export function KubiAvatar({ state = 'idle', size = 48, className = '', paused =
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
-    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const motionQuery = globalThis.window.matchMedia('(prefers-reduced-motion: reduce)');
     let visible = true;
     let frame = 0;
     let lastTime = 0;
@@ -47,7 +47,7 @@ export function KubiAvatar({ state = 'idle', size = 48, className = '', paused =
       const hex = kubiAvatarStates[current].color;
       const rgb = [1, 3, 5].map(offset => Number.parseInt(hex.slice(offset, offset + 2), 16));
       color = color.map((value, index) => animate ? value + (rgb[index] - value) * (1 - Math.exp(-dt * 7)) : rgb[index]);
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min(globalThis.window.devicePixelRatio || 1, 2);
       const pixels = Math.round(size * dpr);
       if (canvas.width !== pixels || canvas.height !== pixels) { canvas.width = pixels; canvas.height = pixels; }
       ctx.setTransform(pixels / 180, 0, 0, pixels / 180, 0, 0);

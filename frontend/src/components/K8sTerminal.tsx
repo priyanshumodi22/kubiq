@@ -24,7 +24,7 @@ export default function K8sTerminal({ namespace, podName, containers }: Readonly
     const xtermRef = useRef<XtermTerminal | null>(null);
     const socketRef = useRef<any>(null);
 
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || globalThis.location.origin;
     const contextPath = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
 
     useEffect(() => {

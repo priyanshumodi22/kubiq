@@ -61,8 +61,8 @@ export default function ProLicenseWelcome() {
       if (status?.active) setIsManuallyOpened(true);
     };
 
-    window.addEventListener('kubiq-pro-card:open', reopen);
-    return () => window.removeEventListener('kubiq-pro-card:open', reopen);
+    globalThis.addEventListener('kubiq-pro-card:open', reopen);
+    return () => globalThis.removeEventListener('kubiq-pro-card:open', reopen);
   }, [status?.active]);
 
   useEffect(() => {
@@ -70,8 +70,8 @@ export default function ProLicenseWelcome() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') dismiss();
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    globalThis.addEventListener('keydown', handleKeyDown);
+    return () => globalThis.removeEventListener('keydown', handleKeyDown);
   }, [dismiss, isOpen]);
 
   return createPortal(

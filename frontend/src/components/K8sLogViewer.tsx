@@ -81,7 +81,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
         setStreamEnded(false);
         setError(null);
 
-        const backendUrl = (import.meta as any).env?.VITE_BACKEND_DNS || window.location.origin;
+        const backendUrl = (import.meta as any).env?.VITE_BACKEND_DNS || globalThis.location.origin;
         const contextPath = (import.meta as any).env?.VITE_BACKEND_CONTEXT_PATH || '';
 
         const socket = io(backendUrl, {

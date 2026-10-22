@@ -161,7 +161,7 @@ export default function Header() {
             {isProActive && (
               <button
                 type="button"
-                onClick={() => window.dispatchEvent(new Event('kubiq-pro-card:open'))}
+                onClick={() => globalThis.dispatchEvent(new Event('kubiq-pro-card:open'))}
                 className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold tracking-[0.12em] text-primary transition-colors hover:border-primary/60 hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 aria-label="Open kubiq Pro details"
               >

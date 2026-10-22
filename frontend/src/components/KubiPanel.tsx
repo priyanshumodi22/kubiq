@@ -77,9 +77,9 @@ export function KubiPanel() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') closePanel();
     };
-    window.addEventListener('keydown', onKeyDown);
+    globalThis.addEventListener('keydown', onKeyDown);
     requestAnimationFrame(() => inputRef.current?.focus());
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => globalThis.removeEventListener('keydown', onKeyDown);
   }, [open]);
 
   const closePanel = () => {
@@ -92,10 +92,10 @@ export function KubiPanel() {
     try {
       const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
       const appRelativeHref = href.startsWith('/') ? `${basePath}${href}` : href;
-      const destination = new URL(appRelativeHref, window.location.origin);
+      const destination = new URL(appRelativeHref, globalThis.location.origin);
       if (destination.protocol !== 'http:' && destination.protocol !== 'https:') return;
       closePanel();
-      window.location.assign(destination.href);
+      globalThis.location.assign(destination.href);
     } catch {
       setError('That kubi reference is not a valid link.');
     }

@@ -63,14 +63,14 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
   let pathPrefix = import.meta.env.BASE_URL;
   if (!pathPrefix.endsWith('/')) pathPrefix += '/';
 
-  const currentPath = window.location.pathname;
+  const currentPath = globalThis.location.pathname;
   if (currentPath.includes('/dashboard')) {
       const prefix = currentPath.substring(0, currentPath.indexOf('/dashboard'));
       pathPrefix = prefix.endsWith('/') ? prefix : `${prefix}/`;
       if (pathPrefix === '') pathPrefix = '/';
   }
 
-  const publicUrl = slug ? `${window.location.origin}${pathPrefix}status/${slug}` : null;
+  const publicUrl = slug ? `${globalThis.location.origin}${pathPrefix}status/${slug}` : null;
 
   return createPortal(
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">

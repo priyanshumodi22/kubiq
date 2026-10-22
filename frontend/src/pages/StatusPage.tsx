@@ -39,7 +39,7 @@ export default function StatusPage() {
   const [copied, setCopied] = useState(false);
 
   const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
+    navigator.clipboard.writeText(globalThis.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

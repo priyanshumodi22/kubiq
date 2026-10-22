@@ -8,7 +8,7 @@ const getBackendDNS = () => {
 
   // If no DNS configured or empty string, use current origin (universal deployment)
   if (!configuredDNS || configuredDNS === '') {
-    return window.location.origin;
+    return globalThis.location.origin;
   }
 
   return configuredDNS;
@@ -48,8 +48,8 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error: AxiosError) => {
-        if (typeof window !== 'undefined' && error.response?.status === 403 && (error.response.data as any)?.error === 'RBAC_FORBIDDEN') {
-          window.dispatchEvent(new CustomEvent('kubiq:toast', {
+        if (typeof globalThis.window !== 'undefined' && error.response?.status === 403 && (error.response.data as any)?.error === 'RBAC_FORBIDDEN') {
+          globalThis.dispatchEvent(new CustomEvent('kubiq:toast', {
             detail: { type: 'warning', message: 'You do not have permission to perform this action.' }
           }));
         }

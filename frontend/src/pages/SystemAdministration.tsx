@@ -203,7 +203,7 @@ export default function SystemAdministration() {
     }
   };
   const resetPassword = async (user: ManagedUser) => {
-    const password = window.prompt(
+    const password = globalThis.prompt(
       `Set a temporary password for ${user.username} (12 characters minimum).`
     );
     if (password === null) return;
@@ -252,7 +252,7 @@ export default function SystemAdministration() {
     }
   };
   const deleteUser = async (user: ManagedUser) => {
-    if (!window.confirm(`Delete ${user.username}? This cannot be undone.`)) return;
+    if (!globalThis.confirm(`Delete ${user.username}? This cannot be undone.`)) return;
     try {
       await apiClient.deleteUser(user.id);
       setUsers((items) => items.filter((item) => item.id !== user.id));
@@ -281,7 +281,7 @@ export default function SystemAdministration() {
     }
   };
   const deleteRole = async (role: Role) => {
-    if (role.builtIn || !window.confirm(`Delete custom role ${role.name}?`)) return;
+    if (role.builtIn || !globalThis.confirm(`Delete custom role ${role.name}?`)) return;
     try {
       await apiClient.deleteRbacRole(role.id);
       setRoles((items) => items.filter((item) => item.id !== role.id));

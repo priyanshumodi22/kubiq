@@ -45,14 +45,14 @@ export function AuditLogViewer() {
         if (!canReadAudit || !hasPermission('audit.export')) return;
         try {
             const blob = await apiClient.exportAuditLogsCsv(search);
-            const url = window.URL.createObjectURL(new Blob([blob], { type: 'text/csv' }));
+            const url = globalThis.URL.createObjectURL(new Blob([blob], { type: 'text/csv' }));
             const a = document.createElement('a');
             a.href = url;
             a.download = `kubiq-audit-logs-${Date.now()}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+            globalThis.URL.revokeObjectURL(url);
         } catch (e) {
             console.error('Failed to export audit logs CSV:', e);
         }
