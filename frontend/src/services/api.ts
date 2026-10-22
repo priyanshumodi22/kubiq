@@ -77,7 +77,7 @@ class ApiClient {
   }
 
   // Auth endpoints
-  async getAuthConfig() {
+  async getAuthConfig(): Promise<import('../types/auth').AuthConfig> {
     const response = await this.client.get('/api/auth/config');
     return response.data;
   }
@@ -93,22 +93,22 @@ class ApiClient {
     };
   }
 
-  async login(credentials: any) {
+  async login(credentials: import('../types/auth').LoginCredentials): Promise<import('../types/auth').NativeSession> {
     const response = await this.client.post('/api/auth/login', credentials);
     return response.data;
   }
 
-  async refreshNativeSession() {
+  async refreshNativeSession(): Promise<import('../types/auth').NativeSession> {
     const response = await this.client.post('/api/auth/refresh');
     return response.data;
   }
 
-  async register(data: any) {
+  async register(data: import('../types/auth').RegistrationInput) {
     const response = await this.client.post('/api/auth/register', data);
     return response.data;
   }
 
-  async getCurrentUser() {
+  async getCurrentUser(): Promise<import('../types/auth').UserAccount> {
     const response = await this.client.get('/api/auth/me'); // Updated endpoint
     return response.data;
   }

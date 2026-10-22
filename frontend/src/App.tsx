@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthProvider';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import StatusPage from './pages/StatusPage';

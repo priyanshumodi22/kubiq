@@ -81,7 +81,7 @@ export class AuthController {
       const user = await (await DatabaseFactory.getUserRepository()).findById(String(payload.sub));
       if (!user || user.enabled === false) return res.status(403).json({ message: 'Account is disabled or no longer available.' });
       // Resolve current roles/scopes from persistence so revoked access takes effect at refresh.
-      return res.json({ token: AuthController.issueNativeToken(user), user: { ...user, passwordHash: undefined } });
+      return res.json({ token: AuthController.issueNativeToken(user), user: { ...user, passwordHash: undefined, permissions: await RbacRoleService.getEffectivePermissions(user) } });
     } catch (error) {
       if (isNativeJwtConfigurationError(error)) return res.status(503).json({ message: error.message });
       return res.status(401).json({ message: 'Invalid or expired Native authentication token.' });

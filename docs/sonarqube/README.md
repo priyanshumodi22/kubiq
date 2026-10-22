@@ -57,6 +57,16 @@ label associations and notification form interactions. The new form IDs are
 unique when multiple instances render together. Both application builds pass;
 frontend lint warnings and final browser/visual acceptance remain outstanding.
 
+The following authentication batch adds typed Native session contracts and stable
+auth context actions. Native refresh now includes effective permissions from the
+current RBAC configuration; old-format responses still trigger a safe permission
+lookup. Session generations fence late permission responses from older sessions.
+Seven lifecycle tests cover revocation, disabled accounts, old-format responses,
+late responses, context identity and Keycloak client-role/refresh-failure behavior.
+Verification passes 163 backend tests and 48 frontend tests. Backend lint has zero
+errors; frontend has zero errors but still 139 explicit-any and 12 hook warnings.
+These changes require their own scan before any additional closure is claimed.
+
 - Backend ESLint: zero errors; warnings are still tracked, not suppressed.
 - Frontend ESLint: zero errors, but the strict command remains blocked by 170
   explicit-any, 15 hook-dependency and two fast-refresh warnings.
