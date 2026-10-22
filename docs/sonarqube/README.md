@@ -272,3 +272,18 @@ falsy values, closes the numeric-separator regression, and records both
 compatibility-sensitive hotspots as reviewed safe with explicit SonarQube
 rationale. SonarQube now reports 100% hotspot review coverage and no remaining
 hotspot review tasks.
+
+Eighth verified checkpoint: commit `0cfa684fd99b4c13802f50a3cdfad983bbe2ab51`,
+analysis `061becfe-a78f-4cd8-a5b0-c86831012526`, task
+`85c1d0a3-4b5b-4347-a348-064d0741d992`. The exact-revision export records 463
+original findings CLOSED and 378 pending, plus 48 additional findings. The
+current analysis has 397 open issues, zero unreviewed hotspots, 22.4% combined
+coverage and gate ERROR. GitHub run number 10 completed the analysis and failed
+on the enforced quality gate as expected. The format-3 archive is
+`gs://priyanshu-apps-sonarqube-backups/reports/85c1d0a3-4b5b-4347-a348-064d0741d992-1792685145.json`.
+No release proof or production image was published.
+
+This checkpoint verifies the optional-chaining batch across authentication,
+repositories, Kubernetes, streaming, license validation, and frontend event
+handlers. The batch preserved all 224 backend and 74 frontend tests and both
+production builds while closing 28 open findings.
