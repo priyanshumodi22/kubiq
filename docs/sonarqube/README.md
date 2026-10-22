@@ -300,6 +300,7 @@ Subsequent completed analyses:
 | `bff6049` | 18 | `0a89864e-8b9e-4080-bec1-1e990ea91222` | 308 | 23.3% | 0 |
 | `996fb43` | 19 | `f0412dd8-f949-4efe-b605-3f1dabe35ded` | 303 | 23.3% | 0 |
 | `fde0263` | 20 | `ec7a6591-b356-4b43-945c-1ce1710343b5` | 296 | 23.4% | 0 |
+| `9dc1c9c` | 21 | `0cc9c910-19e7-48a8-8e8e-5bbdb3e3ac3e` | 289 | 23.4% | 0 |
 
 Matching format-3 exports remain in the private backup bucket under `reports/`:
 `4550fc4b-64aa-45f1-8e3d-f570920514c2-1792689301.json`,
@@ -363,3 +364,12 @@ items). Current open issues total 296. Its archive is
 `gs://priyanshu-apps-sonarqube-backups/reports/cd5700de-2c59-44bc-95e5-dd2cc09f2f55-1792696060.json`.
 Seven literal-pattern follow-ups in CSV/XML escaping are addressed in the next
 batch; their closure is not inferred until a matching scan completes.
+
+Run 21 confirms all seven literal-pattern follow-ups closed, with no open
+S7780 or S7781 findings. The standard Sonar gate is OK, but the strict release
+criteria remain failed because 289 open issues remain. Coverage is 23.4%, and
+there are no unreviewed hotspots. The matching export is
+`gs://priyanshu-apps-sonarqube-backups/reports/ff1c4455-e86b-416c-a924-5ad7fb021b59-1792696392.json`.
+No production image or release proof was published. The next batches still
+include frontend accessibility, nested conditionals, complexity and lint
+warnings; this is verified progress, not completion of the full plan.
