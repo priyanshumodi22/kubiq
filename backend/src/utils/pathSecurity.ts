@@ -8,9 +8,9 @@ const NOT_ALLOWED_LOG_DIRECTORIES = [
     '/dev',
     '/proc',
     '/sys',
-    'C:\\Windows',
-    'C:\\Program Files',
-    'C:\\Program Files (x86)'
+    String.raw`C:\Windows`,
+    String.raw`C:\Program Files`,
+    String.raw`C:\Program Files (x86)`
 ];
 
 export const isPathSafe = (targetPath: string): boolean => {
