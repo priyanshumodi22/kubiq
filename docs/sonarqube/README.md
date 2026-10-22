@@ -297,6 +297,7 @@ Subsequent completed analyses:
 | `3e07db6` | 15 | `f838abb0-4d37-4113-9c91-a973fd93ce7d` | 321 | 22.9% | 0 |
 | `624585e` | 16 | `0ae3bc70-f159-4069-ad03-135d1ee167ac` | 319 | 23.0% | 0 |
 | `292f6e5` | 17, attempt 2 | `ea22e2cf-e65e-45be-85ad-f3113840f01b` | 318 | 23.1% | 0 |
+| `bff6049` | 18 | `0a89864e-8b9e-4080-bec1-1e990ea91222` | 308 | 23.3% | 0 |
 
 Matching format-3 exports remain in the private backup bucket under `reports/`:
 `4550fc4b-64aa-45f1-8e3d-f570920514c2-1792689301.json`,
@@ -327,3 +328,14 @@ still fail because 318 issues and the new-code coverage requirements remain.
 Standard Sonar gate results can be OK while baseline issues remain. The strict
 release verifier and every checkpoint still reject release until the complete
 remediation criteria are met. No production image or release proof was published.
+
+Run 18 verifies the ordered kubi evidence-collector extraction and conditional
+cleanup. Its checkpoint records 545 explicit baseline closures, 294 pending
+baseline findings and two individual safe reviews, plus 50 additional findings.
+The exact-revision export is
+`gs://priyanshu-apps-sonarqube-backups/reports/3d6903ab-11ac-4172-9b89-751b5b46fd66-1792695593.json`.
+All 229 backend and 77 frontend tests and both builds passed. Trace-correlated
+log retrieval now independently requires `logs.read`, with a denial regression
+test. The standard quality gate is ERROR; production remains held. A new
+misleading-indentation finding in the extracted APM collector is tracked and
+fixed in the next batch rather than accepted or excluded.

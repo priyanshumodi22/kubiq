@@ -116,9 +116,8 @@ export default function ServiceCard({
                 )}
                 {service.sslExpiry && (() => {
                     const days = Math.ceil((new Date(service.sslExpiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                    let colorClass = 'bg-primary/10 text-primary border-primary/20'; // Default Blue/Green ish
-                    if (days < 0) colorClass = 'bg-red-500/10 text-red-500 border-red-500/20';
-                    else if (days < 7) colorClass = 'bg-red-500/10 text-red-500 border-red-500/20';
+                    let colorClass: string;
+                    if (days < 7) colorClass = 'bg-red-500/10 text-red-500 border-red-500/20';
                     else if (days < 30) colorClass = 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
                     else colorClass = 'bg-green-500/10 text-green-500 border-green-500/20';
 

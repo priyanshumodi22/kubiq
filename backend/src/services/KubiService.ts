@@ -153,22 +153,24 @@ export class KubiService {
   private async collectApmTelemetry(collection: EvidenceCollection): Promise<void> {
     const { question, context, evidence, maxTools, normalized, traceId, service, plan } = collection;
     const selected = (domain: KubiDomain, legacy: boolean) => plan ? plan.domains.includes(domain) : legacy;
-    if (!selected('apm', hasWord(question, ['trace', 'apm', 'latency', 'slow', 'database', 'query'])) || !DatabaseFactory.isApmSupported() || evidence.length >= maxTools || !await this.can(context.user, 'apm.read')) return;
-      try {
-        const repository = await DatabaseFactory.getTraceRepository();
-        const now = Date.now();
-        const metrics = await repository.getServiceMetrics(now - 60 * 60 * 1000, now);
-        const traceDetails = traceId ? await repository.getTraceDetails(traceId) : [];
-        const selectedService = service?.name || traceDetails[0]?.serviceName || metrics.find(item => normalized.includes(item.serviceName.toLowerCase()))?.serviceName;
-        const minDuration = hasWord(question, ['slow', 'latency']) ? 250 : undefined;
-        const traces = selectedService ? await repository.getRecentTraces(selectedService, 20, minDuration, hasWord(question, ['error', 'fail']) || undefined, undefined, now - 60 * 60 * 1000, now) : [];
-        const payload: Record<string, unknown> = { metrics, traces, ...(traceDetails.length ? { traceDetails } : {}) };
-        await this.collectSlowDatabaseSpans(collection, repository, selectedService, now, payload);
-        evidence.push({ reference: { type: 'trace', label: selectedService ? `APM: ${selectedService}` : 'APM service metrics', href: selectedService ? `/apm?service=${encodeURIComponent(selectedService)}` : '/apm' }, payload });
-        await this.collectTraceCorrelatedLogs(collection, selectedService, traceDetails.length, now);
-      } catch (error: any) {
-        evidence.push({ reference: { type: 'trace', label: 'APM unavailable', href: '/apm' }, payload: { unavailable: true, reason: error?.message || 'APM repository unavailable' } });
-      }
+    if (!selected('apm', hasWord(question, ['trace', 'apm', 'latency', 'slow', 'database', 'query'])) || !DatabaseFactory.isApmSupported() || evidence.length >= maxTools || !await this.can(context.user, 'apm.read')) {
+      return;
+    }
+    try {
+      const repository = await DatabaseFactory.getTraceRepository();
+      const now = Date.now();
+      const metrics = await repository.getServiceMetrics(now - 60 * 60 * 1000, now);
+      const traceDetails = traceId ? await repository.getTraceDetails(traceId) : [];
+      const selectedService = service?.name || traceDetails[0]?.serviceName || metrics.find(item => normalized.includes(item.serviceName.toLowerCase()))?.serviceName;
+      const minDuration = hasWord(question, ['slow', 'latency']) ? 250 : undefined;
+      const traces = selectedService ? await repository.getRecentTraces(selectedService, 20, minDuration, hasWord(question, ['error', 'fail']) || undefined, undefined, now - 60 * 60 * 1000, now) : [];
+      const payload: Record<string, unknown> = { metrics, traces, ...(traceDetails.length ? { traceDetails } : {}) };
+      await this.collectSlowDatabaseSpans(collection, repository, selectedService, now, payload);
+      evidence.push({ reference: { type: 'trace', label: selectedService ? `APM: ${selectedService}` : 'APM service metrics', href: selectedService ? `/apm?service=${encodeURIComponent(selectedService)}` : '/apm' }, payload });
+      await this.collectTraceCorrelatedLogs(collection, selectedService, traceDetails.length, now);
+    } catch (error: any) {
+      evidence.push({ reference: { type: 'trace', label: 'APM unavailable', href: '/apm' }, payload: { unavailable: true, reason: error?.message || 'APM repository unavailable' } });
+    }
   }
 
   private async collectSlowDatabaseSpans(collection: EvidenceCollection, repository: TraceRepository, selectedService: string | undefined, now: number, payload: Record<string, unknown>): Promise<void> {
