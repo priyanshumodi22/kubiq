@@ -262,7 +262,7 @@ export function K8sDetailPanel({
                             {/* Resource Metrics Trend Chart */}
                             {(() => {
                                 const historyKey = `${namespace}/${resName}`;
-                                const podHistory = clickhouseMetrics !== null ? clickhouseMetrics : metricsHistory?.[historyKey];
+                                const podHistory = clickhouseMetrics ?? metricsHistory?.[historyKey];
                                 const cpuData = podHistory?.cpu || [];
                                 const memData = podHistory?.memory || [];
                                 const timestamps = podHistory?.timestamps || [];

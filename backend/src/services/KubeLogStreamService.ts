@@ -238,8 +238,7 @@ export class KubeLogStreamService {
                     );
                 }).catch(e => console.error('Error importing IngestionBufferService:', e));
 
-                if (!shared.flushTimer) {
-                    shared.flushTimer = setTimeout(() => {
+                shared.flushTimer ??= setTimeout(() => {
                         for (const targetRoom of shared.targetRooms) {
                             let content = shared.pendingBuffer;
                             if (targetRoom.includes('::deploy::')) {
@@ -253,7 +252,6 @@ export class KubeLogStreamService {
                         shared.pendingBuffer = '';
                         shared.flushTimer = null;
                     }, 100);
-                }
             });
 
             log.log(namespace, podName, targetContainer ?? '', liveStream, {

@@ -237,7 +237,7 @@ export class KubiService {
         allowed = dbUser?.allowedNamespaces || allowed;
       } catch { /* fallback below */ }
     }
-    if (!allowed) allowed = ['apps', 'default'];
+    allowed ??= ['apps', 'default'];
     if (!allowed.length) return [];
     const permitted = new Set(allowed.map(item => item.toLowerCase()));
     return all.filter(item => permitted.has(item.toLowerCase()));

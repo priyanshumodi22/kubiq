@@ -15,9 +15,7 @@ export class KubiReaderAuth {
 
     async applyAuthentication(_user: User, opts: RequestOptions): Promise<void> {
         if (Date.now() >= this.expiresAt - 60_000) {
-            if (!this.pending) {
-                this.pending = this.refresh().finally(() => { this.pending = undefined; });
-            }
+            this.pending ??= this.refresh().finally(() => { this.pending = undefined; });
             await this.pending;
         }
         opts.headers = { ...opts.headers, Authorization: `Bearer ${this.token}` };

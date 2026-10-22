@@ -207,8 +207,8 @@ export class JsonServiceRepository implements IServiceRepository {
       const logPath = 'undefined'; // Deprecated, always write undefined
       // Use Base64 for logSources to avoid delimiter collision with pipe '|'
       const logSources = s.logSources ? Buffer.from(JSON.stringify(s.logSources)).toString('base64') : 'undefined';
-      const interval = s.interval !== undefined ? s.interval : 'undefined';
-      const retries = s.retries !== undefined ? s.retries : 'undefined';
+      const interval = s.interval ?? 'undefined';
+      const retries = s.retries ?? 'undefined';
       // Format: name=endpoint|headers|type|ignoreSSL|logPath|logSources|interval|retries
       const line = `${s.name}=${s.endpoint}|${headers}|${type}|${ignoreSSL}|${logPath}|${logSources}|${interval}|${retries}`;
       lines.push(line);

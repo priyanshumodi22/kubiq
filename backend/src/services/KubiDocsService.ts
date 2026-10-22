@@ -43,7 +43,7 @@ export class KubiDocsService {
 
   static async search(question: string): Promise<Passage[]> {
     if (Date.now() >= this.expires) {
-      if (!this.pending) this.pending = this.refresh().finally(() => { this.pending = undefined; });
+      this.pending ??= this.refresh().finally(() => { this.pending = undefined; });
       await this.pending;
     }
     const words = [...new Set(question.toLowerCase().match(/[a-z0-9-]{3,}/g) || [])].filter(word => !['how', 'does', 'what', 'the', 'kubiq', 'docs', 'documentation', 'explain', 'can', 'you', 'with', 'about', 'please'].includes(word));

@@ -239,3 +239,20 @@ instead of the field name, and both log viewers no longer use pseudo-random
 numbers as React item identities. Exact-revision verification passed 224 backend
 tests, 74 frontend tests and both builds. Coverage increased from 21.3% to 22.4%,
 which is now the regression floor; it remains far below the 80% new-code target.
+
+Sixth verified checkpoint: commit `fd838d7360668cb401d4e3fcd8b9933aa1a2ae0c`,
+analysis `f8d5603f-6064-4212-bd5b-7c8814a71068`, task
+`5960f712-18c9-4f51-b6ef-a50889171da3`. The exact-revision export records 421
+original findings CLOSED and 420 pending, plus 46 additional findings. The
+current analysis has 439 open issues, two unreviewed hotspots, 22.4% combined
+coverage and gate ERROR. GitHub run `39808403868` completed the analysis and
+failed on the enforced quality gate as expected. The format-3 archive is
+`gs://priyanshu-apps-sonarqube-backups/reports/5960f712-18c9-4f51-b6ef-a50889171da3-1792684375.json`.
+No release proof or production image was published.
+
+This checkpoint verifies that startup jitter and avatar blink scheduling use
+cryptographic randomness. It closes the three remaining fixable random-number
+hotspots. The two remaining review tasks are compatibility-sensitive: the
+persisted MD5 service identifier and the Teams MessageCard schema identifier.
+They must be reviewed with rationale in SonarQube; neither is silently excluded
+or changed in a way that would migrate stored identifiers.

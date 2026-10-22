@@ -4,7 +4,7 @@ import { kubiAvatarStates, type KubiAvatarState } from './kubiAvatarState';
 type Props = { state?: KubiAvatarState; size?: number; className?: string; paused?: boolean };
 
 function randomBlinkDelay(): number {
-  const value = crypto.getRandomValues(new Uint32Array(1))[0] / 0x1_0000_0000;
+  const value = crypto.getRandomValues(new Uint32Array(1))[0] / 4_294_967_296;
   return 2.2 + value * 3.2;
 }
 

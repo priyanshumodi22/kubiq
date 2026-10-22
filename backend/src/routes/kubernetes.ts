@@ -99,7 +99,7 @@ router.get('/namespaces', async (req, res) => {
             }
         }
 
-        if (!allowed) allowed = user.allowedNamespaces || ['apps', 'default'];
+        allowed ??= user.allowedNamespaces || ['apps', 'default'];
 
         if (allowed && Array.isArray(allowed) && allowed.length > 0) {
             const allowedLower = allowed.map((s: string) => String(s).toLowerCase().trim());

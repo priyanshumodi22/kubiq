@@ -241,15 +241,13 @@ export class LogStreamService extends EventEmitter {
                         }
 
                         // Start 100ms flush timer if not already running
-                        if (!shared.flushTimer) {
-                            shared.flushTimer = setTimeout(() => {
+                        shared.flushTimer ??= setTimeout(() => {
                                 if (shared.pendingBuffer.length > 0) {
                                     this.io?.to(roomName).emit('log:line', { content: shared.pendingBuffer });
                                     shared.pendingBuffer = '';
                                 }
                                 shared.flushTimer = null;
                             }, 100);
-                        }
                     });
 
                     stream.on('error', (readErr) => {

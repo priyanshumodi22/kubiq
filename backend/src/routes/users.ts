@@ -18,7 +18,7 @@ export const isLastActiveAdmin = (users: Array<{ id: string; enabled?: boolean; 
   const target = users.find(user => user.id === id);
   if (!target || !RbacService.isAdmin(target)) return false;
   const targetRemainsAdmin = nextRoles ? nextRoles.includes('kubiq-admin') : true;
-  const targetRemainsEnabled = nextEnabled === undefined ? target.enabled !== false : nextEnabled;
+  const targetRemainsEnabled = nextEnabled ?? (target.enabled !== false);
   if (targetRemainsAdmin && targetRemainsEnabled) return false;
   return !users.some(user => user.id !== id && user.enabled !== false && RbacService.isAdmin(user));
 };
