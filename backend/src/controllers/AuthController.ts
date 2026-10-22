@@ -150,26 +150,13 @@ export class AuthController {
           }
 
           // Generate fresh token with updated roles
-          let secret: string;
+          let token: string;
           try {
-            secret = getNativeJwtSecret();
+            token = AuthController.issueNativeToken(freshUser);
           } catch (error) {
             if (isNativeJwtConfigurationError(error)) return res.status(503).json({ message: error.message });
             throw error;
           }
-          const token = jwt.sign(
-            { 
-                sub: freshUser.id, 
-                username: freshUser.username,
-                preferred_username: freshUser.username, 
-                roles: freshUser.roles?.length ? freshUser.roles : [freshUser.role],
-                allowedNamespaces: freshUser.allowedNamespaces || ['apps', 'default'],
-                type: 'native'
-            }, 
-            secret, 
-            { expiresIn: '24h' }
-          );
-
           res.json({
               id: freshUser.id,
               username: freshUser.username,
