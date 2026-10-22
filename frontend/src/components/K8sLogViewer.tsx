@@ -9,6 +9,7 @@ import { apiClient } from '../services/api';
 import { ProUpgradeModal } from './ProUpgradeModal';
 import { AiStatusOrb } from './AiStatusOrb';
 import { AiSummaryContent } from './AiSummaryContent';
+import { classifyLogLevel, type LogLevel } from '../utils/logLevel';
 
 interface K8sLogViewerProps {
     namespace: string;
@@ -20,26 +21,7 @@ interface K8sLogViewerProps {
 interface LogLine {
     id: number;
     content: string;
-    level: 'error' | 'warn' | 'info' | 'debug' | 'plain';
-}
-
-function classifyLine(content: string): LogLine['level'] {
-    // Look for explicit level tags or prefix assignments (e.g. [WARN], level=warn, "level":"error")
-    const explicitMatch = 
-        content.match(/\[(ERROR|WARN|WARNING|INFO|DEBUG|TRACE|FATAL|PANIC|CRITICAL)\]/i) ||
-        content.match(/\b(level|severity|lvl)\s*[:=]\s*["']?(error|warn|warning|info|debug|trace|fatal|panic|critical)\b/i) ||
-        content.match(/^(?:[\d-T:.Z\s+]+)?\b(ERROR|WARN|WARNING|INFO|DEBUG|TRACE|FATAL|PANIC|CRITICAL)\b/i);
-
-    if (explicitMatch) {
-        const found = (explicitMatch[1] || explicitMatch[2]).toLowerCase();
-        if (['error', 'fatal', 'panic', 'critical'].includes(found)) return 'error';
-        if (['warn', 'warning'].includes(found)) return 'warn';
-        if (['info', 'information'].includes(found)) return 'info';
-        if (['debug', 'trace'].includes(found)) return 'debug';
-    }
-
-    // Default to plain if no explicit level was found (industry standard)
-    return 'plain';
+    level: LogLevel;
 }
 
 const LEVEL_COLORS: Record<LogLine['level'], string> = {
@@ -69,6 +51,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
 
     const socketRef = useRef<any>(null);
     const virtuosoRef = useRef<any>(null);
+    const nextLogIdRef = useRef(0);
     const isPausedRef = useRef(isPaused);
     isPausedRef.current = isPaused;
 
@@ -122,10 +105,10 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
         socket.on('disconnect', () => setIsConnected(false));
 
         socket.on('k8s:log:init', (data: { lines: string[] }) => {
-            const mapped: LogLine[] = data.lines.map((content, i) => ({
-                id: Date.now() + i,
+            const mapped: LogLine[] = data.lines.map((content) => ({
+                id: ++nextLogIdRef.current,
                 content,
-                level: classifyLine(content),
+                level: classifyLogLevel(content),
             }));
             setLogs(mapped);
         });
@@ -134,7 +117,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
             const newLines: LogLine[] = data.content
                 .split('\n')
                 .filter(Boolean)
-                .map((content) => ({ id: Date.now() + Math.random(), content, level: classifyLine(content) }));
+                .map((content) => ({ id: ++nextLogIdRef.current, content, level: classifyLogLevel(content) }));
 
             setLogs(prev => [...prev, ...newLines]);
 

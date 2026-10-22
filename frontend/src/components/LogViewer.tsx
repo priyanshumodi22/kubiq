@@ -11,6 +11,7 @@ import { ProUpgradeModal } from './ProUpgradeModal';
 import { AiStatusOrb } from './AiStatusOrb';
 import { AiSummaryContent } from './AiSummaryContent';
 import { useAuth } from '../contexts/AuthContext';
+import { classifyLogLevel, type LogLevel } from '../utils/logLevel';
 
 interface LogViewerProps {
     logPath: string; // Legacy fallback
@@ -25,26 +26,7 @@ interface LogViewerProps {
 interface LogLine {
     id: number;
     content: string;
-    level: 'error' | 'warn' | 'info' | 'debug' | 'plain';
-}
-
-function classifyLine(content: string): LogLine['level'] {
-    // Look for explicit level tags or prefix assignments (e.g. [WARN], level=warn, "level":"error")
-    const explicitMatch =
-        content.match(/\[(ERROR|WARN|WARNING|INFO|DEBUG|TRACE|FATAL|PANIC|CRITICAL)\]/i) ||
-        content.match(/\b(level|severity|lvl)\s*[:=]\s*["']?(error|warn|warning|info|debug|trace|fatal|panic|critical)\b/i) ||
-        content.match(/^(?:[\d-T:.Z\s+]+)?\b(ERROR|WARN|WARNING|INFO|DEBUG|TRACE|FATAL|PANIC|CRITICAL)\b/i);
-
-    if (explicitMatch) {
-        const found = (explicitMatch[1] || explicitMatch[2]).toLowerCase();
-        if (['error', 'fatal', 'panic', 'critical'].includes(found)) return 'error';
-        if (['warn', 'warning'].includes(found)) return 'warn';
-        if (['info', 'information'].includes(found)) return 'info';
-        if (['debug', 'trace'].includes(found)) return 'debug';
-    }
-
-    // Default to plain if no explicit level was found (industry standard)
-    return 'plain';
+    level: LogLevel;
 }
 
 function renderFormattedLogContent(content: string) {
@@ -188,6 +170,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
     const socketRef = useRef<any>(null); // Use any or explicit ReturnType<typeof io> if imported
     const virtuosoRef = useRef<any>(null);
     const logsRef = useRef<LogLine[]>([]); // Ref to keep track without re-rendering everything constantly
+    const nextLogIdRef = useRef(0);
 
     // Handle outside click for dropdown
     useEffect(() => {
@@ -268,20 +251,20 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
         });
 
         socket.on('log:init', (data: { content: string }) => {
-            const lines = data.content.split('\n').filter(Boolean).map((line, i) => ({
-                id: Date.now() + i,
+            const lines = data.content.split('\n').filter(Boolean).map((line) => ({
+                id: ++nextLogIdRef.current,
                 content: line,
-                level: classifyLine(line)
+                level: classifyLogLevel(line)
             }));
             setLogs(lines);
             logsRef.current = lines; // Sync ref
         });
 
         socket.on('log:line', (data: { content: string }) => {
-            const newLines = data.content.split('\n').filter(Boolean).map((line, i) => ({
-                id: Date.now() + i + Math.random(),
+            const newLines = data.content.split('\n').filter(Boolean).map((line) => ({
+                id: ++nextLogIdRef.current,
                 content: line,
-                level: classifyLine(line)
+                level: classifyLogLevel(line)
             }));
 
             // If paused, just accumulate in Ref potentially or State, but track count
@@ -310,7 +293,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
 
         socket.on('error', (err: any) => {
             console.error('Socket Error:', err);
-            setLogs(prev => [...prev, { id: Date.now(), content: `[SYSTEM ERROR]: ${err.message}`, level: 'error' }]);
+            setLogs(prev => [...prev, { id: ++nextLogIdRef.current, content: `[SYSTEM ERROR]: ${err.message}`, level: 'error' }]);
         });
 
         return () => {

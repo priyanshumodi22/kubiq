@@ -27,6 +27,19 @@ describe('IngestionBufferService bounds', () => {
     expect(buffer.addLogs([{ message: 'four' }])).toBe(false);
   });
 
+  it.each([
+    ['[ERROR] request failed', 'ERROR'],
+    ['level=warn request retried', 'WARN'],
+    ['severity: INFO request completed', 'INFO'],
+    ['{"level":"error","message":"failed"}', 'ERROR'],
+    ['{"severity":"debug","message":"details"}', 'DEBUG'],
+    ['ordinary application output', 'INFO'],
+  ])('extracts %s as %s during line ingestion', (line, expected) => {
+    const buffer = IngestionBufferService.getInstance() as any;
+    buffer.ingestLines('api', 'pod-1', [line]);
+    expect(buffer.logBuffer.at(-1)?.level).toBe(expected);
+  });
+
   it('counts an in-flight database flush against log capacity', async () => {
     process.env.KUBIQ_INGESTION_MAX_BUFFERED_LOGS = '2';
     let releaseWrite!: () => void;

@@ -64,13 +64,13 @@ export class IngestionBufferService {
     }
 
     private extractLevel(content: string): string {
-        const explicitMatch = 
-            content.match(/\[(ERROR|WARN|WARNING|INFO|DEBUG|TRACE|FATAL|PANIC|CRITICAL)\]/i) ||
-            content.match(/\b(level|severity|lvl)\s*[:=]\s*["']?(error|warn|warning|info|debug|trace|fatal|panic|critical)\b/i) ||
-            content.match(/^(?:[\d-T:.Z\s+]+)?\b(ERROR|WARN|WARNING|INFO|DEBUG|TRACE|FATAL|PANIC|CRITICAL)\b/i);
+        const explicitMatch =
+            /\[(ERROR|WARN|WARNING|INFO|DEBUG|TRACE|FATAL|PANIC|CRITICAL)\]/i.exec(content) ||
+            /\b(?:level|severity|lvl)["']?\s*[:=]\s*["']?(error|warn|warning|info|debug|trace|fatal|panic|critical)\b/i.exec(content) ||
+            /^(?:[\d-T:.Z\s+]+)?\b(ERROR|WARN|WARNING|INFO|DEBUG|TRACE|FATAL|PANIC|CRITICAL)\b/i.exec(content);
 
         if (explicitMatch) {
-            const found = (explicitMatch[1] || explicitMatch[2]).toLowerCase();
+            const found = explicitMatch[1].toLowerCase();
             if (['error', 'fatal', 'panic', 'critical'].includes(found)) return 'ERROR';
             if (['warn', 'warning'].includes(found)) return 'WARN';
             if (['info', 'information'].includes(found)) return 'INFO';
