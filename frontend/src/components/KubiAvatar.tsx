@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { kubiAvatarStates, type KubiAvatarState } from './kubiAvatarState';
-import { avatarFinShift, avatarGazeTarget, avatarRotation, drawAvatarEyes } from './kubiAvatarDrawing';
+import { avatarFinShift, avatarGazeTarget, avatarRotation, drawAvatarComposingDots, drawAvatarEyes } from './kubiAvatarDrawing';
 
 type Props = { state?: KubiAvatarState; size?: number; className?: string; paused?: boolean };
 
@@ -87,13 +87,7 @@ export function KubiAvatar({ state = 'idle', size = 48, className = '', paused =
       ctx.strokeStyle = signal; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.moveTo(84 + gaze * 0.4, 115);
       ctx.quadraticCurveTo(90 + gaze * 0.4, current === 'error' ? 112 : 119, 96 + gaze * 0.4, 115); ctx.stroke();
-      if (current === 'composing') {
-        for (let i = 0; i < 3; i++) {
-          ctx.globalAlpha = animate ? 0.5 + 0.5 * Math.sin(time * 4 - i) ** 2 : 1;
-          ctx.beginPath(); ctx.arc(77 + i * 13, 149, 2.5, 0, Math.PI * 2); ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-      }
+      drawAvatarComposingDots(ctx, current, time, animate);
       ctx.restore();
       if (animate) frame = requestAnimationFrame(draw);
     };

@@ -44,3 +44,14 @@ export function drawAvatarEyes(ctx: CanvasRenderingContext2D, state: KubiAvatarS
     }
   }
 }
+
+export function drawAvatarComposingDots(ctx: CanvasRenderingContext2D, state: KubiAvatarState, time: number, animate: boolean): void {
+  if (state !== 'composing') return;
+  for (let dot = 0; dot < 3; dot++) {
+    ctx.globalAlpha = animate ? 0.5 + 0.5 * Math.sin(time * 4 - dot) ** 2 : 1;
+    ctx.beginPath();
+    ctx.arc(77 + dot * 13, 149, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
