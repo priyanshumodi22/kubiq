@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { kubiAvatarStates, type KubiAvatarState } from './kubiAvatarState';
+import { avatarFinShift, avatarGazeTarget, avatarRotation, drawAvatarEyes } from './kubiAvatarDrawing';
 
 type Props = { state?: KubiAvatarState; size?: number; className?: string; paused?: boolean };
 
@@ -41,9 +42,10 @@ export function KubiAvatar({ state = 'idle', size = 48, className = '', paused =
       lastTime = timestamp;
       time += dt;
       const current = stateRef.current;
-      const target = current === 'searching' ? Math.sin(time * 1.8) * 9 : current === 'thinking' ? 4 : 0;
+      const target = avatarGazeTarget(current, time);
       velocity += (60 * (target - gaze) - 9 * velocity) * dt;
-      gaze = animate ? gaze + velocity * dt : current === 'searching' ? 7 : target;
+      const stillGaze = current === 'searching' ? 7 : target;
+      gaze = animate ? gaze + velocity * dt : stillGaze;
       const hex = kubiAvatarStates[current].color;
       const rgb = [1, 3, 5].map(offset => Number.parseInt(hex.slice(offset, offset + 2), 16));
       color = color.map((value, index) => animate ? value + (rgb[index] - value) * (1 - Math.exp(-dt * 7)) : rgb[index]);
@@ -56,7 +58,7 @@ export function KubiAvatar({ state = 'idle', size = 48, className = '', paused =
       ctx.beginPath(); ctx.ellipse(90, 153, 45, 7, 0, 0, Math.PI * 2); ctx.fill();
       ctx.save();
       ctx.translate(90, 90 + (animate ? Math.sin(time * 1.7) * 2.3 : 0));
-      ctx.rotate(current === 'thinking' ? -0.13 : current === 'error' ? 0.08 : current === 'searching' ? gaze * 0.008 : 0);
+      ctx.rotate(avatarRotation(current, gaze));
       ctx.translate(-90, -90);
       const gradient = ctx.createLinearGradient(45, 36, 126, 142);
       gradient.addColorStop(0, '#d8efff'); gradient.addColorStop(0.48, '#80b9fa');
@@ -70,7 +72,7 @@ export function KubiAvatar({ state = 'idle', size = 48, className = '', paused =
       ctx.beginPath(); ctx.roundRect(40, 64, 100, 64, 25); ctx.fill(); ctx.stroke();
       const signal = `rgb(${color.map(Math.round).join(',')})`;
       ctx.fillStyle = signal;
-      const finShift = current === 'searching' && animate ? Math.sin(time * 2.4) * 14 : current === 'working' ? 10 + (animate ? Math.sin(time * 3) * 4 : 0) : 0;
+      const finShift = avatarFinShift(current, time, animate);
       for (const side of [-1, 1]) {
         const x = side < 0 ? 23 : 157;
         const y = 77 + side * (current === 'finished' ? 0 : 10) + finShift * side;
@@ -80,17 +82,8 @@ export function KubiAvatar({ state = 'idle', size = 48, className = '', paused =
       ctx.beginPath(); ctx.moveTo(81, 49); ctx.lineTo(90, 44); ctx.lineTo(99, 49); ctx.lineTo(90, 54); ctx.closePath(); ctx.fill();
       const blinking = animate && time >= blinkAt && time < blinkAt + 0.12;
       if (time >= blinkAt + 0.12) blinkAt = time + randomBlinkDelay();
-      ctx.fillStyle = signal; ctx.strokeStyle = signal; ctx.lineWidth = 6; ctx.lineCap = 'round';
-      for (let i = 0; i < 2; i++) {
-        const x = 68 + i * 32 + gaze;
-        const y = current === 'thinking' ? 83 : 89;
-        if (current === 'finished' && !blinking) {
-          ctx.beginPath(); ctx.moveTo(x, 93); ctx.quadraticCurveTo(x + 6, 83, x + 12, 93); ctx.stroke();
-        } else {
-          const height = blinking ? 3 : current === 'composing' ? 12 + (animate ? (Math.sin(time * 4 + i * Math.PI) + 1) * 3.5 : i * 7) : current === 'thinking' && i === 1 ? 13 : 19;
-          ctx.beginPath(); ctx.roundRect(x, y + (19 - height) / 2, 12, height, Math.min(6, height / 2)); ctx.fill();
-        }
-      }
+      ctx.fillStyle = signal; ctx.strokeStyle = signal;
+      drawAvatarEyes(ctx, current, gaze, time, animate, blinking);
       ctx.strokeStyle = signal; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.moveTo(84 + gaze * 0.4, 115);
       ctx.quadraticCurveTo(90 + gaze * 0.4, current === 'error' ? 112 : 119, 96 + gaze * 0.4, 115); ctx.stroke();
