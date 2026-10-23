@@ -30,6 +30,16 @@ kubiq. The following scan must verify the five valid-directive findings close.
 Four individual accessibility review candidates (Footer and canvas avatar) remain
 pending until authenticated review plus export evidence; they are not exclusions.
 
+The four exact accessibility issue IDs have now been individually marked False
+Positive in the authenticated Sonar UI with their test/standards rationale. The
+next completed export must verify these statuses before the ledger counts them
+as reviewed. No bulk acceptance or rule deactivation was used.
+
+Monitor cleanup calls the existing semaphore-protected public check directly
+instead of its deprecated private forwarding wrapper, removes a redundant empty
+header-spread fallback, and normalizes two catch names without changing failures.
+All 278 backend tests, TypeScript build and three release-guard tests pass.
+
 Run 43 verifies `bee9de4849b4c84e11cbcda7f465c7ee64961ade`: 93 open
 issues, 37.8% combined coverage, no unreviewed hotspots and standard gate OK.
 Notification status/severity and kubi trace matching findings are closed.

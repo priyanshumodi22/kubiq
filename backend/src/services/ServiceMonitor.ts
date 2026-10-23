@@ -180,8 +180,8 @@ export class ServiceMonitor {
     if ((!cert || Object.keys(cert).length === 0) && response.status < 400) {
       try {
         cert = await this.checkTlsRaw(service.endpoint);
-      } catch (tlsErr) {
-        console.warn(`TLS Fallback Failed for ${service.name}`, tlsErr);
+      } catch (error_) {
+        console.warn(`TLS Fallback Failed for ${service.name}`, error_);
       }
     }
     if (cert?.valid_to) service.sslExpiry = new Date(cert.valid_to);
@@ -317,7 +317,7 @@ export class ServiceMonitor {
 
     const runCheck = () => {
       if (!this.isRunning || !this.services.has(serviceName)) return;
-      this.checkServiceHealthWithSemaphore(serviceName).catch(console.error);
+      this.checkServiceHealth(serviceName).catch(console.error);
     };
 
     // Jitter: randomize the initial check within [0, effectiveInterval]
@@ -330,11 +330,6 @@ export class ServiceMonitor {
 
     const interval = setInterval(runCheck, effectiveInterval);
     this.pollIntervals.set(serviceName, interval);
-  }
-
-  /** @deprecated Internal use only — use checkServiceHealth() which includes the semaphore */
-  private async checkServiceHealthWithSemaphore(serviceName: string): Promise<HealthCheck> {
-    return this.checkServiceHealth(serviceName);
   }
 
   // --- CRUD Operations ---
@@ -524,7 +519,7 @@ export class ServiceMonitor {
     const startTime = Date.now();
 
     try {
-      const mergedHeaders = { ...(service.headers || {}), ...headers };
+      const mergedHeaders = { ...service.headers, ...headers };
       const isHttps = fullUrl.startsWith('https:');
       const httpsAgent =
         isHttps && service.ignoreSSL

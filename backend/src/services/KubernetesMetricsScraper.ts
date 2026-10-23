@@ -70,8 +70,8 @@ export class KubernetesMetricsScraper {
                             timestamp
                         });
                     }
-                } catch (nsErr) {
-                    console.error(`KubernetesMetricsScraper: Error scraping ns ${ns}:`, nsErr);
+                } catch (error_) {
+                    console.error(`KubernetesMetricsScraper: Error scraping ns ${ns}:`, error_);
                 }
             }
             
