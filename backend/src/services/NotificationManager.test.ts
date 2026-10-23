@@ -14,6 +14,19 @@ afterEach(() => { jest.useRealTimers(); jest.restoreAllMocks(); });
 const add = (url = 'https://hooks.example.test') => manager.addChannel({ name: 'Operations', type: 'webhook', enabled: true, events: { up: true, down: true }, config: { webhookUrl: url } });
 
 describe('notification identities and delivery lifecycle', () => {
+  test.each([
+    ['ERROR and warning', 'unhealthy', 'error', 'trigger'],
+    ['Deployment degraded', 'warning', 'warning', 'resolve'],
+    ['Warning threshold', 'warning', 'warning', 'resolve'],
+    ['Deployment complete', 'info', 'info', 'resolve'],
+  ])('preserves classification and PagerDuty mapping for %s', async (title, status, severity, action) => {
+    const post = jest.spyOn(axios, 'post').mockResolvedValue({ status: 200 });
+    await add('https://events.pagerduty.example.test');
+    await manager.notifyCustomAlert(title, 'State: Example');
+    expect(manager.getHistory()[0].status).toBe(status);
+    expect(post).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ payload: expect.objectContaining({ severity }), event_action: action }), expect.any(Object));
+  });
+
   test('same-millisecond channels and history entries have independent opaque identities', async () => {
     jest.spyOn(Date, 'now').mockReturnValue(100);
     const post = jest.spyOn(axios, 'post').mockResolvedValue({ status: 200 });

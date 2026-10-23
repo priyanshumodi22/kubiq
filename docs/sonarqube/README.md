@@ -23,6 +23,12 @@ The kubi trace-ID lookup now uses RegExp.exec directly (same non-global pattern,
 word boundaries, case handling and first-match result). Both kubi service/evidence
 suites pass all 14 tests and the backend build; no provider configuration changed.
 
+Notification status unions now share a named type. Explicit status/severity
+helpers preserve failure-before-warning precedence and existing PagerDuty
+trigger/resolve mapping. Four table-driven payload/history tests cover these
+branches; all 275 backend tests and the build pass. This batch does not change
+transports, credentials, destinations, retry scheduling or maintenance policy.
+
 Run 40 verifies `0dd4e8f30bda34fab232836d23f54d20f0183ee9`: 101 open
 issues, 37.1% combined coverage, no unreviewed hotspots and standard gate OK.
 Eight log-viewer findings are now closed; histogram identity and component

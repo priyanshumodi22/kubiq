@@ -5,9 +5,23 @@ import { NotificationChannel } from '../types';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { INotificationRepository } from '../database/interfaces/INotificationRepository';
 
+type AlertStatus = 'healthy' | 'unhealthy' | 'warning' | 'info';
+
+function customAlertStatus(title: string): AlertStatus {
+  if (['alert', 'error', 'down', 'fail'].some(word => title.includes(word))) return 'unhealthy';
+  if (['warning', 'degraded'].some(word => title.includes(word))) return 'warning';
+  return 'info';
+}
+
+function pagerDutySeverity(status: AlertStatus): string {
+  if (status === 'unhealthy') return 'error';
+  if (status === 'warning') return 'warning';
+  return 'info';
+}
+
 export interface AlertPayload {
   title: string;
-  status: 'healthy' | 'unhealthy' | 'warning' | 'info';
+  status: AlertStatus;
   serviceName?: string;
   target?: string;
   error?: string;
@@ -20,7 +34,7 @@ export interface AlertHistoryEntry {
   id: string;
   timestamp: string;
   title: string;
-  status: 'healthy' | 'unhealthy' | 'warning' | 'info';
+  status: AlertStatus;
   channelId: string;
   channelName: string;
   channelType: string;
@@ -37,7 +51,7 @@ export interface MaintenanceConfig {
 
 interface FormattedCard {
   title: string;
-  status: 'healthy' | 'unhealthy' | 'warning' | 'info';
+  status: AlertStatus;
   colorHex: string;
   colorDec: number;
   fields: { name: string; value: string; inline?: boolean }[];
@@ -214,9 +228,8 @@ export class NotificationManager {
     extraDetails?: Record<string, any>
   ): Promise<void> {
     const lowerTitle = title.toLowerCase();
-    const isUnhealthy = lowerTitle.includes('alert') || lowerTitle.includes('error') || lowerTitle.includes('down') || lowerTitle.includes('fail');
-    const isWarning = lowerTitle.includes('warning') || lowerTitle.includes('degraded');
-    const status: 'healthy' | 'unhealthy' | 'warning' | 'info' = isUnhealthy ? 'unhealthy' : isWarning ? 'warning' : 'info';
+    const status = customAlertStatus(lowerTitle);
+    const isUnhealthy = status === 'unhealthy';
 
     const cleanTitle = title.replace(/^[\u{1F300}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}]\s*/u, '');
 
@@ -514,7 +527,7 @@ export class NotificationManager {
       bodyPayload = {
         payload: {
           summary: card.title,
-          severity: card.status === 'unhealthy' ? 'error' : card.status === 'warning' ? 'warning' : 'info',
+          severity: pagerDutySeverity(card.status),
           source: 'kubiq Monitoring SRE',
           custom_details: card.fields.reduce((acc, f) => ({ ...acc, [f.name]: f.value }), {})
         },
