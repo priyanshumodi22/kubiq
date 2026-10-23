@@ -45,4 +45,25 @@ describe('raw log subscription compatibility', () => {
         expect(mocks.sockets[0].disconnect).toHaveBeenCalledTimes(1);
         expect(mocks.sockets[0].handlers.size).toBe(0);
     });
+
+    it('rebinds the same path when the service context changes', async () => {
+        const view = render(<LogViewer {...props} />);
+        await act(async () => {});
+        send('connect');
+        view.rerender(<LogViewer {...props} serviceName="worker" />);
+        send('connect');
+        expect(mocks.sockets.at(-1)!.emit).toHaveBeenLastCalledWith('watch:log', expect.objectContaining({ serviceName: 'worker', path: props.logPath }));
+        expect(mocks.sockets[0].emit).toHaveBeenCalledWith('stop:watch');
+        expect(mocks.sockets[0].handlers.size).toBe(0);
+    });
+
+    it('uses an updated source path and file limit without requiring a new source identity', async () => {
+        const source = { id: 'app', name: 'Application', path: '/logs/*.log', fileLimit: 2 };
+        const view = render(<LogViewer {...props} logSources={[source]} />);
+        await act(async () => {});
+        send('connect');
+        view.rerender(<LogViewer {...props} logSources={[{ ...source, path: '/updated/*.log', fileLimit: 4 }]} />);
+        send('connect');
+        expect(mocks.sockets.at(-1)!.emit).toHaveBeenLastCalledWith('watch:log', { serviceName: 'api', path: '/updated/*.log', pattern: '/updated/*.log', limit: 4 });
+    });
 });

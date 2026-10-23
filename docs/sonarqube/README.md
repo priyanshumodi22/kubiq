@@ -7,6 +7,18 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 40 verifies `0dd4e8f30bda34fab232836d23f54d20f0183ee9`: 101 open
+issues, 37.1% combined coverage, no unreviewed hotspots and standard gate OK.
+Eight log-viewer findings are now closed; histogram identity and component
+complexity remain. Archive:
+`gs://priyanshu-apps-sonarqube-backups/reports/33b9100c-4352-4714-9c65-b978fb84e8ab-1792759849.json`.
+
+Additional regression tests reproduced stale subscriptions for changed service
+context and changed path/limit under the same source identity. Explicit effect
+dependencies now rebind and clean up these subscriptions while pause changes do
+not reconnect. All 170 frontend tests and the build pass. This follow-up awaits
+an exact-commit scan; production remains blocked.
+
 Run 39 verifies `fec32eb61cf971bfb79c6e3c13d228183b5fd9f1`: 109 open
 issues, 36.0% combined coverage, no unreviewed hotspots and standard gate OK.
 The strict release gate remains blocked. All 841 baseline findings are accounted

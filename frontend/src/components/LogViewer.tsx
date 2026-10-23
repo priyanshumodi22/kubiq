@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import io from 'socket.io-client';
@@ -156,9 +156,9 @@ function LogSummaryBody({ summarizing, summary }: Readonly<{ summarizing: boolea
 export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpen, onClose, serviceName, isEmbedded = false }) => {
     const { hasPermission } = useAuth();
     // Determine effective sources
-    const effectiveSources = (logSources && logSources.length > 0)
+    const effectiveSources = useMemo(() => (logSources && logSources.length > 0)
         ? logSources
-        : [{ id: 'default', name: 'Default Log', path: logPath }];
+        : [{ id: 'default', name: 'Default Log', path: logPath }], [logSources, logPath]);
 
     const [selectedSourceId, setSelectedSourceId] = useState<string>(effectiveSources[0].id);
     const selectedSource = effectiveSources.find(s => s.id === selectedSourceId) || effectiveSources[0];
@@ -212,10 +212,9 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
             setRotationAlert(null);
             setAvailableFiles([]); // Reset files list
             // When source ID changes, reset active file to that source's configured path
-            const source = effectiveSources.find(s => s.id === selectedSourceId) || effectiveSources[0];
-            setActiveFile(source.path);
+            setActiveFile(selectedSource.path);
         }
-    }, [isOpen, selectedSourceId, serviceName]); // Re-init on service switch too
+    }, [isOpen, selectedSourceId, selectedSource.path, serviceName]);
 
     // Fetch recent AI summary
     useEffect(() => {
@@ -241,6 +240,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
     // Connect to Socket.IO
     useEffect(() => {
         if (!isOpen) return;
+        setIsConnected(false);
 
         // Path should include context path if configured, usually handle by io() generic
         const backendUrl = import.meta.env.VITE_BACKEND_DNS || globalThis.location.origin;
@@ -319,7 +319,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
             socket.disconnect();
             if (socketRef.current === socket) socketRef.current = null;
         };
-    }, [isOpen, selectedSourceId, activeFile]); // Re-connect if activeFile changes (rotation)
+    }, [isOpen, selectedSourceId, selectedSource.path, selectedSource.fileLimit, activeFile, serviceName]);
 
     // Handle Rotation Switch
     const switchToNewFile = () => {
