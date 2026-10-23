@@ -11,6 +11,7 @@ import { ApmConfigModal } from '../components/ApmConfigModal';
 import { ApmInstrumentationModal } from '../components/ApmInstrumentationModal';
 import { useAuth } from '../contexts/AuthContext';
 import { TimeRangeSlider } from '../components/TimeRangeSlider';
+import { exportDurationLabel, latencyLabel, latencyValue, serviceErrorClass } from './apmPresentation';
 
 
 export type TimeFilter =
@@ -68,7 +69,7 @@ const getPresets = () => {
     ];
 };
 
-export default function ApmDashboard() {
+function useApmDashboardModel() {
     const { hasPermission } = useAuth();
     const isAdmin = hasPermission('system.configure');
     const canExport = hasPermission('apm.export');
@@ -362,132 +363,62 @@ export default function ApmDashboard() {
     const pad = (n: number) => String(n).padStart(2, '0');
     const todayString = `${todayObj.getFullYear()}-${pad(todayObj.getMonth() + 1)}-${pad(todayObj.getDate())}`;
 
-    if (checkingStatus) {
-        return (
-            <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] relative z-10 animate-fade-in">
-                {/* Background Effects */}
-                <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-                    <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
-                </div>
-                <div className="flex flex-col items-center gap-4">
-                    <div className="relative">
-                        <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></div>
-                        <Activity className="w-6 h-6 text-primary absolute inset-0 m-auto animate-pulse" />
-                    </div>
-                    <p className="text-text-dim text-sm animate-pulse">Analyzing system configuration...</p>
-                </div>
-            </div>
-        );
-    }
+        return { isAdmin, canExport, status, checkingStatus, metrics, apmLoading, apmError, refresh, spans, traceLoading, traceError, fetchTrace, clearTrace, dependencies, mapLoading, mapError, fetchServiceMap, timeFilter, setTimeFilter, customFromDate, setCustomFromDate, customFromTime, setCustomFromTime, customToDate, setCustomToDate, customToTime, setCustomToTime, traceIdInput, setTraceIdInput, isTraceDropdownOpen, setIsTraceDropdownOpen, serviceFilter, setServiceFilter, activeView, setActiveView, selectedMapService, setSelectedMapService, selectedInspectorService, setSelectedInspectorService, tracesList, isFetchingTraces, minDurationFilter, setMinDurationFilter, errorOnlyFilter, setErrorOnlyFilter, routeSearch, setRouteSearch, isConfigModalOpen, setIsConfigModalOpen, isInstrumentationModalOpen, setIsInstrumentationModalOpen, percentileFilter, setPercentileFilter, isExportModalOpen, setIsExportModalOpen, isExporting, setIsExporting, exportError, setExportError, exportService, setExportService, exportFromTime, setExportFromTime, exportToTime, setExportToTime, exportMinDuration, setExportMinDuration, exportErrorOnly, setExportErrorOnly, exportSpanSearch, setExportSpanSearch, isExportServiceOpen, setIsExportServiceOpen, isExportDurationOpen, setIsExportDurationOpen, sidebarRef, timeRangeTriggerRef, timeRangePanelRef, isTimeRangeOpen, setIsTimeRangeOpen, timeRangeRect, setTimeRangeRect, latencyTriggerRef, latencyPanelRef, isLatencyOpen, setIsLatencyOpen, latencyRect, setLatencyRect, filteredMetrics, handleRefresh, handleServiceClick, handleEdgeClick, selectedTraceObj, applyCustomTime, handleSliderChange, sliderMaxMs, sliderMinMs, sliderFromMs, sliderToMs, todayString };
+}
 
-    if (status && !status.supported) {
-        return (
-            <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full animate-fade-in relative z-10">
-                {/* Background Effects */}
-                <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-                    <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(239,68,68,0.08),transparent_60%)]"></div>
-                    <div className="absolute -top-40 -left-40 w-96 h-96 bg-error/5 rounded-full blur-3xl"></div>
-                    <div className="absolute bottom-20 right-20 w-80 h-80 bg-primary/3 rounded-full blur-3xl"></div>
-                </div>
+type ApmDashboardModel = ReturnType<typeof useApmDashboardModel>;
 
-                <div className="mt-8 mb-6 text-center sm:text-left">
-                    <h1 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-white via-gray-200 to-gray-400">
-                        APM & Distributed Traces
-                    </h1>
-                    <p className="text-text-dim mt-1">Application performance monitoring and diagnostics</p>
-                </div>
-
-                {/* Glassmorphic main alert box */}
-                <div className="bg-bg-surface/60 backdrop-blur-xl border border-error/20 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-                    {/* Top edge glowing stripe */}
-                    <div className="absolute top-0 inset-x-0 h-[2px] bg-linear-to-r from-transparent via-error/50 to-transparent"></div>
-
-                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-                        <div className="p-4 rounded-xl bg-error/10 border border-error/20 text-error animate-pulse-slow">
-                            <AlertTriangle className="w-8 h-8" />
-                        </div>
-
-                        <div className="flex-1 text-center sm:text-left">
-                            <h2 className="text-xl font-semibold text-white mb-2">APM is Disabled (json mode)</h2>
-                            <p className="text-text-dim text-sm sm:text-base leading-relaxed mb-6">
-                                kubiq is currently configured with <code className="px-1.5 py-0.5 rounded bg-bg-elevated border border-gray-700 text-error font-mono text-xs font-bold font-semibold">DB_TYPE=json</code>.
-                                APM, distributed trace collection, metrics, and service maps require a persistent database backend with advanced indexing capabilities.
-                            </p>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                <div className="p-4 rounded-xl bg-bg-elevated/40 border border-gray-800 text-left">
-                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Why this database?</h3>
-                                    <p className="text-xs text-text-dim leading-normal">
-                                        The JSON adapter saves data directly to flat files. Ingesting and querying thousands of spans would quickly overwhelm disk storage and block the main Node.js event loop.
-                                    </p>
-                                </div>
-                                <div className="p-4 rounded-xl bg-bg-elevated/40 border border-gray-800 text-left">
-                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Supported Engines</h3>
-                                    <p className="text-xs text-text-dim leading-normal">
-                                        APM is fully integrated with <span className="text-white font-medium">MySQL (or MariaDB)</span> and <span className="text-white font-medium">MongoDB</span>. They provide indexing for traceId/service searches and aggregate metrics fast.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="border-t border-gray-800/80 pt-6">
-                                <h3 className="text-sm font-semibold text-white mb-3 text-left">How to Enable APM</h3>
-                                <p className="text-xs text-text-dim text-left mb-3">
-                                    Edit your environment configuration <code className="px-1 py-0.5 rounded bg-bg-elevated text-white font-mono text-xs">.env</code> in the backend root directory, set <code className="text-primary font-mono font-semibold">DB_TYPE</code>, and restart your kubiq backend process.
-                                </p>
-
-                                <div className="bg-black/40 border border-gray-800 rounded-lg p-4 font-mono text-xs text-left relative overflow-hidden select-all group">
-                                    <div className="absolute top-2 right-2 text-[10px] text-gray-500 font-sans group-hover:text-primary transition-colors">
-                                        Click to select all
-                                    </div>
-                                    <div className="text-gray-500"># e:\kubiq-product\kubiq\backend\.env</div>
-                                    <div className="text-gray-400 mt-1 font-sans"># Change from DB_TYPE=json to one of:</div>
-                                    <div><span className="text-primary">DB_TYPE</span>=mysql</div>
-                                    <div className="text-gray-500 mt-1"># Or:</div>
-                                    <div><span className="text-primary">DB_TYPE</span>=mongodb</div>
-                                    <div className="text-gray-400 mt-2 font-sans"># If using MySQL, configure connection settings:</div>
-                                    <div><span className="text-primary">MYSQL_HOST</span>=localhost</div>
-                                    <div><span className="text-primary">MYSQL_USER</span>=root</div>
-                                    <div><span className="text-primary">MYSQL_PASSWORD</span>=yourpassword</div>
-                                    <div><span className="text-primary">MYSQL_DATABASE</span>=kubiq</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Additional assistance cards */}
-                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
-                    <div className="p-5 bg-bg-surface/40 border border-gray-800 hover:border-gray-700 rounded-xl transition-all">
-                        <h4 className="text-sm font-medium text-white mb-1">Live Logs are Available</h4>
-                        <p className="text-xs text-text-dim leading-relaxed">
-                            You can still view real-time log streams and container tailing. Logs do not require trace database adapters.
-                        </p>
-                    </div>
-                    <div className="p-5 bg-bg-surface/40 border border-gray-800 hover:border-gray-700 rounded-xl transition-all">
-                        <h4 className="text-sm font-medium text-white mb-1">Local Testing Tip</h4>
-                        <p className="text-xs text-text-dim leading-relaxed">
-                            For quick testing, spin up a lightweight MySQL or MongoDB container using Docker, update your configuration, and restart kubiq.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full animate-fade-in relative z-10">
-            {/* Background Effects (Matched to Dashboard and Logs) */}
-            <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-                <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
-                <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
-                <div className="absolute top-1/3 -right-20 w-80 h-80 bg-primary/3 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-20 left-1/4 w-72 h-72 bg-primary/4 rounded-full blur-3xl"></div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+function ApmHeader({ model }: Readonly<{ model: ApmDashboardModel }>) {
+    const {
+        isAdmin,
+        canExport,
+        apmLoading,
+        refresh,
+        mapLoading,
+        fetchServiceMap,
+        timeFilter,
+        setTimeFilter,
+        customFromDate,
+        setCustomFromDate,
+        customFromTime,
+        setCustomFromTime,
+        customToDate,
+        setCustomToDate,
+        customToTime,
+        setCustomToTime,
+        activeView,
+        selectedInspectorService,
+        setIsConfigModalOpen,
+        setIsInstrumentationModalOpen,
+        percentileFilter,
+        setPercentileFilter,
+        setIsExportModalOpen,
+        setExportError,
+        setExportService,
+        setExportFromTime,
+        setExportToTime,
+        timeRangeTriggerRef,
+        timeRangePanelRef,
+        isTimeRangeOpen,
+        setIsTimeRangeOpen,
+        timeRangeRect,
+        setTimeRangeRect,
+        latencyTriggerRef,
+        latencyPanelRef,
+        isLatencyOpen,
+        setIsLatencyOpen,
+        latencyRect,
+        setLatencyRect,
+        handleRefresh,
+        applyCustomTime,
+        handleSliderChange,
+        sliderMaxMs,
+        sliderMinMs,
+        sliderFromMs,
+        sliderToMs,
+        todayString,
+    } = model;
+    return (<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-white to-gray-400">
                         APM & Traces
@@ -662,16 +593,16 @@ export default function ApmDashboard() {
                         document.body
                     )}
 
-                    {canExport && <button
+                    <button
                         onClick={handleRefresh}
                         disabled={apmLoading || mapLoading}
                         className="px-3 h-[40px] bg-bg-elevated border border-gray-700 hover:border-blue-500 text-text rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50 text-xs sm:text-sm"
                     >
                         <Activity className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${apmLoading ? 'animate-spin' : ''}`} />
                         Refresh
-                    </button>}
+                    </button>
 
-                    <button
+                    {canExport && (<button
                         onClick={() => {
                             setExportError(null);
                             const now = new Date();
@@ -684,7 +615,7 @@ export default function ApmDashboard() {
                                 const s = pad(d.getSeconds());
                                 const ampm = h >= 12 ? 'PM' : 'AM';
                                 h = h % 12;
-                                h = h ? h : 12;
+                                h = h || 12;
                                 return `${pad(h)}:${m}:${s} ${ampm}`;
                             };
                             setExportFromTime(to12hTimeStr(from));
@@ -697,7 +628,7 @@ export default function ApmDashboard() {
                     >
                         <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-400" />
                         Export
-                    </button>
+                    </button>)}
 
                     {/* Custom Latency Percentile Dropdown */}
                     <div className="relative">
@@ -717,10 +648,7 @@ export default function ApmDashboard() {
                             <div className="flex items-center gap-1.5 min-w-0">
                                 <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400 shrink-0" />
                                 <span className="truncate text-xs font-medium text-gray-200">
-                                    {percentileFilter === 'p50' ? 'P50 Latency (Median)' :
-                                        percentileFilter === 'p90' ? 'P90 Latency' :
-                                            percentileFilter === 'p95' ? 'P95 Latency (Standard)' :
-                                                percentileFilter === 'p99' ? 'P99 Latency (Tail SRE)' : 'P95 Latency'}
+                                    {latencyLabel(percentileFilter)}
                                 </span>
                             </div>
                             <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isLatencyOpen ? 'rotate-180' : ''}`} />
@@ -777,69 +705,40 @@ export default function ApmDashboard() {
                         </button>
                     )}
                 </div>
-            </div>
+            </div>);
+}
 
-
-            {/* Trace & Service Search Bar */}
-            <div className="bg-bg-surface border border-gray-800 rounded-xl p-2 mb-8 flex flex-col md:flex-row items-center gap-2 shadow-sm">
-                <div className="relative flex-1 w-full">
-                    <Server className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                        type="text"
-                        value={serviceFilter}
-                        onChange={(e) => setServiceFilter(e.target.value)}
-                        placeholder="Search Service (e.g. auth-api)"
-                        className="w-full bg-transparent border-none text-white focus:ring-0 pl-10 pr-4 py-2 placeholder-gray-500"
-                    />
-                    {serviceFilter && (
-                        <button
-                            onClick={() => setServiceFilter('')}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-white"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
-                    )}
-                </div>
-
-                <div className="hidden md:block w-px h-8 bg-gray-700 mx-2" />
-                <div className="md:hidden h-px w-full bg-gray-700 my-1" />
-
-                <div className="relative flex-1 w-full flex flex-col sm:flex-row gap-2">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                            type="text"
-                            value={traceIdInput}
-                            onChange={(e) => setTraceIdInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && traceIdInput.trim() && fetchTrace(traceIdInput.trim())}
-                            placeholder="Paste Trace ID (e.g. 1a2b3c...)"
-                            className="w-full bg-transparent border-none text-white focus:ring-0 pl-10 pr-4 py-2 placeholder-gray-500"
-                        />
-                        {traceIdInput && (
-                            <button
-                                onClick={() => {
-                                    setTraceIdInput('');
-                                    clearTrace();
-                                }}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        )}
-                    </div>
-
-                    <button
-                        onClick={() => traceIdInput.trim() && fetchTrace(traceIdInput.trim())}
-                        disabled={traceLoading || !traceIdInput.trim()}
-                        className="px-6 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap shadow-sm"
-                    >
-                        {traceLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Search Trace'}
-                    </button>
-                </div>
-            </div>
-
-            {selectedInspectorService ? (
-                <div className="flex flex-col lg:flex-row gap-6 animate-fade-in">
+function ApmInspector({ model }: Readonly<{ model: ApmDashboardModel }>) {
+    const {
+        spans,
+        traceError,
+        fetchTrace,
+        clearTrace,
+        setTraceIdInput,
+        isTraceDropdownOpen,
+        setIsTraceDropdownOpen,
+        selectedInspectorService,
+        setSelectedInspectorService,
+        tracesList,
+        isFetchingTraces,
+        minDurationFilter,
+        setMinDurationFilter,
+        errorOnlyFilter,
+        setErrorOnlyFilter,
+        routeSearch,
+        setRouteSearch,
+        percentileFilter,
+        latencyTriggerRef,
+        latencyPanelRef,
+        isLatencyOpen,
+        setIsLatencyOpen,
+        latencyRect,
+        setLatencyRect,
+        filteredMetrics,
+        handleServiceClick,
+        selectedTraceObj,
+    } = model;
+    return (<div className="flex flex-col lg:flex-row gap-6 animate-fade-in">
                     {/* Left Panel: Service Cards List */}
                     <div className="w-full lg:w-1/3 xl:w-1/4 shrink-0 flex flex-col gap-3 max-h-[800px] overflow-y-auto pr-2 custom-scrollbar">
                         <div className="flex items-center justify-between mb-2">
@@ -865,20 +764,18 @@ export default function ApmDashboard() {
                                 borderClass = 'bg-amber-500/10 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.15)]';
                             }
 
-                            const durationMetric = percentileFilter === 'p50' ? (service.p50DurationMs || service.avgDurationMs) :
-                                percentileFilter === 'p90' ? (service.p90DurationMs || service.p95DurationMs * 0.9) :
-                                    percentileFilter === 'p99' ? (service.p99DurationMs || service.p95DurationMs * 1.2) :
-                                        service.p95DurationMs;
+                            const durationMetric = latencyValue(service, percentileFilter);
 
                             return (
                                 <div
                                     key={service.serviceName}
-                                    onClick={() => handleServiceClick(service.serviceName)}
-                                    className={`p-4 rounded-xl cursor-pointer transition-all border ${borderClass}`}
+
+                                    className={`relative p-4 rounded-xl cursor-pointer transition-all border ${borderClass}`}
                                 >
+<button type="button" onClick={() => handleServiceClick(service.serviceName)} aria-label={`Inspect ${service.serviceName}`} className="absolute inset-0 z-10 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" />
                                     <h3 className="text-sm font-bold text-white flex justify-between">
                                         {service.serviceName}
-                                        <span className={`text-xs ${isRed ? 'text-red-400 font-bold' : isYellow ? 'text-amber-400 font-bold' : 'text-green-400'}`}>{service.errorRate.toFixed(1)}% err</span>
+                                        <span className={`text-xs ${serviceErrorClass(isRed, isYellow)}`}>{service.errorRate.toFixed(1)}% err</span>
                                     </h3>
                                     <div className="flex justify-between text-xs text-gray-400 mt-2">
                                         <span>{service.rpm.toFixed(1)} RPM</span>
@@ -983,11 +880,11 @@ export default function ApmDashboard() {
                                     </div>
                                 ) : (
                                     <div className="relative w-full">
-                                        <div
+                                        <button type="button" aria-label="Select trace to inspect"
                                             onClick={() => setIsTraceDropdownOpen(!isTraceDropdownOpen)}
-                                            className="bg-[#1f2937] p-3 rounded-lg border border-gray-700 flex justify-between items-center group overflow-hidden gap-2 cursor-pointer hover:border-gray-500 transition-colors"
+                                            className="w-full text-left focus-visible:outline-2 focus-visible:outline-primary bg-[#1f2937] p-3 rounded-lg border border-gray-700 flex justify-between items-center group overflow-hidden gap-2 cursor-pointer hover:border-gray-500 transition-colors"
                                         >
-                                            <div className="flex items-center gap-3 overflow-x-auto custom-scrollbar pb-1 sm:pb-0 hide-scrollbar-sm w-full">
+                                            <span className="flex items-center gap-3 overflow-x-auto custom-scrollbar pb-1 sm:pb-0 hide-scrollbar-sm w-full">
                                                 {selectedTraceObj ? (
                                                     <>
                                                         <Activity className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${selectedTraceObj.statusCode === 2 ? 'text-red-500' : 'text-green-500'}`} />
@@ -1003,16 +900,16 @@ export default function ApmDashboard() {
                                                 ) : (
                                                     <span className="text-gray-400 text-sm">-- Select a Trace to Inspect --</span>
                                                 )}
-                                            </div>
+                                            </span>
                                             <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${isTraceDropdownOpen ? 'rotate-180' : ''}`} />
-                                        </div>
+                                        </button>
 
                                         {isTraceDropdownOpen && (
                                             <div className="absolute top-full left-0 right-0 mt-2 bg-[#111827] border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto custom-scrollbar">
                                                 {tracesList.length > 0 ? (
                                                     <div className="p-1">
                                                         {tracesList.map(t => (
-                                                            <div
+                                                            <button type="button" aria-label={`Inspect trace ${t.traceId}`}
                                                                 key={t.traceId}
                                                                 data-trace-id={t.traceId}
                                                                 onClick={() => {
@@ -1020,7 +917,7 @@ export default function ApmDashboard() {
                                                                     fetchTrace(t.traceId);
                                                                     setIsTraceDropdownOpen(false);
                                                                 }}
-                                                                className={`trace-option flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${selectedTraceObj?.traceId === t.traceId
+                                                                className={`w-full text-left focus-visible:outline-2 focus-visible:outline-primary trace-option flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${selectedTraceObj?.traceId === t.traceId
                                                                         ? 'bg-primary/20 border border-primary/50 text-white'
                                                                         : 'hover:bg-[#1f2937] text-gray-300 hover:text-white border border-transparent'
                                                                     }`}
@@ -1034,7 +931,7 @@ export default function ApmDashboard() {
                                                                         <CheckCircle2 className="w-3.5 h-3.5 text-green-500 inline ml-1 align-text-bottom" />
                                                                     )}
                                                                 </span>
-                                                            </div>
+                                                            </button>
                                                         ))}
                                                     </div>
                                                 ) : (
@@ -1064,9 +961,32 @@ export default function ApmDashboard() {
                             </div>
                         ) : null}
                     </div>
-                </div>
-            ) : (
-                <>
+                </div>);
+}
+
+function ApmOverview({ model }: Readonly<{ model: ApmDashboardModel }>) {
+    const {
+        metrics,
+        apmLoading,
+        apmError,
+        spans,
+        traceError,
+        clearTrace,
+        dependencies,
+        mapError,
+        setTraceIdInput,
+        serviceFilter,
+        setServiceFilter,
+        activeView,
+        setActiveView,
+        selectedMapService,
+        setSelectedMapService,
+        sidebarRef,
+        filteredMetrics,
+        handleServiceClick,
+        handleEdgeClick,
+    } = model;
+    return (<>
                     {traceError && (
                         <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 text-red-400 mb-8 flex items-center justify-between">
                             <div>
@@ -1240,9 +1160,10 @@ export default function ApmDashboard() {
                             {filteredMetrics.map((service) => (
                                 <div
                                     key={service.serviceName}
-                                    onClick={() => handleServiceClick(service.serviceName)}
+
                                     className="bg-bg-surface/40 backdrop-blur-md border border-gray-800 rounded-xl p-6 shadow-2xl hover:border-blue-500/50 hover:bg-white/5 cursor-pointer transition-all group relative overflow-hidden"
                                 >
+<button type="button" onClick={() => handleServiceClick(service.serviceName)} aria-label={`Inspect ${service.serviceName}`} className="absolute inset-0 z-10 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" />
                                     <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <span className="flex items-center gap-1 text-xs font-bold text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded shadow-sm">
                                             <Search className="w-3.5 h-3.5" /> Analyze Trace
@@ -1280,18 +1201,36 @@ export default function ApmDashboard() {
                             ))}
                         </div>
                     )}
-                </>
-            )}
+                </>);
+}
 
-            <ApmConfigModal
-                isOpen={isConfigModalOpen}
-                onClose={() => setIsConfigModalOpen(false)}
-            />
-
-            {/* Export Slow Queries Modal */}
-            {isExportModalOpen && (
-                <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity duration-300" onClick={() => setIsExportModalOpen(false)} />
+function ApmExportDialog({ model }: Readonly<{ model: ApmDashboardModel }>) {
+    const {
+        metrics,
+        setIsExportModalOpen,
+        isExporting,
+        setIsExporting,
+        exportError,
+        setExportError,
+        exportService,
+        setExportService,
+        exportFromTime,
+        setExportFromTime,
+        exportToTime,
+        setExportToTime,
+        exportMinDuration,
+        setExportMinDuration,
+        exportErrorOnly,
+        setExportErrorOnly,
+        exportSpanSearch,
+        setExportSpanSearch,
+        isExportServiceOpen,
+        setIsExportServiceOpen,
+        isExportDurationOpen,
+        setIsExportDurationOpen,
+    } = model;
+    return (<div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+                    <button type="button" tabIndex={-1} aria-label="Close export dialog" className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity duration-300" onClick={() => setIsExportModalOpen(false)} />
                     <div className="relative bg-[#0B0C10] bg-linear-to-b from-[#13151A] to-[#0B0C10] border border-gray-700/60 rounded-2xl shadow-2xl shadow-green-900/10 w-full max-w-lg animate-fade-in ring-1 ring-white/5">
                         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-800/80 bg-white/2 rounded-t-2xl">
                             <div className="flex items-center gap-4">
@@ -1375,11 +1314,7 @@ export default function ApmDashboard() {
                                         className="w-full bg-[#1A1C23] border border-gray-700/60 hover:border-orange-500/50 text-white text-sm rounded-xl px-4 py-2.5 transition-all flex items-center justify-between shadow-inner focus:outline-none focus:ring-2 focus:ring-orange-500/20"
                                     >
                                         <span>
-                                            {exportMinDuration === 0 ? 'Any Duration' :
-                                                exportMinDuration === 100 ? '> 100ms' :
-                                                    exportMinDuration === 500 ? '> 500ms' :
-                                                        exportMinDuration === 1000 ? '> 1s' :
-                                                            exportMinDuration === 2000 ? '> 2s' : '> 5s'}
+                                            {exportDurationLabel(exportMinDuration)}
                                         </span>
                                         <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isExportDurationOpen ? 'rotate-180' : ''}`} />
                                     </button>
@@ -1415,7 +1350,8 @@ export default function ApmDashboard() {
                                     placeholder="e.g. mongodb.query, postgresql, http.request..."
                                     className="w-full bg-[#1A1C23] border border-gray-700/60 text-white text-sm rounded-xl px-4 py-2.5 focus:border-cyan-500/60 focus:ring-2 focus:ring-cyan-500/20 outline-none placeholder:text-gray-600 transition-all shadow-inner" />
                             </div>
-                            <div className="flex items-center justify-between bg-[#1A1C23]/60 border border-gray-700/50 rounded-xl px-5 py-4 transition-colors hover:border-gray-600/50 group cursor-pointer" onClick={() => setExportErrorOnly(!exportErrorOnly)}>
+                            <div className="relative flex items-center justify-between bg-[#1A1C23]/60 border border-gray-700/50 rounded-xl px-5 py-4 transition-colors hover:border-gray-600/50 group cursor-pointer" >
+<button type="button" aria-label="Export errors only" aria-pressed={exportErrorOnly} onClick={() => setExportErrorOnly(!exportErrorOnly)} className="absolute inset-0 z-10 rounded-xl focus-visible:outline-2 focus-visible:outline-red-500" />
                                 <div className="flex items-center gap-4">
                                     <div className={`p-2 rounded-lg transition-colors duration-300 ${exportErrorOnly ? 'bg-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-gray-800'}`}>
                                         <AlertTriangle className={`w-4 h-4 transition-colors duration-300 ${exportErrorOnly ? 'text-red-400' : 'text-gray-500'}`} />
@@ -1425,9 +1361,9 @@ export default function ApmDashboard() {
                                         <span className="text-[10px] text-gray-500 mt-0.5 block">(spans with ERROR status)</span>
                                     </div>
                                 </div>
-                                <button type="button" className={`relative w-11 h-6 rounded-full transition-all duration-300 outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0B0C10] focus:ring-red-500/50 ${exportErrorOnly ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]' : 'bg-gray-700'}`}>
+                                <span aria-hidden="true" className={`relative w-11 h-6 rounded-full transition-all duration-300 outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0B0C10] focus:ring-red-500/50 ${exportErrorOnly ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]' : 'bg-gray-700'}`}>
                                     <span className={`absolute top-0.5 left-1 w-5 h-5 bg-white rounded-full transition-transform duration-300 shadow-sm ${exportErrorOnly ? 'translate-x-4' : 'translate-x-0'}`} />
-                                </button>
+                                </span>
                             </div>
                             {exportError && (
                                 <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm animate-fade-in flex items-start gap-2">
@@ -1444,7 +1380,7 @@ export default function ApmDashboard() {
                                 className="px-5 py-2.5 text-sm font-medium text-gray-400 hover:text-white bg-transparent border border-gray-700 hover:border-gray-500 rounded-xl transition-all hover:bg-white/5">
                                 Cancel
                             </button>
-                            <button disabled={isExporting} onClick={async () => {
+                            {model.canExport && (<button disabled={isExporting} onClick={async () => {
                                 try {
                                     setIsExporting(true);
                                     setExportError(null);
@@ -1456,7 +1392,7 @@ export default function ApmDashboard() {
                                         const cleanTimeStr = timeStr.trim().replace(/([ap]m)/i, ' $1').toUpperCase();
                                         const d = new Date(`${todayDate} ${cleanTimeStr}`);
                                         if (Number.isNaN(d.getTime())) {
-                                            throw new Error(`Invalid time format: "${timeStr}". Try "11:03:55 PM"`);
+                                            throw new TypeError(`Invalid time format: "${timeStr}". Try "11:03:55 PM"`);
                                         }
                                         return d;
                                     };
@@ -1490,10 +1426,227 @@ export default function ApmDashboard() {
                                     ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Exporting...</>
                                     : <><Download className="w-4 h-4" /> Download CSV</>
                                 }
-                            </button>
+                            </button>)}
+                        </div>
+                    </div>
+                </div>);
+}
+
+export default function ApmDashboard() {
+    const model = useApmDashboardModel();
+    const {
+        status,
+        checkingStatus,
+        traceLoading,
+        fetchTrace,
+        clearTrace,
+        traceIdInput,
+        setTraceIdInput,
+        serviceFilter,
+        setServiceFilter,
+        selectedInspectorService,
+        isConfigModalOpen,
+        setIsConfigModalOpen,
+        isInstrumentationModalOpen,
+        setIsInstrumentationModalOpen,
+        isExportModalOpen,
+    } = model;
+if (checkingStatus) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] relative z-10 animate-fade-in">
+                {/* Background Effects */}
+                <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+                    <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
+                </div>
+                <div className="flex flex-col items-center gap-4">
+                    <div className="relative">
+                        <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></div>
+                        <Activity className="w-6 h-6 text-primary absolute inset-0 m-auto animate-pulse" />
+                    </div>
+                    <p className="text-text-dim text-sm animate-pulse">Analyzing system configuration...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (status && !status.supported) {
+        return (
+            <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full animate-fade-in relative z-10">
+                {/* Background Effects */}
+                <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+                    <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(239,68,68,0.08),transparent_60%)]"></div>
+                    <div className="absolute -top-40 -left-40 w-96 h-96 bg-error/5 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-20 right-20 w-80 h-80 bg-primary/3 rounded-full blur-3xl"></div>
+                </div>
+
+                <div className="mt-8 mb-6 text-center sm:text-left">
+                    <h1 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-white via-gray-200 to-gray-400">
+                        APM & Distributed Traces
+                    </h1>
+                    <p className="text-text-dim mt-1">Application performance monitoring and diagnostics</p>
+                </div>
+
+                {/* Glassmorphic main alert box */}
+                <div className="bg-bg-surface/60 backdrop-blur-xl border border-error/20 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+                    {/* Top edge glowing stripe */}
+                    <div className="absolute top-0 inset-x-0 h-[2px] bg-linear-to-r from-transparent via-error/50 to-transparent"></div>
+
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+                        <div className="p-4 rounded-xl bg-error/10 border border-error/20 text-error animate-pulse-slow">
+                            <AlertTriangle className="w-8 h-8" />
+                        </div>
+
+                        <div className="flex-1 text-center sm:text-left">
+                            <h2 className="text-xl font-semibold text-white mb-2">APM is Disabled (json mode)</h2>
+                            <p className="text-text-dim text-sm sm:text-base leading-relaxed mb-6">
+                                kubiq is currently configured with <code className="px-1.5 py-0.5 rounded bg-bg-elevated border border-gray-700 text-error font-mono text-xs font-bold font-semibold">DB_TYPE=json</code>.
+                                APM, distributed trace collection, metrics, and service maps require a persistent database backend with advanced indexing capabilities.
+                            </p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <div className="p-4 rounded-xl bg-bg-elevated/40 border border-gray-800 text-left">
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Why this database?</h3>
+                                    <p className="text-xs text-text-dim leading-normal">
+                                        The JSON adapter saves data directly to flat files. Ingesting and querying thousands of spans would quickly overwhelm disk storage and block the main Node.js event loop.
+                                    </p>
+                                </div>
+                                <div className="p-4 rounded-xl bg-bg-elevated/40 border border-gray-800 text-left">
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Supported Engines</h3>
+                                    <p className="text-xs text-text-dim leading-normal">
+                                        APM is fully integrated with <span className="text-white font-medium">MySQL (or MariaDB)</span> and <span className="text-white font-medium">MongoDB</span>. They provide indexing for traceId/service searches and aggregate metrics fast.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="border-t border-gray-800/80 pt-6">
+                                <h3 className="text-sm font-semibold text-white mb-3 text-left">How to Enable APM</h3>
+                                <p className="text-xs text-text-dim text-left mb-3">
+                                    Edit your environment configuration <code className="px-1 py-0.5 rounded bg-bg-elevated text-white font-mono text-xs">.env</code> in the backend root directory, set <code className="text-primary font-mono font-semibold">DB_TYPE</code>, and restart your kubiq backend process.
+                                </p>
+
+                                <div className="bg-black/40 border border-gray-800 rounded-lg p-4 font-mono text-xs text-left relative overflow-hidden select-all group">
+                                    <div className="absolute top-2 right-2 text-[10px] text-gray-500 font-sans group-hover:text-primary transition-colors">
+                                        Click to select all
+                                    </div>
+                                    <div className="text-gray-500"># e:\kubiq-product\kubiq\backend\.env</div>
+                                    <div className="text-gray-400 mt-1 font-sans"># Change from DB_TYPE=json to one of:</div>
+                                    <div><span className="text-primary">DB_TYPE</span>=mysql</div>
+                                    <div className="text-gray-500 mt-1"># Or:</div>
+                                    <div><span className="text-primary">DB_TYPE</span>=mongodb</div>
+                                    <div className="text-gray-400 mt-2 font-sans"># If using MySQL, configure connection settings:</div>
+                                    <div><span className="text-primary">MYSQL_HOST</span>=localhost</div>
+                                    <div><span className="text-primary">MYSQL_USER</span>=root</div>
+                                    <div><span className="text-primary">MYSQL_PASSWORD</span>=yourpassword</div>
+                                    <div><span className="text-primary">MYSQL_DATABASE</span>=kubiq</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                {/* Additional assistance cards */}
+                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
+                    <div className="p-5 bg-bg-surface/40 border border-gray-800 hover:border-gray-700 rounded-xl transition-all">
+                        <h4 className="text-sm font-medium text-white mb-1">Live Logs are Available</h4>
+                        <p className="text-xs text-text-dim leading-relaxed">
+                            You can still view real-time log streams and container tailing. Logs do not require trace database adapters.
+                        </p>
+                    </div>
+                    <div className="p-5 bg-bg-surface/40 border border-gray-800 hover:border-gray-700 rounded-xl transition-all">
+                        <h4 className="text-sm font-medium text-white mb-1">Local Testing Tip</h4>
+                        <p className="text-xs text-text-dim leading-relaxed">
+                            For quick testing, spin up a lightweight MySQL or MongoDB container using Docker, update your configuration, and restart kubiq.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full animate-fade-in relative z-10">
+            {/* Background Effects (Matched to Dashboard and Logs) */}
+            <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+                <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
+                <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
+                <div className="absolute top-1/3 -right-20 w-80 h-80 bg-primary/3 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-20 left-1/4 w-72 h-72 bg-primary/4 rounded-full blur-3xl"></div>
+            </div>
+
+            <ApmHeader model={model} />
+
+
+            {/* Trace & Service Search Bar */}
+            <div className="bg-bg-surface border border-gray-800 rounded-xl p-2 mb-8 flex flex-col md:flex-row items-center gap-2 shadow-sm">
+                <div className="relative flex-1 w-full">
+                    <Server className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                        type="text"
+                        value={serviceFilter}
+                        onChange={(e) => setServiceFilter(e.target.value)}
+                        placeholder="Search Service (e.g. auth-api)"
+                        className="w-full bg-transparent border-none text-white focus:ring-0 pl-10 pr-4 py-2 placeholder-gray-500"
+                    />
+                    {serviceFilter && (
+                        <button
+                            onClick={() => setServiceFilter('')}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-white"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    )}
+                </div>
+
+                <div className="hidden md:block w-px h-8 bg-gray-700 mx-2" />
+                <div className="md:hidden h-px w-full bg-gray-700 my-1" />
+
+                <div className="relative flex-1 w-full flex flex-col sm:flex-row gap-2">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                            type="text"
+                            value={traceIdInput}
+                            onChange={(e) => setTraceIdInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && traceIdInput.trim() && fetchTrace(traceIdInput.trim())}
+                            placeholder="Paste Trace ID (e.g. 1a2b3c...)"
+                            className="w-full bg-transparent border-none text-white focus:ring-0 pl-10 pr-4 py-2 placeholder-gray-500"
+                        />
+                        {traceIdInput && (
+                            <button
+                                onClick={() => {
+                                    setTraceIdInput('');
+                                    clearTrace();
+                                }}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+
+                    <button
+                        onClick={() => traceIdInput.trim() && fetchTrace(traceIdInput.trim())}
+                        disabled={traceLoading || !traceIdInput.trim()}
+                        className="px-6 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap shadow-sm"
+                    >
+                        {traceLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Search Trace'}
+                    </button>
+                </div>
+            </div>
+
+            {selectedInspectorService ? <ApmInspector model={model} /> : <ApmOverview model={model} />}
+
+            <ApmConfigModal
+                isOpen={isConfigModalOpen}
+                onClose={() => setIsConfigModalOpen(false)}
+            />
+
+            {/* Export Slow Queries Modal */}
+            {isExportModalOpen && model.canExport && (
+                <ApmExportDialog model={model} />
             )}
 
             <ApmInstrumentationModal
@@ -1502,5 +1655,6 @@ export default function ApmDashboard() {
             />
         </div>
     );
+
 }
 
