@@ -69,7 +69,7 @@ jobs:
         run: node .github/scripts/verify-sonar-analysis.cjs
         env:
           SONAR_HOST_URL: http://127.0.0.1:19000
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_READ_TOKEN: ${{ secrets.SONAR_READ_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
           name: sonar-release-proof-${{ github.sha }}

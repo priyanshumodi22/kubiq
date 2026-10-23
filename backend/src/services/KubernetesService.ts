@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { KubiReaderAuth } from './KubiReaderAuth';
 import { redactKubernetesSecret } from '../utils/kubernetesSecret';
+import { getContainerState } from '../utils/kubernetesContainerState';
 
 export interface KubeContainer {
     name: string;
@@ -310,10 +311,7 @@ export class KubernetesService {
                             image: c.image ?? '—',
                             ready: cs?.ready ?? false,
                             restartCount: cs?.restartCount ?? 0,
-                            state: cs?.state?.running ? 'running'
-                                : cs?.state?.waiting ? 'waiting'
-                                : cs?.state?.terminated ? 'terminated'
-                                : 'unknown',
+                            state: getContainerState(cs?.state),
                             stateReason: cs?.state?.waiting?.reason ?? cs?.state?.terminated?.reason,
                             imageID: cs?.imageID ?? '',
                             securityContext: c.securityContext ?? {},

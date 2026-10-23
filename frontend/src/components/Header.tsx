@@ -5,6 +5,18 @@ import { Link, useLocation } from 'react-router-dom';
 import { NotificationConfigModal } from './NotificationConfigModal';
 import { apiClient } from '../services/api';
 
+export function UserAvatar({ avatarUrl, initials, className = 'w-8 h-8' }: Readonly<{ avatarUrl?: string; initials: string; className?: string }>) {
+  return (
+    <div className={`${className} overflow-hidden bg-primary/20 rounded-full flex items-center justify-center shrink-0`}>
+      {avatarUrl ? (
+        <img src={avatarUrl} alt="Your avatar" className="h-full w-full object-cover" />
+      ) : (
+        <span className="text-xs font-bold text-primary">{initials}</span>
+      )}
+    </div>
+  );
+}
+
 export default function Header() {
   const { isAuthenticated, user, roles, logout, hasPermission } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -56,16 +68,6 @@ export default function Header() {
   const kubiqRoles = roles.filter((role) => role.toLowerCase().startsWith('kubiq'));
   const userRole = kubiqRoles.length > 0 ? kubiqRoles.join(', ') : 'No Role Assigned';
   const userInitials = (userDisplayName || 'U').slice(0, 2).toUpperCase();
-  const UserAvatar = ({ className = 'w-8 h-8' }: { className?: string }) => (
-    <div className={`${className} overflow-hidden bg-primary/20 rounded-full flex items-center justify-center shrink-0`}>
-      {user?.avatarUrl ? (
-        <img src={user.avatarUrl} alt="Your display picture" className="h-full w-full object-cover" />
-      ) : (
-        <span className="text-xs font-bold text-primary">{userInitials}</span>
-      )}
-    </div>
-  );
-
   const renderNavLinks = () => (
     <>
       {hasPermission('services.read') && <Link
@@ -194,7 +196,7 @@ export default function Header() {
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-2 bg-bg-surface hover:bg-gray-800 rounded-lg transition-colors group"
                 >
-                  <UserAvatar className="w-7 h-7 sm:w-8 sm:h-8" />
+                  <UserAvatar avatarUrl={user?.avatarUrl} initials={userInitials} className="w-7 h-7 sm:w-8 sm:h-8" />
                   <div className="text-left hidden md:block">
                     <div className="text-sm font-medium text-text truncate max-w-[120px] lg:max-w-none">
                       {userDisplayName}
@@ -215,7 +217,7 @@ export default function Header() {
                     {/* User Info Section */}
                     <div className="p-3 border-b border-gray-700 bg-bg-surface">
                       <div className="flex items-center gap-2.5">
-                        <UserAvatar className="w-10 h-10" />
+                        <UserAvatar avatarUrl={user?.avatarUrl} initials={userInitials} className="w-10 h-10" />
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium text-text truncate">
                             {user?.email || user?.username}

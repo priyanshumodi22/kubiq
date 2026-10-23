@@ -43,3 +43,16 @@ test('denied verification identifies only the API path and never leaks its token
     return true;
   });
 });
+
+test('CLI verification fails closed without the separate read token even when an analysis token exists', () => {
+  const { spawnSync } = require('node:child_process');
+  const path = require('node:path');
+  const result = spawnSync(process.execPath, ['.github/scripts/verify-sonar-analysis.cjs'], {
+    cwd: path.resolve(__dirname, '../..'),
+    env: { ...process.env, SONAR_HOST_URL: 'http://127.0.0.1:19000', GITHUB_SHA: sha, SONAR_READ_TOKEN: '', SONAR_TOKEN: 'test-analysis-only' },
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /read-only verification token/);
+  assert.equal(result.stderr.includes('test-analysis-only'), false);
+});

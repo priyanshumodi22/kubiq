@@ -102,8 +102,8 @@ router.get('/namespaces', async (req, res) => {
         allowed ??= user.allowedNamespaces || ['apps', 'default'];
 
         if (allowed && Array.isArray(allowed) && allowed.length > 0) {
-            const allowedLower = allowed.map((s: string) => String(s).toLowerCase().trim());
-            const filtered = clusterNamespaces.filter(ns => allowedLower.includes(ns.toLowerCase().trim()));
+            const allowedLower = new Set(allowed.map((s: string) => String(s).toLowerCase().trim()));
+            const filtered = clusterNamespaces.filter(ns => allowedLower.has(ns.toLowerCase().trim()));
             return res.json(filtered.length > 0 ? filtered : allowed);
         }
 

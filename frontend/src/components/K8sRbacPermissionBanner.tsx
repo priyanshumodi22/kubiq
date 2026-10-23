@@ -29,11 +29,12 @@ const RESOURCE_RBAC_MAP: Record<string, { apiGroup: string; verb: string }> = {
 export function K8sRbacPermissionBanner({ resource, namespace = 'cluster', message, onRetry }: Readonly<K8sRbacPermissionBannerProps>) {
     const [copied, setCopied] = useState(false);
     const rbacMeta = RESOURCE_RBAC_MAP[resource.toLowerCase()] || { apiGroup: '""', verb: 'get, list, watch' };
+    const quotedVerbs = rbacMeta.verb.split(', ').map(v => `"${v}"`).join(', ');
 
     const yamlSnippet = `# Add to rules in ClusterRole "kubiq-observer" (deploy/kubernetes/kubiq-system.yaml):
 - apiGroups: [${rbacMeta.apiGroup}]
   resources: ["${resource}"]
-  verbs: [${rbacMeta.verb.split(', ').map(v => `"${v}"`).join(', ')}]`;
+  verbs: [${quotedVerbs}]`;
 
     const handleCopy = () => {
         copyToClipboard(yamlSnippet);

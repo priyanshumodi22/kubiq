@@ -15,10 +15,23 @@ verified False Positive UI dispositions and documented evidence.
 Archive: `gs://priyanshu-apps-sonarqube-backups/reports/11a418f4-570a-4fa7-80bf-eae79c777db1-1792793073.json`.
 
 The strict GitHub verification still fails closed with HTTP 403 on a read API.
-The project analysis credential is not widened; a separate kubiq-only read
-account is awaiting approval if the endpoint needs Browse permission. Diagnostics
-now identify the denied API path without leaking query data or credentials;
-four release guard tests pass. Production remains blocked.
+The project analysis credential is not widened. The approved separate
+`kubiq-release-verifier` account now has Browse only on the private kubiq project.
+It has no source-code, issue/hotspot administration, analysis or global grants.
+The default sonar-users global analysis/project-creation and kubiq issue/hotspot
+administration grants were removed with approval; the existing administrator
+scanner owner retains Execute Analysis explicitly on kubiq. A 30-day user token
+is saved as `SONAR_READ_TOKEN` in repository Actions secrets, separately from the
+unchanged `SONAR_TOKEN`. Strict verification requires the read token with no
+analysis-token fallback. Five release guard tests pass, including missing-token
+failure and credential-safe errors. Live verification of this new connection
+is still pending; production remains blocked.
+
+The next batch replaces normalized namespace membership scans with a Set,
+extracts container-state selection without changing precedence, moves the header
+avatar out of its parent to preserve DOM identity, and extracts quoted RBAC verbs
+without changing YAML output. Local checks pass: 284 backend tests, 184 frontend
+tests and both builds. These changes still need matching Sonar scan evidence.
 
 Run 46 was not separately archived before the next analysis. The existing VM
 exporter selects the latest completed report when its queue is empty; this needs
