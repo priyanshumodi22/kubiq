@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Virtuoso } from 'react-virtuoso';
+import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import io from 'socket.io-client';
 import { Play, Pause, Trash2, ArrowDown, FileText, ChevronDown, Check, Activity, Search, Copy, X, Download } from 'lucide-react';
 import { LogSource } from '../types';
@@ -30,7 +30,7 @@ interface LogLine {
 }
 
 function renderFormattedLogContent(content: string) {
-    const traceRegex = /(traceId|trace_id|requestId|request_id)[=:]\s*["']?([a-fA-F0-9-]{12,64})["']?/gi;
+    const traceRegex = /(traceId|trace_id|requestId|request_id)[=:]\s*["']?([a-f0-9-]{12,64})["']?/gi;
     const parts: (string | React.ReactNode)[] = [];
     let lastIndex = 0;
     let match;
@@ -132,6 +132,26 @@ const LEVEL_COLORS: Record<LogLine['level'], string> = {
     plain: 'text-gray-300',
 };
 
+function renderLogRow(index: number, log: LogLine) {
+    return (
+        <div className={`px-4 py-0.5 hover:bg-white/5 border-l-2 border-transparent hover:border-gray-600 flex gap-3 ${LEVEL_COLORS[log.level] || LEVEL_COLORS.plain}`}>
+            <span className="select-none opacity-30 w-8 text-right shrink-0 text-[10px] pt-px">{index + 1}</span>
+            <span className="break-all whitespace-pre-wrap flex-1 select-text leading-relaxed">{renderFormattedLogContent(log.content)}</span>
+        </div>
+    );
+}
+
+function LogSummaryBody({ summarizing, summary }: Readonly<{ summarizing: boolean; summary: string | null }>) {
+    if (summarizing) return (
+        <div className="flex flex-col items-center justify-center py-12">
+            <AiStatusOrb activity="searching" size={64} />
+            <p className="mt-4 text-sm font-medium text-white">Thinking through your logs…</p>
+            <p className="mt-1 text-xs text-gray-500">Building a concise incident summary.</p>
+        </div>
+    );
+    if (summary) return <AiSummaryContent summary={summary} />;
+    return <p className="text-red-400">Failed to generate summary.</p>;
+}
 
 export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpen, onClose, serviceName, isEmbedded = false }) => {
     const { hasPermission } = useAuth();
@@ -157,7 +177,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const [recentSummaryData, setRecentSummaryData] = useState<{ summary: string, timestamp: number } | null>(null);
 
-    const [availableFiles, setAvailableFiles] = useState<any[]>([]);
+    const [availableFiles, setAvailableFiles] = useState<Array<{ path: string; name: string }>>([]);
 
     // activeFile tracks the ACTUAL file being streamed (which might differ from pattern if rotation occurred)
     const [activeFile, setActiveFile] = useState<string>(selectedSource.path);
@@ -167,9 +187,10 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
     const [isSourceDropdownOpen, setIsSourceDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    const socketRef = useRef<any>(null); // Use any or explicit ReturnType<typeof io> if imported
-    const virtuosoRef = useRef<any>(null);
-    const logsRef = useRef<LogLine[]>([]); // Ref to keep track without re-rendering everything constantly
+    const socketRef = useRef<ReturnType<typeof io> | null>(null);
+    const virtuosoRef = useRef<VirtuosoHandle | null>(null);
+    const liveStateRef = useRef({ isPaused, atBottom });
+    liveStateRef.current = { isPaused, atBottom };
     const nextLogIdRef = useRef(0);
 
     // Handle outside click for dropdown
@@ -212,7 +233,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
 
     // Safe-guard: if selectedSourceId is no longer valid (e.g. data reloaded), reset to first
     useEffect(() => {
-        if (effectiveSources.length > 0 && !effectiveSources.find(s => s.id === selectedSourceId)) {
+        if (effectiveSources.length > 0 && !effectiveSources.some(s => s.id === selectedSourceId)) {
             setSelectedSourceId(effectiveSources[0].id);
         }
     }, [effectiveSources, selectedSourceId]);
@@ -235,7 +256,6 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
 
         socket.on('connect', () => {
             setIsConnected(true);
-            // console.log('🔌 Connected to Log Stream');
 
             // Start watching
             const sourcePath = selectedSource.path;
@@ -247,7 +267,6 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
 
         socket.on('disconnect', () => {
             setIsConnected(false);
-            // console.log('❌ Disconnected to Log Stream');
         });
 
         socket.on('log:init', (data: { content: string }) => {
@@ -257,7 +276,6 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                 level: classifyLogLevel(line)
             }));
             setLogs(lines);
-            logsRef.current = lines; // Sync ref
         });
 
         socket.on('log:line', (data: { content: string }) => {
@@ -271,7 +289,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
             // We update state regardless to render, but Virtuoso handles the scrolling
             setLogs(prev => [...prev, ...newLines]);
 
-            if (isPaused || !atBottom) {
+            if (liveStateRef.current.isPaused || !liveStateRef.current.atBottom) {
                 setNewLogsCount(prev => prev + newLines.length);
             }
         });
@@ -282,22 +300,24 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
             setActiveFile(data.resolvedPath);
         });
 
-        socket.on('log:file_list', (data: { files: any[] }) => {
+        socket.on('log:file_list', (data: { files: Array<{ path: string; name: string }> }) => {
             setAvailableFiles(data.files);
         });
 
         socket.on('rotation:available', (data: { newFile: string, message: string }) => {
-            // console.log('Rotation:', data);
             setRotationAlert(data);
         });
 
-        socket.on('error', (err: any) => {
+        socket.on('error', (err: { message: string }) => {
             console.error('Socket Error:', err);
             setLogs(prev => [...prev, { id: ++nextLogIdRef.current, content: `[SYSTEM ERROR]: ${err.message}`, level: 'error' }]);
         });
 
         return () => {
+            socket.emit('stop:watch');
+            socket.removeAllListeners();
             socket.disconnect();
+            if (socketRef.current === socket) socketRef.current = null;
         };
     }, [isOpen, selectedSourceId, activeFile]); // Re-connect if activeFile changes (rotation)
 
@@ -405,17 +425,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                                     </div>
                                 </div>
                                 <div className="overflow-y-auto bg-[#0c0d11] p-5 font-sans text-sm leading-relaxed text-gray-300 custom-scrollbar sm:p-6">
-                                    {summarizing ? (
-                                        <div className="flex flex-col items-center justify-center py-12">
-                                            <AiStatusOrb activity="searching" size={64} />
-                                            <p className="mt-4 text-sm font-medium text-white">Thinking through your logs…</p>
-                                            <p className="mt-1 text-xs text-gray-500">Building a concise incident summary.</p>
-                                        </div>
-                                    ) : summary ? (
-                                        <AiSummaryContent summary={summary} />
-                                    ) : (
-                                        <p className="text-red-400">Failed to generate summary.</p>
-                                    )}
+                                    <LogSummaryBody summarizing={summarizing} summary={summary} />
                                 </div>
                             </motion.div>
                         </motion.div>
@@ -440,7 +450,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                                 {isConnected ? (
                                     <span className="flex items-center text-[10px] text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
                                         <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5 animate-pulse"></span>
-                                        LIVE
+                                        {' '}LIVE
                                     </span>
                                 ) : (
                                     <span className="flex items-center text-[10px] text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">
@@ -645,12 +655,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                                 setAtBottom(bottom);
                                 if (bottom) setNewLogsCount(0); // Clear badge if user manually scrolls to bottom
                             }}
-                            itemContent={(index, log) => (
-                                <div className={`px-4 py-0.5 hover:bg-white/5 border-l-2 border-transparent hover:border-gray-600 flex gap-3 ${LEVEL_COLORS[log.level] || LEVEL_COLORS.plain}`}>
-                                    <span className="select-none opacity-30 w-8 text-right shrink-0 text-[10px] pt-px">{index + 1}</span>
-                                    <span className="break-all whitespace-pre-wrap flex-1 select-text leading-relaxed">{renderFormattedLogContent(log.content)}</span>
-                                </div>
-                            )}
+                            itemContent={renderLogRow}
                             className="h-full scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent"
                         />
 

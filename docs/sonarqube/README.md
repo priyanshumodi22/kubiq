@@ -7,6 +7,20 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 39 verifies `fec32eb61cf971bfb79c6e3c13d228183b5fd9f1`: 109 open
+issues, 36.0% combined coverage, no unreviewed hotspots and standard gate OK.
+The strict release gate remains blocked. All 841 baseline findings are accounted
+for: 741 explicit closures, two individually safe reviews and 98 pending items.
+Archive: `gs://priyanshu-apps-sonarqube-backups/reports/daa3cca1-8a7e-4a62-a3f4-18416ac62e63-1792759407.json`.
+
+The next raw-log batch reproduces and fixes stale pause-state counting, explicitly
+stops subscriptions and removes listeners on cleanup. Stable row rendering,
+typed socket/list refs, summary-body extraction and mechanical Sonar fixes retain
+the existing layout and trace links. Both new tests failed before the fixes and
+pass afterward. Local verification: 168 frontend tests, production build and
+LCOV records for all 85 production TS/TSX files. Its exact-commit scan is pending;
+these source edits are not yet claimed as Sonar closures.
+
 Run 38 verifies `05aa0b267d7630e05a018ffd7cdf19e57a4ee4d0`: 111 open
 issues, 35.8% coverage, no unreviewed hotspots; standard gate ERROR. Backend
 identity/resource findings and most administration findings are CLOSED.
