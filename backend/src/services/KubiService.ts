@@ -106,7 +106,7 @@ export class KubiService {
     const maxTools = Math.max(1, Math.min(Number(process.env.AI_KUBI_MAX_TOOL_CALLS) || 6, 10));
     const maxResults = Math.max(1, Math.min(Number(process.env.AI_KUBI_MAX_RESULTS_PER_TOOL) || 50, 100));
     const normalized = question.toLowerCase();
-    const traceId = question.match(/\b[a-f0-9]{16,32}\b/i)?.[0];
+    const traceId = /\b[a-f0-9]{16,32}\b/i.exec(question)?.[0];
     const services = ServiceMonitor.getInstance().getAllServices();
     const service = [...services].sort((a, b) => b.name.length - a.name.length).find(item => normalized.includes(item.name.toLowerCase()));
 
