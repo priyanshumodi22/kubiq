@@ -7,6 +7,20 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Latest verified scan (run 28): `6f64ee82c86775ba86a2cd543ce7388293a2a20e`,
+analysis `5c196588-ee45-42b1-abe5-83fbef048eb2`, task
+`89748692-620d-4557-8011-58480c405d03`. There are 195 open issues,
+29.3% combined coverage, and zero unreviewed hotspots. The quality gate is ERROR.
+The checkpoint records 658 explicit baseline closures, 181 pending baseline
+findings and two individually safe reviews. Production remains blocked.
+Archive: `gs://priyanshu-apps-sonarqube-backups/reports/89748692-620d-4557-8011-58480c405d03-1792736319.json`.
+
+The following diagnosis-modal batch fences late responses and license failures
+after target changes, close/reopen and unmount. Six tests cover pod/event
+compatibility, markdown output, license flow and stale requests. Content-derived
+keys and native dismissal controls replace index keys and a click-only backdrop.
+These edits await their matching scan; they are not counted as verified closures.
+
 Actual checkpoint scan: `2f73b35e24211b5c55d4f25afba7f39212c9ce68`, task
 `11f9a0be-3a40-4825-913c-79806a48bcbd`, analysis
 `1571c7e1-ac6e-42a0-82b0-ac4229db5f8f`.

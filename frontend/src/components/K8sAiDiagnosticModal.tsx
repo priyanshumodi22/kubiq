@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Copy, Check, RefreshCw, AlertTriangle } from 'lucide-react';
 import { apiClient } from '../services/api';
@@ -6,19 +6,30 @@ import { ProUpgradeModal } from './ProUpgradeModal';
 import { AiStatusOrb } from './AiStatusOrb';
 
 
+function contentKeys() {
+    const occurrences = new Map<string, number>();
+    return (content: string) => {
+        const occurrence = occurrences.get(content) ?? 0;
+        occurrences.set(content, occurrence + 1);
+        return `${content}:${occurrence}`;
+    };
+}
+
 function renderInlineMarkdown(text: string) {
     // Preserve the compact markdown the diagnostics API returns, including
     // the italic setup note shown when an AI provider key is missing.
     const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g);
-    return parts.map((part, i) => {
+    const nextKey = contentKeys();
+    return parts.map(part => {
+        const key = nextKey(part);
         if (part.startsWith('**') && part.endsWith('**')) {
-            return <strong key={i} className="font-bold text-white">{part.slice(2, -2)}</strong>;
+            return <strong key={key} className="font-bold text-white">{part.slice(2, -2)}</strong>;
         }
         if (part.startsWith('*') && part.endsWith('*')) {
-            return <em key={i} className="text-gray-300">{part.slice(1, -1)}</em>;
+            return <em key={key} className="text-gray-300">{part.slice(1, -1)}</em>;
         }
         if (part.startsWith('`') && part.endsWith('`')) {
-            return <code key={i} className="rounded border border-white/10 bg-black/20 px-1.5 py-0.5 font-mono text-[11px] text-sky-200">{part.slice(1, -1)}</code>;
+            return <code key={key} className="rounded border border-white/10 bg-black/20 px-1.5 py-0.5 font-mono text-[11px] text-sky-200">{part.slice(1, -1)}</code>;
         }
         return part;
     });
@@ -31,11 +42,13 @@ function parseAndRenderMarkdown(markdownText: string) {
     let inCodeBlock = false;
     let codeBlockLines: string[] = [];
 
-    lines.forEach((line, idx) => {
+    const nextKey = contentKeys();
+    lines.forEach(line => {
+        const key = nextKey(line);
         if (line.trim().startsWith('```')) {
             if (inCodeBlock) {
                 elements.push(
-                    <pre key={`code-${idx}`} className="bg-black/60 border border-white/10 rounded-lg p-3 text-[11px] font-mono text-emerald-400 overflow-x-auto my-2 whitespace-pre-wrap">
+                    <pre key={nextKey(`code:${codeBlockLines.join('\n')}`)} className="bg-black/60 border border-white/10 rounded-lg p-3 text-[11px] font-mono text-emerald-400 overflow-x-auto my-2 whitespace-pre-wrap">
                         {codeBlockLines.join('\n')}
                     </pre>
                 );
@@ -54,13 +67,13 @@ function parseAndRenderMarkdown(markdownText: string) {
 
         const trimmed = line.trim();
         if (!trimmed) {
-            elements.push(<div key={`sp-${idx}`} className="h-1" />);
+            elements.push(<div key={key} className="h-1" />);
             return;
         }
 
         if (trimmed.startsWith('### ')) {
             elements.push(
-                <h4 key={`h3-${idx}`} className="text-sm font-bold text-white pt-3 pb-1 border-b border-white/10 flex items-center gap-2 tracking-wide uppercase">
+                <h4 key={key} className="text-sm font-bold text-white pt-3 pb-1 border-b border-white/10 flex items-center gap-2 tracking-wide uppercase">
                     {renderInlineMarkdown(trimmed.replace('### ', ''))}
                 </h4>
             );
@@ -69,7 +82,7 @@ function parseAndRenderMarkdown(markdownText: string) {
 
         if (trimmed.startsWith('#### ')) {
             elements.push(
-                <h5 key={`h4-${idx}`} className="pt-2 text-xs font-semibold text-slate-200">
+                <h5 key={key} className="pt-2 text-xs font-semibold text-slate-200">
                     {renderInlineMarkdown(trimmed.replace('#### ', ''))}
                 </h5>
             );
@@ -82,7 +95,7 @@ function parseAndRenderMarkdown(markdownText: string) {
 
         if (trimmed.startsWith('> ')) {
             elements.push(
-                <div key={`quote-${idx}`} className="my-3 rounded-lg border border-white/10 bg-[#101116] px-3 py-2 text-xs text-slate-300">
+                <div key={key} className="my-3 rounded-lg border border-white/10 bg-[#101116] px-3 py-2 text-xs text-slate-300">
                     {renderInlineMarkdown(trimmed.replace(/^>\s*(\[!.*?\])?\s*/, ''))}
                 </div>
             );
@@ -91,7 +104,7 @@ function parseAndRenderMarkdown(markdownText: string) {
 
         if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
             elements.push(
-                <div key={`li-${idx}`} className="flex items-start gap-2 pl-2 text-xs text-gray-300 my-1">
+                <div key={key} className="flex items-start gap-2 pl-2 text-xs text-gray-300 my-1">
                     <span className="mt-1 text-slate-400">•</span>
                     <span>{renderInlineMarkdown(trimmed.replace(/^[-*]\s+/, ''))}</span>
                 </div>
@@ -100,7 +113,7 @@ function parseAndRenderMarkdown(markdownText: string) {
         }
 
         elements.push(
-            <p key={`p-${idx}`} className="text-xs text-gray-300 leading-relaxed my-1">
+            <p key={key} className="text-xs text-gray-300 leading-relaxed my-1">
                 {renderInlineMarkdown(line)}
             </p>
         );
@@ -141,35 +154,41 @@ export function K8sAiDiagnosticModal({
     const [copied, setCopied] = useState(false);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-    const fetchDiagnosis = async () => {
+    const requestGeneration = useRef(0);
+    const fetchDiagnosis = useCallback(async () => {
+        const generation = ++requestGeneration.current;
         setLoading(true);
         setError(null);
         try {
             if (podName) {
                 const res = await apiClient.aiDiagnosePod(namespace, podName);
+                if (generation !== requestGeneration.current) return;
                 setDiagnosis(res.diagnosis || 'No diagnostic output returned.');
             } else if (event) {
                 const res = await apiClient.aiDiagnoseEvent(namespace, event);
+                if (generation !== requestGeneration.current) return;
                 setDiagnosis(res.diagnosis || 'No diagnostic output returned.');
             } else {
                 setError('No target pod or event specified for diagnosis.');
             }
         } catch (err: any) {
+            if (generation !== requestGeneration.current) return;
             if (err.response?.status === 402 || err.response?.data?.error === 'NO_LICENSE' || err.response?.data?.error === 'INVALID_LICENSE') {
                 setShowUpgradeModal(true);
                 return;
             }
             setError(err.message || 'Failed to generate AI diagnosis.');
         } finally {
-            setLoading(false);
+            if (generation === requestGeneration.current) setLoading(false);
         }
-    };
+    }, [namespace, podName, event]);
 
     useEffect(() => {
         if (isOpen) {
-            fetchDiagnosis();
+            void fetchDiagnosis();
         }
-    }, [isOpen, namespace, podName, event]);
+        return () => { requestGeneration.current += 1; };
+    }, [isOpen, fetchDiagnosis]);
 
     if (!isOpen) return null;
 
@@ -181,7 +200,7 @@ export function K8sAiDiagnosticModal({
 
     return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity" onClick={onClose} />
+            <button type="button" tabIndex={-1} aria-label="Dismiss diagnosis dialog" className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity" onClick={onClose} />
             
             <div className="relative w-full max-w-2xl rounded-2xl border border-white/15 bg-[#101116] shadow-[0_24px_80px_rgba(0,0,0,0.55)] overflow-hidden flex flex-col max-h-[85vh] animate-scale-in">
                 {/* Header */}
@@ -201,14 +220,14 @@ export function K8sAiDiagnosticModal({
                         </div>
                     </div>
                     
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
+                    <button aria-label="Close diagnosis" onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto bg-[#0c0d11] p-6 space-y-4 font-sans text-sm text-gray-200 leading-relaxed custom-scrollbar">
-                    {loading ? (
+                    {loading && (
                         <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
                             <AiStatusOrb activity="searching" size={64} />
                             <div>
@@ -216,7 +235,8 @@ export function K8sAiDiagnosticModal({
                                 <p className="text-xs text-gray-500 font-mono mt-1">Analyzing log streams, exit codes, and container spec limits</p>
                             </div>
                         </div>
-                    ) : error ? (
+                    )}
+                    {!loading && error && (
                         <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-5 text-red-400 flex items-start gap-3">
                             <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
                             <div className="space-y-1">
@@ -224,7 +244,8 @@ export function K8sAiDiagnosticModal({
                                 <p className="text-xs opacity-80">{error}</p>
                             </div>
                         </div>
-                    ) : (
+                    )}
+                    {!loading && !error && (
                         <div className="space-y-4">
                             <div className="space-y-3 rounded-2xl border border-white/15 bg-[#14151b] p-5 font-sans text-xs leading-relaxed text-gray-200 shadow-[0_18px_42px_rgba(0,0,0,0.2)]">
                                 {parseAndRenderMarkdown(diagnosis)}
