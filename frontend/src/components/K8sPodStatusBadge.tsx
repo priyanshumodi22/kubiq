@@ -22,10 +22,12 @@ export function K8sPodStatusBadge({ status, isTerminating }: Readonly<K8sPodStat
     }
 
     const isRunning = s.includes('running') && !isTerminating;
+    const inactiveDot = isTerminating ? 'animate-pulse bg-orange-400' : 'bg-current';
+    const dotClass = isRunning ? 'animate-pulse bg-green-400' : inactiveDot;
 
     return (
         <div className={`px-2 py-0.5 rounded-full border text-[10px] font-medium inline-flex items-center gap-1.5 ${color}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${isRunning ? 'animate-pulse bg-green-400' : isTerminating ? 'animate-pulse bg-orange-400' : 'bg-current'}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
             {label}
         </div>
     );

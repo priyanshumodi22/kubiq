@@ -111,6 +111,7 @@ export function AuditLogViewer() {
                         <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
                         <input
                             type="text"
+                            aria-label="Filter audit logs"
                             placeholder="Filter by user, action, target..."
                             value={search}
                             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
@@ -135,16 +136,18 @@ export function AuditLogViewer() {
                 </div>
             </div>
 
-            {loading ? (
+            {loading && (
                 <div className="py-16 flex flex-col items-center justify-center space-y-3">
                     <div className="w-8 h-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
                     <span className="text-xs text-gray-500 font-mono">Loading audit logs...</span>
                 </div>
-            ) : logs.length === 0 ? (
+            )}
+            {!loading && logs.length === 0 && (
                 <div className="py-16 text-center text-gray-500 font-mono text-xs">
                     No administrative audit events recorded yet.
                 </div>
-            ) : (
+            )}
+            {!loading && logs.length > 0 && (
                 <>
                 <div className="overflow-x-auto border border-gray-800/80 rounded-xl">
                     <table className="w-full text-left text-xs font-mono">

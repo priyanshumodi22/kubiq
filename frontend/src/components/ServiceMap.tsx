@@ -31,7 +31,8 @@ const CustomServiceNode = ({ data }: Readonly<{ data: { label: string, isError?:
     const iconBg = isError ? 'bg-red-500/20 text-red-500' : 'bg-primary/20 text-primary';
 
     // Animate a soft ringing glow when new data arrives
-    const pulseEffect = isPulsing ? `ring-2 ring-offset-2 ring-offset-bg-surface ${isError ? 'ring-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.4)]' : 'ring-primary/50 shadow-[0_0_20px_rgba(59,130,246,0.4)]'} transition-all duration-300 scale-[1.02]` : 'transition-all duration-700';
+    const pulseColor = isError ? 'ring-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.4)]' : 'ring-primary/50 shadow-[0_0_20px_rgba(59,130,246,0.4)]';
+    const pulseEffect = isPulsing ? `ring-2 ring-offset-2 ring-offset-bg-surface ${pulseColor} transition-all duration-300 scale-[1.02]` : 'transition-all duration-700';
 
     return (
         <div className={`px-5 py-3 shadow-2xl rounded-xl bg-bg-surface/80 backdrop-blur-md border ${borderGlow} ${pulseEffect} min-w-[150px] flex items-center justify-center gap-3 hover:scale-105 group relative overflow-hidden`}>

@@ -36,9 +36,14 @@ export default function ServiceCard({
 
   return (
     <div
-      onClick={onClick}
       className="relative p-4 rounded-lg border border-gray-700 bg-bg-surface cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.02]"
     >
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={`View ${service.name} details`}
+        className="absolute inset-0 z-10 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      />
       {/* Status Indicator Dot */}
       <div className="absolute top-3 right-3">
         <div className="relative">
@@ -133,7 +138,7 @@ export default function ServiceCard({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2">
+      <div className="relative z-20 flex gap-2">
          {/* Log Viewer Button */}
 
 
