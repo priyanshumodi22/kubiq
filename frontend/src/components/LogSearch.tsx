@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { apiClient } from '../services/api';
 import { ProUpgradeModal } from './ProUpgradeModal';
 import { AiStatusOrb } from './AiStatusOrb';
-import { AiSummaryContent } from './AiSummaryContent';
+import { LogSummaryBody } from './LogSummaryBody';
 
 interface LogSearchProps {
     serviceName: string;
@@ -28,6 +28,19 @@ const LEVEL_COLORS: Record<string, string> = {
     DEBUG: 'text-gray-400 bg-gray-400/10 border-gray-400/20',
     ALL: 'text-white bg-white/10 border-white/20',
 };
+
+const renderSearchLogRow = (_index: number, log: LogEntry) => (
+        <div className={`px-4 py-1.5 hover:bg-white/5 border-b border-gray-800/50 flex flex-col gap-1`}>
+            <div className="flex items-center gap-3 text-[10px] text-gray-500">
+                <span className="shrink-0">{new Date(log.timestamp).toLocaleString()}</span>
+                <span className={`px-1.5 rounded border ${LEVEL_COLORS[log.level] || LEVEL_COLORS.ALL}`}>{log.level}</span>
+                <span className="truncate max-w-[200px]" title={log.sourceName}>{log.sourceName.split(/[/\\]/).pop()}</span>
+            </div>
+            <div className={`pl-[130px] whitespace-pre-wrap break-all ${LEVEL_COLORS[log.level]?.split(' ')[0] || 'text-gray-300'}`}>
+                {log.message}
+            </div>
+        </div>
+    );
 
 interface CustomSelectProps {
     id: string;
@@ -304,18 +317,7 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
                 {logs.length > 0 ? (
                     <Virtuoso
                         data={logs}
-                        itemContent={(_, log) => (
-                            <div className={`px-4 py-1.5 hover:bg-white/5 border-b border-gray-800/50 flex flex-col gap-1`}>
-                                <div className="flex items-center gap-3 text-[10px] text-gray-500">
-                                    <span className="shrink-0">{new Date(log.timestamp).toLocaleString()}</span>
-                                    <span className={`px-1.5 rounded border ${LEVEL_COLORS[log.level] || LEVEL_COLORS.ALL}`}>{log.level}</span>
-                                    <span className="truncate max-w-[200px]" title={log.sourceName}>{log.sourceName.split(/[/\\]/).pop()}</span>
-                                </div>
-                                <div className={`pl-[130px] whitespace-pre-wrap break-all ${LEVEL_COLORS[log.level]?.split(' ')[0] || 'text-gray-300'}`}>
-                                    {log.message}
-                                </div>
-                            </div>
-                        )}
+                        itemContent={renderSearchLogRow}
                         className="h-full scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent"
                     />
                 ) : (
@@ -405,17 +407,7 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
                                     </div>
                                 </div>
                                 <div className="overflow-y-auto bg-[#0c0d11] p-5 font-sans text-sm leading-relaxed text-gray-300 custom-scrollbar sm:p-6">
-                                    {summarizing ? (
-                                        <div className="flex flex-col items-center justify-center py-12">
-                                            <AiStatusOrb activity="searching" size={64} />
-                                            <p className="mt-4 text-sm font-medium text-white">Thinking through your logs…</p>
-                                            <p className="mt-1 text-xs text-gray-500">Building a concise incident summary.</p>
-                                        </div>
-                                    ) : summary ? (
-                                        <AiSummaryContent summary={summary} />
-                                    ) : (
-                                        <p className="text-red-400">Failed to generate summary.</p>
-                                    )}
+                                    <LogSummaryBody summarizing={summarizing} summary={summary} />
                                 </div>
                             </motion.div>
                         </motion.div>

@@ -17,6 +17,12 @@ test proving source switching closes the menu, stops the old subscription and
 watches the new path. All 172 frontend tests pass; build and scan evidence are
 required before recording further closures. The strict release gate stays held.
 
+Historical search now shares the summary presentation with raw logs and uses a
+stable virtualized row renderer. Four additional tests cover loading/success/
+missing-summary states and historical timestamp/severity/source/message display;
+existing stale-response and keyboard-filter tests remain passing. Local frontend
+verification: 176 tests, build and LCOV records for all 86 production TS/TSX files.
+
 Run 41 verifies `0f747b09418f3fe0ed0032443f8528e3e35adf9e`: 98 open
 issues, 37.6% combined coverage and no unreviewed hotspots. Its standard gate
 is ERROR, so production remains held. The three MySQL/notification findings

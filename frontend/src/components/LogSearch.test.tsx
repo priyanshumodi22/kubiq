@@ -7,11 +7,20 @@ const mocks = vi.hoisted(() => ({ query: vi.fn(), sources: vi.fn(), recent: vi.f
 vi.mock('../services/api', () => ({ apiClient: { queryLogs: mocks.query, getLogSources: mocks.sources, getRecentSummary: mocks.recent } }));
 vi.mock('./ProUpgradeModal', () => ({ ProUpgradeModal: () => null }));
 vi.mock('./AiStatusOrb', () => ({ AiStatusOrb: () => null }));
-vi.mock('react-virtuoso', () => ({ Virtuoso: ({ data }: { data: { _id: string; message: string }[] }) => <div>{data.map(log => <p key={log._id}>{log.message}</p>)}</div> }));
+vi.mock('react-virtuoso', () => ({ Virtuoso: ({ data, itemContent }: { data: { _id: string; message: string }[]; itemContent: (index: number, log: object) => React.ReactNode }) => <div>{data.map((log, index) => <div key={log._id}>{itemContent(index, { timestamp: '2026-10-23T00:00:00Z', level: 'INFO', sourceName: '/app/api.log', ...log })}</div>)}</div> }));
 beforeEach(() => { vi.clearAllMocks(); mocks.query.mockResolvedValue([]); mocks.sources.mockResolvedValue(['/app/api.log']); mocks.recent.mockResolvedValue({ available: false }); });
 afterEach(cleanup);
 
 describe('log search filter controls', () => {
+  it('renders historical row timestamp, severity, source and message', async () => {
+    mocks.query.mockResolvedValue([{ _id: 'record', message: 'Connection failed', timestamp: '2026-10-23T00:00:00Z', level: 'ERROR', sourceName: '/app/error.log' }]);
+    const view = render(<LogSearch serviceName="api" />);
+    await waitFor(() => expect(view.getByText('Connection failed')).toBeTruthy());
+    expect(view.getByText('ERROR').className).toContain('text-red-400');
+    expect(view.getByTitle('/app/error.log').textContent).toBe('error.log');
+    expect(view.getByText(new Date('2026-10-23T00:00:00Z').toLocaleString())).toBeTruthy();
+  });
+
   it('ignores a prior service source lookup after changing services', async () => {
     let oldSources: ((value: string[]) => void) | undefined;
     mocks.sources.mockImplementationOnce(() => new Promise(resolve => { oldSources = resolve; }));

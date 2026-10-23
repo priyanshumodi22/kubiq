@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { apiClient } from '../services/api';
 import { ProUpgradeModal } from './ProUpgradeModal';
 import { AiStatusOrb } from './AiStatusOrb';
-import { AiSummaryContent } from './AiSummaryContent';
+import { LogSummaryBody } from './LogSummaryBody';
 import { useAuth } from '../contexts/AuthContext';
 import { classifyLogLevel, type LogLevel } from '../utils/logLevel';
 
@@ -221,18 +221,6 @@ function renderLogRow(index: number, log: LogLine) {
             <span className="break-all whitespace-pre-wrap flex-1 select-text leading-relaxed">{renderFormattedLogContent(log.content)}</span>
         </div>
     );
-}
-
-function LogSummaryBody({ summarizing, summary }: Readonly<{ summarizing: boolean; summary: string | null }>) {
-    if (summarizing) return (
-        <div className="flex flex-col items-center justify-center py-12">
-            <AiStatusOrb activity="searching" size={64} />
-            <p className="mt-4 text-sm font-medium text-white">Thinking through your logs…</p>
-            <p className="mt-1 text-xs text-gray-500">Building a concise incident summary.</p>
-        </div>
-    );
-    if (summary) return <AiSummaryContent summary={summary} />;
-    return <p className="text-red-400">Failed to generate summary.</p>;
 }
 
 export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpen, onClose, serviceName, isEmbedded = false }) => {
