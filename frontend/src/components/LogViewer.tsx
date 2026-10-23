@@ -29,6 +29,49 @@ interface LogLine {
     level: LogLevel;
 }
 
+function LogFileTabs({ files, activeFile, onSelect }: Readonly<{ files: Array<{ path: string; name: string }>; activeFile: string; onSelect: (path: string) => void }>) {
+    return (files.length > 0 ? (
+                                        <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar mask-gradient-right">
+                                            {files.map((file, idx) => {
+                                                const isActive = activeFile === file.path;
+                                                return (
+                                                    <button
+                                                        key={file.path}
+                                                        onClick={() => {
+                                                            onSelect(file.path);
+                                                            
+                                                        }}
+                                                        className={`
+                                                        px-2 py-0.5 text-[10px] rounded-full border transition-all whitespace-nowrap font-mono
+                                                        ${isActive
+                                                                ? 'bg-blue-500/20 border-blue-500/50 text-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.2)]'
+                                                                : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-gray-200'
+                                                            }
+                                                    `}
+                                                        title={file.path}
+                                                    >
+                                                        {idx === 0 && <span className="mr-1 text-green-400">●</span>}
+                                                        {file.name}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <span className="text-[10px] text-gray-500 font-mono truncate max-w-[300px]" title={activeFile}>
+                                            {activeFile.split(/[/\\]/).pop()}
+                                        </span>
+                                    ));
+}
+
+function resolveLogSources(logSources: LogSource[] | undefined, logPath: string): LogSource[] {
+    if (logSources?.length) return logSources;
+    return [{ id: 'default', name: 'Default Log', path: logPath }];
+}
+
+function resolveSelectedSource(sources: LogSource[], selectedId: string): LogSource {
+    return sources.find(source => source.id === selectedId) || sources[0];
+}
+
 function renderFormattedLogContent(content: string) {
     const traceRegex = /(traceId|trace_id|requestId|request_id)[=:]\s*["']?([a-f0-9-]{12,64})["']?/gi;
     const parts: (string | React.ReactNode)[] = [];
@@ -76,7 +119,9 @@ function LogVolumeHistogram({ logs }: Readonly<{ logs: LogLine[] }>) {
 
     const bucketCount = 15;
     const bucketSize = Math.max(1, Math.ceil(logs.length / bucketCount));
-    const buckets: { error: number; warn: number; info: number; other: number }[] = Array.from({ length: bucketCount }, () => ({
+    const buckets = Array.from({ length: bucketCount }, (_, index) => ({
+        startLine: index * bucketSize + 1,
+        endLine: (index + 1) * bucketSize,
         error: 0,
         warn: 0,
         info: 0,
@@ -111,7 +156,7 @@ function LogVolumeHistogram({ logs }: Readonly<{ logs: LogLine[] }>) {
                     const othPct = (b.other / maxTotal) * 100;
 
                     return (
-                        <div key={i} className="flex-1 flex flex-col justify-end h-full rounded-sm overflow-hidden" title={`Bucket ${i+1}: ${total} logs (${b.error} err, ${b.warn} warn)`}>
+                        <div key={`${b.startLine}-${b.endLine}`} className="flex-1 flex flex-col justify-end h-full rounded-sm overflow-hidden" title={`Bucket ${i+1}: ${total} logs (${b.error} err, ${b.warn} warn)`}>
                             {errPct > 0 && <div className="bg-red-500 w-full" style={{ height: `${errPct}%` }} />}
                             {warnPct > 0 && <div className="bg-yellow-500 w-full" style={{ height: `${warnPct}%` }} />}
                             {infoPct > 0 && <div className="bg-blue-500 w-full" style={{ height: `${infoPct}%` }} />}
@@ -156,12 +201,10 @@ function LogSummaryBody({ summarizing, summary }: Readonly<{ summarizing: boolea
 export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpen, onClose, serviceName, isEmbedded = false }) => {
     const { hasPermission } = useAuth();
     // Determine effective sources
-    const effectiveSources = useMemo(() => (logSources && logSources.length > 0)
-        ? logSources
-        : [{ id: 'default', name: 'Default Log', path: logPath }], [logSources, logPath]);
+    const effectiveSources = useMemo(() => resolveLogSources(logSources, logPath), [logSources, logPath]);
 
     const [selectedSourceId, setSelectedSourceId] = useState<string>(effectiveSources[0].id);
-    const selectedSource = effectiveSources.find(s => s.id === selectedSourceId) || effectiveSources[0];
+    const selectedSource = resolveSelectedSource(effectiveSources, selectedSourceId);
 
     const [logs, setLogs] = useState<LogLine[]>([]);
     const [isConnected, setIsConnected] = useState(false);
@@ -501,37 +544,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                                     )}
 
                                     {/* Patterned File Tabs */}
-                                    {availableFiles.length > 0 ? (
-                                        <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar mask-gradient-right">
-                                            {availableFiles.map((file, idx) => {
-                                                const isActive = activeFile === file.path;
-                                                return (
-                                                    <button
-                                                        key={file.path}
-                                                        onClick={() => {
-                                                            setActiveFile(file.path);
-                                                            setLogs([]); // Clear logs when switching file
-                                                        }}
-                                                        className={`
-                                                        px-2 py-0.5 text-[10px] rounded-full border transition-all whitespace-nowrap font-mono
-                                                        ${isActive
-                                                                ? 'bg-blue-500/20 border-blue-500/50 text-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.2)]'
-                                                                : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-gray-200'
-                                                            }
-                                                    `}
-                                                        title={file.path}
-                                                    >
-                                                        {idx === 0 && <span className="mr-1 text-green-400">●</span>}
-                                                        {file.name}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <span className="text-[10px] text-gray-500 font-mono truncate max-w-[300px]" title={activeFile}>
-                                            {activeFile.split(/[/\\]/).pop()}
-                                        </span>
-                                    )}
+                                    <LogFileTabs files={availableFiles} activeFile={activeFile} onSelect={(path) => { setActiveFile(path); setLogs([]); }} />
                                 </div>
                             )}
                         </div>

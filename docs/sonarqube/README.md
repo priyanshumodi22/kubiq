@@ -7,6 +7,18 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 41 verifies `0f747b09418f3fe0ed0032443f8528e3e35adf9e`: 98 open
+issues, 37.6% combined coverage and no unreviewed hotspots. Its standard gate
+is ERROR, so production remains held. The three MySQL/notification findings
+are closed. Archive:
+`gs://priyanshu-apps-sonarqube-backups/reports/efd46164-1d6b-4659-b3ef-e632313ab06c-1792760078.json`.
+
+The next log-viewer refactor keys histogram bins by their represented line
+range and extracts stable file-tab/source resolution helpers. A fifth raw-log
+test preserves the 15-bin distribution, severity counts, resolved file switching
+and clean buffer. Local frontend verification: 171 tests, production build and
+complete LCOV records. Exact-commit scan verification is pending.
+
 Run 40 verifies `0dd4e8f30bda34fab232836d23f54d20f0183ee9`: 101 open
 issues, 37.1% combined coverage, no unreviewed hotspots and standard gate OK.
 Eight log-viewer findings are now closed; histogram identity and component

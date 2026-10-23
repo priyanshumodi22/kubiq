@@ -66,4 +66,19 @@ describe('raw log subscription compatibility', () => {
         send('connect');
         expect(mocks.sockets.at(-1)!.emit).toHaveBeenLastCalledWith('watch:log', { serviceName: 'api', path: '/updated/*.log', pattern: '/updated/*.log', limit: 4 });
     });
+
+    it('preserves histogram bins and switches resolved files with a clean buffer', async () => {
+        const source = { id: 'app', name: 'Application', path: '/logs/*.log', fileLimit: 2 };
+        const view = render(<LogViewer {...props} logSources={[source]} />);
+        await act(async () => {});
+        send('log:init', { content: 'INFO ready\nERROR failure\n' });
+        expect(view.container.querySelectorAll('[title^="Bucket "]')).toHaveLength(15);
+        expect(view.getByTitle('Bucket 1: 1 logs (0 err, 0 warn)')).toBeTruthy();
+        expect(view.getByTitle('Bucket 2: 1 logs (1 err, 0 warn)')).toBeTruthy();
+        send('log:file_list', { files: [{ path: '/logs/new.log', name: 'new.log' }, { path: '/logs/old.log', name: 'old.log' }] });
+        fireEvent.click(view.getByTitle('/logs/old.log'));
+        expect(view.queryByText('ERROR failure')).toBeNull();
+        send('connect');
+        expect(mocks.sockets.at(-1)!.emit).toHaveBeenLastCalledWith('watch:log', { path: '/logs/old.log', pattern: '/logs/*.log', limit: 2, serviceName: 'api' });
+    });
 });
