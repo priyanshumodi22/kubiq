@@ -7,6 +7,17 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 43 verifies `bee9de4849b4c84e11cbcda7f465c7ee64961ade`: 93 open
+issues, 37.8% combined coverage, no unreviewed hotspots and standard gate OK.
+Notification status/severity and kubi trace matching findings are closed.
+Source-selector extraction alone did not reduce the remaining raw-log complexity
+finding, so it is still pending. Archive:
+`gs://priyanshu-apps-sonarqube-backups/reports/fad4378c-4be9-4a49-9cc0-00be25461d09-1792760686.json`.
+
+The next refactor isolates the tail/pause button presentation. Pro availability
+copy uses explicit branches instead of nested ternaries; three tests preserve
+unconfigured/disabled messaging versus normal upgrade/pricing behavior.
+
 Run 42 verifies `cda178d71153e9da9d9cc4f54181445f3f981e27`: 97 open
 issues, 37.7% combined coverage, no unreviewed hotspots and standard gate OK.
 The histogram finding is closed; raw-log component complexity remains at 17.

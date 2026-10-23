@@ -29,6 +29,19 @@ interface LogLine {
     level: LogLevel;
 }
 
+function LogTailButton({ isPaused, onToggle }: Readonly<{ isPaused: boolean; onToggle: () => void }>) {
+    return (<button
+        onClick={onToggle}
+        className={`flex items-center space-x-2 px-3 py-1.5 rounded-full backdrop-blur-md border shadow-lg transition-all ${isPaused
+                ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20'
+                : 'bg-gray-800/80 border-gray-700 text-gray-300 hover:bg-gray-700'
+            }`}
+    >
+        {isPaused ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+        <span>{isPaused ? 'Paused' : 'Tailing'}</span>
+    </button>);
+}
+
 function LogSourceMenu({ sources, selectedSource, selectedSourceId, dropdownRef, isOpen, onToggle, onSelect }: Readonly<{ sources: LogSource[]; selectedSource: LogSource; selectedSourceId: string; dropdownRef: React.RefObject<HTMLDivElement | null>; isOpen: boolean; onToggle: () => void; onSelect: (id: string) => void }>) {
     return (sources.length > 1 && (
         <div className="relative mr-3" ref={dropdownRef}>
@@ -611,8 +624,8 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                         {/* Floating Actions inside Terminal */}
                         <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
                             {/* Auto-scroll / Pause Status */}
-                            <button
-                                onClick={() => {
+                            <LogTailButton isPaused={isPaused}
+                                onToggle={() => {
                                     setIsPaused(!isPaused);
                                     if (isPaused) {
                                         setAtBottom(true);
@@ -620,14 +633,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                                         virtuosoRef.current?.scrollToIndex({ index: logs.length - 1, align: 'end' });
                                     }
                                 }}
-                                className={`flex items-center space-x-2 px-3 py-1.5 rounded-full backdrop-blur-md border shadow-lg transition-all ${isPaused
-                                        ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20'
-                                        : 'bg-gray-800/80 border-gray-700 text-gray-300 hover:bg-gray-700'
-                                    }`}
-                            >
-                                {isPaused ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-                                <span>{isPaused ? 'Paused' : 'Tailing'}</span>
-                            </button>
+                            />
                         </div>
 
                         {/* New Logs Badge (Sticky Bottom) */}

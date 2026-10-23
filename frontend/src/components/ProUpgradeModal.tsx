@@ -9,14 +9,24 @@ interface ProUpgradeModalProps {
     unavailableReason?: 'AI_NOT_CONFIGURED' | 'DISABLED';
 }
 
+function dialogCopy(reason: ProUpgradeModalProps['unavailableReason']) {
+    if (reason === 'AI_NOT_CONFIGURED') return {
+        title: 'kubi is being configured',
+        description: 'An administrator needs to configure kubiq’s AI provider before kubi can answer questions. No telemetry is sent to an AI provider until that is configured.',
+    };
+    if (reason === 'DISABLED') return {
+        title: 'kubi is not enabled',
+        description: 'kubi is currently disabled for this kubiq deployment.',
+    };
+    return {
+        title: 'Unlock kubiq Pro',
+        description: 'Unlock AI diagnostics and log summarization with your preferred AI provider.',
+    };
+}
+
 export function ProUpgradeModal({ isOpen, onClose, unavailableReason }: ProUpgradeModalProps) {
     const configurationUnavailable = Boolean(unavailableReason);
-    const title = unavailableReason === 'AI_NOT_CONFIGURED' ? 'kubi is being configured' : unavailableReason === 'DISABLED' ? 'kubi is not enabled' : 'Unlock kubiq Pro';
-    const description = unavailableReason === 'AI_NOT_CONFIGURED'
-        ? 'An administrator needs to configure kubiq’s AI provider before kubi can answer questions. No telemetry is sent to an AI provider until that is configured.'
-        : unavailableReason === 'DISABLED'
-            ? 'kubi is currently disabled for this kubiq deployment.'
-            : 'Unlock AI diagnostics and log summarization with your preferred AI provider.';
+    const { title, description } = dialogCopy(unavailableReason);
     return createPortal(
         <AnimatePresence>
             {isOpen && (
