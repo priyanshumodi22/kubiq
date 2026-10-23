@@ -7,6 +7,24 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 38 verifies `05aa0b267d7630e05a018ffd7cdf19e57a4ee4d0`: 111 open
+issues, 35.8% coverage, no unreviewed hotspots; standard gate ERROR. Backend
+identity/resource findings and most administration findings are CLOSED.
+The remaining administration items are the namespace dialog and a new
+boolean-selector helper warning; both are addressed by the next batch. Archive:
+`gs://priyanshu-apps-sonarqube-backups/reports/f4314246-696c-44a7-9c9d-e42cc02a2ae8-1792758613.json`.
+
+The next batch extracts a native namespace dialog and explicit add/remove
+selection operations. Five dialog tests cover identity/metadata preservation,
+selection, deliberately empty scope, loading restrictions, cancellation and
+focus return; two utility tests verify immutable selection behavior. Chrome
+desktop verifies Enter opens :modal, Cancel has initial focus, Space toggles a
+checkbox, and save/Escape return focus to the trigger. The save used an isolated
+fixture only; no actual account namespace scope was changed. The temporary
+fixture/server were removed/stopped. Local frontend verification passes 166
+tests and the build, with 85 production TS/TSX files covered by LCOV records.
+The exact-commit scan and broader mobile/product verification remain pending.
+
 Run 37 verifies `007219052f266c9bf5c5b2d548733cde8f738182`: 125 open
 issues, 34.0% coverage, no unreviewed hotspots and standard gate OK. Redaction
 and public-status findings are CLOSED. Archive:
