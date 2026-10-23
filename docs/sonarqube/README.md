@@ -302,6 +302,8 @@ Subsequent completed analyses:
 | `fde0263` | 20 | `ec7a6591-b356-4b43-945c-1ce1710343b5` | 296 | 23.4% | 0 |
 | `9dc1c9c` | 21 | `0cc9c910-19e7-48a8-8e8e-5bbdb3e3ac3e` | 289 | 23.4% | 0 |
 | `c090516` | 22 | `f910f2e1-7bab-4ee9-8ecc-5a67511cc1ef` | 281 | 24.0% | 0 |
+| `591a311` | 23 | `dcb95e3d-58e5-4a30-9187-4cad39e8ae7a` | 280 | 24.1% | 0 |
+| `2322a6c` | 24 | `3e21691d-103e-48b7-be82-a18ec6cdda90` | 275 | 24.1% | 0 |
 
 Matching format-3 exports remain in the private backup bucket under `reports/`:
 `4550fc4b-64aa-45f1-8e3d-f570920514c2-1792689301.json`,
@@ -342,6 +344,30 @@ matching export is
 `gs://priyanshu-apps-sonarqube-backups/reports/65ca222f-755f-4cdb-ac06-7fd6e6e0080e-1792732343.json`.
 Standard gate is OK; strict release criteria remain blocked. Remaining findings
 in these files are addressed in the following batch and require another scan.
+
+Run 23 confirms the message route is below the cognitive-complexity limit,
+with no open findings in `backend/src/routes/kubi.ts`. The extracted helpers
+preserve reply persistence before SSE completion, local product answers,
+clarification-slot handling, provider error messages and active-user cleanup.
+All 244 backend and 87 frontend tests pass, both builds pass, and coverage
+reports and exact-commit release-gate regression checks pass. The checkpoint
+records 574 explicit original closures, 265 pending originals and two safe
+reviews. Its matching export is
+`gs://priyanshu-apps-sonarqube-backups/reports/e0371133-829e-4c44-93bc-38213f926d81-1792732529.json`.
+The standard gate is OK; the strict release gate rejects the remaining 280
+issues. No production image or release proof was published.
+
+Run 24 confirms the remaining five findings in the focused frontend files
+closed. There are no open findings in ServiceCard, KubiActivity, AuditLogViewer
+or ServiceMap. Native progress output retains the former text styling through
+an explicit class; native service-card controls retain independent admin
+actions. Existing status, permission-transition, loading, empty and populated
+audit tests remain passing. The exact-revision export is
+`gs://priyanshu-apps-sonarqube-backups/reports/c4bac73a-d8a6-48c6-b8cb-667095e8f436-1792732736.json`.
+Current open issues: 275; unreviewed hotspots: zero; combined coverage: 24.1%.
+The standard gate is OK, but the strict release gate remains blocked. Larger
+APM/Kubernetes findings, lint warnings, and full browser visual comparisons
+remain pending; these results do not establish complete remediation.
 
 Run 18 verifies the ordered kubi evidence-collector extraction and conditional
 cleanup. Its checkpoint records 545 explicit baseline closures, 294 pending
