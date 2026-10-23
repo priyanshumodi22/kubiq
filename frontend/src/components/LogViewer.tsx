@@ -31,36 +31,33 @@ interface LogLine {
 
 function LogFileTabs({ files, activeFile, onSelect }: Readonly<{ files: Array<{ path: string; name: string }>; activeFile: string; onSelect: (path: string) => void }>) {
     return (files.length > 0 ? (
-                                        <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar mask-gradient-right">
-                                            {files.map((file, idx) => {
-                                                const isActive = activeFile === file.path;
-                                                return (
-                                                    <button
-                                                        key={file.path}
-                                                        onClick={() => {
-                                                            onSelect(file.path);
-                                                            
-                                                        }}
-                                                        className={`
-                                                        px-2 py-0.5 text-[10px] rounded-full border transition-all whitespace-nowrap font-mono
-                                                        ${isActive
-                                                                ? 'bg-blue-500/20 border-blue-500/50 text-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.2)]'
-                                                                : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-gray-200'
-                                                            }
-                                                    `}
-                                                        title={file.path}
-                                                    >
-                                                        {idx === 0 && <span className="mr-1 text-green-400">●</span>}
-                                                        {file.name}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <span className="text-[10px] text-gray-500 font-mono truncate max-w-[300px]" title={activeFile}>
-                                            {activeFile.split(/[/\\]/).pop()}
-                                        </span>
-                                    ));
+        <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar mask-gradient-right">
+            {files.map((file, idx) => {
+                const isActive = activeFile === file.path;
+                return (
+                    <button
+                        key={file.path}
+                        onClick={() => onSelect(file.path)}
+                        className={`
+                        px-2 py-0.5 text-[10px] rounded-full border transition-all whitespace-nowrap font-mono
+                        ${isActive
+                                ? 'bg-blue-500/20 border-blue-500/50 text-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.2)]'
+                                : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-gray-200'
+                            }
+                    `}
+                        title={file.path}
+                    >
+                        {idx === 0 && <span className="mr-1 text-green-400">●</span>}
+                        {file.name}
+                    </button>
+                );
+            })}
+        </div>
+    ) : (
+        <span className="text-[10px] text-gray-500 font-mono truncate max-w-[300px]" title={activeFile}>
+            {activeFile.split(/[/\\]/).pop()}
+        </span>
+    ));
 }
 
 function resolveLogSources(logSources: LogSource[] | undefined, logPath: string): LogSource[] {
