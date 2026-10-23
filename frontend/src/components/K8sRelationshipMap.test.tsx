@@ -35,7 +35,7 @@ describe('Kubernetes topology controls', () => {
 
     it('supports canvas keyboard pan, zoom and reset without consuming child keys', () => {
         const view = render(<K8sRelationshipMap {...props} />);
-        const canvas = view.getByRole('application');
+        const canvas = view.getByRole('button', { name: /^Kubernetes topology canvas/ });
         const graph = () => view.container.querySelector<HTMLDivElement>('div[style*="scale("]')!;
         fireEvent.keyDown(canvas, { key: 'ArrowRight' });
         fireEvent.keyDown(canvas, { key: 'ArrowDown' });
@@ -46,6 +46,10 @@ describe('Kubernetes topology controls', () => {
         expect(view.getByText('110%')).toBeTruthy();
         fireEvent.keyDown(canvas, { key: 'Home' });
         expect(graph().style.transform).toBe('translate(0px, 0px) scale(1)');
+        fireEvent.mouseDown(canvas, { clientX: 10, clientY: 20 });
+        fireEvent.mouseMove(canvas, { clientX: 30, clientY: 50 });
+        fireEvent.mouseUp(canvas);
+        expect(graph().style.transform).toBe('translate(20px, 30px) scale(1)');
     });
 
     it('exports parseable SVG with escaped resource text and releases its object URL', async () => {

@@ -316,6 +316,69 @@ function ChannelForm({
     );
 }
 
+
+function NotificationChannelCard({ channel, isAdmin, handleToggle, initiateEdit, handleTest, initiateDelete }: Readonly<{
+    channel: NotificationChannel;
+    isAdmin: boolean;
+    handleToggle: (channel: NotificationChannel) => Promise<void>;
+    initiateEdit: (id: string) => void;
+    handleTest: (id: string) => Promise<void>;
+    initiateDelete: (channel: { id: string; name: string }) => void;
+}>) {
+    const toggleTitle = channel.enabled ? 'Disable Channel' : 'Enable Channel';
+    return (
+        <div className="bg-bg-elevated border border-gray-800 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0 w-full sm:w-auto">
+                {/* Toggle Switch */}
+                <button
+                    onClick={() => handleToggle(channel)}
+                    className={`shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-gray-900 ${channel.enabled ? 'bg-green-500' : 'bg-red-500/50'
+                        } ${isAdmin ? '' : 'opacity-50 cursor-not-allowed'}`}
+                    title={isAdmin ? toggleTitle : 'Access Denied'}
+                >
+                    <span
+                        className={`${channel.enabled ? 'translate-x-6' : 'translate-x-1'
+                            } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                    />
+                </button>
+
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <h3 className={`font-semibold truncate ${channel.enabled ? 'text-text' : 'text-gray-500 line-through'}`}>{channel.name}</h3>
+                        <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded bg-gray-700 text-gray-300 uppercase shrink-0">{channel.type}</span>
+                    </div>
+                    <div className="text-xs sm:text-sm text-text-dim truncate">
+                        {channel.type === 'webhook' ? channel.config.webhookUrl : channel.config.email}
+                    </div>
+                </div>
+            </div>
+            <div className="flex gap-2 shrink-0 justify-end sm:justify-start">
+                <button
+                    onClick={() => initiateEdit(channel.id)}
+                    className={`p-2 hover:bg-gray-700 rounded-lg transition-colors ${isAdmin ? 'text-gray-400 hover:text-blue-500' : 'text-gray-600 cursor-not-allowed'}`}
+                    title={isAdmin ? "Edit Channel" : "Access Denied"}
+                >
+                    <Pencil className="w-4 h-4" />
+                </button>
+                <button
+                    onClick={() => handleTest(channel.id)}
+                    className="p-2 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-green-500 transition-colors"
+                    title="Send Test Alert"
+                >
+                    <Send className="w-4 h-4" />
+                </button>
+                <button
+                    onClick={() => initiateDelete({ id: channel.id, name: channel.name })}
+                    className={`p-2 hover:bg-gray-700 rounded-lg transition-colors ${isAdmin ? 'text-gray-400 hover:text-red-500' : 'text-gray-600 cursor-not-allowed'}`}
+                    title={isAdmin ? "Delete Channel" : "Access Denied"}
+                >
+                    <Trash2 className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export function NotificationConfigModal({ isOpen, onClose }: Readonly<NotificationConfigModalProps>) {
     const [channels, setChannels] = useState<NotificationChannel[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -427,7 +490,7 @@ export function NotificationConfigModal({ isOpen, onClose }: Readonly<Notificati
                 ...channel,
                 enabled: !channel.enabled
             });
-            addToast(`Channel ${!channel.enabled ? 'enabled' : 'disabled'}`, 'success');
+            addToast(`Channel ${channel.enabled ? 'disabled' : 'enabled'}`, 'success');
         } catch {
             // Revert on failure
             fetchChannels();
@@ -480,7 +543,7 @@ export function NotificationConfigModal({ isOpen, onClose }: Readonly<Notificati
                 maintenanceMode: !maintenanceConfig.maintenanceMode
             });
             setMaintenanceConfig(updated);
-            addToast(`Global maintenance silence mode ${!maintenanceConfig.maintenanceMode ? 'ENABLED 🔇' : 'DISABLED 🔔'}`, 'success');
+            addToast(`Global maintenance silence mode ${maintenanceConfig.maintenanceMode ? 'DISABLED 🔔' : 'ENABLED 🔇'}`, 'success');
         } catch {
             addToast('Failed to toggle maintenance mode', 'error');
         }
@@ -595,57 +658,7 @@ export function NotificationConfigModal({ isOpen, onClose }: Readonly<Notificati
                                                 isLoading={isLoading}
                                             />
                                         </div>
-                                    ) : (
-                                        <div className="bg-bg-elevated border border-gray-800 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden">
-                                            <div className="flex items-center gap-3 sm:gap-4 min-w-0 w-full sm:w-auto">
-                                                {/* Toggle Switch */}
-                                                <button
-                                                    onClick={() => handleToggle(channel)}
-                                                    className={`shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-gray-900 ${channel.enabled ? 'bg-green-500' : 'bg-red-500/50'
-                                                        } ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                    title={!isAdmin ? 'Access Denied' : (channel.enabled ? 'Disable Channel' : 'Enable Channel')}
-                                                >
-                                                    <span
-                                                        className={`${channel.enabled ? 'translate-x-6' : 'translate-x-1'
-                                                            } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-                                                    />
-                                                </button>
-
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <h3 className={`font-semibold truncate ${channel.enabled ? 'text-text' : 'text-gray-500 line-through'}`}>{channel.name}</h3>
-                                                        <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded bg-gray-700 text-gray-300 uppercase shrink-0">{channel.type}</span>
-                                                    </div>
-                                                    <div className="text-xs sm:text-sm text-text-dim truncate">
-                                                        {channel.type === 'webhook' ? channel.config.webhookUrl : channel.config.email}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-2 shrink-0 justify-end sm:justify-start">
-                                                <button
-                                                    onClick={() => initiateEdit(channel.id)}
-                                                    className={`p-2 hover:bg-gray-700 rounded-lg transition-colors ${!isAdmin ? 'text-gray-600 cursor-not-allowed' : 'text-gray-400 hover:text-blue-500'}`}
-                                                    title={!isAdmin ? "Access Denied" : "Edit Channel"}
-                                                >
-                                                    <Pencil className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleTest(channel.id)}
-                                                    className="p-2 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-green-500 transition-colors"
-                                                    title="Send Test Alert"
-                                                >
-                                                    <Send className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => initiateDelete({ id: channel.id, name: channel.name })}
-                                                    className={`p-2 hover:bg-gray-700 rounded-lg transition-colors ${!isAdmin ? 'text-gray-600 cursor-not-allowed' : 'text-gray-400 hover:text-red-500'}`}
-                                                    title={!isAdmin ? "Access Denied" : "Delete Channel"}
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
+                                    ) : <NotificationChannelCard channel={channel} isAdmin={isAdmin} handleToggle={handleToggle} initiateEdit={initiateEdit} handleTest={handleTest} initiateDelete={initiateDelete} />}
                                 </div>
                             ))}
                         </div>
@@ -727,7 +740,7 @@ export function NotificationConfigModal({ isOpen, onClose }: Readonly<Notificati
                                     className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${maintenanceConfig.maintenanceMode
                                         ? 'bg-amber-500 text-black hover:bg-amber-400'
                                         : 'bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10'
-                                        } ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        } ${isAdmin ? '' : 'opacity-50 cursor-not-allowed'}`}
                                 >
                                     {maintenanceConfig.maintenanceMode ? 'Disable Maintenance Mode' : 'Enable Maintenance Silence'}
                                 </button>

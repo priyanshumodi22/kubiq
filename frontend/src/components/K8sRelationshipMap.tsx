@@ -80,7 +80,7 @@ export function K8sRelationshipMap({
     const handleZoomOut = () => setScale(s => Math.max(s - 0.1, 0.5));
     const handleResetZoom = () => { setScale(1); setPan({ x: 0, y: 0 }); };
 
-    const handleCanvasKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const handleCanvasKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
         if (event.target !== event.currentTarget) return;
         switch (event.key) {
             case 'ArrowLeft': setPan(previous => ({ ...previous, x: previous.x - 30 })); break;
@@ -99,7 +99,7 @@ export function K8sRelationshipMap({
     const handleMouseDown = (e: React.MouseEvent) => {
         // Only drag if clicking the background SVG or standard non-interactive area
         const target = e.target as SVGElement;
-        if (target.tagName === 'BUTTON' || target.closest('.node-card')) return;
+        if (target.closest('button:not([data-topology-pan]), .node-card')) return;
         setIsDragging(true);
         dragStart.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
     };
@@ -117,7 +117,7 @@ export function K8sRelationshipMap({
     // Touch handlers for mobile panning
     const handleTouchStart = (e: React.TouchEvent) => {
         const target = e.target as SVGElement;
-        if (target.tagName === 'BUTTON' || target.closest('.node-card')) return;
+        if (target.closest('button:not([data-topology-pan]), .node-card')) return;
         if (e.touches.length === 1) {
             setIsDragging(true);
             dragStart.current = { x: e.touches[0].clientX - pan.x, y: e.touches[0].clientY - pan.y };
@@ -429,10 +429,7 @@ export function K8sRelationshipMap({
             {/* Topology Canvas Area */}
             <div
                 ref={containerRef}
-                role="application"
-                aria-label="Kubernetes topology canvas. Arrow keys pan; plus and minus zoom; Home resets."
-                tabIndex={0}
-                onKeyDown={handleCanvasKeyDown}
+                role="presentation"
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
@@ -443,8 +440,16 @@ export function K8sRelationshipMap({
                 onTouchCancel={handleTouchEnd}
                 className="flex-1 overflow-hidden bg-[#0d0d0d] relative cursor-grab active:cursor-grabbing touch-none focus-visible:outline-2 focus-visible:outline-primary"
             >
+                <button
+                    type="button"
+                    data-topology-pan
+                    aria-label="Kubernetes topology canvas. Arrow keys pan; plus and minus zoom; Home resets."
+                    onKeyDown={handleCanvasKeyDown}
+                    className="absolute inset-0 h-full w-full focus-visible:outline-2 focus-visible:outline-primary"
+                />
                 {/* Single transformed wrapper for perfect SVG & Card coordinate alignment */}
                 <div
+                    className="pointer-events-none [&_button]:pointer-events-auto"
                     style={{
                         position: 'absolute',
                         top: 0,

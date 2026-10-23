@@ -7,6 +7,20 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 29 verifies `7d04fb7c00a570067a137787a54681640c8889d6`:
+182 open issues, 30.0% combined coverage, zero unreviewed hotspots, standard
+gate OK. All 13 diagnosis-modal findings are CLOSED. The checkpoint records
+671 explicit baseline closures, 168 pending and two individually safe reviews.
+The strict release gate still blocks production. Archive:
+`gs://priyanshu-apps-sonarqube-backups/reports/6e25d0ee-20c8-4683-8a1b-b1c89a9ccb13-1792736707.json`.
+
+The following batch extracts the notification channel card, makes flagged
+conditionals positive without changing falsy-value behavior, and preserves
+permission-denial toast handlers. Three interaction tests check persisted IDs,
+saved form values, cancel, denied mutations and kubiq toasts. Topology keyboard
+navigation uses a native button separate from node buttons; the regression test
+also exercises mouse dragging. These changes await their exact-commit scan.
+
 Latest verified scan (run 28): `6f64ee82c86775ba86a2cd543ce7388293a2a20e`,
 analysis `5c196588-ee45-42b1-abe5-83fbef048eb2`, task
 `89748692-620d-4557-8011-58480c405d03`. There are 195 open issues,
