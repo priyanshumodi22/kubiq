@@ -86,6 +86,21 @@ describe('APM dashboard characterization', () => {
     expect(mocks.refresh).toHaveBeenCalledWith({ timeRangeMs: 3600000 });
   });
 
+  it('switches to the topology canvas with a valid selected-toggle class', async () => {
+    const view = render(<ApmDashboard />);
+    await waitFor(() => expect(view.getByRole('button', { name: 'Topology Map' })).toBeTruthy());
+    const toggle = view.getByRole('button', { name: 'Topology Map' });
+    expect(toggle.className).not.toContain('[object Object]');
+    fireEvent.click(toggle);
+    expect(view.getByText('Topology canvas')).toBeTruthy();
+    expect(toggle.className).toContain('bg-primary');
+    expect(toggle.className).not.toContain('[object Object]');
+    expect(mocks.fetchMap).toHaveBeenCalledWith({ timeRangeMs: 3600000 });
+    fireEvent.click(view.getByRole('button', { name: 'Metrics Grid' }));
+    expect(view.queryByText('Topology canvas')).toBeNull();
+    expect(view.getByText('No Service Data Found')).toBeTruthy();
+  });
+
   it('exposes a native export toggle and preserves its state across header updates', async () => {
     const view = render(<ApmDashboard />);
     await waitFor(() => expect(view.getByRole('button', { name: 'Export' })).toBeTruthy());

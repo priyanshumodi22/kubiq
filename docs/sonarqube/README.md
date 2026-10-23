@@ -304,6 +304,8 @@ Subsequent completed analyses:
 | `c090516` | 22 | `f910f2e1-7bab-4ee9-8ecc-5a67511cc1ef` | 281 | 24.0% | 0 |
 | `591a311` | 23 | `dcb95e3d-58e5-4a30-9187-4cad39e8ae7a` | 280 | 24.1% | 0 |
 | `2322a6c` | 24 | `3e21691d-103e-48b7-be82-a18ec6cdda90` | 275 | 24.1% | 0 |
+| `b303271` | 25 | `566e2878-34ba-4edf-919b-1b87d3132f1b` | 252 | 25.9% | 0 |
+| `caf4648` | 26 | `1dbab1b7-7dbf-48b9-a297-6cfd9bc7cf2f` | 252 | 25.9% | 0 |
 
 Matching format-3 exports remain in the private backup bucket under `reports/`:
 `4550fc4b-64aa-45f1-8e3d-f570920514c2-1792689301.json`,
@@ -368,6 +370,24 @@ Current open issues: 275; unreviewed hotspots: zero; combined coverage: 24.1%.
 The standard gate is OK, but the strict release gate remains blocked. Larger
 APM/Kubernetes findings, lint warnings, and full browser visual comparisons
 remain pending; these results do not establish complete remediation.
+
+Run 25 verifies the first APM rendering split, native controls and presentation
+helpers. The 112-complexity page function is removed; new characterization tests
+cover loading/error precedence, adapter support, service filtering, trace
+auto-selection and returning to overview. Export is now gated by `apm.export`,
+while Refresh no longer incorrectly requires export permission. Coverage is
+25.9% with 252 open issues and no unreviewed hotspots. Its archive is
+`gs://priyanshu-apps-sonarqube-backups/reports/1214eed7-a8c3-49a3-bd6a-0b8380b8f4e0-1792734509.json`.
+
+Run 26 records 606 explicit original closures, 233 pending originals and two
+individual safe reviews, plus 64 additional exported findings. Its archive is
+`gs://priyanshu-apps-sonarqube-backups/reports/7850207a-e2be-45c2-89d4-216a41f0cc08-1792734869.json`.
+The total remains 252 because new findings offset closures. In particular,
+S6551 caught a topology-toggle class expression that returned React elements
+instead of class strings during further extraction. This revision was held
+from production. The next batch corrects it and adds an explicit topology
+switching and CSS-class regression test, rather than accepting the finding.
+Standard and strict gates remain failed at these checkpoints.
 
 Run 18 verifies the ordered kubi evidence-collector extraction and conditional
 cleanup. Its checkpoint records 545 explicit baseline closures, 294 pending

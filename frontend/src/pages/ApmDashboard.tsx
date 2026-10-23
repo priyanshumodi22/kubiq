@@ -618,32 +618,19 @@ function ApmInspector({ model }: Readonly<{ model: ApmDashboardModel }>) {
                             <ApmTraceSelector model={model} />
                         </div>
 
-                        {<ApmInspectorTrace model={model} />}
+                        <ApmInspectorTrace model={model} />
                     </div>
                 </div>);
 }
 
 function ApmOverview({ model }: Readonly<{ model: ApmDashboardModel }>) {
     const {
-        metrics,
-        apmLoading,
-        apmError,
         spans,
         traceError,
         clearTrace,
-        dependencies,
-        mapError,
         setTraceIdInput,
-        serviceFilter,
-        setServiceFilter,
         activeView,
         setActiveView,
-        selectedMapService,
-        setSelectedMapService,
-        sidebarRef,
-        filteredMetrics,
-        handleServiceClick,
-        handleEdgeClick,
     } = model;
     return (<>
                     {traceError && (
@@ -692,174 +679,14 @@ function ApmOverview({ model }: Readonly<{ model: ApmDashboardModel }>) {
                             Metrics Grid
                         </button>
                         <button
-                            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${activeView === 'map' ? <ApmTopology model={model} /> : <ApmMetrics model={model} />}`}
+                            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${activeView === 'map' ? 'bg-primary text-white shadow-md border border-primary/50' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                             onClick={() => setActiveView('map')}
                         >
                             Topology Map
                         </button>
                     </div>
 
-                    {activeView === 'map' ? (
-                        <div className="mb-8 animate-fade-in-up delay-100 relative">
-                            {mapError ? (
-                                <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 text-red-400 mb-8">
-                                    {mapError}
-                                </div>
-                            ) : (
-                                <ServiceMap
-                                    dependencies={dependencies}
-                                    onNodeClick={(service) => setSelectedMapService(service)}
-                                    onEdgeClick={handleEdgeClick}
-                                    onPaneClick={() => setSelectedMapService(null)}
-                                />
-                            )}
-
-                            {/* Sidebar Panel for Map Node Selection - Positioned absolute inside canvas */}
-                            {selectedMapService && (() => {
-                                const serviceData = metrics.find(m => m.serviceName === selectedMapService);
-                                return (
-                                    <div
-                                        ref={sidebarRef}
-                                        className="absolute right-6 top-1/2 -translate-y-1/2 w-full md:w-80 h-auto max-h-[550px] bg-black/40 backdrop-blur-2xl border border-gray-600/30 shadow-2xl rounded-2xl z-50 transform transition-all duration-300 flex flex-col overflow-hidden"
-                                    >
-                                        <div className="px-5 py-4 border-b border-gray-700/50 flex justify-between items-center bg-white/3">
-                                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                                <Server className="w-4 h-4 text-blue-400" />
-                                                {selectedMapService}
-                                            </h3>
-                                            <button
-                                                onClick={() => setSelectedMapService(null)}
-                                                className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        </div>
-
-                                        <div className="p-5 overflow-y-auto">
-                                            {serviceData ? (
-                                                <div className="space-y-5">
-                                                    <div className="bg-black/30 border border-gray-700/50 rounded-xl p-4 shadow-inner">
-                                                        <h4 className="text-xs font-semibold tracking-wider uppercase text-gray-400 mb-3 flex items-center gap-1.5">
-                                                            <Activity className="w-3.5 h-3.5 text-blue-400" /> Key Metrics
-                                                        </h4>
-                                                        <div className="grid grid-cols-2 gap-y-4 gap-x-2">
-                                                            <div>
-                                                                <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-0.5">Throughput</p>
-                                                                <p className="text-base font-mono text-white">{serviceData.rpm.toFixed(1)} <span className="text-[10px] text-gray-500 font-sans">RPM</span></p>
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-0.5">P95 Latency</p>
-                                                                <p className="text-base font-mono text-white">{serviceData.p95DurationMs.toFixed(0)} <span className="text-[10px] text-gray-500 font-sans">ms</span></p>
-                                                            </div>
-                                                            <div className="col-span-2 pt-3 border-t border-gray-700/50 mt-1">
-                                                                <div className="flex items-center justify-between">
-                                                                    <p className="text-[10px] uppercase tracking-wider text-gray-500">Error Rate</p>
-                                                                    <p className={`text-sm font-mono font-medium ${serviceData.errorRate > 5 ? 'text-red-400' : 'text-green-400'}`}>
-                                                                        {serviceData.errorRate.toFixed(2)}%
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <button
-                                                        onClick={() => {
-                                                            setSelectedMapService(null);
-                                                            handleServiceClick(selectedMapService);
-                                                        }}
-                                                        className="w-full py-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-sm font-medium rounded-lg border border-blue-500/20 transition-colors flex items-center justify-center gap-2 group shadow-sm backdrop-blur-sm"
-                                                    >
-                                                        <Search className="w-4 h-4 group-hover:scale-110 transition-transform" /> Analyze Recent Trace
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="text-center py-10">
-                                                    <Activity className="w-10 h-10 text-gray-600 mx-auto mb-4 animate-pulse" />
-                                                    <p className="text-gray-400">Loading metrics...</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })()}
-                        </div>
-                    ) : apmError ? (
-                        <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 text-red-400 mb-8">
-                            {apmError}
-                        </div>
-                    ) : apmLoading ? (
-                        <div className="flex justify-center flex-col items-center h-40 gap-4">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                            <p className="text-text-dim">Aggregating traces...</p>
-                        </div>
-                    ) : metrics.length === 0 ? (
-                        <div className="bg-bg-card border border-gray-800 rounded-xl p-8 text-center mt-8 shadow-lg">
-                            <Server className="w-12 h-12 text-primary mx-auto mb-4 opacity-50" />
-                            <h3 className="text-xl font-medium text-white mb-2">No Service Data Found</h3>
-                            <p className="text-gray-400 max-w-md mx-auto">
-                                We couldn't find any APM telemetry data for the selected time range. Ensure your services are sending OTLP traces to kubiq.
-                            </p>
-                        </div>
-                    ) : filteredMetrics.length === 0 ? (
-                        <div className="bg-bg-card border border-gray-800 rounded-xl p-8 text-center mt-8 shadow-lg">
-                            <Search className="w-12 h-12 text-gray-500 mx-auto mb-4 opacity-50" />
-                            <h3 className="text-xl font-medium text-white mb-2">No Matching Services</h3>
-                            <p className="text-gray-400 max-w-md mx-auto">
-                                No services match your current filter "{serviceFilter}".
-                            </p>
-                            <button
-                                onClick={() => setServiceFilter('')}
-                                className="mt-4 text-primary hover:text-primary-hover font-medium underline"
-                            >
-                                Clear Filter
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                            {filteredMetrics.map((service) => (
-                                <div
-                                    key={service.serviceName}
-
-                                    className="bg-bg-surface/40 backdrop-blur-md border border-gray-800 rounded-xl p-6 shadow-2xl hover:border-blue-500/50 hover:bg-white/5 cursor-pointer transition-all group relative overflow-hidden"
-                                >
-<button type="button" onClick={() => handleServiceClick(service.serviceName)} aria-label={`Inspect ${service.serviceName}`} className="absolute inset-0 z-10 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" />
-                                    <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <span className="flex items-center gap-1 text-xs font-bold text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded shadow-sm">
-                                            <Search className="w-3.5 h-3.5" /> Analyze Trace
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-start mb-4">
-                                        <h3 className="text-lg font-bold text-white flex items-center gap-2 group-hover:text-blue-400 transition-colors">
-                                            {service.serviceName}
-                                        </h3>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-gray-400 flex items-center gap-1.5">
-                                                <Activity className="w-4 h-4 text-blue-400" /> Throughput (RPM)
-                                            </span>
-                                            <span className="font-mono text-white">{service.rpm.toFixed(1)}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-gray-400 flex items-center gap-1.5">
-                                                <Clock className="w-4 h-4 text-yellow-400" /> P95 Latency
-                                            </span>
-                                            <span className="font-mono text-white">{service.p95DurationMs.toFixed(0)} ms</span>
-                                        </div>
-                                        <div className="flex justify-between items-center bg-bg-surface p-2 rounded -mx-2">
-                                            <span className="text-sm text-gray-400 flex items-center gap-1.5">
-                                                <AlertTriangle className={`w-4 h-4 ${service.errorRate > 5 ? 'text-red-500' : 'text-gray-500'}`} /> Error Rate
-                                            </span>
-                                            <span className={`font-mono font-medium ${service.errorRate > 5 ? 'text-red-400' : 'text-green-400'}`}>
-                                                {service.errorRate.toFixed(2)}%
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    {activeView === 'map' ? <ApmTopology model={model} /> : <ApmMetrics model={model} />}
                 </>);
 }
 
@@ -1457,18 +1284,187 @@ function ApmInspectorTrace({ model }: Readonly<{ model: ApmDashboardModel }>) {
     return (null);
 }
 
+
+
+
+
 function ApmTopology({ model }: Readonly<{ model: ApmDashboardModel }>) {
     const {
-
+        metrics,
+        dependencies,
+        mapError,
+        selectedMapService,
+        setSelectedMapService,
+        sidebarRef,
+        handleServiceClick,
+        handleEdgeClick,
     } = model;
-    return ('bg-primary text-white shadow-md border border-primary/50');
+    return (<div className="mb-8 animate-fade-in-up delay-100 relative">
+                            {mapError ? (
+                                <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 text-red-400 mb-8">
+                                    {mapError}
+                                </div>
+                            ) : (
+                                <ServiceMap
+                                    dependencies={dependencies}
+                                    onNodeClick={(service) => setSelectedMapService(service)}
+                                    onEdgeClick={handleEdgeClick}
+                                    onPaneClick={() => setSelectedMapService(null)}
+                                />
+                            )}
+
+                            {/* Sidebar Panel for Map Node Selection - Positioned absolute inside canvas */}
+                            {selectedMapService && (() => {
+                                const serviceData = metrics.find(m => m.serviceName === selectedMapService);
+                                return (
+                                    <div
+                                        ref={sidebarRef}
+                                        className="absolute right-6 top-1/2 -translate-y-1/2 w-full md:w-80 h-auto max-h-[550px] bg-black/40 backdrop-blur-2xl border border-gray-600/30 shadow-2xl rounded-2xl z-50 transform transition-all duration-300 flex flex-col overflow-hidden"
+                                    >
+                                        <div className="px-5 py-4 border-b border-gray-700/50 flex justify-between items-center bg-white/3">
+                                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                                <Server className="w-4 h-4 text-blue-400" />
+                                                {selectedMapService}
+                                            </h3>
+                                            <button
+                                                onClick={() => setSelectedMapService(null)}
+                                                className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+
+                                        <div className="p-5 overflow-y-auto">
+                                            {serviceData ? (
+                                                <div className="space-y-5">
+                                                    <div className="bg-black/30 border border-gray-700/50 rounded-xl p-4 shadow-inner">
+                                                        <h4 className="text-xs font-semibold tracking-wider uppercase text-gray-400 mb-3 flex items-center gap-1.5">
+                                                            <Activity className="w-3.5 h-3.5 text-blue-400" /> Key Metrics
+                                                        </h4>
+                                                        <div className="grid grid-cols-2 gap-y-4 gap-x-2">
+                                                            <div>
+                                                                <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-0.5">Throughput</p>
+                                                                <p className="text-base font-mono text-white">{serviceData.rpm.toFixed(1)} <span className="text-[10px] text-gray-500 font-sans">RPM</span></p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-0.5">P95 Latency</p>
+                                                                <p className="text-base font-mono text-white">{serviceData.p95DurationMs.toFixed(0)} <span className="text-[10px] text-gray-500 font-sans">ms</span></p>
+                                                            </div>
+                                                            <div className="col-span-2 pt-3 border-t border-gray-700/50 mt-1">
+                                                                <div className="flex items-center justify-between">
+                                                                    <p className="text-[10px] uppercase tracking-wider text-gray-500">Error Rate</p>
+                                                                    <p className={`text-sm font-mono font-medium ${serviceData.errorRate > 5 ? 'text-red-400' : 'text-green-400'}`}>
+                                                                        {serviceData.errorRate.toFixed(2)}%
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedMapService(null);
+                                                            handleServiceClick(selectedMapService);
+                                                        }}
+                                                        className="w-full py-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-sm font-medium rounded-lg border border-blue-500/20 transition-colors flex items-center justify-center gap-2 group shadow-sm backdrop-blur-sm"
+                                                    >
+                                                        <Search className="w-4 h-4 group-hover:scale-110 transition-transform" /> Analyze Recent Trace
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-10">
+                                                    <Activity className="w-10 h-10 text-gray-600 mx-auto mb-4 animate-pulse" />
+                                                    <p className="text-gray-400">Loading metrics...</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                        </div>);
 }
 
 function ApmMetrics({ model }: Readonly<{ model: ApmDashboardModel }>) {
     const {
-
+        metrics,
+        apmLoading,
+        apmError,
+        serviceFilter,
+        setServiceFilter,
+        filteredMetrics,
+        handleServiceClick,
     } = model;
-    return ('text-gray-400 hover:text-white hover:bg-white/5');
+    if (apmError) return (<div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 text-red-400 mb-8">
+                            {apmError}
+                        </div>);
+    if (apmLoading) return (<div className="flex justify-center flex-col items-center h-40 gap-4">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            <p className="text-text-dim">Aggregating traces...</p>
+                        </div>);
+    if (metrics.length === 0) return (<div className="bg-bg-card border border-gray-800 rounded-xl p-8 text-center mt-8 shadow-lg">
+                            <Server className="w-12 h-12 text-primary mx-auto mb-4 opacity-50" />
+                            <h3 className="text-xl font-medium text-white mb-2">No Service Data Found</h3>
+                            <p className="text-gray-400 max-w-md mx-auto">
+                                We couldn't find any APM telemetry data for the selected time range. Ensure your services are sending OTLP traces to kubiq.
+                            </p>
+                        </div>);
+    if (filteredMetrics.length === 0) return (<div className="bg-bg-card border border-gray-800 rounded-xl p-8 text-center mt-8 shadow-lg">
+                            <Search className="w-12 h-12 text-gray-500 mx-auto mb-4 opacity-50" />
+                            <h3 className="text-xl font-medium text-white mb-2">No Matching Services</h3>
+                            <p className="text-gray-400 max-w-md mx-auto">
+                                No services match your current filter "{serviceFilter}".
+                            </p>
+                            <button
+                                onClick={() => setServiceFilter('')}
+                                className="mt-4 text-primary hover:text-primary-hover font-medium underline"
+                            >
+                                Clear Filter
+                            </button>
+                        </div>);
+    return (<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                            {filteredMetrics.map((service) => (
+                                <div
+                                    key={service.serviceName}
+
+                                    className="bg-bg-surface/40 backdrop-blur-md border border-gray-800 rounded-xl p-6 shadow-2xl hover:border-blue-500/50 hover:bg-white/5 cursor-pointer transition-all group relative overflow-hidden"
+                                >
+<button type="button" onClick={() => handleServiceClick(service.serviceName)} aria-label={`Inspect ${service.serviceName}`} className="absolute inset-0 z-10 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" />
+                                    <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <span className="flex items-center gap-1 text-xs font-bold text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded shadow-sm">
+                                            <Search className="w-3.5 h-3.5" /> Analyze Trace
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-start mb-4">
+                                        <h3 className="text-lg font-bold text-white flex items-center gap-2 group-hover:text-blue-400 transition-colors">
+                                            {service.serviceName}
+                                        </h3>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-gray-400 flex items-center gap-1.5">
+                                                <Activity className="w-4 h-4 text-blue-400" /> Throughput (RPM)
+                                            </span>
+                                            <span className="font-mono text-white">{service.rpm.toFixed(1)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-gray-400 flex items-center gap-1.5">
+                                                <Clock className="w-4 h-4 text-yellow-400" /> P95 Latency
+                                            </span>
+                                            <span className="font-mono text-white">{service.p95DurationMs.toFixed(0)} ms</span>
+                                        </div>
+                                        <div className="flex justify-between items-center bg-bg-surface p-2 rounded -mx-2">
+                                            <span className="text-sm text-gray-400 flex items-center gap-1.5">
+                                                <AlertTriangle className={`w-4 h-4 ${service.errorRate > 5 ? 'text-red-500' : 'text-gray-500'}`} /> Error Rate
+                                            </span>
+                                            <span className={`font-mono font-medium ${service.errorRate > 5 ? 'text-red-400' : 'text-green-400'}`}>
+                                                {service.errorRate.toFixed(2)}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>);
 }
 
 export default function ApmDashboard() {
