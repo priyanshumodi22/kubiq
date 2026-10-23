@@ -55,7 +55,8 @@ export class KubeLogStreamService {
             }) => {
                 const { namespace, podName, deploymentName, container, tailLines = 100 } = data;
                 const target = podName ? `pod ${podName}` : `deployment ${deploymentName}`;
-                console.log(`☸️  [K8sLogs] Socket ${socket.id} → watch ${namespace}/${target}${container ? `[${container}]` : ''}`);
+                const containerLabel = container ? `[${container}]` : '';
+                console.log(`☸️  [K8sLogs] Socket ${socket.id} → watch ${namespace}/${target}${containerLabel}`);
 
                 this.unsubscribeSocket(socket);
 
@@ -137,7 +138,7 @@ export class KubeLogStreamService {
                 
                 const specContainers = pod.spec?.containers || [];
                 let targetContainer = container;
-                if (!targetContainer || !specContainers.find(c => c.name === targetContainer)) {
+                if (!targetContainer || !specContainers.some(c => c.name === targetContainer)) {
                     targetContainer = specContainers[0]?.name;
                 }
 

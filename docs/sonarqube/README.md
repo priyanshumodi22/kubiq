@@ -7,6 +7,22 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 32 verifies `05b7d5f213410777088f173852085c4edd1e5188`: 158 open
+issues, 31.6% coverage, no unreviewed hotspots and standard gate OK.
+Waterfall/inspector findings are CLOSED. The strict zero-issue/verification
+requirements still block release. Archive:
+`gs://priyanshu-apps-sonarqube-backups/reports/5a6c1763-5300-419c-93c5-ee6d1d42b16a-1792738292.json`.
+
+The next backend batch simplifies import/template/condition/constructor and
+existence-check findings without changing the valid string API contract.
+Provider/model validation now rejects non-string payloads instead of silently
+coercing arrays/objects into configuration strings. A regression test first
+reproduced that acceptance bug. Local verification: 250 backend tests, backend
+build, and unchanged frontend source with 130 tests/build already passed.
+Live lint inspection finds zero errors but 371 backend explicit-any warnings
+and 128 frontend warnings (118 explicit-any, 10 hook dependencies). The strict
+lint gate remains failed, not disabled. The batch awaits a matching scan.
+
 Run 31 verifies `2b8f31669d3700e43c38b028a7f43faee21247bd`: 165 open
 issues, 30.9% coverage and no unreviewed hotspots; standard gate ERROR.
 The raw-log watcher findings and topology follow-up are CLOSED. Archive:

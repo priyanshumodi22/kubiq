@@ -26,8 +26,8 @@ export class KubiAiConfigService {
   }
 
   private static validate(provider: unknown, model: unknown): { provider: KubiProvider; model: string } {
-    const normalizedProvider = String(provider || '').toLowerCase() as KubiProvider;
-    const normalizedModel = String(model || '').trim();
+    const normalizedProvider = (typeof provider === 'string' ? provider.toLowerCase() : '') as KubiProvider;
+    const normalizedModel = typeof model === 'string' ? model.trim() : '';
     if (!providers.has(normalizedProvider)) throw new Error('KUBI_PROVIDER_INVALID');
     if (!modelPattern.test(normalizedModel)) throw new Error('KUBI_MODEL_INVALID');
     return { provider: normalizedProvider, model: normalizedModel };

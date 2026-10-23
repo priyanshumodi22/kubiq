@@ -1,8 +1,7 @@
 import { Router } from 'express';
-import { getUserFromReq, requirePermission } from '../middleware/auth';
+import { getAuthenticationProvider, getUserFromReq, requirePermission } from '../middleware/auth';
 import { AuditLogService } from '../services/AuditLogService';
 import { permissionCatalogue, RbacRoleService } from '../services/RbacRoleService';
-import { getAuthenticationProvider } from '../middleware/auth';
 import { KeycloakAdminService } from '../services/KeycloakAdminService';
 
 const router = Router();

@@ -37,7 +37,8 @@ export class KubiDocsService {
     return article.split(/(?=<h2\b)/i).map(section => {
       const heading = /<h2\b[^>]*>([\s\S]*?)<\/h2>/i.exec(section);
       const anchor = /<h2\b[^>]*id="([a-z0-9-]+)"/i.exec(section)?.[1];
-      return { title: heading ? plainText(heading[1]) : slug.replaceAll('-', ' '), href: `${ORIGIN}/docs/${slug}${anchor ? `#${anchor}` : ''}`, text: plainText(section).slice(0, 8000) };
+      const fragment = anchor ? `#${anchor}` : '';
+      return { title: heading ? plainText(heading[1]) : slug.replaceAll('-', ' '), href: `${ORIGIN}/docs/${slug}${fragment}`, text: plainText(section).slice(0, 8000) };
     }).filter(item => item.text.length > 30);
   }
 

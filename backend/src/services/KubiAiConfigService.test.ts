@@ -72,4 +72,14 @@ describe('KubiAiConfigService', () => {
     await expect(KubiAiConfigService.save({ provider: 'gemini', model: 'invalid model', apiKey: 'key' }))
       .rejects.toThrow('KUBI_MODEL_INVALID');
   });
+
+  it('rejects non-string provider/model payloads instead of coercing arrays or objects', async () => {
+    await expect(KubiAiConfigService.save({ provider: ['gemini'], model: 'valid-model', apiKey: 'key' }))
+      .rejects.toThrow('KUBI_PROVIDER_INVALID');
+    await expect(KubiAiConfigService.save({ provider: 'gemini', model: ['valid-model'], apiKey: 'key' }))
+      .rejects.toThrow('KUBI_MODEL_INVALID');
+    await expect(KubiAiConfigService.save({ provider: 'gemini', model: { toString: () => 'valid-model' }, apiKey: 'key' }))
+      .rejects.toThrow('KUBI_MODEL_INVALID');
+    expect(stored).toBeNull();
+  });
 });

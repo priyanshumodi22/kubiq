@@ -5,10 +5,7 @@ class ClickhouseService {
   private configured = false;
   private database = 'default';
 
-  constructor() {
-    // We don't read process.env here to avoid race conditions with dotenv loading in server.ts
-  }
-
+  // Configuration stays lazy to avoid racing dotenv loading in server.ts.
   private ensureConfigured() {
     if (this.configured) return;
     

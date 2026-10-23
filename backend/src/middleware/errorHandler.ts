@@ -5,7 +5,7 @@ export const errorHandler = (err: Error, req: Request, res: Response, next: Next
 
   if (res.headersSent) return next(err);
 
-  const statusCode = res.statusCode !== 200 ? res.statusCode : 500;
+  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
 
   res.status(statusCode).json({
     error: err.name || 'Internal Server Error',
