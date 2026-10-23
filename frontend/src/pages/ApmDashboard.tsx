@@ -373,50 +373,17 @@ function ApmHeader({ model }: Readonly<{ model: ApmDashboardModel }>) {
         isAdmin,
         canExport,
         apmLoading,
-        refresh,
         mapLoading,
-        fetchServiceMap,
         timeFilter,
-        setTimeFilter,
-        customFromDate,
-        setCustomFromDate,
-        customFromTime,
-        setCustomFromTime,
-        customToDate,
-        setCustomToDate,
-        customToTime,
-        setCustomToTime,
-        activeView,
         selectedInspectorService,
         setIsConfigModalOpen,
         setIsInstrumentationModalOpen,
-        percentileFilter,
-        setPercentileFilter,
         setIsExportModalOpen,
         setExportError,
         setExportService,
         setExportFromTime,
         setExportToTime,
-        timeRangeTriggerRef,
-        timeRangePanelRef,
-        isTimeRangeOpen,
-        setIsTimeRangeOpen,
-        timeRangeRect,
-        setTimeRangeRect,
-        latencyTriggerRef,
-        latencyPanelRef,
-        isLatencyOpen,
-        setIsLatencyOpen,
-        latencyRect,
-        setLatencyRect,
         handleRefresh,
-        applyCustomTime,
-        handleSliderChange,
-        sliderMaxMs,
-        sliderMinMs,
-        sliderFromMs,
-        sliderToMs,
-        todayString,
     } = model;
     return (<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                 <div>
@@ -428,170 +395,7 @@ function ApmHeader({ model }: Readonly<{ model: ApmDashboardModel }>) {
 
                 <div className="flex flex-wrap lg:flex-nowrap items-center gap-1.5 sm:gap-2 w-full sm:w-auto mt-4 sm:mt-0">
                     {/* Time Range — Custom Portal Dropdown */}
-                    <div className="relative">
-                        <button
-                            ref={timeRangeTriggerRef}
-                            type="button"
-                            onClick={() => {
-                                if (!isTimeRangeOpen && timeRangeTriggerRef.current) {
-                                    const r = timeRangeTriggerRef.current.getBoundingClientRect();
-                                    const isMobile = window.innerWidth < 640;
-                                    if (isMobile) {
-                                        setTimeRangeRect({ top: r.bottom + 4, left: 16, width: window.innerWidth - 32 });
-                                    } else {
-                                        setTimeRangeRect({ top: r.bottom + 4, left: r.right - 580 > 0 ? r.right - 580 : Math.max(16, r.left), width: 580 });
-                                    }
-                                }
-                                setIsTimeRangeOpen(o => !o);
-                            }}
-                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text text-xs sm:text-sm rounded-lg flex items-center justify-between gap-1.5 px-2.5 h-[40px] transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-[130px] sm:min-w-[145px]"
-                        >
-                            <div className="flex items-center gap-1.5 min-w-0">
-                                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
-                                {timeFilter.type === 'absolute' && timeFilter.label.includes(' to ') && timeFilter.label.split(' ').length === 5 ? (
-                                    <div className="flex flex-col items-start text-left min-w-[120px]">
-                                        <span className="text-[10px] text-gray-400 leading-tight">
-                                            {timeFilter.label.split(' ')[0]} to {timeFilter.label.split(' ')[3]}
-                                        </span>
-                                        <span className="text-xs leading-tight text-white">
-                                            {timeFilter.label.split(' ')[1]} to {timeFilter.label.split(' ')[4]}
-                                        </span>
-                                    </div>
-                                ) : (
-                                    <span className="truncate max-w-[160px]">
-                                        {timeFilter.label}
-                                    </span>
-                                )}
-                            </div>
-                            <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isTimeRangeOpen ? 'rotate-180' : ''}`} />
-                        </button>
-                    </div>
-
-                    {isTimeRangeOpen && timeRangeRect && createPortal(
-                        <div
-                            ref={timeRangePanelRef}
-                            style={{
-                                position: 'fixed',
-                                top: timeRangeRect.top,
-                                left: window.innerWidth < 640 ? '16px' : timeRangeRect.left,
-                                right: window.innerWidth < 640 ? '16px' : 'auto',
-                                width: window.innerWidth < 640 ? 'auto' : timeRangeRect.width,
-                                zIndex: 9999
-                            }}
-                            className="bg-bg-surface border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col"
-                        >
-                            {/* Header */}
-                            <div className="flex border-b border-white/10 bg-black/20">
-                                <div className="py-2 sm:py-3 px-4 sm:px-6 text-sm font-medium text-primary border-b-2 border-primary flex items-center gap-2">
-                                    <Clock className="w-4 h-4" /> Time range
-                                </div>
-                            </div>
-
-                            <div className="p-3 sm:p-4 flex flex-col gap-3 sm:gap-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
-                                {/* Presets Section */}
-                                <div>
-                                    <h3 className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-2 sm:mb-3">Presets</h3>
-                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                        {getPresets().map(preset => {
-                                            const isActive = preset.type === 'relative'
-                                                ? timeFilter.type === 'relative' && timeFilter.ms === preset.ms
-                                                : timeFilter.type === 'absolute' && timeFilter.fromMs === preset.fromMs && timeFilter.toMs === preset.toMs;
-
-                                            const hideOnMobile = ['Last 12 hours', 'Last 24 hours', 'Yesterday', 'Two days ago', 'Last seven days', 'Previous week'].includes(preset.label);
-
-                                            return (
-                                                <button
-                                                    key={preset.label}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const newFilter: TimeFilter = preset.type === 'relative'
-                                                            ? { type: 'relative', ms: preset.ms, label: preset.label }
-                                                            : { type: 'absolute', fromMs: preset.fromMs, toMs: preset.toMs, label: preset.label };
-
-                                                        setTimeFilter(newFilter);
-                                                        const opts = preset.type === 'relative'
-                                                            ? { timeRangeMs: preset.ms }
-                                                            : { fromMs: preset.fromMs, toMs: preset.toMs, timeRangeMs: preset.toMs - preset.fromMs };
-
-                                                        refresh(opts);
-                                                        if (activeView === 'map') fetchServiceMap(opts);
-                                                        setIsTimeRangeOpen(false);
-                                                    }}
-                                                    className={`px-2 py-1.5 sm:py-3 text-xs border rounded-md transition-all text-left flex-col justify-center h-full min-h-[36px] sm:min-h-[50px] ${hideOnMobile ? 'hidden sm:flex' : 'flex'} ${isActive
-                                                            ? 'border-primary bg-primary/10 text-white font-medium shadow-sm'
-                                                            : 'border-gray-700 bg-bg-elevated text-gray-300 hover:border-gray-500 hover:bg-gray-800'
-                                                        }`}
-                                                >
-                                                    {preset.subLabel && <span className="text-[10px] opacity-70 mb-0.5 font-normal truncate w-full">{preset.subLabel}</span>}
-                                                    <span className="truncate w-full">{preset.label}</span>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* Custom Time Range Section */}
-                                <div>
-                                    <h3 className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-2 sm:mb-3">Custom Range</h3>
-
-                                    <div className="mb-2 sm:mb-4">
-                                        <TimeRangeSlider
-                                            minMs={sliderMinMs}
-                                            maxMs={sliderMaxMs}
-                                            value={[sliderFromMs, sliderToMs]}
-                                            onChange={handleSliderChange}
-                                        />
-                                    </div>
-
-                                    {/* Inputs */}
-                                    <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 bg-black/20 p-2 sm:p-3 rounded-lg border border-gray-800">
-                                        <div className="flex gap-2 flex-1 w-full">
-                                            <input
-                                                type="date"
-                                                max={todayString}
-                                                className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none w-full"
-                                                value={customFromDate}
-                                                onChange={e => setCustomFromDate(e.target.value)}
-                                            />
-                                            <input
-                                                type="time"
-                                                className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none"
-                                                value={customFromTime}
-                                                onChange={e => setCustomFromTime(e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="text-gray-500 text-sm font-medium px-1">to</div>
-                                        <div className="flex gap-2 flex-1 w-full">
-                                            <input
-                                                type="date"
-                                                max={todayString}
-                                                className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none w-full"
-                                                value={customToDate}
-                                                onChange={e => setCustomToDate(e.target.value)}
-                                            />
-                                            <input
-                                                type="time"
-                                                className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none"
-                                                value={customToTime}
-                                                onChange={e => setCustomToTime(e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-2 sm:mt-4 flex justify-end">
-                                        <button
-                                            onClick={applyCustomTime}
-                                            disabled={!customFromDate || !customFromTime || !customToDate || !customToTime}
-                                            className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                                        >
-                                            Set time
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>,
-                        document.body
-                    )}
+                    <ApmTimeRangePicker model={model} />
 
                     <button
                         onClick={handleRefresh}
@@ -631,60 +435,7 @@ function ApmHeader({ model }: Readonly<{ model: ApmDashboardModel }>) {
                     </button>)}
 
                     {/* Custom Latency Percentile Dropdown */}
-                    <div className="relative">
-                        <button
-                            ref={latencyTriggerRef}
-                            type="button"
-                            onClick={() => {
-                                if (!isLatencyOpen && latencyTriggerRef.current) {
-                                    const r = latencyTriggerRef.current.getBoundingClientRect();
-                                    setLatencyRect({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 180) });
-                                }
-                                setIsLatencyOpen(o => !o);
-                            }}
-                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text text-xs sm:text-sm rounded-lg flex items-center justify-between gap-1.5 px-2.5 h-[40px] transition-colors focus:outline-none min-w-[155px] sm:min-w-[175px]"
-                            title="Latency Percentile Metric"
-                        >
-                            <div className="flex items-center gap-1.5 min-w-0">
-                                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400 shrink-0" />
-                                <span className="truncate text-xs font-medium text-gray-200">
-                                    {latencyLabel(percentileFilter)}
-                                </span>
-                            </div>
-                            <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isLatencyOpen ? 'rotate-180' : ''}`} />
-                        </button>
-
-                        {isLatencyOpen && latencyRect && createPortal(
-                            <div
-                                ref={latencyPanelRef}
-                                style={{ position: 'fixed', top: latencyRect.top, left: latencyRect.left, width: latencyRect.width, zIndex: 9999 }}
-                                className="bg-[#1e1e1e] border border-gray-700 rounded-xl shadow-2xl overflow-hidden py-1 animate-fade-in"
-                            >
-                                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-500 border-b border-gray-800 uppercase tracking-wider bg-[#151515]">
-                                    Latency Percentiles
-                                </div>
-                                {[
-                                    { value: 'p50', label: 'P50 Latency (Median)' },
-                                    { value: 'p90', label: 'P90 Latency' },
-                                    { value: 'p95', label: 'P95 Latency (Standard)' },
-                                    { value: 'p99', label: 'P99 Latency (Tail SRE)' },
-                                ].map(opt => (
-                                    <button
-                                        key={opt.value}
-                                        type="button"
-                                        onClick={() => {
-                                            setPercentileFilter(opt.value as any);
-                                            setIsLatencyOpen(false);
-                                        }}
-                                        className={`w-full text-left px-4 py-2.5 text-xs transition-colors hover:bg-primary/20 block border-b border-gray-800/40 last:border-0 ${percentileFilter === opt.value ? 'text-primary font-bold bg-primary/5' : 'text-gray-300'}`}
-                                    >
-                                        <span>{opt.label}</span>
-                                    </button>
-                                ))}
-                            </div>,
-                            document.body
-                        )}
-                    </div>
+                    <ApmPercentilePicker model={model} />
 
                     <button
                         onClick={() => setIsInstrumentationModalOpen(true)}
@@ -710,17 +461,10 @@ function ApmHeader({ model }: Readonly<{ model: ApmDashboardModel }>) {
 
 function ApmInspector({ model }: Readonly<{ model: ApmDashboardModel }>) {
     const {
-        spans,
-        traceError,
-        fetchTrace,
         clearTrace,
         setTraceIdInput,
-        isTraceDropdownOpen,
-        setIsTraceDropdownOpen,
         selectedInspectorService,
         setSelectedInspectorService,
-        tracesList,
-        isFetchingTraces,
         minDurationFilter,
         setMinDurationFilter,
         errorOnlyFilter,
@@ -736,7 +480,6 @@ function ApmInspector({ model }: Readonly<{ model: ApmDashboardModel }>) {
         setLatencyRect,
         filteredMetrics,
         handleServiceClick,
-        selectedTraceObj,
     } = model;
     return (<div className="flex flex-col lg:flex-row gap-6 animate-fade-in">
                     {/* Left Panel: Service Cards List */}
@@ -872,94 +615,10 @@ function ApmInspector({ model }: Readonly<{ model: ApmDashboardModel }>) {
                                 </div>
                             </div>
 
-                            <div className="relative">
-                                {isFetchingTraces ? (
-                                    <div className="w-full bg-bg-elevated border border-gray-700 text-gray-400 text-sm rounded-lg p-3 flex items-center gap-3">
-                                        <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                                        Fetching recent traces...
-                                    </div>
-                                ) : (
-                                    <div className="relative w-full">
-                                        <button type="button" aria-label="Select trace to inspect"
-                                            onClick={() => setIsTraceDropdownOpen(!isTraceDropdownOpen)}
-                                            className="w-full text-left focus-visible:outline-2 focus-visible:outline-primary bg-[#1f2937] p-3 rounded-lg border border-gray-700 flex justify-between items-center group overflow-hidden gap-2 cursor-pointer hover:border-gray-500 transition-colors"
-                                        >
-                                            <span className="flex items-center gap-3 overflow-x-auto custom-scrollbar pb-1 sm:pb-0 hide-scrollbar-sm w-full">
-                                                {selectedTraceObj ? (
-                                                    <>
-                                                        <Activity className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${selectedTraceObj.statusCode === 2 ? 'text-red-500' : 'text-green-500'}`} />
-                                                        <span className="text-xs sm:text-sm text-gray-300 font-mono whitespace-nowrap">
-                                                            {new Date(selectedTraceObj.startTimeUnixNano / 1000000).toLocaleTimeString()} | {selectedTraceObj.name} | {selectedTraceObj.durationMs.toFixed(2)}ms
-                                                            {selectedTraceObj.statusCode === 2 ? (
-                                                                <span className="text-red-500 inline-flex items-center ml-1 align-text-bottom gap-1"><X className="w-3.5 h-3.5" /> Error</span>
-                                                            ) : (
-                                                                <CheckCircle2 className="w-3.5 h-3.5 text-green-500 inline ml-1 align-text-bottom" />
-                                                            )}
-                                                        </span>
-                                                    </>
-                                                ) : (
-                                                    <span className="text-gray-400 text-sm">-- Select a Trace to Inspect --</span>
-                                                )}
-                                            </span>
-                                            <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${isTraceDropdownOpen ? 'rotate-180' : ''}`} />
-                                        </button>
-
-                                        {isTraceDropdownOpen && (
-                                            <div className="absolute top-full left-0 right-0 mt-2 bg-[#111827] border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto custom-scrollbar">
-                                                {tracesList.length > 0 ? (
-                                                    <div className="p-1">
-                                                        {tracesList.map(t => (
-                                                            <button type="button" aria-label={`Inspect trace ${t.traceId}`}
-                                                                key={t.traceId}
-                                                                data-trace-id={t.traceId}
-                                                                onClick={() => {
-                                                                    setTraceIdInput(t.traceId);
-                                                                    fetchTrace(t.traceId);
-                                                                    setIsTraceDropdownOpen(false);
-                                                                }}
-                                                                className={`w-full text-left focus-visible:outline-2 focus-visible:outline-primary trace-option flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${selectedTraceObj?.traceId === t.traceId
-                                                                        ? 'bg-primary/20 border border-primary/50 text-white'
-                                                                        : 'hover:bg-[#1f2937] text-gray-300 hover:text-white border border-transparent'
-                                                                    }`}
-                                                            >
-                                                                <Activity className={`w-3.5 h-3.5 shrink-0 ${t.statusCode === 2 ? 'text-red-500' : 'text-green-500'}`} />
-                                                                <span className="text-xs font-mono whitespace-nowrap">
-                                                                    {new Date(t.startTimeUnixNano / 1000000).toLocaleTimeString()} | {t.name} | {t.durationMs.toFixed(2)}ms
-                                                                    {t.statusCode === 2 ? (
-                                                                        <span className="text-red-500 inline-flex items-center ml-1 align-text-bottom gap-1"><X className="w-3.5 h-3.5" /> Error</span>
-                                                                    ) : (
-                                                                        <CheckCircle2 className="w-3.5 h-3.5 text-green-500 inline ml-1 align-text-bottom" />
-                                                                    )}
-                                                                </span>
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                ) : (
-                                                    <div className="p-4 text-center text-gray-500 text-sm">
-                                                        No traces found matching filters.
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
+                            <ApmTraceSelector model={model} />
                         </div>
 
-                        {traceError ? (
-                            <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 text-red-400 flex items-center justify-between">
-                                <div><span className="font-bold">Trace Error:</span> {traceError}</div>
-                            </div>
-                        ) : spans.length > 0 ? (
-                            <div className="bg-bg-surface border border-gray-800 rounded-xl p-2 md:p-4 shadow-lg overflow-x-auto">
-                                <TraceWaterfall spans={spans} />
-                            </div>
-                        ) : !isFetchingTraces && tracesList.length === 0 ? (
-                            <div className="text-gray-400 text-center py-12 bg-bg-surface/50 rounded-xl border border-gray-800 border-dashed">
-                                <Activity className="w-8 h-8 mx-auto mb-3 opacity-20" />
-                                No APM traces available for this service in the selected time range.
-                            </div>
-                        ) : null}
+                        {<ApmInspectorTrace model={model} />}
                     </div>
                 </div>);
 }
@@ -1033,7 +692,7 @@ function ApmOverview({ model }: Readonly<{ model: ApmDashboardModel }>) {
                             Metrics Grid
                         </button>
                         <button
-                            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${activeView === 'map' ? 'bg-primary text-white shadow-md border border-primary/50' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${activeView === 'map' ? <ApmTopology model={model} /> : <ApmMetrics model={model} />}`}
                             onClick={() => setActiveView('map')}
                         >
                             Topology Map
@@ -1430,6 +1089,386 @@ function ApmExportDialog({ model }: Readonly<{ model: ApmDashboardModel }>) {
                         </div>
                     </div>
                 </div>);
+}
+
+function ApmTimeRangePicker({ model }: Readonly<{ model: ApmDashboardModel }>) {
+    const {
+        refresh,
+        fetchServiceMap,
+        timeFilter,
+        setTimeFilter,
+        customFromDate,
+        setCustomFromDate,
+        customFromTime,
+        setCustomFromTime,
+        customToDate,
+        setCustomToDate,
+        customToTime,
+        setCustomToTime,
+        activeView,
+        timeRangeTriggerRef,
+        timeRangePanelRef,
+        isTimeRangeOpen,
+        setIsTimeRangeOpen,
+        timeRangeRect,
+        setTimeRangeRect,
+        applyCustomTime,
+        handleSliderChange,
+        sliderMaxMs,
+        sliderMinMs,
+        sliderFromMs,
+        sliderToMs,
+        todayString,
+    } = model;
+    return (<> <div className="relative">
+                        <button
+                            ref={timeRangeTriggerRef}
+                            type="button"
+                            onClick={() => {
+                                if (!isTimeRangeOpen && timeRangeTriggerRef.current) {
+                                    const r = timeRangeTriggerRef.current.getBoundingClientRect();
+                                    const isMobile = window.innerWidth < 640;
+                                    if (isMobile) {
+                                        setTimeRangeRect({ top: r.bottom + 4, left: 16, width: window.innerWidth - 32 });
+                                    } else {
+                                        setTimeRangeRect({ top: r.bottom + 4, left: r.right - 580 > 0 ? r.right - 580 : Math.max(16, r.left), width: 580 });
+                                    }
+                                }
+                                setIsTimeRangeOpen(o => !o);
+                            }}
+                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text text-xs sm:text-sm rounded-lg flex items-center justify-between gap-1.5 px-2.5 h-[40px] transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-[130px] sm:min-w-[145px]"
+                        >
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
+                                {timeFilter.type === 'absolute' && timeFilter.label.includes(' to ') && timeFilter.label.split(' ').length === 5 ? (
+                                    <div className="flex flex-col items-start text-left min-w-[120px]">
+                                        <span className="text-[10px] text-gray-400 leading-tight">
+                                            {timeFilter.label.split(' ')[0]} to {timeFilter.label.split(' ')[3]}
+                                        </span>
+                                        <span className="text-xs leading-tight text-white">
+                                            {timeFilter.label.split(' ')[1]} to {timeFilter.label.split(' ')[4]}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <span className="truncate max-w-[160px]">
+                                        {timeFilter.label}
+                                    </span>
+                                )}
+                            </div>
+                            <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isTimeRangeOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                    </div>
+
+                    {isTimeRangeOpen && timeRangeRect && createPortal(
+                        <div
+                            ref={timeRangePanelRef}
+                            style={{
+                                position: 'fixed',
+                                top: timeRangeRect.top,
+                                left: window.innerWidth < 640 ? '16px' : timeRangeRect.left,
+                                right: window.innerWidth < 640 ? '16px' : 'auto',
+                                width: window.innerWidth < 640 ? 'auto' : timeRangeRect.width,
+                                zIndex: 9999
+                            }}
+                            className="bg-bg-surface border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col"
+                        >
+                            {/* Header */}
+                            <div className="flex border-b border-white/10 bg-black/20">
+                                <div className="py-2 sm:py-3 px-4 sm:px-6 text-sm font-medium text-primary border-b-2 border-primary flex items-center gap-2">
+                                    <Clock className="w-4 h-4" /> Time range
+                                </div>
+                            </div>
+
+                            <div className="p-3 sm:p-4 flex flex-col gap-3 sm:gap-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                                {/* Presets Section */}
+                                <div>
+                                    <h3 className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-2 sm:mb-3">Presets</h3>
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                        {getPresets().map(preset => {
+                                            const isActive = preset.type === 'relative'
+                                                ? timeFilter.type === 'relative' && timeFilter.ms === preset.ms
+                                                : timeFilter.type === 'absolute' && timeFilter.fromMs === preset.fromMs && timeFilter.toMs === preset.toMs;
+
+                                            const hideOnMobile = ['Last 12 hours', 'Last 24 hours', 'Yesterday', 'Two days ago', 'Last seven days', 'Previous week'].includes(preset.label);
+
+                                            return (
+                                                <button
+                                                    key={preset.label}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newFilter: TimeFilter = preset.type === 'relative'
+                                                            ? { type: 'relative', ms: preset.ms, label: preset.label }
+                                                            : { type: 'absolute', fromMs: preset.fromMs, toMs: preset.toMs, label: preset.label };
+
+                                                        setTimeFilter(newFilter);
+                                                        const opts = preset.type === 'relative'
+                                                            ? { timeRangeMs: preset.ms }
+                                                            : { fromMs: preset.fromMs, toMs: preset.toMs, timeRangeMs: preset.toMs - preset.fromMs };
+
+                                                        refresh(opts);
+                                                        if (activeView === 'map') fetchServiceMap(opts);
+                                                        setIsTimeRangeOpen(false);
+                                                    }}
+                                                    className={`px-2 py-1.5 sm:py-3 text-xs border rounded-md transition-all text-left flex-col justify-center h-full min-h-[36px] sm:min-h-[50px] ${hideOnMobile ? 'hidden sm:flex' : 'flex'} ${isActive
+                                                            ? 'border-primary bg-primary/10 text-white font-medium shadow-sm'
+                                                            : 'border-gray-700 bg-bg-elevated text-gray-300 hover:border-gray-500 hover:bg-gray-800'
+                                                        }`}
+                                                >
+                                                    {preset.subLabel && <span className="text-[10px] opacity-70 mb-0.5 font-normal truncate w-full">{preset.subLabel}</span>}
+                                                    <span className="truncate w-full">{preset.label}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Custom Time Range Section */}
+                                <div>
+                                    <h3 className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-2 sm:mb-3">Custom Range</h3>
+
+                                    <div className="mb-2 sm:mb-4">
+                                        <TimeRangeSlider
+                                            minMs={sliderMinMs}
+                                            maxMs={sliderMaxMs}
+                                            value={[sliderFromMs, sliderToMs]}
+                                            onChange={handleSliderChange}
+                                        />
+                                    </div>
+
+                                    {/* Inputs */}
+                                    <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 bg-black/20 p-2 sm:p-3 rounded-lg border border-gray-800">
+                                        <div className="flex gap-2 flex-1 w-full">
+                                            <input
+                                                type="date"
+                                                max={todayString}
+                                                className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none w-full"
+                                                value={customFromDate}
+                                                onChange={e => setCustomFromDate(e.target.value)}
+                                            />
+                                            <input
+                                                type="time"
+                                                className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none"
+                                                value={customFromTime}
+                                                onChange={e => setCustomFromTime(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="text-gray-500 text-sm font-medium px-1">to</div>
+                                        <div className="flex gap-2 flex-1 w-full">
+                                            <input
+                                                type="date"
+                                                max={todayString}
+                                                className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none w-full"
+                                                value={customToDate}
+                                                onChange={e => setCustomToDate(e.target.value)}
+                                            />
+                                            <input
+                                                type="time"
+                                                className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none"
+                                                value={customToTime}
+                                                onChange={e => setCustomToTime(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-2 sm:mt-4 flex justify-end">
+                                        <button
+                                            onClick={applyCustomTime}
+                                            disabled={!customFromDate || !customFromTime || !customToDate || !customToTime}
+                                            className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                        >
+                                            Set time
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>,
+                        document.body
+                    )} </>);
+}
+
+function ApmPercentilePicker({ model }: Readonly<{ model: ApmDashboardModel }>) {
+    const {
+        percentileFilter,
+        setPercentileFilter,
+        latencyTriggerRef,
+        latencyPanelRef,
+        isLatencyOpen,
+        setIsLatencyOpen,
+        latencyRect,
+        setLatencyRect,
+    } = model;
+    return (<div className="relative">
+                        <button
+                            ref={latencyTriggerRef}
+                            type="button"
+                            onClick={() => {
+                                if (!isLatencyOpen && latencyTriggerRef.current) {
+                                    const r = latencyTriggerRef.current.getBoundingClientRect();
+                                    setLatencyRect({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 180) });
+                                }
+                                setIsLatencyOpen(o => !o);
+                            }}
+                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text text-xs sm:text-sm rounded-lg flex items-center justify-between gap-1.5 px-2.5 h-[40px] transition-colors focus:outline-none min-w-[155px] sm:min-w-[175px]"
+                            title="Latency Percentile Metric"
+                        >
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400 shrink-0" />
+                                <span className="truncate text-xs font-medium text-gray-200">
+                                    {latencyLabel(percentileFilter)}
+                                </span>
+                            </div>
+                            <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isLatencyOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {isLatencyOpen && latencyRect && createPortal(
+                            <div
+                                ref={latencyPanelRef}
+                                style={{ position: 'fixed', top: latencyRect.top, left: latencyRect.left, width: latencyRect.width, zIndex: 9999 }}
+                                className="bg-[#1e1e1e] border border-gray-700 rounded-xl shadow-2xl overflow-hidden py-1 animate-fade-in"
+                            >
+                                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-500 border-b border-gray-800 uppercase tracking-wider bg-[#151515]">
+                                    Latency Percentiles
+                                </div>
+                                {[
+                                    { value: 'p50', label: 'P50 Latency (Median)' },
+                                    { value: 'p90', label: 'P90 Latency' },
+                                    { value: 'p95', label: 'P95 Latency (Standard)' },
+                                    { value: 'p99', label: 'P99 Latency (Tail SRE)' },
+                                ].map(opt => (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        onClick={() => {
+                                            setPercentileFilter(opt.value as any);
+                                            setIsLatencyOpen(false);
+                                        }}
+                                        className={`w-full text-left px-4 py-2.5 text-xs transition-colors hover:bg-primary/20 block border-b border-gray-800/40 last:border-0 ${percentileFilter === opt.value ? 'text-primary font-bold bg-primary/5' : 'text-gray-300'}`}
+                                    >
+                                        <span>{opt.label}</span>
+                                    </button>
+                                ))}
+                            </div>,
+                            document.body
+                        )}
+                    </div>);
+}
+
+function ApmTraceSelector({ model }: Readonly<{ model: ApmDashboardModel }>) {
+    const {
+        fetchTrace,
+        setTraceIdInput,
+        isTraceDropdownOpen,
+        setIsTraceDropdownOpen,
+        tracesList,
+        isFetchingTraces,
+        selectedTraceObj,
+    } = model;
+    return (<div className="relative">
+                                {isFetchingTraces ? (
+                                    <div className="w-full bg-bg-elevated border border-gray-700 text-gray-400 text-sm rounded-lg p-3 flex items-center gap-3">
+                                        <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                        Fetching recent traces...
+                                    </div>
+                                ) : (
+                                    <div className="relative w-full">
+                                        <button type="button" aria-label="Select trace to inspect"
+                                            onClick={() => setIsTraceDropdownOpen(!isTraceDropdownOpen)}
+                                            className="w-full text-left focus-visible:outline-2 focus-visible:outline-primary bg-[#1f2937] p-3 rounded-lg border border-gray-700 flex justify-between items-center group overflow-hidden gap-2 cursor-pointer hover:border-gray-500 transition-colors"
+                                        >
+                                            <span className="flex items-center gap-3 overflow-x-auto custom-scrollbar pb-1 sm:pb-0 hide-scrollbar-sm w-full">
+                                                {selectedTraceObj ? (
+                                                    <>
+                                                        <Activity className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${selectedTraceObj.statusCode === 2 ? 'text-red-500' : 'text-green-500'}`} />
+                                                        <span className="text-xs sm:text-sm text-gray-300 font-mono whitespace-nowrap">
+                                                            {new Date(selectedTraceObj.startTimeUnixNano / 1000000).toLocaleTimeString()} | {selectedTraceObj.name} | {selectedTraceObj.durationMs.toFixed(2)}ms
+                                                            {selectedTraceObj.statusCode === 2 ? (
+                                                                <span className="text-red-500 inline-flex items-center ml-1 align-text-bottom gap-1"><X className="w-3.5 h-3.5" /> Error</span>
+                                                            ) : (
+                                                                <CheckCircle2 className="w-3.5 h-3.5 text-green-500 inline ml-1 align-text-bottom" />
+                                                            )}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-gray-400 text-sm">-- Select a Trace to Inspect --</span>
+                                                )}
+                                            </span>
+                                            <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${isTraceDropdownOpen ? 'rotate-180' : ''}`} />
+                                        </button>
+
+                                        {isTraceDropdownOpen && (
+                                            <div className="absolute top-full left-0 right-0 mt-2 bg-[#111827] border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto custom-scrollbar">
+                                                {tracesList.length > 0 ? (
+                                                    <div className="p-1">
+                                                        {tracesList.map(t => (
+                                                            <button type="button" aria-label={`Inspect trace ${t.traceId}`}
+                                                                key={t.traceId}
+                                                                data-trace-id={t.traceId}
+                                                                onClick={() => {
+                                                                    setTraceIdInput(t.traceId);
+                                                                    fetchTrace(t.traceId);
+                                                                    setIsTraceDropdownOpen(false);
+                                                                }}
+                                                                className={`w-full text-left focus-visible:outline-2 focus-visible:outline-primary trace-option flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${selectedTraceObj?.traceId === t.traceId
+                                                                        ? 'bg-primary/20 border border-primary/50 text-white'
+                                                                        : 'hover:bg-[#1f2937] text-gray-300 hover:text-white border border-transparent'
+                                                                    }`}
+                                                            >
+                                                                <Activity className={`w-3.5 h-3.5 shrink-0 ${t.statusCode === 2 ? 'text-red-500' : 'text-green-500'}`} />
+                                                                <span className="text-xs font-mono whitespace-nowrap">
+                                                                    {new Date(t.startTimeUnixNano / 1000000).toLocaleTimeString()} | {t.name} | {t.durationMs.toFixed(2)}ms
+                                                                    {t.statusCode === 2 ? (
+                                                                        <span className="text-red-500 inline-flex items-center ml-1 align-text-bottom gap-1"><X className="w-3.5 h-3.5" /> Error</span>
+                                                                    ) : (
+                                                                        <CheckCircle2 className="w-3.5 h-3.5 text-green-500 inline ml-1 align-text-bottom" />
+                                                                    )}
+                                                                </span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="p-4 text-center text-gray-500 text-sm">
+                                                        No traces found matching filters.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>);
+}
+
+function ApmInspectorTrace({ model }: Readonly<{ model: ApmDashboardModel }>) {
+    const {
+        spans,
+        traceError,
+        tracesList,
+        isFetchingTraces,
+    } = model;
+    if (traceError) return (<div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 text-red-400 flex items-center justify-between">
+                                <div><span className="font-bold">Trace Error:</span> {traceError}</div>
+                            </div>);
+    if (spans.length > 0) return (<div className="bg-bg-surface border border-gray-800 rounded-xl p-2 md:p-4 shadow-lg overflow-x-auto">
+                                <TraceWaterfall spans={spans} />
+                            </div>);
+    if (!isFetchingTraces && tracesList.length === 0) return (<div className="text-gray-400 text-center py-12 bg-bg-surface/50 rounded-xl border border-gray-800 border-dashed">
+                                <Activity className="w-8 h-8 mx-auto mb-3 opacity-20" />
+                                No APM traces available for this service in the selected time range.
+                            </div>);
+    return (null);
+}
+
+function ApmTopology({ model }: Readonly<{ model: ApmDashboardModel }>) {
+    const {
+
+    } = model;
+    return ('bg-primary text-white shadow-md border border-primary/50');
+}
+
+function ApmMetrics({ model }: Readonly<{ model: ApmDashboardModel }>) {
+    const {
+
+    } = model;
+    return ('text-gray-400 hover:text-white hover:bg-white/5');
 }
 
 export default function ApmDashboard() {
