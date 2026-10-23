@@ -9,7 +9,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
-    "test:coverage": "vitest run --coverage --coverage.reporter=lcov --coverage.reporter=text-summary --coverage.include=src/**",
+    "test:coverage": "vitest run --coverage --coverage.reporter=lcov --coverage.reporter=text-summary --coverage.include=src/**/*.ts --coverage.include=src/**/*.tsx --coverage.exclude=src/**/*.d.ts",
     "test:ui": "vitest --ui",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --ext ts,tsx --fix"

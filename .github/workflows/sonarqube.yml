@@ -32,6 +32,8 @@ jobs:
           npm run test:coverage --prefix frontend
           test -s backend/coverage/lcov.info
           test -s frontend/coverage/lcov.info
+          node --test scripts/verify-frontend-coverage.test.cjs
+          node scripts/verify-frontend-coverage.cjs
       - uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.sha }}

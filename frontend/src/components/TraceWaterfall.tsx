@@ -12,6 +12,12 @@ interface SpanNode extends ISpan {
     depth: number;
 }
 
+function durationLabelPosition(left: number, width: number) {
+    if (width >= 15) return { left: `calc(${left}% + 8px)`, right: 'auto' };
+    if (left + width > 85) return { left: 'auto', right: `calc(${100 - left}% + 6px)` };
+    return { left: `calc(${left + width}% + 6px)`, right: 'auto' };
+}
+
 function getSpanLayerColor(span: ISpan): { bg: string; border: string; badge: string } {
     if (span.statusCode === 2) {
         return { bg: 'bg-red-500/80', border: 'border-red-400', badge: 'bg-red-500' };
@@ -97,9 +103,15 @@ export default function TraceWaterfall({ spans }: Readonly<TraceWaterfallProps>)
         return (
             <div key={node.spanId} className="flex flex-col mb-1 group">
                 <div
-                    onClick={() => setSelectedSpan(node)}
                     className={`flex items-center text-sm py-1 rounded px-2 transition-colors relative cursor-pointer ${selectedSpan?.spanId === node.spanId ? 'bg-primary/20 border border-primary/30' : 'hover:bg-white/5 border border-transparent'}`}
                 >
+                    <button
+                        type="button"
+                        aria-label={`Inspect span ${node.name} from ${node.serviceName}`}
+                        aria-pressed={selectedSpan?.spanId === node.spanId}
+                        onClick={() => setSelectedSpan(node)}
+                        className="absolute inset-0 z-20 h-full w-full rounded focus-visible:outline-2 focus-visible:outline-primary"
+                    />
                     <div className="w-1/3 shrink-0 flex items-center pr-4 overflow-hidden" style={{ paddingLeft: `${node.depth * 16}px` }}>
                         <div className="flex flex-col min-w-0">
                             <div className="flex items-center gap-1.5 min-w-0">
@@ -125,14 +137,7 @@ export default function TraceWaterfall({ spans }: Readonly<TraceWaterfallProps>)
 
                         <span
                             className={`absolute font-mono text-xs z-10 px-1 py-0.5 rounded ${widthPercent >= 15 ? 'text-white bg-black/20' : 'text-gray-300'}`}
-                            style={{
-                                left: widthPercent >= 15
-                                    ? `calc(${leftPercent}% + 8px)`
-                                    : (leftPercent + widthPercent > 85 ? 'auto' : `calc(${leftPercent + widthPercent}% + 6px)`),
-                                right: widthPercent >= 15
-                                    ? 'auto'
-                                    : (leftPercent + widthPercent > 85 ? `calc(${100 - leftPercent}% + 6px)` : 'auto'),
-                            }}
+                            style={durationLabelPosition(leftPercent, widthPercent)}
                         >
                             {node.durationMs.toFixed(2)}ms
                         </span>

@@ -8,6 +8,16 @@ interface SpanDetailsSidebarProps {
     onClose: () => void;
 }
 
+function SpanAttributeValue({ name, value }: Readonly<{ name: string; value: unknown }>) {
+    if (name === 'db.statement') {
+        return <div className="bg-black/30 p-2 rounded border border-gray-800 text-blue-300 text-xs shadow-inner max-h-40 overflow-y-auto">{String(value)}</div>;
+    }
+    if (name === 'http.url') {
+        return <a href={String(value)} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{String(value)}</a>;
+    }
+    return String(value);
+}
+
 export const SpanDetailsSidebar: React.FC<SpanDetailsSidebarProps> = ({ span, onClose }) => {
     if (!span) return null;
 
@@ -44,7 +54,10 @@ export const SpanDetailsSidebar: React.FC<SpanDetailsSidebarProps> = ({ span, on
     return createPortal(
         <>
             {/* Backdrop for mobile closing */}
-            <div
+            <button
+                type="button"
+                tabIndex={-1}
+                aria-label="Dismiss span details"
                 className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden animate-fade-in"
                 onClick={onClose}
             />
@@ -64,6 +77,7 @@ export const SpanDetailsSidebar: React.FC<SpanDetailsSidebarProps> = ({ span, on
                         </div>
                     </div>
                     <button
+                        aria-label="Close span details"
                         onClick={onClose}
                         className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                     >
@@ -107,17 +121,7 @@ export const SpanDetailsSidebar: React.FC<SpanDetailsSidebarProps> = ({ span, on
                                                 </td>
                                                 <td className="px-4 py-3 align-top font-mono text-gray-300 break-all select-all">
                                                     {/* Highlight DB Statements */}
-                                                    {key === 'db.statement' ? (
-                                                        <div className="bg-black/30 p-2 rounded border border-gray-800 text-blue-300 text-xs shadow-inner max-h-40 overflow-y-auto">
-                                                            {String(value)}
-                                                        </div>
-                                                    ) : key === 'http.url' ? (
-                                                        <a href={String(value)} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                                                            {String(value)}
-                                                        </a>
-                                                    ) : (
-                                                        String(value)
-                                                    )}
+                                                    <SpanAttributeValue name={key} value={value} />
                                                 </td>
                                             </tr>
                                         ))}

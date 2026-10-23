@@ -7,6 +7,20 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 31 verifies `2b8f31669d3700e43c38b028a7f43faee21247bd`: 165 open
+issues, 30.9% coverage and no unreviewed hotspots; standard gate ERROR.
+The raw-log watcher findings and topology follow-up are CLOSED. Archive:
+`gs://priyanshu-apps-sonarqube-backups/reports/32a7de18-32bb-439a-9191-e910b9ab0ef4-1792737532.json`.
+
+The following trace UI batch adds native waterfall selection/dismissal buttons
+and separates duration-position and attribute-rendering branches. Five fixture
+tests cover tree ordering/depth, selection, label positioning, attribute values,
+error status, dismissal and empty states. Frontend LCOV now includes executable
+TS/TSX only, not CSS or declaration files. All 83 production files are verified
+present; four CI guard tests reject missing, unexpected or duplicate records.
+Local verification passes 130 frontend tests and the frontend build. These edits
+await their own scan; production remains blocked.
+
 Run 30 verifies `122a15865eecbf8e469c33cc86bb67bb1e7dee25`: 170 open
 issues, 30.3% coverage, zero unreviewed hotspots, standard gate ERROR.
 All notification-modal findings are CLOSED. The checkpoint records 682 baseline
