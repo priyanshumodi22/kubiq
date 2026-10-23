@@ -43,6 +43,28 @@ const tabs: Array<{ id: Tab; label: string; icon: typeof LayoutDashboard; kubiAv
     { id: 'configuration', label: 'System configuration', icon: SlidersHorizontal },
   ];
 
+function toggleSelection(selected: string[], key: string, checked: boolean) {
+  return checked ? [...selected, key] : selected.filter(item => item !== key);
+}
+
+function updateNamespaceSelection(user: ManagedUser | null, namespace: string, checked: boolean) {
+  return user ? { ...user, allowedNamespaces: toggleSelection(user.allowedNamespaces || [], namespace, checked) } : user;
+}
+
+function monitoredMounts(value: unknown): string[] {
+  let mounts: unknown = value;
+  if (value && typeof value === 'object' && !Array.isArray(value) && 'mounts' in value) mounts = value.mounts;
+  return Array.isArray(mounts) ? mounts.filter((mount): mount is string => typeof mount === 'string') : [];
+}
+
+type KeycloakHealth = { selected?: boolean; reachable?: boolean; configured?: boolean };
+function keycloakHealthText(health: KeycloakHealth) {
+  if (!health.selected) return 'Not selected for this deployment.';
+  if (health.reachable) return 'Selected, configured, and reachable.';
+  if (health.configured) return 'Configured but unreachable. No provisioning actions are attempted.';
+  return 'Selected but the server-only service account is not configured.';
+}
+
 function PermissionPicker({
   permissions,
   selected,
@@ -54,7 +76,8 @@ function PermissionPicker({
 }>) {
   const groups = permissions.reduce<Record<string, Permission[]>>((result, item) => {
     const group = item.key.split('.')[0];
-    (result[group] ||= []).push(item);
+    result[group] ||= [];
+    result[group].push(item);
     return result;
   }, {});
   return (
@@ -90,9 +113,7 @@ function PermissionPicker({
                     checked={selected.includes(permission.key)}
                     onChange={(event) =>
                       setSelected(
-                        event.target.checked
-                          ? [...selected, permission.key]
-                          : selected.filter((key) => key !== permission.key)
+                        toggleSelection(selected, permission.key, event.target.checked)
                       )
                     }
                   />
@@ -352,12 +373,11 @@ export default function SystemAdministration() {
         </nav>
         <section className="rounded-3xl border border-white/10 bg-bg-surface/80 p-5 shadow-2xl shadow-black/15 sm:p-7">
           {message && (
-            <p
-              role="status"
-              className="mb-5 rounded-xl border border-primary/20 bg-primary/6 p-3 text-sm text-text-dim"
+            <output
+              className="mb-5 block rounded-xl border border-primary/20 bg-primary/6 p-3 text-sm text-text-dim"
             >
               {message}
-            </p>
+            </output>
           )}
           {loading && (
             <div className="flex gap-2 py-10 text-text-dim">
@@ -443,9 +463,7 @@ export default function SystemAdministration() {
                           onChange={(event) =>
                             setNewUser((item) => ({
                               ...item,
-                              roles: event.target.checked
-                                ? [...item.roles, role.name]
-                                : item.roles.filter((value) => value !== role.name),
+                              roles: toggleSelection(item.roles, role.name, event.target.checked),
                             }))
                           }
                         />
@@ -760,12 +778,13 @@ export default function SystemAdministration() {
                   </button>
                 </div>
               </div>
-              {namespaceLoading ? (
+              {namespaceLoading && (
                 <div className="flex items-center gap-2 py-8 text-sm text-text-dim">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Loading cluster namespaces…
                 </div>
-              ) : availableNamespaces.length ? (
+              )}
+              {!namespaceLoading && availableNamespaces.length > 0 && (
                 <div className="mt-3 grid max-h-56 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
                   {availableNamespaces.map((namespace) => (
                     <label
@@ -777,16 +796,7 @@ export default function SystemAdministration() {
                         checked={(namespaceDialog.allowedNamespaces || []).includes(namespace)}
                         onChange={(event) =>
                           setNamespaceDialog((user) =>
-                            user
-                              ? {
-                                  ...user,
-                                  allowedNamespaces: event.target.checked
-                                    ? [...(user.allowedNamespaces || []), namespace]
-                                    : (user.allowedNamespaces || []).filter(
-                                        (item) => item !== namespace
-                                      ),
-                                }
-                              : user
+                            updateNamespaceSelection(user, namespace, event.target.checked)
                           )
                         }
                       />
@@ -794,7 +804,8 @@ export default function SystemAdministration() {
                     </label>
                   ))}
                 </div>
-              ) : (
+              )}
+              {!namespaceLoading && availableNamespaces.length === 0 && (
                 <p className="py-7 text-center text-sm text-text-dim">
                   No cluster namespaces are available to select.
                 </p>
@@ -889,7 +900,7 @@ function SystemOverview() {
 
 function AuthenticationStatus() {
   const [config, setConfig] = useState<any>(null);
-  const [health, setHealth] = useState<any>(null);
+  const [health, setHealth] = useState<KeycloakHealth | null>(null);
   const [preview, setPreview] = useState<any>(null);
   const [message, setMessage] = useState('');
   useEffect(() => {
@@ -953,24 +964,17 @@ function AuthenticationStatus() {
         </article>
       )}
       {message && (
-        <p
-          role="status"
-          className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-text-dim"
+        <output
+          className="block rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-text-dim"
         >
           {message}
-        </p>
+        </output>
       )}
       {health && (
         <article className="rounded-3xl border border-white/10 bg-black/10 p-6 shadow-inner shadow-black/10">
           <h3 className="font-semibold text-text">Keycloak Admin API</h3>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-text-dim">
-            {health.selected
-              ? health.reachable
-                ? 'Selected, configured, and reachable.'
-                : health.configured
-                  ? 'Configured but unreachable. No provisioning actions are attempted.'
-                  : 'Selected but the server-only service account is not configured.'
-              : 'Not selected for this deployment.'}
+            {keycloakHealthText(health)}
           </p>
         </article>
       )}
@@ -985,7 +989,7 @@ function SystemConfiguration() {
   useEffect(() => {
     Promise.all([apiClient.getMonitoredDisksConfig(), apiClient.getApmConfig()])
       .then(([disk, apm]) => {
-        setMounts(disk?.mounts || []);
+        setMounts(monitoredMounts(disk));
         setIgnored((apm?.ignoredRoutes || []).join('\n'));
       })
       .catch(() => setMessage('Configuration could not be loaded.'));
@@ -1014,7 +1018,7 @@ function SystemConfiguration() {
         in Notifications.
       </p>
       <label className="block text-sm text-text-dim">
-        Monitored mounts (comma-separated)
+        Monitored mounts (comma-separated){' '}
         <input
           value={mounts.join(', ')}
           onChange={(event) =>
@@ -1029,7 +1033,7 @@ function SystemConfiguration() {
         />
       </label>
       <label className="block text-sm text-text-dim">
-        Ignored APM routes (one per line)
+        Ignored APM routes (one per line){' '}
         <textarea
           value={ignored}
           onChange={(event) => setIgnored(event.target.value)}

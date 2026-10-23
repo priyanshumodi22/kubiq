@@ -7,4 +7,10 @@ describe('Kubernetes sensitive-resource classification', () => {
     expect(isSecretResourceType('secrets')).toBe(true);
     expect(isSecretResourceType('ConfigMap')).toBe(false);
   });
+  it('normalizes actual resource paths without coercing malformed values', () => {
+    expect(isSecretResourceType(' SECRETS ')).toBe(true);
+    for (const value of [undefined, null, 42, {}, ['secrets'], Object.create(null)]) {
+      expect(isSecretResourceType(value)).toBe(false);
+    }
+  });
 });

@@ -197,7 +197,7 @@ export class AuthController {
 
           if (avatarUrl !== undefined && avatarUrl !== null) {
             const validAvatar = typeof avatarUrl === 'string'
-              && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/i.test(avatarUrl)
+              && /^data:image\/(png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(avatarUrl)
               && avatarUrl.length <= 360_000;
             if (!validAvatar) {
               return res.status(400).json({ message: 'Display picture must be a PNG, JPEG, or WebP image under 250 KB.' });

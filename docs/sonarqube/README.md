@@ -7,6 +7,28 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 37 verifies `007219052f266c9bf5c5b2d548733cde8f738182`: 125 open
+issues, 34.0% coverage, no unreviewed hotspots and standard gate OK. Redaction
+and public-status findings are CLOSED. Archive:
+`gs://priyanshu-apps-sonarqube-backups/reports/620585d0-a252-446e-a97b-650849f2ad6d-1792758086.json`.
+
+The next backend batch has eight HTTP Keycloak user tests covering search,
+status mutation, last-admin protection, missing targets and provider failures.
+Repeated search parameters are rejected instead of silently coerced. Avatar
+regex cleanup preserves allowed formats, mixed-case base64, rejection limits
+and identity-provider protection (five tests). Sensitive-resource classification
+normalizes string paths without coercing malformed objects. Backend: 266 tests.
+
+Administration tests reproduced a data-loss bug: the disk config API returns an
+array, but the page read only .mounts and would save an empty list. Both current
+array and legacy object responses are now supported. Nine frontend tests cover
+exact role permissions, user assignment, disk preservation and Keycloak health
+precedence. Selection helpers and native output elements reduce rendering
+nesting while keeping labels and layout. Permission dependencies (users.manage
+versus roles.manage; system.configure versus system.read) are documented for a
+narrow policy decision; no access was widened in this batch. The exact-commit
+scan is still required, and production remains held.
+
 Run 36 verifies `a24a19b86c9080a36ee2ddf07f76d31f510e99da`: 130 open
 issues, 33.3% coverage, no unreviewed hotspots; standard gate ERROR. Storage
 follow-ups are CLOSED. Two native-dialog event warnings remain OPEN pending

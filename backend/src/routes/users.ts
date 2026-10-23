@@ -28,7 +28,9 @@ router.get('/', authMiddleware, requirePermission('users.manage'), async (req: R
   try {
     const repo = await DatabaseFactory.getUserRepository();
     if (getAuthenticationProvider() === 'keycloak') {
-      const users = await new KeycloakAdminService().listUsers(String(req.query.search || '') || undefined);
+      const search = req.query.search;
+      if (search !== undefined && typeof search !== 'string') return res.status(400).json({ message: 'Search must be a single string.' });
+      const users = await new KeycloakAdminService().listUsers(search || undefined);
       return res.json(users);
     }
     const users = await repo.getAllUsers();
@@ -177,6 +179,17 @@ router.delete('/:id', authMiddleware, requirePermission('users.manage'), async (
     }
 });
 
+const updateKeycloakUserStatus = async (req: Request, res: Response, id: string, enabled: boolean) => {
+    const keycloak = new KeycloakAdminService();
+    const users = await keycloak.listUsers();
+    const target = users.find(user => user.id === id);
+    if (!target) return res.status(404).json({ message: 'User not found' });
+    if (!enabled && isLastActiveAdmin(users, id, undefined, false)) return res.status(409).json({ message: 'Cannot disable the final active kubiq-admin account.' });
+    await keycloak.updateUser(id, { enabled });
+    AuditLogService.getInstance().log({ user: getUserFromReq(req), action: 'KEYCLOAK_USER_STATUS_UPDATE', target: `user/${target.username}`, details: `Updated Keycloak account status to ${enabled ? 'ENABLED' : 'DISABLED'}.`, ip: req.ip });
+    return res.json({ ...target, enabled });
+};
+
 // PUT /api/users/:id/status - Update user status (Admin only)
 router.put('/:id/status', authMiddleware, requirePermission('users.manage'), async (req: Request, res: Response) => {
     try {
@@ -193,14 +206,7 @@ router.put('/:id/status', authMiddleware, requirePermission('users.manage'), asy
         }
 
         if (getAuthenticationProvider() === 'keycloak') {
-            const keycloak = new KeycloakAdminService();
-            const users = await keycloak.listUsers();
-            const target = users.find(user => user.id === id);
-            if (!target) return res.status(404).json({ message: 'User not found' });
-            if (!enabled && isLastActiveAdmin(users, id as string, undefined, false)) return res.status(409).json({ message: 'Cannot disable the final active kubiq-admin account.' });
-            await keycloak.updateUser(id as string, { enabled });
-            AuditLogService.getInstance().log({ user: getUserFromReq(req), action: 'KEYCLOAK_USER_STATUS_UPDATE', target: `user/${target.username}`, details: `Updated Keycloak account status to ${enabled ? 'ENABLED' : 'DISABLED'}.`, ip: req.ip });
-            return res.json({ ...target, enabled });
+            return await updateKeycloakUserStatus(req, res, id as string, enabled);
         }
         const repo = await DatabaseFactory.getUserRepository();
         const users = await repo.getAllUsers();

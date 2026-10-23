@@ -1,3 +1,3 @@
 /** Sensitive Kubernetes resource matching shared by route-level authorization. */
 export const isSecretResourceType = (value: unknown): boolean =>
-  ['secret', 'secrets'].includes(String(value || '').trim().toLowerCase());
+  typeof value === 'string' && ['secret', 'secrets'].includes(value.trim().toLowerCase());
