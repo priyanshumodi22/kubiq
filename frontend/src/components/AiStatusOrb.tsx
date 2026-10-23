@@ -14,6 +14,7 @@ type AiStatusOrbProps = {
  * modal headers, reasoning for analysis context, and lighthouse for search.
  */
 export function AiStatusOrb({ activity, size = 20, className }: Readonly<AiStatusOrbProps>) {
+    const extraClassName = className ? ` ${className}` : '';
     const sharedProps = {
         size,
         density: size >= 64 ? 1.35 : 1.1,
@@ -21,25 +22,25 @@ export function AiStatusOrb({ activity, size = 20, className }: Readonly<AiStatu
     };
 
     if (activity === 'searching') {
-        return <Orb state="searching" variant="lighthouse" className={`text-blue-200${className ? ` ${className}` : ''}`} {...sharedProps} />;
+        return <Orb state="searching" variant="lighthouse" className={`text-blue-200${extraClassName}`} {...sharedProps} />;
     }
 
     if (activity === 'thinking') {
-        return <Orb state="reasoning" className={`text-cyan-100${className ? ` ${className}` : ''}`} {...sharedProps} />;
+        return <Orb state="reasoning" className={`text-cyan-100${extraClassName}`} {...sharedProps} />;
     }
 
     if (activity === 'working') {
-        return <Orb state="working" className={`text-sky-100${className ? ` ${className}` : ''}`} {...sharedProps} />;
+        return <Orb state="working" className={`text-sky-100${extraClassName}`} {...sharedProps} />;
     }
 
     if (activity === 'pro') {
-        return <Orb state="waiting" className={`text-blue-100${className ? ` ${className}` : ''}`} {...sharedProps} />;
+        return <Orb state="waiting" className={`text-blue-100${extraClassName}`} {...sharedProps} />;
     }
 
     return (
         <Orb
             state="reasoning"
-            className={`text-sky-200${className ? ` ${className}` : ''}`}
+            className={`text-sky-200${extraClassName}`}
             {...sharedProps}
         />
     );

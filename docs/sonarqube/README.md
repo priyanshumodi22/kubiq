@@ -7,6 +7,21 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 34 verifies `2a820f5be0a277885b2a68aebf41bd1d5d5b4287`: 142 open
+issues, 32.4% coverage, no unreviewed hotspots; standard gate ERROR.
+Six Kubernetes log-viewer findings are CLOSED; residual component complexity is
+16 versus the allowed 15 and receives a small plural-label helper in the next
+batch. No acceptance or exclusion is used. Archive:
+`gs://priyanshu-apps-sonarqube-backups/reports/47404977-c66e-44a4-9f8f-ffc027473577-1792756242.json`.
+
+The following batch preserves all five AI orb states/classnames (six tests) and
+storage utilization thresholds. Storage configuration now uses kubiq's shared
+toast, with handler-level permission checks. Tests first reproduced the custom
+toast and stale Configure-click behavior; five tests now cover threshold colors,
+selected-volume saves, revoked open/save permissions and discovery errors.
+Local frontend verification passes 144 tests/build, and all 83 production source
+files remain in LCOV. The batch still needs its exact-commit verification scan.
+
 Run 33 verifies `dd6d1c1a66a539a665e3bfce363d578b00ec5191`: 148 open
 issues, 31.6% coverage, zero unreviewed hotspots and standard gate OK. The
 backend configuration/template/import/condition batch is verified closed.

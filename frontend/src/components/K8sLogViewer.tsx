@@ -34,6 +34,11 @@ const LEVEL_COLORS: Record<LogLine['level'], string> = {
 
 const TAIL_OPTIONS = [50, 100, 200, 500];
 
+function newLineLabel(count: number) {
+    const suffix = count === 1 ? '' : 's';
+    return `${count} new line${suffix}`;
+}
+
 
 function LogConnectionBadge({ connected, ended }: Readonly<{ connected: boolean; ended: boolean }>) {
     if (connected) return (
@@ -460,7 +465,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                             className="flex items-center gap-2 bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg transition-all animate-bounce text-xs"
                         >
                             <ArrowDown className="w-3.5 h-3.5" />
-                            {newLogsCount} new line{newLogsCount === 1 ? '' : 's'}
+                            {newLineLabel(newLogsCount)}
                         </button>
                     </div>
                 )}

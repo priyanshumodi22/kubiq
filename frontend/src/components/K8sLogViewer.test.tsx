@@ -42,6 +42,9 @@ describe('Kubernetes log viewer compatibility', () => {
         expect(view.getByRole('button', { name: '2 new lines' })).toBeTruthy();
         fireEvent.click(view.getByTitle('Resume tailing'));
         expect(view.queryByRole('button', { name: '2 new lines' })).toBeNull();
+        fireEvent.click(view.getByTitle('Pause tailing'));
+        send('k8s:log:line', { content: 'three\n' });
+        expect(view.getByRole('button', { name: '1 new line' })).toBeTruthy();
         send('k8s:log:end');
         expect(view.getByText('ENDED')).toBeTruthy();
     });

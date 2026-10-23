@@ -5,9 +5,17 @@ import { HardDrive, Settings, AlertTriangle, CheckCircle } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { StoragePrediction, SystemMetrics, DiskInfo } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
+
+function diskColors(percent: number) {
+    if (percent > 90) return { text: 'text-red-500', bar: 'bg-red-500' };
+    if (percent > 75) return { text: 'text-yellow-500', bar: 'bg-yellow-500' };
+    return { text: 'text-green-500', bar: 'bg-green-500' };
+}
 
 export const StorageAnalyticsWidget = () => {
     const { hasPermission } = useAuth();
+    const { addToast: showToast } = useToast();
     const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
     const [predictions, setPredictions] = useState<StoragePrediction[]>([]);
     const [showConfig, setShowConfig] = useState(false);
@@ -15,7 +23,6 @@ export const StorageAnalyticsWidget = () => {
     const [selectedMounts, setSelectedMounts] = useState<string[]>([]);
     const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
     const [loading, setLoading] = useState(true);
-    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
     const [animate, setAnimate] = useState(false);
 
     useEffect(() => {
@@ -25,17 +32,6 @@ export const StorageAnalyticsWidget = () => {
              });
         }
     }, [loading, metrics]);
-
-    useEffect(() => {
-        if (toast) {
-            const timer = setTimeout(() => setToast(null), 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [toast]);
-
-    const showToast = (message: string, type: 'success' | 'error') => {
-        setToast({ message, type });
-    };
 
     const fetchData = async () => {
         try {
@@ -63,6 +59,10 @@ export const StorageAnalyticsWidget = () => {
     }, []);
 
     const openConfig = async () => {
+        if (!hasPermission('system.configure')) {
+            showToast('Access Denied: Your role cannot configure monitored disks.', 'error');
+            return;
+        }
         try {
             const disks = await apiClient.getAllDisks();
             setAllDisks(disks);
@@ -82,6 +82,10 @@ export const StorageAnalyticsWidget = () => {
     };
 
     const saveConfig = async () => {
+        if (!hasPermission('system.configure')) {
+            showToast('Access Denied: Your role cannot configure monitored disks.', 'error');
+            return;
+        }
         try {
             await apiClient.updateMonitoredDisks(selectedMounts);
             setShowConfig(false);
@@ -102,17 +106,6 @@ export const StorageAnalyticsWidget = () => {
 
     return (
         <>
-            {/* Global Toast Portal */}
-            {toast && createPortal(
-                <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-200 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-200 ${
-                    toast.type === 'success' ? 'bg-green-500/90 text-white' : 'bg-red-500/90 text-white'
-                }`}>
-                    {toast.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
-                    <span className="text-sm font-medium">{toast.message}</span>
-                </div>,
-                document.body
-            )}
-
             <div className="bg-bg-card border border-border-color rounded-lg p-6 shadow-lg backdrop-blur-sm bg-opacity-80 mt-4 relative overflow-hidden">
                 {/* Background Gradient */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full filter blur-3xl pointer-events-none -mr-16 -mt-16"></div>
@@ -146,7 +139,7 @@ export const StorageAnalyticsWidget = () => {
                             (
                             <>
                                 {/* Click overlay to close */}
-                                <div className="fixed inset-0 z-100" onClick={() => setShowConfig(false)}></div>
+                                <button type="button" tabIndex={-1} aria-label="Dismiss disk configuration" className="fixed inset-0 z-100" onClick={() => setShowConfig(false)} />
                                 
                                 {/* Dropdown Content - Portal'd to Body */}
                                 <div 
@@ -206,6 +199,7 @@ export const StorageAnalyticsWidget = () => {
                         ) : (
                             monitoredDisks.map((disk) => {
                                 const percent = Math.round(disk.use);
+                                const colors = diskColors(percent);
                                 const prediction = predictions.find(p => p.mount === disk.mount);
                                 
                                 return (
@@ -215,13 +209,13 @@ export const StorageAnalyticsWidget = () => {
                                                 <span className="font-mono text-sm text-white font-bold mr-2">{disk.mount}</span>
                                                 <span className="text-xs text-gray-500">({disk.fs})</span>
                                             </div>
-                                            <span className={`text-sm font-bold ${percent > 90 ? 'text-red-500' : percent > 75 ? 'text-yellow-500' : 'text-green-500'}`}>
+                                            <span className={`text-sm font-bold ${colors.text}`}>
                                                 {percent}%
                                             </span>
                                         </div>
                                         <div className="w-full bg-gray-800 rounded-full h-2 mb-2">
                                             <div 
-                                                className={`h-2 rounded-full ${percent > 90 ? 'bg-red-500' : percent > 75 ? 'bg-yellow-500' : 'bg-green-500'}`} 
+                                                className={`h-2 rounded-full ${colors.bar}`}
                                                 style={{ width: `${animate ? percent : 0}%`, transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
                                             ></div>
                                         </div>
@@ -241,7 +235,7 @@ export const StorageAnalyticsWidget = () => {
                                             </div>
                                             <div className="ml-6">
                                                 <p className="text-xs opacity-90 mb-1">
-                                                    At current rate, this disk will be <span className="font-bold underline">100% full</span> in:
+                                                    At current rate, this disk will be <span className="font-bold underline">100% full</span>{' '}in:
                                                 </p>
                                                 <p className="text-lg font-bold">
                                                     {prediction.daysRemaining < 30 
