@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { Virtuoso } from 'react-virtuoso';
+import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import io from 'socket.io-client';
 import { Play, Pause, Trash2, ArrowDown, ChevronDown, Check, Search, X, Activity, Copy } from 'lucide-react';
 import { createPortal } from 'react-dom';
@@ -34,6 +34,110 @@ const LEVEL_COLORS: Record<LogLine['level'], string> = {
 
 const TAIL_OPTIONS = [50, 100, 200, 500];
 
+
+function LogConnectionBadge({ connected, ended }: Readonly<{ connected: boolean; ended: boolean }>) {
+    if (connected) return (
+        <span className="flex items-center gap-1.5 text-[10px] text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20 shrink-0">
+            <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />{' '}LIVE
+        </span>
+    );
+    if (ended) return (
+        <span className="flex items-center gap-1.5 text-[10px] text-gray-500 bg-gray-800 px-2 py-0.5 rounded-full border border-gray-700 shrink-0">
+            ENDED
+        </span>
+    );
+    return (
+        <span className="flex items-center gap-1.5 text-[10px] text-yellow-400 bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20 shrink-0">
+            <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse" />{' '}CONNECTING
+        </span>
+    );
+}
+
+function renderLogRow(index: number, log: LogLine) {
+    return (
+        <div className={`px-4 py-0.5 hover:bg-white/5 border-l-2 border-transparent hover:border-gray-600 flex gap-3 ${LEVEL_COLORS[log.level]}`}>
+            <span className="select-none opacity-30 w-8 text-right shrink-0 text-[10px] pt-px">{index + 1}</span>
+            <span className="break-all whitespace-pre-wrap flex-1 select-text leading-relaxed">{log.content}</span>
+        </div>
+    );
+}
+
+function K8sLogModals({ showSummaryModal, summary, summarizing, showUpgradeModal, onCloseSummary, onCloseUpgrade }: Readonly<{
+    showSummaryModal: boolean; summary: string | null; summarizing: boolean; showUpgradeModal: boolean;
+    onCloseSummary: () => void; onCloseUpgrade: () => void;
+}>) {
+    return (
+        <>
+            {/* AI Summary Modal — portal to body to escape backdrop-blur stacking context */}
+            {createPortal(
+                <AnimatePresence>
+                    {showSummaryModal && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/75 backdrop-blur-sm z-9999 flex items-center justify-center p-4 sm:p-8"
+                        >
+                            <button type="button" tabIndex={-1} aria-label="Dismiss log analysis" onClick={onCloseSummary} className="absolute inset-0 h-full w-full" />
+                            <motion.div
+                                initial={{ scale: 0.95, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.95, opacity: 0 }}
+                                className="relative w-full max-w-3xl max-h-[85vh] overflow-hidden rounded-2xl border border-white/15 bg-[#101116] shadow-[0_24px_80px_rgba(0,0,0,0.55)] flex flex-col"
+                            >
+                                <div className="flex items-center justify-between border-b border-white/10 bg-[#15161b] px-6 py-5">
+                                    <div>
+                                        <p className="mb-1 text-[10px] font-semibold tracking-[0.16em] text-primary">kubiq Pro</p>
+                                        <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
+                                            <AiStatusOrb activity="working" size={32} />
+                                            AI Log Analysis
+                                        </h3>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {summary && !summarizing && (
+                                            <button
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(summary);
+                                                }}
+                                                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors px-2 py-1 rounded hover:bg-white/10 border border-gray-700/50"
+                                                title="Copy to clipboard"
+                                            >
+                                                <Copy className="w-3.5 h-3.5" />
+                                                Copy
+                                            </button>
+                                        )}
+                                        <button aria-label="Close log analysis" onClick={onCloseSummary} className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-white/10">
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="overflow-y-auto bg-[#0c0d11] p-5 font-sans text-sm leading-relaxed text-gray-300 custom-scrollbar sm:p-6">
+                                    {summarizing && (
+                                        <div className="flex flex-col items-center justify-center py-12">
+                                            <AiStatusOrb activity="searching" size={64} />
+                                            <p className="mt-4 text-sm font-medium text-white">Thinking through your logs…</p>
+                                            <p className="mt-1 text-xs text-gray-500">Building a concise incident summary.</p>
+                                        </div>
+                                    )}
+                                    {!summarizing && summary && (
+                                        <AiSummaryContent summary={summary} />
+                                    )}
+                                    {!summarizing && !summary && (
+                                        <p className="text-red-400">Failed to generate summary.</p>
+                                    )}
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
+
+            <ProUpgradeModal isOpen={showUpgradeModal} onClose={onCloseUpgrade} />
+        </>
+    );
+}
+
 export function K8sLogViewer({ namespace, podName, deploymentName, containers }: Readonly<K8sLogViewerProps>) {
     const [selectedContainer, setSelectedContainer] = useState(containers[0]?.name ?? '');
     const [tailLines, setTailLines] = useState(100);
@@ -49,8 +153,8 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'live' | 'search'>('live');
 
-    const socketRef = useRef<any>(null);
-    const virtuosoRef = useRef<any>(null);
+    const socketRef = useRef<ReturnType<typeof io> | null>(null);
+    const virtuosoRef = useRef<VirtuosoHandle | null>(null);
     const nextLogIdRef = useRef(0);
     const isPausedRef = useRef(isPaused);
     isPausedRef.current = isPaused;
@@ -76,13 +180,14 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
 
     // Connect to Socket.IO and start streaming
     useEffect(() => {
+        setIsConnected(false);
         setLogs([]);
         setNewLogsCount(0);
         setStreamEnded(false);
         setError(null);
 
-        const backendUrl = (import.meta as any).env?.VITE_BACKEND_DNS || globalThis.location.origin;
-        const contextPath = (import.meta as any).env?.VITE_BACKEND_CONTEXT_PATH || '';
+        const backendUrl = import.meta.env.VITE_BACKEND_DNS || globalThis.location.origin;
+        const contextPath = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
 
         const socket = io(backendUrl, {
             path: `${contextPath}/socket.io`,
@@ -138,7 +243,9 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
 
         return () => {
             socket.emit('k8s:stop:logs');
+            socket.removeAllListeners();
             socket.disconnect();
+            if (socketRef.current === socket) socketRef.current = null;
         };
     }, [namespace, podName, deploymentName, selectedContainer, tailLines]);
 
@@ -199,79 +306,11 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
         }
     };
 
-    const modals = (
-        <>
-            {/* AI Summary Modal — portal to body to escape backdrop-blur stacking context */}
-            {createPortal(
-                <AnimatePresence>
-                    {showSummaryModal && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/75 backdrop-blur-sm z-9999 flex items-center justify-center p-4 sm:p-8"
-                            onClick={() => setShowSummaryModal(false)}
-                        >
-                            <motion.div
-                                initial={{ scale: 0.95, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.95, opacity: 0 }}
-                                className="relative w-full max-w-3xl max-h-[85vh] overflow-hidden rounded-2xl border border-white/15 bg-[#101116] shadow-[0_24px_80px_rgba(0,0,0,0.55)] flex flex-col"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <div className="flex items-center justify-between border-b border-white/10 bg-[#15161b] px-6 py-5">
-                                    <div>
-                                        <p className="mb-1 text-[10px] font-semibold tracking-[0.16em] text-primary">kubiq Pro</p>
-                                        <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
-                                            <AiStatusOrb activity="working" size={32} />
-                                            AI Log Analysis
-                                        </h3>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        {summary && !summarizing && (
-                                            <button 
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(summary);
-                                                }} 
-                                                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors px-2 py-1 rounded hover:bg-white/10 border border-gray-700/50"
-                                                title="Copy to clipboard"
-                                            >
-                                                <Copy className="w-3.5 h-3.5" />
-                                                Copy
-                                            </button>
-                                        )}
-                                        <button onClick={() => setShowSummaryModal(false)} className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-white/10">
-                                            <X className="w-5 h-5" />
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="overflow-y-auto bg-[#0c0d11] p-5 font-sans text-sm leading-relaxed text-gray-300 custom-scrollbar sm:p-6">
-                                    {summarizing ? (
-                                        <div className="flex flex-col items-center justify-center py-12">
-                                            <AiStatusOrb activity="searching" size={64} />
-                                            <p className="mt-4 text-sm font-medium text-white">Thinking through your logs…</p>
-                                            <p className="mt-1 text-xs text-gray-500">Building a concise incident summary.</p>
-                                        </div>
-                                    ) : summary ? (
-                                        <AiSummaryContent summary={summary} />
-                                    ) : (
-                                        <p className="text-red-400">Failed to generate summary.</p>
-                                    )}
-                                </div>
-                            </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>,
-                document.body
-            )}
-
-            <ProUpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
-        </>
-    );
+    ;
 
     return (
         <div className="flex flex-col h-full bg-[#0d0d0d] font-mono text-xs overflow-hidden">
-            {modals}
+            <K8sLogModals showSummaryModal={showSummaryModal} summary={summary} summarizing={summarizing} showUpgradeModal={showUpgradeModal} onCloseSummary={() => setShowSummaryModal(false)} onCloseUpgrade={() => setShowUpgradeModal(false)} />
             {/* ── Toolbar ────────────────────────────────────────── */}
             <div className="flex flex-row items-center gap-2 px-3 py-2 border-b border-gray-800 bg-[#111111] shrink-0 flex-wrap">
                 
@@ -283,7 +322,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                             activeTab === 'live' ? 'bg-[#2a2d36] text-white shadow-sm' : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
                         }`}
                     >
-                        <Activity className="w-3 h-3" /> Live
+                        <Activity className="w-3 h-3" />{' '}Live
                     </button>
                     <button
                         onClick={() => setActiveTab('search')}
@@ -291,28 +330,14 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                             activeTab === 'search' ? 'bg-[#2a2d36] text-white shadow-sm' : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
                         }`}
                     >
-                        <Search className="w-3 h-3" /> Search
+                        <Search className="w-3 h-3" />{' '}Search
                     </button>
                 </div>
 
                 {activeTab === 'live' && (
                     <>
                         {/* Connection Badge */}
-                        {isConnected ? (
-                    <span className="flex items-center gap-1.5 text-[10px] text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20 shrink-0">
-                        <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                        LIVE
-                    </span>
-                ) : streamEnded ? (
-                    <span className="flex items-center gap-1.5 text-[10px] text-gray-500 bg-gray-800 px-2 py-0.5 rounded-full border border-gray-700 shrink-0">
-                        ENDED
-                    </span>
-                ) : (
-                    <span className="flex items-center gap-1.5 text-[10px] text-yellow-400 bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20 shrink-0">
-                        <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse" />
-                        CONNECTING
-                    </span>
-                )}
+                        {<LogConnectionBadge connected={isConnected} ended={streamEnded} />}
 
                 {/* Container Selector */}
                 {containers.length > 1 && (
@@ -435,7 +460,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                             className="flex items-center gap-2 bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg transition-all animate-bounce text-xs"
                         >
                             <ArrowDown className="w-3.5 h-3.5" />
-                            {newLogsCount} new line{newLogsCount !== 1 ? 's' : ''}
+                            {newLogsCount} new line{newLogsCount === 1 ? '' : 's'}
                         </button>
                     </div>
                 )}
@@ -459,12 +484,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
                     atBottomStateChange={(bottom) => {
                         if (bottom) setNewLogsCount(0);
                     }}
-                    itemContent={(index, log) => (
-                        <div className={`px-4 py-0.5 hover:bg-white/5 border-l-2 border-transparent hover:border-gray-600 flex gap-3 ${LEVEL_COLORS[log.level]}`}>
-                            <span className="select-none opacity-30 w-8 text-right shrink-0 text-[10px] pt-px">{index + 1}</span>
-                            <span className="break-all whitespace-pre-wrap flex-1 select-text leading-relaxed">{log.content}</span>
-                        </div>
-                    )}
+                    itemContent={renderLogRow}
                     className="h-full"
                 />
 

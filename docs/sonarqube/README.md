@@ -7,6 +7,20 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 33 verifies `dd6d1c1a66a539a665e3bfce363d578b00ec5191`: 148 open
+issues, 31.6% coverage, zero unreviewed hotspots and standard gate OK. The
+backend configuration/template/import/condition batch is verified closed.
+Archive: `gs://priyanshu-apps-sonarqube-backups/reports/820fc407-9ca7-47bb-a58d-df72ccabdc96-1792755903.json`.
+
+The following Kubernetes log-viewer batch extracts stable row, connection badge
+and summary-modal renderers. Three interaction tests preserve subscriptions,
+container switches, filtering, pause/new-line counts and ended-state rendering.
+A test reproduced retained socket listeners on container change; cleanup now
+removes them, and a new subscription resets the connection badge. Typed socket
+and virtual-list refs replace explicit-any refs. Local verification passes
+133 frontend tests and its build; backend source is unchanged from 250 passing
+tests. The matching scan remains required; production stays blocked.
+
 Run 32 verifies `05b7d5f213410777088f173852085c4edd1e5188`: 158 open
 issues, 31.6% coverage, no unreviewed hotspots and standard gate OK.
 Waterfall/inspector findings are CLOSED. The strict zero-issue/verification
