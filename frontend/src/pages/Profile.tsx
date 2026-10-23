@@ -13,11 +13,9 @@ import {
   Mail,
   Lock,
   Fingerprint,
-  Trash2,
   Plus,
   X,
   CheckCircle2,
-  Laptop,
   ArrowLeft,
   Edit2,
   ExternalLink,
@@ -30,6 +28,8 @@ import {
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { readAvatarFile } from '../utils/readAvatarFile';
+import { ProfilePasskeys, type ProfilePasskey } from './ProfilePasskeys';
 
 // --- Utility for Tailwind Classes ---
 function cn(...inputs: (string | undefined | null | false)[]) {
@@ -124,7 +124,7 @@ const Profile: React.FC = () => {
   // Logic State
   const [profile, setProfile] = useState({ username: '', email: '', avatarUrl: '' });
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
-  const [passkeys, setPasskeys] = useState<any[]>([]);
+  const [passkeys, setPasskeys] = useState<ProfilePasskey[]>([]);
 
   // Loading States
   const [loading, setLoading] = useState({
@@ -191,12 +191,7 @@ const Profile: React.FC = () => {
     }
 
     try {
-      const source = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(new Error('Unable to read image'));
-        reader.readAsDataURL(file);
-      });
+      const source = await readAvatarFile(file);
       const image = await new Promise<HTMLImageElement>((resolve, reject) => {
         const nextImage = new Image();
         nextImage.onload = () => resolve(nextImage);
@@ -240,8 +235,8 @@ const Profile: React.FC = () => {
     }
   };
 
-  const assignedRoles = roles.filter(role => role.toLowerCase().startsWith('kubiq'));
-  const currentRole = assignedRoles[0] || roles[0] || 'No role assigned';
+  const firstKubiqRole = roles.find(role => role.toLowerCase().startsWith('kubiq'));
+  const currentRole = firstKubiqRole || roles[0] || 'No role assigned';
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -367,7 +362,7 @@ const Profile: React.FC = () => {
               <div className="relative mb-2 md:mb-4 shrink-0">
                 <div className="w-16 h-16 md:w-24 md:h-24 overflow-hidden bg-linear-to-br from-primary to-blue-600 rounded-full flex items-center justify-center shadow-xl shadow-blue-500/20 ring-4 ring-bg/50">
                   {profile.avatarUrl ? (
-                    <img src={profile.avatarUrl} alt={`${profile.username}'s display picture`} className="h-full w-full object-cover" />
+                    <img src={profile.avatarUrl} alt={`${profile.username}'s avatar`} className="h-full w-full object-cover" />
                   ) : (
                     <span className="text-xl md:text-3xl font-bold text-white">{profile.username.substring(0, 2).toUpperCase()}</span>
                   )}
@@ -527,45 +522,7 @@ const Profile: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {loading.passkeys ? (
-                        <div className="col-span-2 text-center py-12 text-text-dim">Loading devices...</div>
-                      ) : passkeys.length === 0 ? (
-                        <div className="col-span-2 text-center py-8 border border-dashed border-white/10 rounded-xl text-text-dim">
-                          No passkeys configured. Add one to login faster!
-                        </div>
-                      ) : (
-                        passkeys.map(pk => (
-                          <div key={pk.id} className="group bg-bg-surface/40 hover:bg-bg-surface/60 border border-white/5 rounded-xl p-4 flex items-center justify-between transition-all duration-200">
-                            <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
-                                {pk.deviceType === 'singleDevice' ? <Smartphone className="w-5 h-5" /> : <Laptop className="w-5 h-5" />}
-                              </div>
-                              <div>
-                                <h4 className="font-semibold text-text group-hover:text-primary transition-colors">{pk.name}</h4>
-                                <p className="text-xs text-text-dim">Added {new Date(pk.createdAt).toLocaleDateString()}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center">
-                              {isNative && (
-                                <>
-                                  <button
-                                    onClick={() => startRenamePasskey(pk.id, pk.name)}
-                                    className="p-2 text-text-dim hover:text-white hover:bg-white/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100 mr-1"
-                                  >
-                                    <Edit2 className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => confirmDeletePasskey(pk.id)}
-                                    className="p-2 text-text-dim hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        ))
-                      )}
+                      <ProfilePasskeys loading={loading.passkeys} passkeys={passkeys} isNative={isNative} onRename={startRenamePasskey} onDelete={confirmDeletePasskey} />
                     </div>
                   </section>
 

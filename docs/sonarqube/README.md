@@ -48,6 +48,14 @@ spacing explicit. All 187 frontend tests and the frontend build pass. Tick
 retention, midnight collisions and uptime DOM identity have regression tests.
 These subsequent changes still require their own exact-commit scan.
 
+The profile batch additionally narrows FileReader results to real strings,
+preserves first matching kubiq role selection via find, uses concise avatar alt
+text, and extracts passkey loading/empty/list rendering with named native
+actions and visible keyboard focus. Existing stored passkey IDs and backend
+requests are unchanged. All 194 frontend tests and the frontend build pass;
+seven new tests cover image read success/failure and passkey rendering/actions.
+This batch is not yet counted as a verified Sonar closure.
+
 Run 46 was not separately archived before the next analysis. The existing VM
 exporter selects the latest completed report when its queue is empty; this needs
 a per-analysis export barrier before promising every intermediate scan is saved.
