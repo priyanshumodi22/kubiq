@@ -24,6 +24,12 @@ interface PageData {
   lastUpdated: string;
 }
 
+function uptimeColor(uptime: number) {
+  if (uptime >= 98) return 'text-success';
+  if (uptime >= 90) return 'text-warning';
+  return 'text-error';
+}
+
 export default function StatusPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -298,9 +304,7 @@ export default function StatusPage() {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-baseline gap-3">
                         <h3 className="text-lg font-semibold text-text tracking-tight">{service.name}</h3>
-                        <span className={`text-sm font-bold ${
-                             uptime >= 98 ? 'text-success' : uptime >= 90 ? 'text-warning' : 'text-error'
-                         }`}>
+                        <span className={`text-sm font-bold ${uptimeColor(uptime)}`}>
                            {uptime.toFixed(1)}%
                         </span>
                       </div>
@@ -313,14 +317,14 @@ export default function StatusPage() {
                     <div className="w-full relative py-1">
                        {/* Container for the line segments */}
                        <div className="flex items-center w-full h-3 gap-[2px]">
-                           {aggregatedBars.map((bar, idx) => {
+                           {aggregatedBars.map(bar => {
                                if (bar.empty) {
                                    return (
-                                       <div key={idx} className="flex-1 h-[2px] bg-gray-800/50 rounded-full" />
+                                       <div key={bar.timestamp} className="flex-1 h-[2px] bg-gray-800/50 rounded-full" />
                                    );
                                }
                                return (
-                                  <div key={idx} className="group relative flex-1 h-full flex items-center">
+                                  <div key={bar.timestamp} className="group relative flex-1 h-full flex items-center">
                                      {/* The Line Segment */}
                                      {/* If 24h view, bars are small. */}
                                      <div 
@@ -338,7 +342,7 @@ export default function StatusPage() {
                                              <div className={`w-1.5 h-1.5 rounded-full ${bar.success ? 'bg-success' : 'bg-error'}`}></div>
                                              {bar.success ? (
                                                  <span className="flex items-center gap-2">
-                                                     Operational
+                                                     Operational{' '}
                                                      <span className="text-text-dim font-normal border-l border-gray-700 pl-2 ml-1 text-[10px] font-mono">
                                                          ~{Math.round(bar.avgResponse)}ms
                                                      </span>

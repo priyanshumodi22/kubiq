@@ -7,6 +7,22 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 36 verifies `a24a19b86c9080a36ee2ddf07f76d31f510e99da`: 130 open
+issues, 33.3% coverage, no unreviewed hotspots; standard gate ERROR. Storage
+follow-ups are CLOSED. Two native-dialog event warnings remain OPEN pending
+individual review; `review-candidates.json` records exact IDs and browser/test
+evidence, not claimed resolutions. The admin session has expired; source fixes
+continue independently. Archive:
+`gs://priyanshu-apps-sonarqube-backups/reports/78596aee-a77f-4f5b-b2d9-0b69143e126f-1792757191.json`.
+
+The next batch separates credential-redaction patterns while caching their next
+matches, preserving original leftmost priority and bearer prefixes. A fixture
+oracle checks 100 overlapping format combinations; a long-input fixture checks
+10,000 redactions. Public status bars use time-bin identity instead of index keys,
+with four tests for uptime thresholds, 60-bin layout, empty history and filtering.
+Local verification passes 252 backend tests, 150 frontend tests and both builds.
+Its exact-commit scan is pending; no production image is published.
+
 Run 35 verifies `cb09048c90116cc4ccff2a3630507ecc26ba28b7`: 133 open
 issues, 33.1% coverage, zero unreviewed hotspots; standard gate ERROR.
 Orb and Kubernetes log-viewer findings are CLOSED. Two new storage findings

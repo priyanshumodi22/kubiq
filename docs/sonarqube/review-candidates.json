@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "note": "Candidates only. These issues remain pending and count as open until an authenticated individual SonarQube review is recorded and verified in an export. No rule is disabled.",
+  "issues": [
+    {
+      "id": "1612f690-5af3-4999-8e14-a6deab91af8f",
+      "rule": "typescript:S6847",
+      "file": "frontend/src/components/Footer.tsx",
+      "proposedDisposition": "false_positive_pending_review",
+      "rationale": "The native modal dialog's click handler implements only light dismissal outside its bounding rectangle, not activation of non-interactive content. In-dialog content clicks do not dismiss it. Native cancel handles Escape, and an explicitly labelled native Close button provides keyboard dismissal. Initial focus and focus restoration were verified in Chrome.",
+      "evidence": ["Footer.test.tsx: native modal state, content-click preservation, close, cancel, backdrop and focus-return tests", "Chrome desktop 1920x855: Enter opens :modal; Close license receives initial focus; Escape and a real outside click dismiss; focus returns to License"],
+      "verifiedSourceRevision": "a24a19b86c9080a36ee2ddf07f76d31f510e99da"
+    },
+    {
+      "id": "778d62b8-3b76-4442-9aaf-0ba82bf9a50c",
+      "rule": "typescript:S1082",
+      "file": "frontend/src/components/Footer.tsx",
+      "proposedDisposition": "false_positive_pending_review",
+      "rationale": "The outside-click dismissal already has equivalent native keyboard behavior through the dialog cancel event (Escape) and native Close button. Adding a second artificial key handler solely to satisfy a JSX heuristic would duplicate native dialog behavior. It is not a click-only control.",
+      "evidence": ["Footer.test.tsx: cancel/close and focus-return regression coverage", "Chrome desktop: actual Escape dismissal and License trigger focus return verified"],
+      "verifiedSourceRevision": "a24a19b86c9080a36ee2ddf07f76d31f510e99da"
+    }
+  ]
+}
