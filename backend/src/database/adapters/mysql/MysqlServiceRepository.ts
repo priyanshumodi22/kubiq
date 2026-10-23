@@ -119,27 +119,27 @@ export class MysqlServiceRepository implements IServiceRepository {
 
             // Check for missing columns in 'services' (Migration for existing DBs)
             const [columns] = await connection.query<RowDataPacket[]>('SHOW COLUMNS FROM services');
-            const columnNames = columns.map(c => c.Field);
+            const columnNames = new Set(columns.map(c => c.Field));
 
-            if (!columnNames.includes('ignore_ssl')) {
+            if (!columnNames.has('ignore_ssl')) {
                 await connection.query('ALTER TABLE services ADD COLUMN ignore_ssl BOOLEAN DEFAULT FALSE');
             }
-            if (!columnNames.includes('ssl_expiry')) {
+            if (!columnNames.has('ssl_expiry')) {
                 await connection.query('ALTER TABLE services ADD COLUMN ssl_expiry DATETIME');
             }
-            if (!columnNames.includes('log_sources')) {
+            if (!columnNames.has('log_sources')) {
                 await connection.query('ALTER TABLE services ADD COLUMN log_sources JSON');
             }
-            if (!columnNames.includes('uptime')) {
+            if (!columnNames.has('uptime')) {
                 await connection.query('ALTER TABLE services ADD COLUMN uptime FLOAT DEFAULT 100.0');
             }
-            if (!columnNames.includes('average_response_time')) {
+            if (!columnNames.has('average_response_time')) {
                 await connection.query('ALTER TABLE services ADD COLUMN average_response_time FLOAT DEFAULT 0.0');
             }
-            if (!columnNames.includes('interval')) {
+            if (!columnNames.has('interval')) {
                 await connection.query('ALTER TABLE services ADD COLUMN `interval` INT DEFAULT 30000');
             }
-            if (!columnNames.includes('retries')) {
+            if (!columnNames.has('retries')) {
                 await connection.query('ALTER TABLE services ADD COLUMN retries INT DEFAULT 3');
             }
 
@@ -315,15 +315,15 @@ export class MysqlServiceRepository implements IServiceRepository {
             );
 
             // Update current status in services table
-            if (extraData?.sslExpiry !== undefined) {
-                await this.pool.execute(
-                    'UPDATE services SET current_status = ?, updated_at = NOW(), ssl_expiry = ? WHERE id = ?',
-                    [result.success ? 'healthy' : 'unhealthy', extraData.sslExpiry, serviceId]
-                );
-            } else {
+            if (extraData?.sslExpiry === undefined) {
                 await this.pool.execute(
                     'UPDATE services SET current_status = ?, updated_at = NOW() WHERE id = ?',
                     [result.success ? 'healthy' : 'unhealthy', serviceId]
+                );
+            } else {
+                await this.pool.execute(
+                    'UPDATE services SET current_status = ?, updated_at = NOW(), ssl_expiry = ? WHERE id = ?',
+                    [result.success ? 'healthy' : 'unhealthy', extraData.sslExpiry, serviceId]
                 );
             }
 

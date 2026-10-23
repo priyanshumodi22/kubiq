@@ -63,7 +63,7 @@ router.post('/', requirePermission('notifications.manage'), async (req, res) => 
 
     // Default events if not provided
     const channelEvents = events || { up: true, down: true };
-    const isEnabled = enabled !== undefined ? enabled : true;
+    const isEnabled = enabled === undefined ? true : enabled;
 
     const newChannel = await notificationManager.addChannel({
       name,

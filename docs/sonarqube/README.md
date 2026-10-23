@@ -21,6 +21,14 @@ pass afterward. Local verification: 168 frontend tests, production build and
 LCOV records for all 85 production TS/TSX files. Its exact-commit scan is pending;
 these source edits are not yet claimed as Sonar closures.
 
+The following MySQL batch replaces repeated column-array membership checks with
+a Set and makes the optional SSL update branch positive without changing SQL or
+null/undefined semantics. Notification creation still defaults only undefined
+enabled values to true. Five adapter compatibility tests cover existing/missing
+columns and SSL expiry omitted/null/date cases. Backend verification passes all
+271 tests and the build. Current lint inspection has zero errors but still 371
+backend and 118 frontend warnings, so strict zero-warning lint is not complete.
+
 Run 38 verifies `05aa0b267d7630e05a018ffd7cdf19e57a4ee4d0`: 111 open
 issues, 35.8% coverage, no unreviewed hotspots; standard gate ERROR. Backend
 identity/resource findings and most administration findings are CLOSED.
