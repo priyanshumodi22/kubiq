@@ -22,6 +22,18 @@ const props = { logPath: '/var/log/app.log', isOpen: true, onClose: vi.fn(), ser
 const send = (event: string, data?: unknown) => act(() => { mocks.sockets.at(-1)!.handlers.get(event)?.(data); });
 
 describe('raw log subscription compatibility', () => {
+    it('switches configured sources without leaving the menu or old subscription active', async () => {
+        const sources = [{ id: 'app', name: 'Application', path: '/logs/app.log' }, { id: 'worker', name: 'Worker', path: '/logs/worker.log' }];
+        const view = render(<LogViewer {...props} logSources={sources} />);
+        await act(async () => {});
+        fireEvent.click(view.getByRole('button', { name: 'Application' }));
+        fireEvent.click(view.getByRole('button', { name: 'Worker /logs/worker.log' }));
+        expect(view.queryByRole('button', { name: 'Application /logs/app.log' })).toBeNull();
+        send('connect');
+        expect(mocks.sockets.at(-1)!.emit).toHaveBeenLastCalledWith('watch:log', expect.objectContaining({ path: '/logs/worker.log' }));
+        expect(mocks.sockets[0].handlers.size).toBe(0);
+    });
+
     it('counts incoming lines while paused without reconnecting', async () => {
         const view = render(<LogViewer {...props} />);
         await act(async () => {});

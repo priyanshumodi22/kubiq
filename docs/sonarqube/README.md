@@ -7,6 +7,16 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 42 verifies `cda178d71153e9da9d9cc4f54181445f3f981e27`: 97 open
+issues, 37.7% combined coverage, no unreviewed hotspots and standard gate OK.
+The histogram finding is closed; raw-log component complexity remains at 17.
+Archive: `gs://priyanshu-apps-sonarqube-backups/reports/30058b24-20c1-4473-96e5-f6bbe5633b7a-1792760375.json`.
+
+The following batch extracts the stable source selector and adds a sixth raw-log
+test proving source switching closes the menu, stops the old subscription and
+watches the new path. All 172 frontend tests pass; build and scan evidence are
+required before recording further closures. The strict release gate stays held.
+
 Run 41 verifies `0f747b09418f3fe0ed0032443f8528e3e35adf9e`: 98 open
 issues, 37.6% combined coverage and no unreviewed hotspots. Its standard gate
 is ERROR, so production remains held. The three MySQL/notification findings

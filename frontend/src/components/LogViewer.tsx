@@ -29,6 +29,46 @@ interface LogLine {
     level: LogLevel;
 }
 
+function LogSourceMenu({ sources, selectedSource, selectedSourceId, dropdownRef, isOpen, onToggle, onSelect }: Readonly<{ sources: LogSource[]; selectedSource: LogSource; selectedSourceId: string; dropdownRef: React.RefObject<HTMLDivElement | null>; isOpen: boolean; onToggle: () => void; onSelect: (id: string) => void }>) {
+    return (sources.length > 1 && (
+        <div className="relative mr-3" ref={dropdownRef}>
+            <button
+                onClick={() => onToggle()}
+                className="flex items-center space-x-1 text-xs text-blue-400 hover:text-blue-300 transition-colors font-mono bg-blue-500/10 px-2 py-0.5 rounded cursor-pointer border border-blue-500/20"
+            >
+                <span className="truncate max-w-[150px]">{selectedSource.name}</span>
+                <ChevronDown className="w-3 h-3" />
+            </button>
+
+            {/* Dropdown */}
+            {isOpen && (
+                <div className="absolute top-full left-0 mt-2 w-64 bg-[#1d1f24] border border-white/10 rounded-lg shadow-xl z-50 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                    {sources.map(source => (
+                        <button
+                            key={source.id}
+                            onClick={() => {
+                                onSelect(source.id);
+
+                            }}
+                            className="w-full text-left px-3 py-2 text-xs hover:bg-white/5 flex items-center justify-between group"
+                        >
+                            <div className="min-w-0">
+                                <div className={`font-medium ${selectedSourceId === source.id ? 'text-blue-400' : 'text-gray-300'}`}>
+                                    {source.name}
+                                </div>
+                                <div className="text-[10px] text-gray-500 font-mono truncate">
+                                    {source.path}
+                                </div>
+                            </div>
+                            {selectedSourceId === source.id && <Check className="w-3 h-3 text-blue-500" />}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    ));
+}
+
 function LogFileTabs({ files, activeFile, onSelect }: Readonly<{ files: Array<{ path: string; name: string }>; activeFile: string; onSelect: (path: string) => void }>) {
     return (files.length > 0 ? (
         <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar mask-gradient-right">
@@ -502,43 +542,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                             {activeTab === 'live' && (
                                 <div className="flex items-center mt-1">
                                     {/* Source Selector */}
-                                    {effectiveSources.length > 1 && (
-                                        <div className="relative mr-3" ref={dropdownRef}>
-                                            <button
-                                                onClick={() => setIsSourceDropdownOpen(!isSourceDropdownOpen)}
-                                                className="flex items-center space-x-1 text-xs text-blue-400 hover:text-blue-300 transition-colors font-mono bg-blue-500/10 px-2 py-0.5 rounded cursor-pointer border border-blue-500/20"
-                                            >
-                                                <span className="truncate max-w-[150px]">{selectedSource.name}</span>
-                                                <ChevronDown className="w-3 h-3" />
-                                            </button>
-
-                                            {/* Dropdown */}
-                                            {isSourceDropdownOpen && (
-                                                <div className="absolute top-full left-0 mt-2 w-64 bg-[#1d1f24] border border-white/10 rounded-lg shadow-xl z-50 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-                                                    {effectiveSources.map(source => (
-                                                        <button
-                                                            key={source.id}
-                                                            onClick={() => {
-                                                                setSelectedSourceId(source.id);
-                                                                setIsSourceDropdownOpen(false);
-                                                            }}
-                                                            className="w-full text-left px-3 py-2 text-xs hover:bg-white/5 flex items-center justify-between group"
-                                                        >
-                                                            <div className="min-w-0">
-                                                                <div className={`font-medium ${selectedSourceId === source.id ? 'text-blue-400' : 'text-gray-300'}`}>
-                                                                    {source.name}
-                                                                </div>
-                                                                <div className="text-[10px] text-gray-500 font-mono truncate">
-                                                                    {source.path}
-                                                                </div>
-                                                            </div>
-                                                            {selectedSourceId === source.id && <Check className="w-3 h-3 text-blue-500" />}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
+                                    <LogSourceMenu sources={effectiveSources} selectedSource={selectedSource} selectedSourceId={selectedSourceId} dropdownRef={dropdownRef} isOpen={isSourceDropdownOpen} onToggle={() => setIsSourceDropdownOpen(!isSourceDropdownOpen)} onSelect={(id) => { setSelectedSourceId(id); setIsSourceDropdownOpen(false); }} />
 
                                     {/* Patterned File Tabs */}
                                     <LogFileTabs files={availableFiles} activeFile={activeFile} onSelect={(path) => { setActiveFile(path); setLogs([]); }} />
