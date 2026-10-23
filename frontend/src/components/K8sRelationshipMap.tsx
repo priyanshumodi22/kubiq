@@ -429,20 +429,19 @@ export function K8sRelationshipMap({
             {/* Topology Canvas Area */}
             <div
                 ref={containerRef}
-                role="presentation"
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                onTouchCancel={handleTouchEnd}
                 className="flex-1 overflow-hidden bg-[#0d0d0d] relative cursor-grab active:cursor-grabbing touch-none focus-visible:outline-2 focus-visible:outline-primary"
             >
                 <button
                     type="button"
                     data-topology-pan
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    onTouchCancel={handleTouchEnd}
                     aria-label="Kubernetes topology canvas. Arrow keys pan; plus and minus zoom; Home resets."
                     onKeyDown={handleCanvasKeyDown}
                     className="absolute inset-0 h-full w-full focus-visible:outline-2 focus-visible:outline-primary"

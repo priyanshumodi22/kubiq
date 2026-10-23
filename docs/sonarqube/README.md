@@ -7,6 +7,22 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 30 verifies `122a15865eecbf8e469c33cc86bb67bb1e7dee25`: 170 open
+issues, 30.3% coverage, zero unreviewed hotspots, standard gate ERROR.
+All notification-modal findings are CLOSED. The checkpoint records 682 baseline
+closures, 157 pending findings and two safe reviews. One new presentation-role
+finding on the topology background is corrected by keeping all interaction
+handlers on its native pan button in the next batch. Archive:
+`gs://priyanshu-apps-sonarqube-backups/reports/b8619d0e-f9b9-4065-9609-70c7c0930ce8-1792737021.json`.
+
+The raw-log watcher batch adds five lifecycle tests for shared subscriptions,
+batched/oversized flushes, truncation, cleanup and late asynchronous work.
+The late-stat test failed before the fix. Cleanup now closes active reads, and
+late stat/data callbacks cannot restart an unsubscribed stream. Nested append
+handling and per-file/per-directory unsubscribe logic are split into methods.
+Local verification passes 249 backend tests and 125 frontend tests, with both
+builds passing. These edits await their own scan; production remains held.
+
 Run 29 verifies `7d04fb7c00a570067a137787a54681640c8889d6`:
 182 open issues, 30.0% combined coverage, zero unreviewed hotspots, standard
 gate OK. All 13 diagnosis-modal findings are CLOSED. The checkpoint records

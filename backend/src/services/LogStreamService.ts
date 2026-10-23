@@ -17,6 +17,7 @@ interface SharedFileWatcher {
     flushTimer: NodeJS.Timeout | null;  // 100ms flush timer
     serviceName: string;           // Track for retention
     sourceName: string;            // Track for retention
+    activeReads: Set<fs.ReadStream>;
 }
 
 // ─── Shared directory watcher: ONE per glob pattern ────────────────
@@ -204,66 +205,72 @@ export class LogStreamService extends EventEmitter {
             pendingBuffer: '', 
             flushTimer: null,
             serviceName,
-            sourceName
+            sourceName,
+            activeReads: new Set(),
         };
         this.fileWatchers.set(filePath, shared);
 
-        watcher.on('change', (changedPath) => {
-            fs.stat(changedPath, (err, stats) => {
-                if (err) return;
-
-                if (stats.size > shared.currentSize) {
-                    const stream = fs.createReadStream(changedPath, {
-                        start: shared.currentSize,
-                        end: stats.size - 1 
-                    });
-                    
-                    stream.on('data', (chunk) => {
-                        const chunkStr = chunk.toString();
-                        // Buffer chunks instead of emitting immediately (backpressure)
-                        shared.pendingBuffer += chunkStr;
-
-                        // Forward to IngestionBufferService asynchronously
-                        import('./IngestionBufferService').then(({ IngestionBufferService }) => {
-                            IngestionBufferService.getInstance().ingestLines(
-                                shared.serviceName,
-                                shared.sourceName,
-                                chunkStr.split('\n')
-                            );
-                        }).catch(e => console.error('Error importing IngestionBufferService:', e));
-
-                        // Force-flush if buffer exceeds 64KB to cap memory usage
-                        if (shared.pendingBuffer.length > 65536) {
-                            if (shared.flushTimer) { clearTimeout(shared.flushTimer); shared.flushTimer = null; }
-                            this.io?.to(roomName).emit('log:line', { content: shared.pendingBuffer });
-                            shared.pendingBuffer = '';
-                            return;
-                        }
-
-                        // Start 100ms flush timer if not already running
-                        shared.flushTimer ??= setTimeout(() => {
-                                if (shared.pendingBuffer.length > 0) {
-                                    this.io?.to(roomName).emit('log:line', { content: shared.pendingBuffer });
-                                    shared.pendingBuffer = '';
-                                }
-                                shared.flushTimer = null;
-                            }, 100);
-                    });
-
-                    stream.on('error', (readErr) => {
-                        console.error(`Error reading log stream for ${changedPath}:`, readErr);
-                    });
-
-                    shared.currentSize = stats.size;
-                } else if (stats.size < shared.currentSize) {
-                    shared.currentSize = stats.size;
-                    this.io?.to(roomName).emit('log:truncated', { message: 'File truncated' });
-                }
-            });
-        });
+        watcher.on('change', changedPath => this.readFileAppend(changedPath, filePath, shared, roomName));
 
         watcher.on('error', (error) => {
             console.error(`Log watcher error for ${filePath}:`, error);
+        });
+    }
+
+    private readFileAppend(changedPath: string, filePath: string, shared: SharedFileWatcher, roomName: string) {
+        fs.stat(changedPath, (err, stats) => {
+            if (err || this.fileWatchers.get(filePath) !== shared) return;
+
+            if (stats.size > shared.currentSize) {
+                const stream = fs.createReadStream(changedPath, {
+                    start: shared.currentSize,
+                    end: stats.size - 1
+                });
+
+                shared.activeReads.add(stream);
+                stream.once('close', () => shared.activeReads.delete(stream));
+                stream.on('data', (chunk) => {
+                    if (this.fileWatchers.get(filePath) !== shared) return;
+                    const chunkStr = chunk.toString();
+                    // Buffer chunks instead of emitting immediately (backpressure)
+                    shared.pendingBuffer += chunkStr;
+
+                    // Forward to IngestionBufferService asynchronously
+                    import('./IngestionBufferService').then(({ IngestionBufferService }) => {
+                        IngestionBufferService.getInstance().ingestLines(
+                            shared.serviceName,
+                            shared.sourceName,
+                            chunkStr.split('\n')
+                        );
+                    }).catch(e => console.error('Error importing IngestionBufferService:', e));
+
+                    // Force-flush if buffer exceeds 64KB to cap memory usage
+                    if (shared.pendingBuffer.length > 65536) {
+                        if (shared.flushTimer) { clearTimeout(shared.flushTimer); shared.flushTimer = null; }
+                        this.io?.to(roomName).emit('log:line', { content: shared.pendingBuffer });
+                        shared.pendingBuffer = '';
+                        return;
+                    }
+
+                    // Start 100ms flush timer if not already running
+                    shared.flushTimer ??= setTimeout(() => {
+                            if (shared.pendingBuffer.length > 0) {
+                                this.io?.to(roomName).emit('log:line', { content: shared.pendingBuffer });
+                                shared.pendingBuffer = '';
+                            }
+                            shared.flushTimer = null;
+                        }, 100);
+                });
+
+                stream.on('error', (readErr) => {
+                    console.error(`Error reading log stream for ${changedPath}:`, readErr);
+                });
+
+                shared.currentSize = stats.size;
+            } else if (stats.size < shared.currentSize) {
+                shared.currentSize = stats.size;
+                this.io?.to(roomName).emit('log:truncated', { message: 'File truncated' });
+            }
         });
     }
 
@@ -334,42 +341,51 @@ export class LogStreamService extends EventEmitter {
         const sub = this.socketSubs.get(socket.id);
         if (!sub) return;
 
-        // Clean up file watcher subscription
-        if (sub.filePath) {
-            const roomName = `file::${sub.filePath}`;
-            socket.leave(roomName);
-
-            const shared = this.fileWatchers.get(sub.filePath);
-            if (shared) {
-                shared.refCount--;
-                if (shared.refCount <= 0) {
-                    console.log(`🗑️  No subscribers left, closing file watcher: ${sub.filePath}`);
-                    if (shared.flushTimer) clearTimeout(shared.flushTimer);
-                    void shared.watcher.close().catch(error => console.warn('File watcher close failed.', error));
-                    this.fileWatchers.delete(sub.filePath);
-                }
-            }
-        }
-
-        // Clean up directory watcher subscription
-        if (sub.dirPattern) {
-            const roomName = `dir::${sub.dirPattern}`;
-            socket.leave(roomName);
-
-            const shared = this.dirWatchers.get(sub.dirPattern);
-            if (shared) {
-                shared.refCount--;
-                if (shared.refCount <= 0) {
-                    console.log(`🗑️  No subscribers left, closing dir watcher: ${sub.dirPattern}`);
-                    if (shared.debounceTimer) clearTimeout(shared.debounceTimer);
-                    void shared.watcher.close().catch(error => console.warn('Directory watcher close failed.', error));
-                    this.dirWatchers.delete(sub.dirPattern);
-                }
-            }
-        }
+        if (sub.filePath) this.unsubscribeFile(socket, sub.filePath);
+        if (sub.dirPattern) this.unsubscribeDirectory(socket, sub.dirPattern);
 
         this.socketSubs.delete(socket.id);
         console.log(`🛑 Unsubscribed socket ${socket.id}`);
+    }
+
+    private unsubscribeFile(socket: Socket, filePath: string) {
+        // Clean up file watcher subscription
+
+        const roomName = `file::${filePath}`;
+        socket.leave(roomName);
+
+        const shared = this.fileWatchers.get(filePath);
+        if (shared) {
+            shared.refCount--;
+            if (shared.refCount <= 0) {
+                console.log(`🗑️  No subscribers left, closing file watcher: ${filePath}`);
+                if (shared.flushTimer) clearTimeout(shared.flushTimer);
+                void shared.watcher.close().catch(error => console.warn('File watcher close failed.', error));
+                this.fileWatchers.delete(filePath);
+                for (const stream of shared.activeReads) stream.destroy();
+                shared.activeReads.clear();
+            }
+        }
+
+    }
+
+    private unsubscribeDirectory(socket: Socket, pattern: string) {
+        // Clean up directory watcher subscription
+
+        const roomName = `dir::${pattern}`;
+        socket.leave(roomName);
+
+        const shared = this.dirWatchers.get(pattern);
+        if (shared) {
+            shared.refCount--;
+            if (shared.refCount <= 0) {
+                console.log(`🗑️  No subscribers left, closing dir watcher: ${pattern}`);
+                if (shared.debounceTimer) clearTimeout(shared.debounceTimer);
+                void shared.watcher.close().catch(error => console.warn('Directory watcher close failed.', error));
+                this.dirWatchers.delete(pattern);
+            }
+        }
+
     }
 
     // ─── Utility: scan files matching a glob pattern ───────────────────
