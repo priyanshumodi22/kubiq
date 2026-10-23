@@ -96,7 +96,7 @@ export default function ServiceCard({
         <div>
           <div className="text-xs text-text-dim mb-0.5">Uptime</div>
           <div className="text-sm font-mono text-text">
-            {service.uptime !== undefined ? `${service.uptime.toFixed(1)}%` : '-'}
+            {service.uptime === undefined ? '-' : `${service.uptime.toFixed(1)}%`}
           </div>
         </div>
       </div>

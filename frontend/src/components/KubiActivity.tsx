@@ -18,7 +18,7 @@ export function KubiActivity({ state, steps, phase }: Readonly<{ state: KubiAvat
     <div className="kubi-activity-heading">
       <KubiAvatar state={state} size={80} />
       <div><span className="kubi-caption">{caption}</span>
-        <p role="status" aria-live="polite">{phase || kubiAvatarStates[state].label}</p></div>
+        <output className="kubi-activity-status" aria-live="polite">{phase || kubiAvatarStates[state].label}</output></div>
     </div>
     <ol className="kubi-steps">{investigationSteps.map(step => {
       const visited = steps.includes(step.state);

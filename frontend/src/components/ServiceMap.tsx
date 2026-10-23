@@ -101,13 +101,14 @@ export default function ServiceMap({ dependencies, onNodeClick, onEdgeClick, onP
             const errorRate = dep.errorCount / dep.callCount;
             const isError = errorRate > 0.05;
             const edgeColor = isError ? '#ef4444' : '#3b82f6'; // red-500 vs blue-500
+            const errorLabel = isError ? ` (${Math.round(errorRate * 100)}% err)` : '';
 
             return {
                 id: `edge-${dep.source}-${dep.target}-${i}`,
                 source: dep.source,
                 target: dep.target,
                 type: 'default',
-                label: `${dep.callCount} reqs${isError ? ` (${Math.round(errorRate * 100)}% err)` : ''}`,
+                label: `${dep.callCount} reqs${errorLabel}`,
                 labelStyle: { fill: isError ? '#ef4444' : '#9ca3af', fontWeight: 600, fontSize: 12 },
                 labelBgStyle: { fill: '#1f2937', color: '#fff', fillOpacity: 0.8 },
                 labelBgPadding: [6, 4],
@@ -179,14 +180,14 @@ export default function ServiceMap({ dependencies, onNodeClick, onEdgeClick, onP
         const groupBounds = new Map<string, { minX: number, maxX: number, minY: number, maxY: number }>();
         nodePositions.forEach((pos, id) => {
             const prefix = prefixMap.get(id) || 'core';
-            if (!groupBounds.has(prefix)) {
-                groupBounds.set(prefix, { minX: pos.x, maxX: pos.x + 200, minY: pos.y, maxY: pos.y + 60 });
-            } else {
+            if (groupBounds.has(prefix)) {
                 const b = groupBounds.get(prefix)!;
                 b.minX = Math.min(b.minX, pos.x);
                 b.maxX = Math.max(b.maxX, pos.x + 200);
                 b.minY = Math.min(b.minY, pos.y);
                 b.maxY = Math.max(b.maxY, pos.y + 60);
+            } else {
+                groupBounds.set(prefix, { minX: pos.x, maxX: pos.x + 200, minY: pos.y, maxY: pos.y + 60 });
             }
         });
 

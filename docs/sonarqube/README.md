@@ -301,6 +301,7 @@ Subsequent completed analyses:
 | `996fb43` | 19 | `f0412dd8-f949-4efe-b605-3f1dabe35ded` | 303 | 23.3% | 0 |
 | `fde0263` | 20 | `ec7a6591-b356-4b43-945c-1ce1710343b5` | 296 | 23.4% | 0 |
 | `9dc1c9c` | 21 | `0cc9c910-19e7-48a8-8e8e-5bbdb3e3ac3e` | 289 | 23.4% | 0 |
+| `c090516` | 22 | `f910f2e1-7bab-4ee9-8ecc-5a67511cc1ef` | 281 | 24.0% | 0 |
 
 Matching format-3 exports remain in the private backup bucket under `reports/`:
 `4550fc4b-64aa-45f1-8e3d-f570920514c2-1792689301.json`,
@@ -331,6 +332,16 @@ still fail because 318 issues and the new-code coverage requirements remain.
 Standard Sonar gate results can be OK while baseline issues remain. The strict
 release verifier and every checkpoint still reject release until the complete
 remediation criteria are met. No production image or release proof was published.
+
+Run 22 verifies native service-card details controls without nesting Edit/Delete
+buttons, plus investigation, pod-status, service-map and audit-view conditional
+cleanup. All 241 backend and 87 frontend tests and both builds passed. The
+checkpoint records 573 explicit original closures, 266 pending original
+findings and two individual safe reviews. Current open issues total 281. The
+matching export is
+`gs://priyanshu-apps-sonarqube-backups/reports/65ca222f-755f-4cdb-ac06-7fd6e6e0080e-1792732343.json`.
+Standard gate is OK; strict release criteria remain blocked. Remaining findings
+in these files are addressed in the following batch and require another scan.
 
 Run 18 verifies the ordered kubi evidence-collector extraction and conditional
 cleanup. Its checkpoint records 545 explicit baseline closures, 294 pending

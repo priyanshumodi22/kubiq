@@ -56,7 +56,7 @@
 .kubi-activity { border: 1px solid #3b4653; background: #14171c; border-radius: 16px; margin: 18px 0; padding: 8px 14px 15px; }
 .kubi-activity-heading { display: flex; align-items: center; gap: 2px; min-height: 84px; }
 .kubi-caption { color: var(--kubi-muted); font-size: 11px; }
-.kubi-activity-heading p { font-size: 14px; font-weight: 500; line-height: 1.5; margin-top: 3px; }
+.kubi-activity-status { display: block; font-size: 14px; font-weight: 500; line-height: 1.5; margin-top: 3px; }
 .kubi-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding-top: 10px; border-top: 1px solid #343941; }
 .kubi-steps li { display: flex; gap: 5px; align-items: center; font-size: 10px; color: #9ca3af; }
 .kubi-steps svg { flex-shrink: 0; }

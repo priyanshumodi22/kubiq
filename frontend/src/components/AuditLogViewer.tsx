@@ -51,7 +51,7 @@ export function AuditLogViewer() {
             a.download = `kubiq-audit-logs-${Date.now()}.csv`;
             document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
+            a.remove();
             globalThis.URL.revokeObjectURL(url);
         } catch (e) {
             console.error('Failed to export audit logs CSV:', e);
