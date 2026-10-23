@@ -306,6 +306,7 @@ Subsequent completed analyses:
 | `2322a6c` | 24 | `3e21691d-103e-48b7-be82-a18ec6cdda90` | 275 | 24.1% | 0 |
 | `b303271` | 25 | `566e2878-34ba-4edf-919b-1b87d3132f1b` | 252 | 25.9% | 0 |
 | `caf4648` | 26 | `1dbab1b7-7dbf-48b9-a297-6cfd9bc7cf2f` | 252 | 25.9% | 0 |
+| `fe0d435` | 27 | `cf803e97-cf13-489f-a315-a0c07d61b5e5` | 217 | 27.6% | 0 |
 
 Matching format-3 exports remain in the private backup bucket under `reports/`:
 `4550fc4b-64aa-45f1-8e3d-f570920514c2-1792689301.json`,
@@ -388,6 +389,23 @@ instead of class strings during further extraction. This revision was held
 from production. The next batch corrects it and adds an explicit topology
 switching and CSS-class regression test, rather than accepting the finding.
 Standard and strict gates remain failed at these checkpoints.
+
+Run 27 confirms the APM topology regression corrected and no remaining open
+findings in ApmDashboard, its presentation helpers, K8sDetailPanel or its
+presentation helpers. Current issues total 217, coverage is 27.6%, and no
+hotspots remain unreviewed. The exact export is
+`gs://priyanshu-apps-sonarqube-backups/reports/21e6cd6a-2fe9-41b1-9395-ff17d6f38031-1792735770.json`.
+The checkpoint records 635 explicit original closures, 204 pending originals
+and two safe reviews, plus 65 additional exported findings. One new nesting
+finding in the polling hook is fixed in the next batch and not hidden.
+
+The Kubernetes lifecycle regression test first reproduced three history calls
+after unmount when delayed configuration resolved. The fixed hook no longer
+starts timers or applies stale responses after cleanup. Tests also verify
+stale YAML rejection, configuration-failure fallback, terminal removal after
+exec-permission revocation, and container expansion retained across reordering.
+All 244 backend and 110 frontend tests and both builds passed for this revision.
+Both standard and strict gates remain failed; no production image was published.
 
 Run 18 verifies the ordered kubi evidence-collector extraction and conditional
 cleanup. Its checkpoint records 545 explicit baseline closures, 294 pending

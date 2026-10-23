@@ -3,6 +3,7 @@ import {
     Box, Globe, Settings,
     Search, ZoomIn, ZoomOut, Maximize2, Server, HelpCircle, Shield, Download
 } from 'lucide-react';
+import { exportNodeColors, podCardColor, relationshipCardClass, relationshipEdges, relationshipStatus, type RelationshipNode } from './k8sRelationshipData';
 
 
 interface K8sRelationshipMapProps {
@@ -13,6 +14,33 @@ interface K8sRelationshipMapProps {
     configMaps: any[];
     secrets: any[];
     onSelectItem: (item: { type: string, data: any }) => void;
+}
+
+const getNodeIcon = (type: string) => {
+        switch (type) {
+            case 'ingresses': return <Globe className="w-4 h-4 text-cyan-400" />;
+            case 'services': return <Server className="w-4 h-4 text-emerald-400" />;
+            case 'pods': return <Box className="w-4 h-4 text-primary" />;
+            case 'configmaps': return <Settings className="w-4 h-4 text-amber-400" />;
+            case 'secrets': return <Shield className="w-4 h-4 text-red-400" />;
+            default: return <HelpCircle className="w-4 h-4 text-gray-400" />;
+        }
+    };
+
+function RelationshipNodeStatus({ node }: Readonly<{ node: RelationshipNode }>) {
+    if (node.type === 'pods') return <div className="text-[9px] font-mono text-gray-400 mt-0.5 truncate flex items-center gap-1"><span className={`w-1.5 h-1.5 rounded-full ${node.data.ready ? 'bg-green-400' : 'bg-red-400 animate-pulse'}`} /><span>{relationshipStatus(node)}</span></div>;
+    if (node.type === 'ingresses') return <div className="text-[9px] font-mono text-gray-400 mt-0.5 truncate">{relationshipStatus(node)}</div>;
+    return <div className="text-[9px] font-mono text-gray-400 mt-0.5 truncate capitalize">{node.type.replace('persistent', 'Persistent ')}</div>;
+}
+
+function RelationshipNodeCard({ node, connected, filtered, hovered, onSelectItem, onHover }: Readonly<{ node: RelationshipNode; connected: boolean; filtered: boolean; hovered: boolean; onSelectItem: K8sRelationshipMapProps['onSelectItem']; onHover: (id: string | null) => void }>) {
+    const color = relationshipCardClass(hovered, connected, filtered, podCardColor(node));
+    return <div className="node-card absolute pointer-events-auto" style={{ left: `${node.x}px`, top: `${node.y}px`, width: '190px', height: '48px', zIndex: hovered ? 50 : 10 }}>
+        <button type="button" aria-label={`Inspect ${node.type} ${node.name || ''}`} onClick={() => onSelectItem({ type: node.type, data: node.data })} onMouseEnter={() => onHover(node.id)} onMouseLeave={() => onHover(null)} onFocus={() => onHover(node.id)} onBlur={() => onHover(null)} onTouchStart={() => onHover(node.id)} onTouchEnd={() => onHover(null)} onTouchCancel={() => onHover(null)} className={`w-full h-full text-left rounded-xl border p-2 flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md shadow-lg hover:scale-[1.03] hover:shadow-black/60 focus-visible:outline-2 focus-visible:outline-primary ${color}`}>
+            <div className="w-8 h-8 rounded-lg bg-black/35 flex items-center justify-center shrink-0 border border-white/4">{getNodeIcon(node.type)}</div>
+            <div className="min-w-0 flex-1"><div className="text-[11px] font-bold truncate text-white uppercase tracking-wider">{node.name}</div><RelationshipNodeStatus node={node} /></div>
+        </button>
+    </div>;
 }
 
 export function K8sRelationshipMap({
@@ -51,6 +79,21 @@ export function K8sRelationshipMap({
     const handleZoomIn = () => setScale(s => Math.min(s + 0.1, 2));
     const handleZoomOut = () => setScale(s => Math.max(s - 0.1, 0.5));
     const handleResetZoom = () => { setScale(1); setPan({ x: 0, y: 0 }); };
+
+    const handleCanvasKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (event.target !== event.currentTarget) return;
+        switch (event.key) {
+            case 'ArrowLeft': setPan(previous => ({ ...previous, x: previous.x - 30 })); break;
+            case 'ArrowRight': setPan(previous => ({ ...previous, x: previous.x + 30 })); break;
+            case 'ArrowUp': setPan(previous => ({ ...previous, y: previous.y - 30 })); break;
+            case 'ArrowDown': setPan(previous => ({ ...previous, y: previous.y + 30 })); break;
+            case '+': case '=': handleZoomIn(); break;
+            case '-': handleZoomOut(); break;
+            case 'Home': handleResetZoom(); break;
+            default: return;
+        }
+        event.preventDefault();
+    };
 
     // Pan handlers
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -111,7 +154,7 @@ export function K8sRelationshipMap({
 
     // Process nodes into layout list
     const nodes = useMemo(() => {
-        const list: any[] = [];
+        const list: RelationshipNode[] = [];
 
         // 1. Ingresses
         const ingSpacing = height / (ingresses.length + 1);
@@ -182,104 +225,7 @@ export function K8sRelationshipMap({
     }, [ingresses, services, pods, configMaps, secrets, height]);
 
     // Build relationship connections (Edges)
-    const edges = useMemo(() => {
-        const list: any[] = [];
-
-        // 1. Match Ingresses to Services
-        ingresses.forEach(ing => {
-            const ingName = ing.metadata?.name;
-            const rules = ing.spec?.rules || [];
-            const targets: string[] = [];
-
-            rules.forEach((rule: any) => {
-                const paths = rule.http?.paths || [];
-                paths.forEach((p: any) => {
-                    if (p.backend?.service?.name) targets.push(p.backend.service.name);
-                });
-            });
-            if (ing.spec?.defaultBackend?.service?.name) {
-                targets.push(ing.spec.defaultBackend.service.name);
-            }
-
-            Array.from(new Set(targets)).forEach(svcName => {
-                const source = nodes.find(n => n.id === `ingress-${ingName}`);
-                const target = nodes.find(n => n.id === `service-${svcName}`);
-                if (source && target) {
-                    list.push({
-                        id: `edge-ing-svc-${ingName}-${svcName}`,
-                        sourceId: source.id,
-                        targetId: target.id,
-                        source,
-                        target
-                    });
-                }
-            });
-        });
-
-        // 2. Match Services to Pods
-        services.forEach(svc => {
-            const svcName = svc.metadata?.name;
-            const selector = svc.spec?.selector;
-            if (!selector || Object.keys(selector).length === 0) return;
-
-            pods.forEach(pod => {
-                const podLabels = pod.labels || {};
-                const matches = Object.entries(selector).every(([k, v]) => podLabels[k] === v);
-                if (matches) {
-                    const source = nodes.find(n => n.id === `service-${svcName}`);
-                    const target = nodes.find(n => n.id === `pod-${pod.name}`);
-                    if (source && target) {
-                        list.push({
-                            id: `edge-svc-pod-${svcName}-${pod.name}`,
-                            sourceId: source.id,
-                            targetId: target.id,
-                            source,
-                            target
-                        });
-                    }
-                }
-            });
-        });
-
-        // 3. Match Pods to ConfigMaps / Secrets
-        pods.forEach(pod => {
-            // ConfigMaps references
-            if (pod.refConfigMaps) {
-                pod.refConfigMaps.forEach((cmName: string) => {
-                    const source = nodes.find(n => n.id === `pod-${pod.name}`);
-                    const target = nodes.find(n => n.id === `configmap-${cmName}`);
-                    if (source && target) {
-                        list.push({
-                            id: `edge-pod-cm-${pod.name}-${cmName}`,
-                            sourceId: source.id,
-                            targetId: target.id,
-                            source,
-                            target
-                        });
-                    }
-                });
-            }
-
-            // Secrets references
-            if (pod.refSecrets) {
-                pod.refSecrets.forEach((secName: string) => {
-                    const source = nodes.find(n => n.id === `pod-${pod.name}`);
-                    const target = nodes.find(n => n.id === `secret-${secName}`);
-                    if (source && target) {
-                        list.push({
-                            id: `edge-pod-sec-${pod.name}-${secName}`,
-                            sourceId: source.id,
-                            targetId: target.id,
-                            source,
-                            target
-                        });
-                    }
-                });
-            }
-        });
-
-        return list;
-    }, [ingresses, services, pods, nodes]);
+    const edges = useMemo(() => relationshipEdges(ingresses, services, pods, nodes), [ingresses, services, pods, nodes]);
 
     // Active Highlight calculations
     const activeTraceNodeIds = useMemo(() => {
@@ -311,16 +257,7 @@ export function K8sRelationshipMap({
 
 
     // Render node icons helper
-    const getNodeIcon = (type: string) => {
-        switch (type) {
-            case 'ingresses': return <Globe className="w-4 h-4 text-cyan-400" />;
-            case 'services': return <Server className="w-4 h-4 text-emerald-400" />;
-            case 'pods': return <Box className="w-4 h-4 text-primary" />;
-            case 'configmaps': return <Settings className="w-4 h-4 text-amber-400" />;
-            case 'secrets': return <Shield className="w-4 h-4 text-red-400" />;
-            default: return <HelpCircle className="w-4 h-4 text-gray-400" />;
-        }
-    };
+
 
     return (
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative select-none">
@@ -339,6 +276,7 @@ export function K8sRelationshipMap({
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
                         <input
                             type="text"
+                            aria-label="Filter topology nodes"
                             placeholder="Filter nodes..."
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
@@ -411,43 +349,8 @@ export function K8sRelationshipMap({
 
                                 // Draw Nodes
                                 nodes.forEach(n => {
-                                    const isPod = n.type === 'pods';
-                                    const podReady = isPod && n.data?.ready;
-
-                                    const rawStatus = isPod
-                                        ? (typeof n.data?.status === 'string'
-                                            ? n.data.status
-                                            : typeof n.data?.status?.phase === 'string'
-                                                ? n.data.status.phase
-                                                : podReady ? 'Running' : 'Active')
-                                        : n.type === 'ingresses'
-                                            ? (n.data?.spec?.rules?.[0]?.host || 'Local Route')
-                                            : (n.type.charAt(0).toUpperCase() + n.type.slice(1));
-
-                                    let cardBg = '#161616';
-                                    let cardStroke = '#262626';
-                                    let statusDotColor = '#3b82f6';
-
-                                    if (isPod) {
-                                        if (rawStatus.toLowerCase().includes('running') || podReady) {
-                                            cardBg = '#091b12';
-                                            cardStroke = 'rgba(16, 185, 129, 0.4)';
-                                            statusDotColor = '#4ade80';
-                                        } else if (rawStatus.toLowerCase().includes('pending')) {
-                                            cardBg = '#1f1609';
-                                            cardStroke = 'rgba(245, 158, 11, 0.4)';
-                                            statusDotColor = '#fbbf24';
-                                        } else {
-                                            cardBg = '#220b0b';
-                                            cardStroke = 'rgba(239, 68, 68, 0.4)';
-                                            statusDotColor = '#f87171';
-                                        }
-                                    } else {
-                                        if (n.type === 'ingresses') statusDotColor = '#22d3ee';
-                                        else if (n.type === 'services') statusDotColor = '#34d399';
-                                        else if (n.type === 'configmaps') statusDotColor = '#fbbf24';
-                                        else if (n.type === 'secrets') statusDotColor = '#f87171';
-                                    }
+                                    const rawStatus = relationshipStatus(n);
+                                    const { cardBg, cardStroke, statusDotColor } = exportNodeColors(n);
 
                                     const cleanName = escapeXml((n.name || '').toUpperCase().slice(0, 18));
                                     const cleanStatus = escapeXml(rawStatus);
@@ -493,7 +396,7 @@ export function K8sRelationshipMap({
                                 a.download = `kubiq-topology-${namespace || 'cluster'}-${Date.now()}.svg`;
                                 document.body.appendChild(a);
                                 a.click();
-                                document.body.removeChild(a);
+                                a.remove();
                                 URL.revokeObjectURL(url);
                             }}
                             className="flex items-center gap-1 px-2 py-1 bg-white/5 hover:bg-white/10 text-gray-300 rounded text-xs transition-colors border border-white/10"
@@ -526,6 +429,10 @@ export function K8sRelationshipMap({
             {/* Topology Canvas Area */}
             <div
                 ref={containerRef}
+                role="application"
+                aria-label="Kubernetes topology canvas. Arrow keys pan; plus and minus zoom; Home resets."
+                tabIndex={0}
+                onKeyDown={handleCanvasKeyDown}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
@@ -534,7 +441,7 @@ export function K8sRelationshipMap({
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
                 onTouchCancel={handleTouchEnd}
-                className="flex-1 overflow-hidden bg-[#0d0d0d] relative cursor-grab active:cursor-grabbing touch-none"
+                className="flex-1 overflow-hidden bg-[#0d0d0d] relative cursor-grab active:cursor-grabbing touch-none focus-visible:outline-2 focus-visible:outline-primary"
             >
                 {/* Single transformed wrapper for perfect SVG & Card coordinate alignment */}
                 <div
@@ -682,86 +589,7 @@ export function K8sRelationshipMap({
                     `}</style>
 
                     {/* DOM Node cards placed on top of SVG */}
-                    {nodes.map(node => {
-                        const isNodeTrace = !hoveredNodeId || activeTraceNodeIds.has(node.id);
-                        const isFiltered = searchQuery && !node.name.toLowerCase().includes(searchQuery.toLowerCase());
-                        const isPod = node.type === 'pods';
-                        const podReady = isPod && node.data.ready;
-
-                        // Pod status-specific backgrounds
-                        let statusColor = 'border-gray-800 bg-[#161616]';
-                        if (isPod) {
-                            if (node.data.status?.toLowerCase().includes('running') || podReady) {
-                                statusColor = 'border-emerald-500/30 bg-emerald-950/15';
-                            } else if (node.data.status?.toLowerCase().includes('pending')) {
-                                statusColor = 'border-amber-500/30 bg-amber-950/15';
-                            } else {
-                                statusColor = 'border-red-500/30 bg-red-950/15';
-                            }
-                        }
-
-                        return (
-                            <div
-                                key={node.id}
-                                className="node-card absolute pointer-events-auto"
-                                style={{
-                                    left: `${node.x}px`,
-                                    top: `${node.y}px`,
-                                    width: '190px',
-                                    height: '48px',
-                                    zIndex: hoveredNodeId === node.id ? 50 : 10
-                                }}
-                            >
-                                <button
-                                    type="button"
-                                    onClick={() => onSelectItem({ type: node.type, data: node.data })}
-                                    onMouseEnter={() => setHoveredNodeId(node.id)}
-                                    onMouseLeave={() => setHoveredNodeId(null)}
-                                    onTouchStart={() => setHoveredNodeId(node.id)}
-                                    onTouchEnd={() => setHoveredNodeId(null)}
-                                    onTouchCancel={() => setHoveredNodeId(null)}
-                                    className={`
-                                        w-full h-full text-left rounded-xl border p-2 flex items-center gap-2.5 
-                                        transition-all duration-300 backdrop-blur-md shadow-lg
-                                        hover:scale-[1.03] hover:shadow-black/60
-                                        ${hoveredNodeId === node.id
-                                            ? 'border-primary bg-primary/10 shadow-primary/20 scale-[1.02]'
-                                            : isNodeTrace && !isFiltered
-                                                ? `${statusColor} text-gray-100 hover:border-gray-600`
-                                                : 'border-gray-900/60 bg-[#141414]/30 text-gray-500 opacity-25'
-                                        }
-                                    `}
-                                >
-                                    <div className="w-8 h-8 rounded-lg bg-black/35 flex items-center justify-center shrink-0 border border-white/4">
-                                        {getNodeIcon(node.type)}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="text-[11px] font-bold truncate text-white uppercase tracking-wider">{node.name}</div>
-                                        {isPod ? (
-                                            <div className="text-[9px] font-mono text-gray-400 mt-0.5 truncate flex items-center gap-1">
-                                                <span className={`w-1.5 h-1.5 rounded-full ${podReady ? 'bg-green-400' : 'bg-red-400 animate-pulse'}`} />
-                                                <span>
-                                                    {typeof node.data.status === 'string'
-                                                        ? node.data.status
-                                                        : typeof node.data.status?.phase === 'string'
-                                                            ? node.data.status.phase
-                                                            : podReady ? 'Running' : 'Active'}
-                                                </span>
-                                            </div>
-                                        ) : node.type === 'ingresses' ? (
-                                            <div className="text-[9px] font-mono text-gray-400 mt-0.5 truncate">
-                                                {node.data.spec?.rules?.[0]?.host || 'Local Route'}
-                                            </div>
-                                        ) : (
-                                            <div className="text-[9px] font-mono text-gray-400 mt-0.5 truncate capitalize">
-                                                {node.type.replace('persistent', 'Persistent ')}
-                                            </div>
-                                        )}
-                                    </div>
-                                </button>
-                            </div>
-                        );
-                    })}
+                    {nodes.map(node => <RelationshipNodeCard key={node.id} node={node} connected={!hoveredNodeId || activeTraceNodeIds.has(node.id)} filtered={Boolean(searchQuery && !(node.name || '').toLowerCase().includes(searchQuery.toLowerCase()))} hovered={hoveredNodeId === node.id} onSelectItem={onSelectItem} onHover={setHoveredNodeId} />)}
                 </div>
             </div>
         </div>

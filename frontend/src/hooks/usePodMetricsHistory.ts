@@ -4,6 +4,10 @@ import { apiClient } from '../services/api';
 interface PodMetricSample { cpu_m: number; memory_mi: number; timestamp_ms: number }
 export interface PodMetricsHistory { cpu: number[]; memory: number[]; timestamps: number[] }
 
+function decrementCountdown(previous: number): number {
+    return Math.max(0, previous - 1);
+}
+
 export function usePodMetricsHistory(namespace: string, podName: string | undefined, enabled: boolean) {
     const [clickhouseMetrics, setClickhouseMetrics] = useState<PodMetricsHistory | null>(null);
     const [refreshCountdown, setRefreshCountdown] = useState(60);
@@ -49,7 +53,7 @@ export function usePodMetricsHistory(namespace: string, podName: string | undefi
                 if (status?.clickhouseEnabled === false) return;
                 void fetchHistory(interval);
                 intervalId = setInterval(() => { void fetchHistory(interval); }, interval * 1000);
-                countdownId = setInterval(() => setRefreshCountdown(previous => Math.max(0, previous - 1)), 1000);
+                countdownId = setInterval(() => setRefreshCountdown(decrementCountdown), 1000);
             } catch {
                 if (active) {
                     setIsCheckingConfig(false);
