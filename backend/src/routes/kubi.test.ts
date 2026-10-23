@@ -72,6 +72,45 @@ describe('kubi streaming message route', () => {
     expect(writes.join('')).toContain("I can help with kubiq");
     expect(writes.join('')).toContain('event: done');
   });
+  it('answers fixed product questions without planning or telemetry', async () => {
+    const writes: string[] = [];
+    const res = { setHeader: jest.fn(), flushHeaders: jest.fn(), write: jest.fn((value: string) => writes.push(value)), end: jest.fn(), status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await messageHandler({ user: { sub: 'local-user' }, params: { conversationId: 'conversation-a' }, body: { message: 'Who created kubi?' }, headers: {} }, res);
+    expect(plan).not.toHaveBeenCalled();
+    expect(stream).not.toHaveBeenCalled();
+    expect(repository.appendMessage).toHaveBeenCalledTimes(2);
+    expect(writes.join('')).toContain('created by Priyanshu Modi');
+    expect(writes.join('').indexOf('event: answer_delta')).toBeLessThan(writes.join('').indexOf('event: done'));
+    expect(res.end).toHaveBeenCalledTimes(1);
+  });
+
+  it('preserves clarification slots even when the next message resembles a product question', async () => {
+    repository.getConversation.mockResolvedValue({ id: 'conversation-a', messages: [{ clarification: { slot: 'namespace', options: [], question: 'Investigate workloads' } }] });
+    plan.mockResolvedValue({ kind: 'clarify', question: 'Investigate workloads', message: 'Which namespace?', options: [], slot: 'namespace', domains: [] });
+    const res = { setHeader: jest.fn(), flushHeaders: jest.fn(), write: jest.fn(), end: jest.fn(), status: jest.fn().mockReturnThis(), json: jest.fn() };
+    await messageHandler({ user: { sub: 'clarifying-user' }, params: { conversationId: 'conversation-a' }, body: { message: 'hello' }, headers: {} }, res);
+    expect(plan).toHaveBeenCalled();
+    expect(repository.appendMessage).toHaveBeenLastCalledWith('clarifying-user', 'conversation-a', expect.objectContaining({ clarification: { options: [], slot: 'namespace', question: 'Investigate workloads' } }));
+    expect(stream).not.toHaveBeenCalled();
+  });
+
+  it('ends failed streams and releases the active-user guard for a subsequent request', async () => {
+    stream.mockRejectedValueOnce(new Error('provider unavailable'));
+    const logger = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const req = { user: { sub: 'recovering-user' }, params: { conversationId: 'conversation-a' }, body: { message: 'Investigate service health' }, headers: {} };
+    const response = () => ({ setHeader: jest.fn(), flushHeaders: jest.fn(), write: jest.fn(), end: jest.fn(), status: jest.fn().mockReturnThis(), json: jest.fn() });
+    try {
+      const first = response();
+      await messageHandler(req, first);
+      expect(first.write).toHaveBeenCalledWith(expect.stringContaining('KUBI_REQUEST_FAILED'));
+      expect(first.end).toHaveBeenCalledTimes(1);
+      const second = response();
+      await messageHandler(req, second);
+      expect(second.status).not.toHaveBeenCalledWith(429);
+      expect(second.write).toHaveBeenCalledWith(expect.stringContaining('event: done'));
+      expect(second.end).toHaveBeenCalledTimes(1);
+    } finally { logger.mockRestore(); }
+  });
   it('persists clarification choices without collecting telemetry', async () => {
     plan.mockResolvedValue({ kind: 'clarify', message: 'Whose history?', options: ['My account', 'All users'], domains: [] });
     const writes: string[] = [];

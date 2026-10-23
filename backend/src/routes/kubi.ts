@@ -6,8 +6,9 @@ import { sanitizeKubiContent } from '../utils/kubiSanitizer';
 import { AuditLogService } from '../services/AuditLogService';
 import { getUserFromReq } from '../middleware/auth';
 import { KubiScopeService } from '../services/KubiScopeService';
-import { KubiIntentService } from '../services/KubiIntentService';
+import { KubiIntentService, KubiPlan } from '../services/KubiIntentService';
 import { RbacRoleService } from '../services/RbacRoleService';
+import { IKubiConversationRepository, KubiConversation, KubiConversationMessage } from '../database/interfaces/IKubiConversationRepository';
 
 export const kubiRouter = Router();
 const kubiService = new KubiService();
@@ -18,6 +19,45 @@ const requestTimestamps = new Map<string, number[]>();
 const getUserId = (req: Request) => String(req.user?.sub || req.user?.id || getUserFromReq(req));
 const sanitizeInput = (value: unknown) => typeof value === 'string' ? value.trim().slice(0, 4000) : '';
 const sendEvent = (res: Response, event: string, data: unknown) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+
+type ReplyContext = {
+  req: Request;
+  res: Response;
+  repository: IKubiConversationRepository;
+  conversation: KubiConversation;
+  userId: string;
+};
+
+async function persistLocalReply(context: ReplyContext, message: KubiConversationMessage): Promise<void> {
+  const { repository, userId, conversation, res } = context;
+  await repository.appendMessage(userId, conversation.id, message);
+  sendEvent(res, 'answer_delta', { text: message.content });
+  sendEvent(res, 'done', { conversationId: conversation.id, messageId: message.id });
+}
+
+async function answerProductQuestion(context: ReplyContext, question: string): Promise<boolean> {
+  const { conversation, req } = context;
+  const pendingClarification = conversation.messages[conversation.messages.length - 1]?.clarification;
+  const localAnswer = pendingClarification ? null : KubiScopeService.fixedProductAnswer(question);
+  if (!localAnswer) return false;
+  await persistLocalReply(context, kubiMessage('assistant', localAnswer));
+  auditLog.log({ user: getUserFromReq(req), action: KubiScopeService.isInScope(question) ? 'KUBI_PRODUCT_QUESTION' : 'KUBI_OUT_OF_SCOPE_QUESTION', target: `kubi/conversation/${conversation.id}`, details: KubiScopeService.isInScope(question) ? 'kubi answered a local product question.' : 'kubi declined a non-kubiq question.', ip: req.ip });
+  return true;
+}
+
+async function answerNonTelemetryPlan(context: ReplyContext, plan: KubiPlan): Promise<void> {
+  const assistantMessage = kubiMessage('assistant', plan.message);
+  if (plan.kind === 'clarify') assistantMessage.clarification = { options: plan.options, ...(plan.slot ? { slot: plan.slot, question: plan.question } : {}) };
+  await persistLocalReply(context, assistantMessage);
+  const { req, conversation } = context;
+  auditLog.log({ user: getUserFromReq(req), action: plan.kind === 'clarify' ? 'KUBI_CLARIFICATION' : 'KUBI_OUT_OF_SCOPE_QUESTION', target: `kubi/conversation/${conversation.id}`, details: plan.kind === 'clarify' ? 'kubi requested clarification.' : 'kubi declined an unsupported request.', ip: req.ip });
+}
+
+function sendRequestError(res: Response, error: any): void {
+  console.error('kubi request failed:', error?.message || error);
+  const providerLimited = error?.response?.status === 429;
+  sendEvent(res, 'error', { error: providerLimited ? 'KUBI_PROVIDER_RATE_LIMITED' : 'KUBI_REQUEST_FAILED', message: providerLimited ? 'The configured AI provider has reached its rate or quota limit. Please try again later; if it persists, ask your administrator to check the AI provider quota.' : 'kubi could not complete this request. Try again shortly.' });
+}
 
 const consumeRequestAllowance = (userId: string): boolean => {
   const now = Date.now();
@@ -95,16 +135,8 @@ kubiRouter.post('/conversations/:conversationId/messages', async (req, res) => {
     sendEvent(res, 'status', { state: 'thinking', label: 'kubi is understanding your question' });
 
     // Fixed product facts and refusals stay local: no telemetry query, provider request, or rate-limit use.
-    const pendingClarification = conversation.messages[conversation.messages.length - 1]?.clarification;
-    const localAnswer = pendingClarification ? null : KubiScopeService.fixedProductAnswer(question);
-    if (localAnswer) {
-      const assistantMessage = kubiMessage('assistant', localAnswer);
-      await repository.appendMessage(userId, conversation.id, assistantMessage);
-      sendEvent(res, 'answer_delta', { text: localAnswer });
-      sendEvent(res, 'done', { conversationId: conversation.id, messageId: assistantMessage.id });
-      auditLog.log({ user: getUserFromReq(req), action: KubiScopeService.isInScope(question) ? 'KUBI_PRODUCT_QUESTION' : 'KUBI_OUT_OF_SCOPE_QUESTION', target: `kubi/conversation/${conversation.id}`, details: KubiScopeService.isInScope(question) ? 'kubi answered a local product question.' : 'kubi declined a non-kubiq question.', ip: req.ip });
-      return;
-    }
+    const replyContext: ReplyContext = { req, res, repository, conversation, userId };
+    if (await answerProductQuestion(replyContext, question)) return;
     if (!consumeRequestAllowance(userId)) {
       sendEvent(res, 'error', { error: 'KUBI_RATE_LIMITED', message: 'kubi has reached its per-user request limit. Try again later.' });
       return;
@@ -114,12 +146,7 @@ kubiRouter.post('/conversations/:conversationId/messages', async (req, res) => {
     const canReadAudit = await RbacRoleService.hasPermission(context.user || {}, 'audit.read');
     const plan = await new KubiIntentService().plan(question, conversation.messages, canReadAudit);
     if (plan.kind !== 'answer') {
-      const assistantMessage = kubiMessage('assistant', plan.message);
-      if (plan.kind === 'clarify') assistantMessage.clarification = { options: plan.options, ...(plan.slot ? { slot: plan.slot, question: plan.question } : {}) };
-      await repository.appendMessage(userId, conversation.id, assistantMessage);
-      sendEvent(res, 'answer_delta', { text: plan.message });
-      sendEvent(res, 'done', { conversationId: conversation.id, messageId: assistantMessage.id });
-      auditLog.log({ user: getUserFromReq(req), action: plan.kind === 'clarify' ? 'KUBI_CLARIFICATION' : 'KUBI_OUT_OF_SCOPE_QUESTION', target: `kubi/conversation/${conversation.id}`, details: plan.kind === 'clarify' ? 'kubi requested clarification.' : 'kubi declined an unsupported request.', ip: req.ip });
+      await answerNonTelemetryPlan(replyContext, plan);
       return;
     }
 
@@ -135,9 +162,7 @@ kubiRouter.post('/conversations/:conversationId/messages', async (req, res) => {
     sendEvent(res, 'done', { conversationId: conversation.id, messageId: assistantMessage.id });
     auditLog.log({ user: getUserFromReq(req), action: 'KUBI_QUESTION', target: `kubi/conversation/${conversation.id}`, details: 'Asked kubi an observability question.', ip: req.ip });
   } catch (error: any) {
-    console.error('kubi request failed:', error?.message || error);
-    const providerLimited = error?.response?.status === 429;
-    sendEvent(res, 'error', { error: providerLimited ? 'KUBI_PROVIDER_RATE_LIMITED' : 'KUBI_REQUEST_FAILED', message: providerLimited ? 'The configured AI provider has reached its rate or quota limit. Please try again later; if it persists, ask your administrator to check the AI provider quota.' : 'kubi could not complete this request. Try again shortly.' });
+    sendRequestError(res, error);
   } finally {
     activeUsers.delete(userId);
     res.end();
