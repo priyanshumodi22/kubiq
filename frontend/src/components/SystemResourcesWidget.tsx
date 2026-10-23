@@ -93,8 +93,8 @@ export const SystemResourcesWidget = () => {
                         <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> Uptime
                     </h3>
                     <div className="flex space-x-1 justify-center sm:justify-start">
-                        {formatUptime(metrics.uptime).split(' ').map((part, i) => (
-                            <div key={i} className="bg-gray-800 border border-gray-700 rounded px-1.5 py-0.5 sm:px-2 sm:py-1 text-white font-mono text-xs sm:text-lg font-bold">
+                        {formatUptime(metrics.uptime).split(' ').map((part) => (
+                            <div key={part.slice(-1)} className="bg-gray-800 border border-gray-700 rounded px-1.5 py-0.5 sm:px-2 sm:py-1 text-white font-mono text-xs sm:text-lg font-bold">
                                 {part}
                             </div>
                         ))}

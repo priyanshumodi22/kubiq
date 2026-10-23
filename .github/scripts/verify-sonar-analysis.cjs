@@ -14,9 +14,9 @@ async function verifyAnalysis({ host, token, sha, request = fetch, baseline }) {
   const hotspots = await get('/api/hotspots/search?projectKey=kubiq&status=TO_REVIEW&ps=1');
   const issueCount = issues.paging?.total ?? issues.total;
   const hotspotCount = hotspots.paging?.total;
-  if (issueCount !== 0 || hotspotCount !== 0 || gate.projectStatus?.status !== 'OK') throw new Error(`Release blocked: ${issueCount ?? 'unknown'} open issues, ${hotspotCount ?? 'unknown'} unreviewed hotspots, gate ${gate.projectStatus?.status || 'unknown'}.`);
   const payload = await get('/api/measures/component?component=kubiq&metricKeys=coverage,new_coverage,new_lines_to_cover,new_duplicated_lines_density');
   const measures = Object.fromEntries((payload.component?.measures || []).map(item => [item.metric, Number(item.value ?? item.period?.value ?? item.periods?.[0]?.value)]));
+  if (issueCount !== 0 || hotspotCount !== 0 || gate.projectStatus?.status !== 'OK') throw new Error(`Release blocked: ${issueCount ?? 'unknown'} open issues, ${hotspotCount ?? 'unknown'} unreviewed hotspots, gate ${gate.projectStatus?.status || 'unknown'}.`);
   if (!Number.isFinite(measures.coverage) || !Number.isFinite(baseline?.coverage)) throw new Error('Measured overall coverage and a reviewed coverage baseline are required.');
   if (measures.coverage + 0.01 < baseline.coverage) throw new Error('Overall coverage regressed against the reviewed baseline.');
   if (!Number.isFinite(measures.new_lines_to_cover)) throw new Error('New-code coverage scope is missing; configure the fixed new-code baseline.');

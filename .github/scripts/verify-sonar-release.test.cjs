@@ -56,3 +56,14 @@ test('CLI verification fails closed without the separate read token even when an
   assert.match(result.stderr, /read-only verification token/);
   assert.equal(result.stderr.includes('test-analysis-only'), false);
 });
+
+test('blocked analyses still check authenticated access to the measures endpoint', async () => {
+  const paths = [];
+  const request = async (url, options) => {
+    paths.push(new URL(url).pathname);
+    assert.equal(options.headers.Authorization, 'Bearer test-read-only');
+    return mockSonar({ open: 1 })(url);
+  };
+  await assert.rejects(verifyAnalysis({ host: 'http://127.0.0.1:19000', token: 'test-read-only', sha, baseline: { coverage: 20 }, request }), /1 open issues/);
+  assert.deepEqual(paths, ['/api/project_analyses/search', '/api/qualitygates/project_status', '/api/issues/search', '/api/hotspots/search', '/api/measures/component']);
+});

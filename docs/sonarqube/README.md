@@ -7,14 +7,18 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
-Run 47 verifies `7787e534e99674ba24c8bb674fffb714686942d1`: 75 open
+Run 48 verifies `3dc7714d106e9154151f02da3f7c3cc5cddb1a08`: 68 open
 issues, 38.5% combined coverage, no unreviewed hotspots and standard gate OK.
 The five Tailwind directives and four monitor findings are closed. Four exact
 accessibility IDs have RESOLVED export status, matching their individually
 verified False Positive UI dispositions and documented evidence.
-Archive: `gs://priyanshu-apps-sonarqube-backups/reports/11a418f4-570a-4fa7-80bf-eae79c777db1-1792793073.json`.
+Archive: `gs://priyanshu-apps-sonarqube-backups/reports/349a3a8e-6740-47a5-b6a2-937dde78a1e0-1792798972.json`.
 
-The strict GitHub verification still fails closed with HTTP 403 on a read API.
+The strict GitHub verification no longer fails with HTTP 403: run 48 reads
+the exact analysis, quality gate, open issues and hotspots using the new account,
+then correctly blocks release on 68 remaining issues. The next revision also
+reads measures before evaluating issue counts so every read endpoint is exercised
+even during remediation.
 The project analysis credential is not widened. The approved separate
 `kubiq-release-verifier` account now has Browse only on the private kubiq project.
 It has no source-code, issue/hotspot administration, analysis or global grants.
@@ -24,14 +28,25 @@ scanner owner retains Execute Analysis explicitly on kubiq. A 30-day user token
 is saved as `SONAR_READ_TOKEN` in repository Actions secrets, separately from the
 unchanged `SONAR_TOKEN`. Strict verification requires the read token with no
 analysis-token fallback. Five release guard tests pass, including missing-token
-failure and credential-safe errors. Live verification of this new connection
-is still pending; production remains blocked.
+failure and credential-safe errors. A sixth test checks all read API paths and
+the correct Authorization header for a blocked analysis. The read token expires
+November 22, 2026; the unchanged project analysis token expires November 20, 2026.
+Production remains blocked.
 
 The next batch replaces normalized namespace membership scans with a Set,
 extracts container-state selection without changing precedence, moves the header
 avatar out of its parent to preserve DOM identity, and extracts quoted RBAC verbs
 without changing YAML output. Local checks pass: 284 backend tests, 184 frontend
-tests and both builds. These changes still need matching Sonar scan evidence.
+tests and both builds. Run 48 confirms those findings closed: 776 original
+findings are now explicitly CLOSED, 61 remain pending, two are reviewed safe
+and two are individually reviewed false positives. The 72 additional exported
+findings include closed items. The full original 841-row ledger is preserved.
+
+The subsequent source batch replaces index keys with semantic day/now tick IDs
+and uptime units, removes a commented debug statement and makes model-label
+spacing explicit. All 187 frontend tests and the frontend build pass. Tick
+retention, midnight collisions and uptime DOM identity have regression tests.
+These subsequent changes still require their own exact-commit scan.
 
 Run 46 was not separately archived before the next analysis. The existing VM
 exporter selects the latest completed report when its queue is empty; this needs

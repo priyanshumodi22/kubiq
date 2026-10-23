@@ -127,7 +127,7 @@ export function KubiAiSettings() {
           />
         </label>
         <label className="block text-sm font-medium text-text-dim">
-          Model identifier
+          Model identifier{' '}
           <input
             value={model}
             onChange={(event) => setModel(event.target.value)}

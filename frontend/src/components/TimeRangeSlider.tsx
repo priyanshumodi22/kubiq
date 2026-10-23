@@ -78,11 +78,11 @@ export function TimeRangeSlider({ minMs, maxMs, value, onChange }: Readonly<Time
                 label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
                 label = label.replace(',', '\n'); // Split into two lines for UI
             }
-            generatedTicks.push({ value: d.getTime(), label });
+            generatedTicks.push({ id: `day-${d.getTime()}`, value: d.getTime(), label });
         }
         
         // Add Now tick
-        generatedTicks.push({ value: maxMs, label: 'Now' });
+        generatedTicks.push({ id: 'now', value: maxMs, label: 'Now' });
         
         return generatedTicks;
     }, [maxMs, minMs]);
@@ -91,9 +91,9 @@ export function TimeRangeSlider({ minMs, maxMs, value, onChange }: Readonly<Time
         <div className="relative h-20 select-none mx-4 mt-6 mb-2">
             {/* Ticks and Labels */}
             <div className="absolute top-0 left-0 right-0 h-4">
-                {ticks.map((tick, i) => (
+                {ticks.map((tick) => (
                     <div 
-                        key={i} 
+                        key={tick.id}
                         className="absolute flex flex-col items-center -translate-x-1/2"
                         style={{ left: `${getPercent(tick.value)}%` }}
                     >
