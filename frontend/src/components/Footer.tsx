@@ -1,25 +1,34 @@
 import { ExternalLink, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import licenseText from '../../../LICENSE?raw';
 
 const LICENSE_SOURCE_URL = 'https://github.com/priyanshumodi22/kubiq/blob/main/LICENSE';
 const [LICENSE_TITLE = 'Elastic License 2.0', ...LICENSE_BODY] = licenseText.split(/\r?\n/);
 
+function dismissLicenseBackdrop(event: MouseEvent<HTMLDialogElement>, close: () => void) {
+  if (event.target !== event.currentTarget) return;
+  const bounds = event.currentTarget.getBoundingClientRect();
+  if (event.clientX < bounds.left || event.clientX > bounds.right
+    || event.clientY < bounds.top || event.clientY > bounds.bottom) close();
+}
+
 export default function Footer() {
   const [isLicenseOpen, setIsLicenseOpen] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const licenseTriggerRef = useRef<HTMLButtonElement>(null);
 
-  const closeLicense = () => setIsLicenseOpen(false);
+  const closeLicense = () => {
+    dialogRef.current?.close();
+    setIsLicenseOpen(false);
+    licenseTriggerRef.current?.focus();
+  };
 
   useEffect(() => {
-    if (!isLicenseOpen) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeLicense();
-    };
-
-    globalThis.addEventListener('keydown', handleKeyDown);
-    return () => globalThis.removeEventListener('keydown', handleKeyDown);
+    const dialog = dialogRef.current;
+    if (!isLicenseOpen || !dialog) return;
+    dialog.showModal();
+    return () => { if (dialog.open) dialog.close(); };
   }, [isLicenseOpen]);
 
   return (
@@ -33,7 +42,7 @@ export default function Footer() {
                 <a className="transition-colors hover:text-primary" href="https://kubiq.priyanshumodi.in/privacy">Privacy</a>
                 <a className="transition-colors hover:text-primary" href="https://kubiq.priyanshumodi.in/terms">Terms</a>
                 <a className="transition-colors hover:text-primary" href="https://kubiq.priyanshumodi.in/trademarks">Trademark Notice</a>
-                <button type="button" onClick={() => setIsLicenseOpen(true)} className="transition-colors hover:text-primary">License</button>
+                <button ref={licenseTriggerRef} type="button" onClick={() => setIsLicenseOpen(true)} className="transition-colors hover:text-primary">License</button>
               </nav>
             </div>
             <p>Built with ❤️ for Reliability Engineers. Downtime is Not an Option.</p>
@@ -42,13 +51,13 @@ export default function Footer() {
       </footer>
 
       {isLicenseOpen && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onMouseDown={closeLicense}>
-          <section
-            role="dialog"
+          <dialog
+            ref={dialogRef}
             aria-modal="true"
             aria-labelledby="license-dialog-title"
-            className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-bg shadow-2xl"
-            onMouseDown={(event) => event.stopPropagation()}
+            className="fixed inset-0 m-auto flex max-h-[85vh] w-[calc(100%_-_2rem)] max-w-2xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-bg p-0 text-inherit shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm"
+            onCancel={(event) => { event.preventDefault(); closeLicense(); }}
+            onClick={(event) => dismissLicenseBackdrop(event, closeLicense)}
           >
             <header className="flex items-center justify-between border-b border-white/10 bg-white/5 px-6 py-4">
               <h2 id="license-dialog-title" className="text-lg font-bold text-white">{LICENSE_TITLE.trim()}</h2>
@@ -68,8 +77,7 @@ export default function Footer() {
                 View original on GitHub <ExternalLink className="size-3" />
               </a>
             </footer>
-          </section>
-        </div>
+          </dialog>
       )}
     </>
   );

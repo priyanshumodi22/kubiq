@@ -7,6 +7,23 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 35 verifies `cb09048c90116cc4ccff2a3630507ecc26ba28b7`: 133 open
+issues, 33.1% coverage, zero unreviewed hotspots; standard gate ERROR.
+Orb and Kubernetes log-viewer findings are CLOSED. Two new storage findings
+(single-child fragment and accessible label text) are fixed in the following
+batch rather than ignored. Archive:
+`gs://priyanshu-apps-sonarqube-backups/reports/e5665f84-1e21-49cd-8b28-bbb3606de539-1792756729.json`.
+
+The next batch replaces the license modal's simulated dialog with a native
+dialog. Two tests read the actual root LICENSE, which is narrowly allowlisted
+for Vite by exact file and raw-import ID, not by repository directory. Chrome
+desktop verification confirms Enter opens a modal, Close receives initial focus,
+Escape and a real outside click dismiss it, and focus returns to License. A
+browser-discovered focus-return issue was fixed before publishing. Desktop
+layout was visually inspected; mobile and broader product verification remain
+pending. The isolated local fixture/server were removed/stopped after testing.
+Local frontend suite passes 146 tests and the build; this batch awaits its scan.
+
 Run 34 verifies `2a820f5be0a277885b2a68aebf41bd1d5d5b4287`: 142 open
 issues, 32.4% coverage, no unreviewed hotspots; standard gate ERROR.
 Six Kubernetes log-viewer findings are CLOSED; residual component complexity is

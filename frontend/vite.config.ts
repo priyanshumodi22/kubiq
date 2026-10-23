@@ -19,6 +19,8 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      // Footer imports the public root license; do not expose the rest of the repository.
+      fs: { allow: [path.resolve(__dirname), path.resolve(__dirname, '../LICENSE'), path.resolve(__dirname, '../LICENSE?raw')] },
       port: 3000,
       host: true,
       hmr: {

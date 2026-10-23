@@ -105,7 +105,6 @@ export const StorageAnalyticsWidget = () => {
     const monitoredDisks = metrics.disks.filter(d => selectedMounts.length === 0 || selectedMounts.includes(d.mount));
 
     return (
-        <>
             <div className="bg-bg-card border border-border-color rounded-lg p-6 shadow-lg backdrop-blur-sm bg-opacity-80 mt-4 relative overflow-hidden">
                 {/* Background Gradient */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full filter blur-3xl pointer-events-none -mr-16 -mt-16"></div>
@@ -156,6 +155,7 @@ export const StorageAnalyticsWidget = () => {
                                     <div className="max-h-64 overflow-y-auto p-2 space-y-1">
                                         {allDisks.map(disk => (
                                             <label key={disk.mount} className="flex items-center p-2 rounded hover:bg-gray-800 cursor-pointer transition-colors">
+                                                <span className="sr-only">Monitor volume {disk.mount}</span>
                                                 <input 
                                                     type="checkbox" 
                                                     checked={selectedMounts.includes(disk.mount)}
@@ -280,6 +280,5 @@ export const StorageAnalyticsWidget = () => {
                     </div>
                 </div>
             </div>
-        </>
     );
 };
