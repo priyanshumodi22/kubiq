@@ -4,7 +4,7 @@ async function verifyAnalysis({ host, token, sha, request = fetch, baseline }) {
   if (!/^https?:\/\//.test(host || '') || !token || !/^[a-f0-9]{40}$/.test(sha || '')) throw new Error('Sonar endpoint, token and exact revision are required.');
   const get = async path => {
     const response = await request(`${host}${path}`, { redirect: 'error', headers: { Authorization: `Bearer ${token}` } });
-    if (!response.ok) throw new Error(`Sonar verification unavailable (${response.status}).`);
+    if (!response.ok) throw new Error(`Sonar verification unavailable for ${path.split('?')[0]} (${response.status}).`);
     return response.json();
   };
   const analysis = (await get('/api/project_analyses/search?project=kubiq&ps=1')).analyses?.[0];

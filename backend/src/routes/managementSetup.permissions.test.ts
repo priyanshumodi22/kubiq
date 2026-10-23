@@ -12,8 +12,8 @@ describe('management setup least-privilege HTTP matrix', () => {
     let server: ReturnType<typeof app.listen>;
     let origin: string;
     beforeAll(async () => {
-        jest.spyOn(RbacRoleService, 'hasPermission').mockImplementation(async (user, permission) => (user.roles || []).includes(permission));
-        jest.spyOn(RbacRoleService, 'getRoles').mockResolvedValue([{ id: 'viewer', name: 'kubiq-viewer', description: 'Viewer', permissions: ['logs.read'] }]);
+        // Exercise the real role evaluator and HTTP guard; only persistence is stubbed.
+        jest.spyOn(RbacRoleService, 'getRoles').mockResolvedValue(['users.manage', 'system.configure', 'system.read'].map(permission => ({ id: permission, name: permission, description: 'Fixture', permissions: [permission] })));
         const monitor = SystemMonitorService.getInstance();
         jest.spyOn(monitor, 'getAllDisks').mockResolvedValue([]);
         jest.spyOn(monitor, 'getMonitoredDisksConfig').mockResolvedValue(['/data']);

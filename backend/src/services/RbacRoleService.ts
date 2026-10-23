@@ -18,14 +18,14 @@ export const permissionCatalogue = [
 // dependency with the role so selecting a meaningful action in the role builder
 // never creates a role whose own API request is denied by an enclosing guard.
 const permissionDependencies: Record<string, string[]> = {
-  'system.access': ['system.read'],
   'services.manage': ['services.read'],
   'notifications.manage': ['notifications.read'],
   'database.read': ['services.read'],
   'roles.manage': ['system.access'],
+  'users.manage': ['system.access'],
   'auth.configure': ['system.access'],
   'system.configure': ['system.access'],
-  'kubi.configure': ['system.access'],
+  'kubi.configure': ['system.access', 'system.read'],
   'logs.export': ['logs.read'],
   'logs.raw.read': ['logs.read'],
   'apm.export': ['apm.read'],

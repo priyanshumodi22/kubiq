@@ -26,6 +26,16 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 describe('system administration compatibility', () => {
+  it('loads configuration-only setup without requesting live metrics or audit history', async () => {
+    mocks.can.mockImplementation(permission => permission === 'system.configure');
+    const view = render(<SystemAdministration />);
+    await waitFor(() => expect((view.getByLabelText('Monitored mounts (comma-separated)') as HTMLInputElement).value).toBe('/, /data'));
+    expect(apiClient.getSystemStats).not.toHaveBeenCalled();
+    expect(apiClient.getAuditLogs).not.toHaveBeenCalled();
+    expect(view.queryByRole('button', { name: 'Users' })).toBeNull();
+    expect(view.getByRole('button', { name: 'Save configuration' })).toBeTruthy();
+  });
+
   it('loads user-role assignments without requesting role editing permissions or overview telemetry', async () => {
     mocks.can.mockImplementation(permission => permission === 'users.manage');
     const view = render(<SystemAdministration />);

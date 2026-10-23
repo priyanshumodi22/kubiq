@@ -182,8 +182,9 @@ const frontendPath = path.join(process.cwd(), 'public');
 app.use(`${FRONTEND_CONTEXT_PATH}`, express.static(frontendPath));
 
 // Fallback to index.html for client-side routing (Express 5 regex syntax)
+const escapedFrontendContextPath = FRONTEND_CONTEXT_PATH.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 app.get(
-  new RegExp(`^${FRONTEND_CONTEXT_PATH.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)}/.*`),
+  new RegExp(`^${escapedFrontendContextPath}/.*`),
   (req: Request, res: Response, next: express.NextFunction) => {
     // Don't override API routes or static files like favicon
     if (req.path.startsWith(`${BACKEND_CONTEXT_PATH}/api`) ||

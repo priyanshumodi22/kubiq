@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const ledger = require('../docs/sonarqube/baseline-ledger.json');
+const individualReviews = require('../docs/sonarqube/review-candidates.json').issues;
 
 // Consume an archived export, never infer a closure from a source edit or absence.
 const report = JSON.parse(fs.readFileSync(0, 'utf8').replace(/^\uFEFF/, ''));
@@ -48,6 +49,7 @@ const verifiedRevisions = {
   'bee9de4849b4c84e11cbcda7f465c7ee64961ade': [275, 172],
   '1a52a421a1e5eb69733955eaf15f72cb1349e542': [275, 176],
   'eb9507f821a055c954b082bc9edd6330d47a1e69': [275, 179],
+  '7787e534e99674ba24c8bb674fffb714686942d1': [278, 181],
 };
 const checks = verifiedRevisions[report.metadata.revision];
 assert.ok(checks, 'Record actual local verification for this exact revision before importing its scan.');
@@ -72,6 +74,14 @@ const safeReviews = {
 };
 const dispositions = ledger.findings.map(finding => {
   const issue = current.get(finding.id);
+  const falsePositive = individualReviews.find(review => review.id === finding.id && review.proposedDisposition === 'false_positive_reviewed');
+  if (issue?.status === 'RESOLVED' && falsePositive) {
+    assert.equal(issue.file, falsePositive.file);
+    assert.equal(issue.rule, falsePositive.rule);
+    assert.equal(falsePositive.reviewedStatus, 'False Positive');
+    assert.ok(falsePositive.verificationScan && falsePositive.verificationCommit);
+    return { id: finding.id, status: 'false_positive', sonarStatus: issue.status, rationale: falsePositive.rationale, tests: falsePositive.evidence, reviewEvidence: falsePositive.reviewedStatus, verificationScan: report.metadata.analysisId };
+  }
   const review = safeReviews[finding.id];
   if (issue?.status === 'REVIEWED' && review) {
     assert.equal(issue.file, review.file);
@@ -85,7 +95,7 @@ const checkpoint = {
   schemaVersion: 1,
   evidence: report.metadata,
   archiveFormat: 3,
-  rationale: 'Only explicit CLOSED status in the matching completed analysis is counted as fixed. Reviewed-safe status requires an individual recorded review with matching issue ID, file, rule and REVIEWED status. Missing and open findings remain pending.',
+  rationale: 'Only explicit CLOSED status in the matching completed analysis is counted as fixed. Safe reviews require matching issue ID, file, rule and REVIEWED status. Individual false positives require recorded authenticated UI review evidence plus matching RESOLVED export status. Missing and open findings remain pending.',
   regressionChecks: [`backend Jest: ${checks[0]} tests passed`, `frontend Vitest: ${checks[1]} tests passed`, 'backend TypeScript build passed', 'frontend TypeScript/Vite build passed'],
   baselineDispositions: dispositions,
   additionalFindings: added,

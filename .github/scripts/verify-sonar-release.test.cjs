@@ -34,3 +34,12 @@ test('strict Sonar gate requires issues/hotspots resolved and measurable coverag
   }
   await assert.rejects(verifyAnalysis({ ...args, baseline: { coverage: null }, request: mockSonar() }));
 });
+
+test('denied verification identifies only the API path and never leaks its token', async () => {
+  const token = 'test-secret-must-not-appear';
+  await assert.rejects(verifyAnalysis({ host: 'http://127.0.0.1:19000', token, sha, baseline: { coverage: 20 }, request: async () => ({ ok: false, status: 403 }) }), error => {
+    assert.equal(error.message, 'Sonar verification unavailable for /api/project_analyses/search (403).');
+    assert.equal(error.message.includes(token), false);
+    return true;
+  });
+});

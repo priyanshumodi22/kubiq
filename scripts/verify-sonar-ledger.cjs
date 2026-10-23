@@ -32,6 +32,11 @@ for (const item of checkpoint.baselineDispositions) {
     assert.equal(item.sonarStatus, 'REVIEWED');
     assert.equal(item.verificationScan, checkpoint.evidence.analysisId);
     assert.ok(item.rationale && item.tests?.length, 'Safe reviews require individual rationale and verification.');
+  } else if (item.status === 'false_positive') {
+    assert.equal(item.sonarStatus, 'RESOLVED');
+    assert.equal(item.reviewEvidence, 'False Positive');
+    assert.equal(item.verificationScan, checkpoint.evidence.analysisId);
+    assert.ok(item.rationale && item.tests?.length, 'Individual false positives need review and regression evidence.');
   } else assert.equal(item.status, 'pending');
   checkpointCounts[item.status] = (checkpointCounts[item.status] || 0) + 1;
 }

@@ -39,8 +39,19 @@ describe('custom role lifecycle safety', () => {
     const role = saved.roles.find((item: any) => item.name === 'trace-exporter');
     expect(role.permissions).toEqual(expect.arrayContaining([
       'apm.export', 'apm.read', 'kubernetes.exec', 'kubernetes.read',
-      'system.configure', 'system.access', 'system.read',
+      'system.configure', 'system.access',
     ]));
+    expect(role.permissions).not.toContain('system.read');
+  });
+
+  it.each(['users.manage', 'roles.manage', 'system.configure'])('does not broaden %s into system telemetry read access', async permission => {
+    const role = await RbacRoleService.createRole({ name: `fixture-${permission.replace('.', '-')}`, description: 'Narrow management fixture', permissions: [permission] });
+    expect(new Set(role.permissions)).toEqual(new Set([permission, 'system.access']));
+  });
+
+  it('preserves the existing explicit kubi configuration read dependency', async () => {
+    const role = await RbacRoleService.createRole({ name: 'fixture-kubi-configure', description: '', permissions: ['kubi.configure'] });
+    expect(new Set(role.permissions)).toEqual(new Set(['kubi.configure', 'system.access', 'system.read']));
   });
 
   it('does not delete a custom role that remains assigned to a Native user', async () => {

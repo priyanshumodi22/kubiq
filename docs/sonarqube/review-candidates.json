@@ -1,42 +1,71 @@
 {
   "schemaVersion": 1,
-  "note": "Candidates only. These issues remain pending and count as open until an authenticated individual SonarQube review is recorded and verified in an export. No rule is disabled.",
+  "note": "Individual reviews only. Each listed issue was reviewed as False Positive in the authenticated Sonar UI, with a matching RESOLVED status verified in the archived exact-commit analysis. No rule is disabled.",
   "issues": [
     {
       "id": "254f95af-53c3-4cf2-a0f8-b3c7d6f83b87",
       "rule": "typescript:S6843",
       "file": "frontend/src/components/KubiAvatar.tsx",
-      "proposedDisposition": "false_positive_pending_review",
+      "proposedDisposition": "false_positive_reviewed",
       "rationale": "This canvas draws a procedural status avatar; it has no click, keyboard or focus interaction. The image role is appropriate for the drawing, not an override on an interactive control. W3C ACT examples explicitly use a canvas with role=img and aria-label. Replacing it with a static img would remove the existing procedural state and reduced-motion behavior.",
-      "evidence": ["https://www.w3.org/WAI/standards-guidelines/act/rules/e88epe/proposed/", "KubiAvatar.test.tsx: image role, state-specific accessible label, no click or tab stop; animation lifecycle and reduced-motion tests"],
-      "verifiedSourceRevision": "bee9de4849b4c84e11cbcda7f465c7ee64961ade"
+      "evidence": [
+        "https://www.w3.org/WAI/standards-guidelines/act/rules/e88epe/proposed/",
+        "KubiAvatar.test.tsx: image role, state-specific accessible label, no click or tab stop; animation lifecycle and reduced-motion tests"
+      ],
+      "verifiedSourceRevision": "bee9de4849b4c84e11cbcda7f465c7ee64961ade",
+      "reviewedStatus": "False Positive",
+      "verifiedSonarStatus": "RESOLVED",
+      "verificationScan": "5dba66d4-1596-4afc-bc3f-27cb1f6ca246",
+      "verificationCommit": "7787e534e99674ba24c8bb674fffb714686942d1"
     },
     {
       "id": "ba7754fd-8eee-4e2a-9126-ba571f82e6f5",
       "rule": "typescript:S6819",
       "file": "frontend/src/components/KubiAvatar.tsx",
-      "proposedDisposition": "false_positive_pending_review",
+      "proposedDisposition": "false_positive_reviewed",
       "rationale": "A native img cannot render this canvas drawing. Canvas does not support alt; role=img with a meaningful aria-label supplies its image semantics and accessible name, matching W3C ACT canvas examples. No rule disabling or inaccessible conversion is justified.",
-      "evidence": ["https://www.w3.org/WAI/standards-guidelines/act/rules/e88epe/proposed/", "https://developer.mozilla.org/en-US/docs/Web/Accessibility/Guides/Understanding_WCAG/Text_labels_and_names", "KubiAvatar.test.tsx: non-interactive canvas with state-specific image label"],
-      "verifiedSourceRevision": "bee9de4849b4c84e11cbcda7f465c7ee64961ade"
+      "evidence": [
+        "https://www.w3.org/WAI/standards-guidelines/act/rules/e88epe/proposed/",
+        "https://developer.mozilla.org/en-US/docs/Web/Accessibility/Guides/Understanding_WCAG/Text_labels_and_names",
+        "KubiAvatar.test.tsx: non-interactive canvas with state-specific image label"
+      ],
+      "verifiedSourceRevision": "bee9de4849b4c84e11cbcda7f465c7ee64961ade",
+      "reviewedStatus": "False Positive",
+      "verifiedSonarStatus": "RESOLVED",
+      "verificationScan": "5dba66d4-1596-4afc-bc3f-27cb1f6ca246",
+      "verificationCommit": "7787e534e99674ba24c8bb674fffb714686942d1"
     },
     {
       "id": "1612f690-5af3-4999-8e14-a6deab91af8f",
       "rule": "typescript:S6847",
       "file": "frontend/src/components/Footer.tsx",
-      "proposedDisposition": "false_positive_pending_review",
+      "proposedDisposition": "false_positive_reviewed",
       "rationale": "The native modal dialog's click handler implements only light dismissal outside its bounding rectangle, not activation of non-interactive content. In-dialog content clicks do not dismiss it. Native cancel handles Escape, and an explicitly labelled native Close button provides keyboard dismissal. Initial focus and focus restoration were verified in Chrome.",
-      "evidence": ["Footer.test.tsx: native modal state, content-click preservation, close, cancel, backdrop and focus-return tests", "Chrome desktop 1920x855: Enter opens :modal; Close license receives initial focus; Escape and a real outside click dismiss; focus returns to License"],
-      "verifiedSourceRevision": "a24a19b86c9080a36ee2ddf07f76d31f510e99da"
+      "evidence": [
+        "Footer.test.tsx: native modal state, content-click preservation, close, cancel, backdrop and focus-return tests",
+        "Chrome desktop 1920x855: Enter opens :modal; Close license receives initial focus; Escape and a real outside click dismiss; focus returns to License"
+      ],
+      "verifiedSourceRevision": "a24a19b86c9080a36ee2ddf07f76d31f510e99da",
+      "reviewedStatus": "False Positive",
+      "verifiedSonarStatus": "RESOLVED",
+      "verificationScan": "5dba66d4-1596-4afc-bc3f-27cb1f6ca246",
+      "verificationCommit": "7787e534e99674ba24c8bb674fffb714686942d1"
     },
     {
       "id": "778d62b8-3b76-4442-9aaf-0ba82bf9a50c",
       "rule": "typescript:S1082",
       "file": "frontend/src/components/Footer.tsx",
-      "proposedDisposition": "false_positive_pending_review",
+      "proposedDisposition": "false_positive_reviewed",
       "rationale": "The outside-click dismissal already has equivalent native keyboard behavior through the dialog cancel event (Escape) and native Close button. Adding a second artificial key handler solely to satisfy a JSX heuristic would duplicate native dialog behavior. It is not a click-only control.",
-      "evidence": ["Footer.test.tsx: cancel/close and focus-return regression coverage", "Chrome desktop: actual Escape dismissal and License trigger focus return verified"],
-      "verifiedSourceRevision": "a24a19b86c9080a36ee2ddf07f76d31f510e99da"
+      "evidence": [
+        "Footer.test.tsx: cancel/close and focus-return regression coverage",
+        "Chrome desktop: actual Escape dismissal and License trigger focus return verified"
+      ],
+      "verifiedSourceRevision": "a24a19b86c9080a36ee2ddf07f76d31f510e99da",
+      "reviewedStatus": "False Positive",
+      "verifiedSonarStatus": "RESOLVED",
+      "verificationScan": "5dba66d4-1596-4afc-bc3f-27cb1f6ca246",
+      "verificationCommit": "7787e534e99674ba24c8bb674fffb714686942d1"
     }
   ]
 }

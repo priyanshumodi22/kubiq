@@ -7,6 +7,38 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 47 verifies `7787e534e99674ba24c8bb674fffb714686942d1`: 75 open
+issues, 38.5% combined coverage, no unreviewed hotspots and standard gate OK.
+The five Tailwind directives and four monitor findings are closed. Four exact
+accessibility IDs have RESOLVED export status, matching their individually
+verified False Positive UI dispositions and documented evidence.
+Archive: `gs://priyanshu-apps-sonarqube-backups/reports/11a418f4-570a-4fa7-80bf-eae79c777db1-1792793073.json`.
+
+The strict GitHub verification still fails closed with HTTP 403 on a read API.
+The project analysis credential is not widened; a separate kubiq-only read
+account is awaiting approval if the endpoint needs Browse permission. Diagnostics
+now identify the denied API path without leaking query data or credentials;
+four release guard tests pass. Production remains blocked.
+
+Run 46 was not separately archived before the next analysis. The existing VM
+exporter selects the latest completed report when its queue is empty; this needs
+a per-analysis export barrier before promising every intermediate scan is saved.
+Run 47 is the verified combined checkpoint, not substituted evidence for run 46.
+
+The setup-read policy also removes automatic system.access -> system.read
+expansion for new/updated custom roles. User management gains only the UI shell
+dependency; existing stored role grants are not rewritten. Existing kubi
+configuration's system.read dependency is explicitly preserved. Real role
+evaluation (not a mocked permission predicate) now drives the HTTP setup matrix.
+Verification passes 282 backend tests, 182 frontend tests, both builds, four
+release-guard tests and complete frontend LCOV records. Source changes still
+await the next exact-commit scan.
+
+The dedicated Sonar verification account was approved; creation is waiting for
+the user's private password entry in the Sonar Create User dialog. No account
+or verification token has been created yet. Default memberships/global grants
+must be removed or audited before assigning kubiq-only Browse and issuing a token.
+
 Run 45 verifies `eb9507f821a055c954b082bc9edd6330d47a1e69`: 88 open
 issues, 38.0% combined coverage, no unreviewed hotspots and standard gate OK.
 Raw-log complexity and both Pro copy findings are now closed. Run 44 verified
