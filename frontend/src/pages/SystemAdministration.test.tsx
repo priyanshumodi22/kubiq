@@ -2,9 +2,10 @@
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import SystemAdministration from './SystemAdministration';
-const mocks = vi.hoisted(() => ({ createRole: vi.fn(), createUser: vi.fn(), saveDisks: vi.fn(), saveApm: vi.fn(), diskConfig: vi.fn(), health: vi.fn() }));
+import { apiClient } from '../services/api';
+const mocks = vi.hoisted(() => ({ can: vi.fn(), createRole: vi.fn(), createUser: vi.fn(), saveDisks: vi.fn(), saveApm: vi.fn(), diskConfig: vi.fn(), health: vi.fn() }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
-vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ hasPermission: () => true }) }));
+vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ hasPermission: mocks.can }) }));
 vi.mock('../components/KubiAiSettings', () => ({ KubiAiSettings: () => null }));
 vi.mock('../components/KubiAvatar', () => ({ KubiAvatar: () => null }));
 vi.mock('../services/api', () => ({ apiClient: {
@@ -17,6 +18,7 @@ vi.mock('../services/api', () => ({ apiClient: {
 } }));
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.can.mockReturnValue(true);
   mocks.createRole.mockImplementation(async input => ({ id: 'created', ...input }));
   mocks.createUser.mockImplementation(async input => ({ id: 'new-user', ...input }));
   mocks.diskConfig.mockResolvedValue(['/', '/data']); mocks.health.mockResolvedValue({ selected: false });
@@ -24,6 +26,17 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 describe('system administration compatibility', () => {
+  it('loads user-role assignments without requesting role editing permissions or overview telemetry', async () => {
+    mocks.can.mockImplementation(permission => permission === 'users.manage');
+    const view = render(<SystemAdministration />);
+    await waitFor(() => expect(view.getByRole('button', { name: 'Create user' })).toBeTruthy());
+    expect(apiClient.getRbacRoles).toHaveBeenCalled();
+    expect(apiClient.getRbacPermissions).not.toHaveBeenCalled();
+    expect(apiClient.getSystemStats).not.toHaveBeenCalled();
+    expect(apiClient.getAuditLogs).not.toHaveBeenCalled();
+    expect(view.queryByRole('button', { name: 'Roles & permissions' })).toBeNull();
+  });
+
   it('creates a role with exactly the selected permission set', async () => {
     const view = render(<SystemAdministration />);
     fireEvent.click(view.getByRole('button', { name: 'Roles & permissions' }));

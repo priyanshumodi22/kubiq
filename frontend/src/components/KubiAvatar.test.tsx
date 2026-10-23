@@ -80,4 +80,12 @@ describe('kubi avatar animation lifecycle', () => {
     docListeners.get('visibilitychange')?.(); expect(frames.size).toBe(1);
   });
   it('does not animate a covered launcher', () => { mount(true); expect(frames.size).toBe(0); });
+  it('exposes the procedural drawing as a labelled, non-interactive image', () => {
+    const avatar = KubiAvatar({ state: 'searching' });
+    expect(avatar.type).toBe('canvas');
+    expect(avatar.props.role).toBe('img');
+    expect(avatar.props['aria-label']).toBe('kubi: Finding permitted evidence');
+    expect(avatar.props.onClick).toBeUndefined();
+    expect(avatar.props.tabIndex).toBeUndefined();
+  });
 });

@@ -7,6 +7,29 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 45 verifies `eb9507f821a055c954b082bc9edd6330d47a1e69`: 88 open
+issues, 38.0% combined coverage, no unreviewed hotspots and standard gate OK.
+Raw-log complexity and both Pro copy findings are now closed. Run 44 verified
+`1a52a421a1e5eb69733955eaf15f72cb1349e542` with 91 open, 37.9% coverage
+and historical log search findings closed. Archives:
+`gs://priyanshu-apps-sonarqube-backups/reports/a813853b-af0f-477a-a5b5-f4107c999ee2-1792761310.json`
+and `gs://priyanshu-apps-sonarqube-backups/reports/efc9b2e0-6b30-4371-b29a-eef676b4e28d-1792760958.json`.
+
+The user approved narrowly required management setup reads. User managers may
+read the assignment role catalogue, not permission editing or role mutations.
+System configuration permits disk/APM setup reads and configuration writes,
+without granting stats, predictions, license state or kubi configuration.
+The UI skips role-editor permission and unauthorized overview requests. Three
+HTTP matrix tests and a user-manager component regression cover these boundaries.
+Local verification: 278 backend tests, 181 frontend tests and both builds pass.
+
+Sonar CSS profile `kubiq Tailwind v4` extends Sonar way with all 27 active rules
+retained. Its only override appends `plugin,utility` to css:S4662 ignoreAtRules;
+the built-in/global default is unchanged. The profile is associated only with
+kubiq. The following scan must verify the five valid-directive findings close.
+Four individual accessibility review candidates (Footer and canvas avatar) remain
+pending until authenticated review plus export evidence; they are not exclusions.
+
 Run 43 verifies `bee9de4849b4c84e11cbcda7f465c7ee64961ade`: 93 open
 issues, 37.8% combined coverage, no unreviewed hotspots and standard gate OK.
 Notification status/severity and kubi trace matching findings are closed.

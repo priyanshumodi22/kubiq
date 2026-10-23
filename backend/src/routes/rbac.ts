@@ -8,7 +8,8 @@ const router = Router();
 const audit = AuditLogService.getInstance();
 
 router.get('/permissions', requirePermission('roles.manage'), (_req, res) => res.json(permissionCatalogue.map(([key, label]) => ({ key, label }))));
-router.get('/roles', requirePermission('roles.manage'), async (_req, res, next) => {
+// User managers need the assignment catalogue, not role-definition mutations.
+router.get('/roles', requirePermission('roles.manage', 'users.manage'), async (_req, res, next) => {
   try { res.json(await RbacRoleService.getRoles()); } catch (error) { next(error); }
 });
 

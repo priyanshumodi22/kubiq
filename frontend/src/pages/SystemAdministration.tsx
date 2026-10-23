@@ -167,7 +167,7 @@ export default function SystemAdministration() {
   const loadRoles = async () => {
     const [nextRoles, nextPermissions] = await Promise.all([
       apiClient.getRbacRoles(),
-      apiClient.getRbacPermissions(),
+      hasPermission('roles.manage') ? apiClient.getRbacPermissions() : Promise.resolve([]),
     ]);
     setRoles(nextRoles);
     setPermissions(nextPermissions);
@@ -382,7 +382,7 @@ export default function SystemAdministration() {
               Loading administration data…
             </div>
           )}
-          {!loading && activeTab === 'overview' && <SystemOverview />}
+          {!loading && activeTab === 'overview' && hasPermission('system.read') && <SystemOverview />}
           {!loading && activeTab === 'users' && (
             <div>
               <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">

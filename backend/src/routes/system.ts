@@ -12,7 +12,6 @@ import { KubiProviderService } from '../services/KubiProviderService';
 const router = express.Router();
 const systemMonitor = SystemMonitorService.getInstance();
 const auditService = AuditLogService.getInstance();
-router.use(requirePermission('system.read'));
 
 function aiConfigurationErrorMessage(code: unknown): string {
   if (code === 'KUBI_CONFIGURATION_ENCRYPTION_UNAVAILABLE') return 'kubi AI secure configuration is not initialized. Set KUBI_AI_CONFIG_ENCRYPTION_KEY first.';
@@ -22,7 +21,7 @@ function aiConfigurationErrorMessage(code: unknown): string {
 }
 
 // GET /api/system/pro-status - Authenticated, non-secret license state for the UI
-router.get('/pro-status', async (_req, res) => {
+router.get('/pro-status', requirePermission('system.read'), async (_req, res) => {
   try {
     const licenseKey = process.env.KUBIQ_LICENSE_KEY?.trim() || '';
     const active = licenseKey ? await validateLicenseKey(licenseKey) : false;
@@ -39,7 +38,7 @@ router.get('/pro-status', async (_req, res) => {
 });
 
 // AI keys are write-only: only kubiq-admin may configure them, and no endpoint returns one.
-router.get('/kubi-ai', requirePermission('kubi.configure'), async (_req, res) => {
+router.get('/kubi-ai', requirePermission('system.read'), requirePermission('kubi.configure'), async (_req, res) => {
   try {
     res.json(await KubiAiConfigService.getPublicConfig());
   } catch {
@@ -47,7 +46,7 @@ router.get('/kubi-ai', requirePermission('kubi.configure'), async (_req, res) =>
   }
 });
 
-router.put('/kubi-ai', requirePermission('kubi.configure'), async (req, res) => {
+router.put('/kubi-ai', requirePermission('system.read'), requirePermission('kubi.configure'), async (req, res) => {
   try {
     const config = await KubiAiConfigService.save(req.body || {});
     auditService.log({
@@ -62,7 +61,7 @@ router.put('/kubi-ai', requirePermission('kubi.configure'), async (req, res) => 
   }
 });
 
-router.post('/kubi-ai/test', requirePermission('kubi.configure'), async (_req, res) => {
+router.post('/kubi-ai/test', requirePermission('system.read'), requirePermission('kubi.configure'), async (_req, res) => {
   try {
     const response = await new KubiProviderService().complete([{ role: 'user', content: 'Reply exactly: OK' }], 8);
     res.json({ ok: response.length > 0 });
@@ -76,7 +75,7 @@ router.post('/kubi-ai/test', requirePermission('kubi.configure'), async (_req, r
 });
 
 // GET /api/system/stats - Live data
-router.get('/stats', async (req, res) => {
+router.get('/stats', requirePermission('system.read'), async (req, res) => {
   try {
     const stats = await systemMonitor.getLiveStats();
     res.json(stats);
@@ -86,7 +85,7 @@ router.get('/stats', async (req, res) => {
 });
 
 // GET /api/system/disks - List ALL detected disks (for selection UI)
-router.get('/disks', async (req, res) => {
+router.get('/disks', requirePermission('system.read', 'system.configure'), async (req, res) => {
   try {
     const disks = await systemMonitor.getAllDisks();
     res.json(disks);
@@ -96,7 +95,7 @@ router.get('/disks', async (req, res) => {
 });
 
 // GET /api/system/disks/config - Get monitored list
-router.get('/disks/config', async (req, res) => {
+router.get('/disks/config', requirePermission('system.read', 'system.configure'), async (req, res) => {
   try {
     const config = await systemMonitor.getMonitoredDisksConfig();
     res.json(config);
@@ -130,7 +129,7 @@ router.put('/disks/config', requirePermission('system.configure'), async (req, r
 });
 
 // GET /api/system/prediction - Storage Analysis
-router.get('/prediction', async (req, res) => {
+router.get('/prediction', requirePermission('system.read'), async (req, res) => {
   try {
     const prediction = await systemMonitor.getStoragePrediction();
     res.json(prediction);
@@ -140,7 +139,7 @@ router.get('/prediction', async (req, res) => {
 });
 
 // GET /api/system/apm-config
-router.get('/apm-config', async (req, res) => {
+router.get('/apm-config', requirePermission('system.read', 'system.configure'), async (req, res) => {
   try {
     const systemRepo = await DatabaseFactory.getSystemRepository();
     const config = await systemRepo.getApmConfig();
