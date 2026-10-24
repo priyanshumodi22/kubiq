@@ -1,11 +1,11 @@
 
 export interface K8sPodStatusBadgeProps {
-    status: string;
+    status: string | { phase?: string; reason?: string } | null | undefined;
     isTerminating?: boolean;
 }
 
 export function K8sPodStatusBadge({ status, isTerminating }: Readonly<K8sPodStatusBadgeProps>) {
-    const rawStatus = typeof status === 'string' ? status : (status as any)?.phase || (status as any)?.reason || 'Active';
+    const rawStatus = typeof status === 'string' ? status : status?.phase || status?.reason || 'Active';
     let color = 'bg-gray-500/10 text-gray-400 border-gray-500/20';
     const label = isTerminating ? 'Terminating' : rawStatus;
 

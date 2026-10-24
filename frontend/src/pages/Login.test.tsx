@@ -17,6 +17,22 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('login compatibility', () => {
+  it.each([
+    [{ name: 'NotAllowedError' }, 'Biometric login cancelled or timed out'],
+    [{ response: { data: { error: 'Server error', message: 'Server message' } }, message: 'Transport error' }, 'Server error'],
+    [{ response: { data: { message: 'Server message' } }, message: 'Transport error' }, 'Server message'],
+    [new Error('Transport error'), 'Transport error'],
+    [null, 'Biometric login failed'],
+  ])('reports a passkey failure without authenticating', async (failure, message) => {
+    mocks.authenticate.mockRejectedValue(failure);
+    const view = render(<MemoryRouter><Login /></MemoryRouter>);
+    fireEvent.change(view.getByRole('textbox', { name: 'Username' }), { target: { value: 'fixture' } });
+    fireEvent.click(view.getByRole('button', { name: 'Use passkey' }));
+    await waitFor(() => expect(view.getByText(message as string)).toBeTruthy());
+    expect(mocks.verify).not.toHaveBeenCalled();
+    expect(mocks.token).not.toHaveBeenCalled();
+  });
+
   it('preserves empty and nonempty username passkey styling and availability', () => {
     const view = render(<MemoryRouter><Login /></MemoryRouter>);
     const passkey = view.getByRole('button', { name: 'Use passkey' }) as HTMLButtonElement;

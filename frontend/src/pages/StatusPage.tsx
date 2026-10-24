@@ -5,6 +5,7 @@ import { apiClient } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Layout from '../components/Layout';
 import { StatusPageConfigModal } from '../components/StatusPageConfigModal';
+import { requestErrorStatus } from '../utils/requestError';
 
 interface PublicService {
   name: string;
@@ -57,9 +58,9 @@ export default function StatusPage() {
       const result = await apiClient.getPublicStatus(slug);
       setData(result);
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load status page:', err);
-      setError(err.response?.status === 404 ? 'Status page not found or disabled.' : 'Failed to load status page.');
+      setError(requestErrorStatus(err) === 404 ? 'Status page not found or disabled.' : 'Failed to load status page.');
     } finally {
       setLoading(false);
       setIsRefreshing(false);

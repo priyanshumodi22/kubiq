@@ -14,6 +14,17 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 const history = (count: number) => Array.from({ length: count }, (_unused, index) => ({ timestamp: now - 30_000 - index, responseTime: 20, success: index !== 0, status: index === 0 ? 500 : 200 }));
 
 describe('public status presentation compatibility', () => {
+  it.each([
+    [{ response: { status: 404 } }, 'Status page not found or disabled.'],
+    [new Error('Offline'), 'Failed to load status page.'],
+    [null, 'Failed to load status page.'],
+  ])('shows unavailable status for a failed request', async (failure, message) => {
+    mocks.getStatus.mockRejectedValue(failure);
+    const view = render(<StatusPage />);
+    await waitFor(() => expect(view.getByText(message as string)).toBeTruthy());
+    expect(view.queryByText('All Systems Operational')).toBeNull();
+  });
+
   it.each([[50, '98.0%', 'text-success'], [10, '90.0%', 'text-warning'], [1, '0.0%', 'text-error']] as const)('retains uptime threshold for %s checks', async (count, uptime, color) => {
     mocks.getStatus.mockResolvedValue({ pageTitle: 'Public status', refreshInterval: 60, lastUpdated: new Date(now).toISOString(), services: [{ name: 'api', currentStatus: 'healthy', history: history(count) }] });
     const view = render(<StatusPage />);

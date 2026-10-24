@@ -7,6 +7,21 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 60 verifies `af6d63c87a081046f0090b8e4a11dd3c8a4fcf82`: zero open
+issues, zero unreviewed hotspots, 47.2% overall coverage and a passing quality
+gate with the fixed new-code baseline. The GitHub scan completes successfully.
+Source verification: 284 backend tests, 278 frontend tests and both builds pass.
+Archive: `gs://priyanshu-apps-sonarqube-backups/reports/5bfb3325-2730-45d0-93b7-72ef4e22c615-1792867600.json`.
+The separate frontend lint gate still has 81 warnings at this source; production
+remains held pending lint and the remaining end-to-end acceptance checks.
+
+The next local batch passes 291 frontend tests and the production build, with
+62.33% frontend line coverage and all 96 production files represented in LCOV.
+It preserves pod phase/reason/termination display with explicit types, and tests
+passkey cancellation/server-message precedence plus public status request failures.
+Malformed or null failures now produce bounded fallback text instead of throwing
+from error handling. These source changes require their own final exact-SHA scan.
+
 Run 59 verifies `5f7ba04ee3a5eb4c04c009a6ecb2dd4bb6d5d7c3`: zero open
 issues, zero unreviewed hotspots and 46.9% overall coverage. Pinned new-code
 coverage is 78.7%, below the unchanged 80% requirement, so production remains held.

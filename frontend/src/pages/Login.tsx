@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Shield, User, Lock, LogIn, Fingerprint } from 'lucide-react';
 import { useEffect, useState, useId } from 'react';
 import { apiErrorMessage } from '../utils/apiErrorMessage';
+import { requestErrorMessage } from '../utils/requestError';
 import { useNavigate } from 'react-router-dom';
 import Footer from '../components/Footer';
 import { startAuthentication } from '@simplewebauthn/browser';
@@ -63,13 +64,12 @@ export default function Login() {
                 setError('Biometric verification failed');
             }
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
-            if (error.name === 'NotAllowedError') {
+            if (error && typeof error === 'object' && 'name' in error && error.name === 'NotAllowedError') {
                 setError('Biometric login cancelled or timed out');
             } else {
-                const serverError = error.response?.data?.error || error.response?.data?.message;
-                setError(serverError || error.message || 'Biometric login failed');
+                setError(requestErrorMessage(error, 'Biometric login failed', 'error-or-message'));
             }
         } finally {
             setBiometricLoading(false);

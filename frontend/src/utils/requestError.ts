@@ -7,10 +7,12 @@ function text(value: unknown): string | undefined {
 }
 
 /** Preserve transport error precedence while keeping arbitrary payloads out of React text. */
-export function requestErrorMessage(error: unknown, fallback: string, field: 'message' | 'error' = 'message'): string {
+export function requestErrorMessage(error: unknown, fallback: string, field: 'message' | 'error' | 'error-or-message' = 'message'): string {
   const failure = record(error);
   const response = record(failure?.response);
-  return text(record(response?.data)?.[field]) || text(failure?.message) || fallback;
+  const data = record(response?.data);
+  const serverMessage = field === 'error-or-message' ? text(data?.error) || text(data?.message) : text(data?.[field]);
+  return serverMessage || text(failure?.message) || fallback;
 }
 
 export function requestErrorStatus(error: unknown): number | undefined {
