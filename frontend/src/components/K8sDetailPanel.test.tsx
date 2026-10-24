@@ -22,6 +22,22 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 describe('Kubernetes detail panel compatibility', () => {
+  it('renders no inspector or resource requests when selection is cleared', () => {
+    const view = render(<K8sDetailPanel item={null} namespace="apps" onClose={vi.fn()} />);
+    expect(view.container.innerHTML).toBe('');
+    expect(mocks.history).not.toHaveBeenCalled();
+    expect(mocks.yaml).not.toHaveBeenCalled();
+  });
+
+  it('renders raw metadata labels and condition text without requiring pod-only fields', () => {
+    const view = render(<K8sDetailPanel item={{ type: 'nodes', data: { metadata: { name: 'raw-node', namespace: 'apps', labels: { app: 'fixture-label' } }, conditions: [{ type: 'Ready', status: 'True', reason: '—', message: 'Fixture ready' }] } }} namespace="apps" onClose={vi.fn()} />);
+    expect(view.getByText('raw-node')).toBeTruthy();
+    expect(view.getByText(/fixture-label/)).toBeTruthy();
+    expect(view.getByText('Status Info')).toBeTruthy();
+    expect(view.getByText('Fixture ready')).toBeTruthy();
+    expect(view.queryByRole('button', { name: 'Terminal' })).toBeNull();
+  });
+
   it('hides terminal without exec permission and preserves log navigation', async () => {
     const view = render(<K8sDetailPanel item={pod} namespace="apps" onClose={vi.fn()} />);
     expect(view.queryByRole('button', { name: 'Terminal' })).toBeNull();

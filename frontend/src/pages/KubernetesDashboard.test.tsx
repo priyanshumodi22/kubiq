@@ -29,6 +29,44 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 describe('Kubernetes explorer request and rendering lifecycle', () => {
+  it.each([
+    { tab: 'Nodes', request: 'nodes', group: '', row: { metadata: { name: 'fallback-resource' } }, cells: ['NotReady', 'worker', '—'] },
+    { tab: 'Persistent Volume Claims', request: 'claims', group: 'Storage', row: { metadata: { name: 'fallback-resource' }, spec: { volumeName: 'fixture-volume', resources: { requests: { storage: '12Gi' } } } }, cells: ['Bound', 'fixture-volume', '12Gi'] },
+    { tab: 'Endpoints', request: 'endpoints', group: '', row: { metadata: { name: 'fallback-resource' }, subsets: [{ addresses: [{ ip: '10.0.0.6' }] }] }, cells: ['10.0.0.6:'] },
+  ] as const)('keeps $tab fallback values usable for partial API objects', async ({ tab, request, group, row, cells }) => {
+    mocks[request].mockResolvedValue([row]);
+    const view = render(<KubernetesDashboard />);
+    await waitFor(() => expect(mocks.pods).toHaveBeenCalled());
+    if (group) fireEvent.click(view.getByRole('button', { name: group }));
+    fireEvent.click(view.getByRole('button', { name: tab }));
+    await view.findByText('fallback-resource');
+    for (const cell of cells) expect(view.getAllByRole('cell', { name: cell }).length).toBeGreaterThan(0);
+  });
+
+  it.each([
+    { tab: 'Services', request: 'services', group: '', row: { metadata: { name: 'fixture-resource' }, spec: { type: 'ClusterIP', ports: [{ port: 8080, protocol: 'TCP' }] } }, cells: ['ClusterIP', '8080/TCP'] },
+    { tab: 'Endpoints', request: 'endpoints', group: '', row: { metadata: { name: 'fixture-resource' }, subsets: [{ addresses: [{ ip: '10.0.0.5' }], ports: [{ port: 8080 }] }] }, cells: ['10.0.0.5:8080'] },
+    { tab: 'Ingresses', request: 'ingresses', group: '', row: { metadata: { name: 'fixture-resource' }, spec: { ingressClassName: 'traefik', rules: [{ host: 'fixture.example.test' }] } }, cells: ['traefik', 'fixture.example.test'] },
+    { tab: 'Persistent Volumes', request: 'volumes', group: 'Storage', row: { metadata: { name: 'fixture-resource' }, spec: { capacity: { storage: '30Gi' }, claimRef: { name: 'fixture-claim' } }, status: { phase: 'Available' } }, cells: ['30Gi', 'Available', 'fixture-claim'] },
+    { tab: 'Persistent Volume Claims', request: 'claims', group: 'Storage', row: { metadata: { name: 'fixture-resource' }, spec: { volumeName: 'fixture-volume' }, status: { phase: 'Bound', capacity: { storage: '20Gi' } } }, cells: ['Bound', 'fixture-volume', '20Gi'] },
+    { tab: 'Storage Classes', request: 'classes', group: 'Storage', row: { metadata: { name: 'fixture-resource' }, provisioner: 'rancher.io/local-path', volumeBindingMode: 'WaitForFirstConsumer' }, cells: ['rancher.io/local-path', 'WaitForFirstConsumer'] },
+    { tab: 'Nodes', request: 'nodes', group: '', row: { metadata: { name: 'fixture-resource', labels: { 'node-role.kubernetes.io/control-plane': '' } }, status: { conditions: [{ type: 'Ready', status: 'True' }], nodeInfo: { kubeletVersion: 'v1.36.4' } } }, cells: ['Ready', 'control-plane', 'v1.36.4'] },
+    { tab: 'Deployments', request: 'deployments', group: '', row: { name: 'fixture-resource', replicas: 2, readyReplicas: 2 }, cells: ['2/2', 'Healthy'] },
+    { tab: 'Secrets', request: 'secrets', group: 'Configuration', row: { metadata: { name: 'fixture-resource' }, type: 'Opaque', data: { fixture: 'fixture-only' } }, cells: ['Opaque', '1 keys'] },
+  ] as const)('renders $tab values and keeps the resource inspectable', async ({ tab, request, group, row, cells }) => {
+    mocks[request].mockResolvedValue([row]);
+    const view = render(<KubernetesDashboard />);
+    await waitFor(() => expect(mocks.pods).toHaveBeenCalled());
+    if (group) fireEvent.click(view.getByRole('button', { name: group }));
+    fireEvent.click(view.getByRole('button', { name: tab }));
+    const name = await view.findByText('fixture-resource');
+    for (const cell of cells) expect(view.getByRole('cell', { name: cell })).toBeTruthy();
+    fireEvent.click(name);
+    expect(view.getByRole('button', { name: 'Close fixture detail' })).toBeTruthy();
+    fireEvent.click(view.getByRole('button', { name: 'Close fixture detail' }));
+    expect(view.queryByRole('button', { name: 'Close fixture detail' })).toBeNull();
+  });
+
   it('loads the overview and preserves namespace and context selection contracts', async () => {
     const view = render(<KubernetesDashboard />);
     await waitFor(() => expect(mocks.pods).toHaveBeenCalledWith('fixture'));

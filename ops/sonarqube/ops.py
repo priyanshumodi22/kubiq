@@ -87,7 +87,7 @@ def analysis_metadata(task):
       'measures',(SELECT json_object_agg(m.name,coalesce(p.text_value,p.value::text))
         FROM project_measures p JOIN metrics m ON m.uuid=p.metric_uuid
         WHERE p.analysis_uuid=s.uuid AND m.name IN
-          ('coverage','alert_status','security_hotspots_reviewed')))
+          ('coverage','alert_status','security_hotspots_reviewed','quality_gate_details')))
       FROM ce_activity a JOIN snapshots s ON s.uuid=a.analysis_uuid
       WHERE a.uuid='%s' AND a.status='SUCCESS'""" % task
     metadata = json.loads(sql(query))
@@ -118,7 +118,11 @@ def export():
     metadata['openIssues'] = sum(row['status'] in ('OPEN', 'CONFIRMED') for row in rows)
     metadata['unreviewedHotspots'] = sum(row['issue_type'] == 4 and row['status'] == 'TO_REVIEW' for row in rows)
     measures = metadata.get('measures') or {}
+    details = json.loads(measures.get('quality_gate_details') or '{}')
+    metadata['qualityGateDetails'] = details
+    conditions = {item['metric']: item.get('actual', 'Unavailable') for item in details.get('conditions', [])}
     headers = ['Analysis task', 'Issue ID', 'File', 'Line', 'Severity', 'Status', 'Type', 'Message', 'Effort minutes', 'Rule', 'Rule name', 'SonarQube link', 'Commit SHA', 'Analysis ID', 'Quality gate', 'Coverage %', 'Hotspots reviewed %', 'Open issues', 'Unreviewed hotspots']
+    headers += ['New code coverage %', 'New code duplication %']
     values = [headers]
     for row in rows:
         kind = {1: 'CODE_SMELL', 2: 'BUG', 3: 'VULNERABILITY', 4: 'SECURITY_HOTSPOT'}.get(row['issue_type'], str(row['issue_type']))
@@ -127,7 +131,8 @@ def export():
                        'https://sonar.priyanshumodi.in/project/issues?id=kubiq&issues=' + row['issue_id'],
                        metadata.get('revision') or 'Unavailable', metadata['analysisId'],
                        measures.get('alert_status', 'Unavailable'), measures.get('coverage', 'Unavailable'),
-                       measures.get('security_hotspots_reviewed', 'Unavailable'), metadata['openIssues'], metadata['unreviewedHotspots']])
+                       measures.get('security_hotspots_reviewed', 'Unavailable'), metadata['openIssues'], metadata['unreviewedHotspots'],
+                       conditions.get('new_coverage', 'Unavailable'), conditions.get('new_duplicated_lines_density', 'Unavailable')])
     # RAW input prevents issue messages or paths being interpreted as formulas.
     title = 'Scan ' + dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%d %H%M%S')
     base = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEET

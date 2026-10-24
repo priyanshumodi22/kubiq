@@ -12,7 +12,8 @@ class ExportMetadataTests(unittest.TestCase):
     def test_failed_quality_gate_is_exported_with_revision_and_original_columns(self):
         task = 'ac87f101-0834-43a1-a03f-5de3cbcd5008'
         metadata = {'task': task, 'analysisId': 'analysis', 'revision': 'a' * 40,
-                    'measures': {'alert_status': 'ERROR', 'coverage': '20', 'security_hotspots_reviewed': '50'}}
+                    'measures': {'alert_status': 'ERROR', 'coverage': '20', 'security_hotspots_reviewed': '50',
+                                 'quality_gate_details': ops.json.dumps({'level': 'ERROR', 'conditions': [{'metric': 'new_coverage', 'actual': '78.7', 'level': 'ERROR'}, {'metric': 'new_duplicated_lines_density', 'actual': '0.23', 'level': 'OK'}]})}}
         rows = [{'issue_id': 'issue', 'file': 'backend/src/test.ts', 'line': 1,
                  'severity': 'MAJOR', 'status': 'OPEN', 'issue_type': 1, 'message': '=not a formula',
                  'effort': 5, 'rule': 'typescript:S1', 'rule_name': 'Rule'}]
@@ -23,10 +24,12 @@ class ExportMetadataTests(unittest.TestCase):
             request = ops.json.loads(sheets.call_args.args[1])
             self.assertEqual(request['values'][0][0:3], ['Analysis task', 'Issue ID', 'File'])
             self.assertEqual(request['values'][1][12:16], ['a' * 40, 'analysis', 'ERROR', '20'])
+            self.assertEqual(request['values'][1][-2:], ['78.7', '0.23'])
             self.assertIn('valueInputOption=RAW', sheets.call_args.args[0])
             report = ops.json.loads(upload.call_args.args[1])
             self.assertEqual(report['schemaVersion'], 3)
             self.assertEqual(report['metadata']['openIssues'], 1)
+            self.assertEqual(report['metadata']['qualityGateDetails']['level'], 'ERROR')
             state = ops.json.loads((Path(folder) / 'export.json').read_text())
             self.assertEqual(state['qualityGate'], 'ERROR')
             self.assertEqual(state['format'], 3)
@@ -44,7 +47,7 @@ class IdlePolicyTests(unittest.TestCase):
             (root / 'idle.json').write_text('{"lastActivity": %s}' % (now - 8000))
             original_read = Path.read_text
             def read(path, *a, **kw):
-                return '20000 0' if str(path) == '/proc/uptime' else original_read(path, *a, **kw)
+                return '20000 0' if path.as_posix() == '/proc/uptime' else original_read(path, *a, **kw)
             timestamp = ops.dt.datetime.fromtimestamp(now if recent else now-8000, ops.dt.timezone.utc).strftime('%d/%b/%Y:%H:%M:%S %z')
             url = '/dashboard?id=kubiq' if recent else '/api/system/status'
             logs = f'127.0.0.1 - - [{timestamp}] "GET {url} HTTP/1.1" 200 -'

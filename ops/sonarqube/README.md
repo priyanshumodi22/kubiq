@@ -55,6 +55,9 @@ array-format archives are retained unchanged. Spreadsheet reports preserve the
 original twelve columns and append commit SHA, analysis ID, quality gate,
 coverage, hotspot review percentage, open issue count and unreviewed hotspot
 count. A completed analysis with a failed quality gate is still exported.
+New reports also append new-code coverage and duplication columns, and retain
+the full quality-gate conditions in archive metadata. Existing sheet tabs and
+the first nineteen report columns are preserved unchanged.
 Export state is marked successful only after the Sheets write and archive upload;
 an export failure continues to prevent idle shutdown. Format-3 export was verified
 against analysis `1571c7e1-ac6e-42a0-82b0-ac4229db5f8f` (gate ERROR).

@@ -7,6 +7,21 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 63 verifies `3f3e2df4c10307e3021351eee5bf4473615e5c7f`: zero
+open issues and zero unreviewed hotspots. Both run-62 findings are CLOSED.
+Overall coverage is 48.7%, but fixed new-code coverage is 78.7%, so release is
+still blocked by the unchanged 80% gate. New-code duplication is 0.2349%.
+Archive: `gs://priyanshu-apps-sonarqube-backups/reports/7feab4e7-ffb7-4fed-825f-04f222cc51c1-1792884130.json`.
+Sheets tab: `Scan 2026-10-24 232205`. All 841 baseline findings have final
+verified dispositions and 74 additional findings are retained in the checkpoint.
+
+The next test-only coverage batch passes 320 frontend tests, lint with zero
+warnings/errors and the production build. It exercises raw resource tables,
+partial API responses, cleared selections and raw metadata conditions. Frontend
+line coverage is 65.28%, with all 97 production files in LCOV. The export now
+also retains the quality-gate conditions and appends new-code coverage and
+duplication columns while preserving all existing report columns.
+
 Latest local verification: frontend lint has zero warnings/errors, all 306
 frontend tests pass, the production build passes, and LCOV contains all 97
 production files (64.94% frontend line coverage). Both new run-62 findings are
