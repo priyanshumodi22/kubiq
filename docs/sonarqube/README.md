@@ -7,6 +7,21 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 58 verifies `a00694c86d5fac5d8bcc77aba5b904dab7714859`: zero open
+issues, zero unreviewed hotspots and 45.9% overall coverage. The bounded request
+error helpers and typing changes introduce no new issues. Standard gate remains
+ERROR; production is held. Source verification: 284 backend tests, 259 frontend
+tests, frontend LCOV records for all 96 production files and both builds passing.
+Archive: `gs://priyanshu-apps-sonarqube-backups/reports/9324fcc3-9bbb-47b5-8620-58ae1ca6dad0-1792866172.json`.
+Sheets tab: `Scan 2026-10-24 182244`.
+
+The following coverage batch passes 270 frontend tests. It adds APM CSV/filter,
+invalid-time, export failure/retry, relative/absolute time-range and trace lookup
+coverage, plus Native/SSO rotation, permission-denial, logout failure, registration
+and stale-initialization tests. Local frontend line coverage is 61.56%; that is
+not the combined or new-code Sonar measure. The actual scan must establish the
+new-code result. All 96 production frontend files have LCOV records.
+
 Run 57 verifies `d7c95c9acf652313b61a3197116d10ca45f07a65`: **zero open
 issues and zero unreviewed hotspots**, with 44.3% overall coverage. The remaining
 user-row complexity finding is CLOSED. All five individually reviewed ARIA

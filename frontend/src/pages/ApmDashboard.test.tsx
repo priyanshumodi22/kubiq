@@ -6,9 +6,9 @@ import ApmDashboard from './ApmDashboard';
 const mocks = vi.hoisted(() => ({
   getStatus: vi.fn(), getTraces: vi.fn(), fetchTrace: vi.fn(), clearTrace: vi.fn(), refresh: vi.fn(), fetchMap: vi.fn(),
   metrics: [] as Array<{ serviceName: string; requestCount: number; errorCount: number; avgDurationMs: number; p95DurationMs: number; rpm: number; errorRate: number }>,
-  loading: false, error: null as string | null, canExport: true,
+  loading: false, error: null as string | null, canExport: true, exportSpans: vi.fn(),
 }));
-vi.mock('../services/api', () => ({ apiClient: { getApmStatus: mocks.getStatus, getApmServiceTraces: mocks.getTraces } }));
+vi.mock('../services/api', () => ({ apiClient: { getApmStatus: mocks.getStatus, getApmServiceTraces: mocks.getTraces, exportApmSpans: mocks.exportSpans } }));
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ hasPermission: (permission: string) => permission !== 'apm.export' || mocks.canExport }) }));
 vi.mock('../hooks/useApm', () => ({ useApm: () => ({ metrics: mocks.metrics, loading: mocks.loading, error: mocks.error, refresh: mocks.refresh }) }));
 vi.mock('../hooks/useTrace', () => ({ useTrace: () => ({ spans: [], loading: false, error: null, fetchTrace: mocks.fetchTrace, clearTrace: mocks.clearTrace }) }));
@@ -27,9 +27,10 @@ beforeEach(() => {
   mocks.canExport = true;
   mocks.getStatus.mockResolvedValue({ supported: true, dbType: 'mysql' });
   mocks.getTraces.mockResolvedValue([]);
+  mocks.exportSpans.mockResolvedValue({ data: 'fixture,csv', headers: { 'content-disposition': 'attachment; filename="fixture.csv"' } });
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('APM dashboard characterization', () => {
   it('renders configuration loading before the supported empty state', async () => {
@@ -111,5 +112,75 @@ describe('APM dashboard characterization', () => {
     expect(toggle.getAttribute('aria-pressed')).toBe('true');
     fireEvent.change(view.getByPlaceholderText('Search Service (e.g. auth-api)'), { target: { value: 'filter' } });
     expect(view.getByRole('button', { name: 'Export errors only' }).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('exports the selected service and filters as CSV and releases the download URL', async () => {
+    mocks.metrics = [{ serviceName: 'payments', requestCount: 20, errorCount: 0, avgDurationMs: 10, p95DurationMs: 20, rpm: 2, errorRate: 0 }];
+    const create = vi.fn(() => 'blob:fixture-csv');
+    const revoke = vi.fn();
+    vi.stubGlobal('URL', Object.assign(class extends URL {}, { createObjectURL: create, revokeObjectURL: revoke }));
+    const download = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    const view = render(<ApmDashboard />);
+    fireEvent.click(await view.findByRole('button', { name: 'Export' }));
+    fireEvent.change(view.getByPlaceholderText('11:03:55 PM'), { target: { value: '11:03:55 AM' } });
+    fireEvent.change(view.getByPlaceholderText('11:08:30 PM'), { target: { value: '11:08:30 AM' } });
+    fireEvent.click(view.getByRole('button', { name: 'All Services' }));
+    fireEvent.click(view.getByRole('button', { name: 'payments' }));
+    fireEvent.click(view.getByRole('button', { name: 'Any Duration' }));
+    fireEvent.click(view.getByRole('button', { name: '> 500ms' }));
+    fireEvent.change(view.getByPlaceholderText('e.g. mongodb.query, postgresql, http.request...'), { target: { value: ' db.query ' } });
+    fireEvent.click(view.getByRole('button', { name: 'Export errors only' }));
+    fireEvent.click(view.getByRole('button', { name: 'Download CSV' }));
+    await waitFor(() => expect(mocks.exportSpans).toHaveBeenCalledWith(expect.objectContaining({ service: 'payments', minDuration: '500', search: 'db.query', errorOnly: 'true', from: expect.stringMatching(/Z$/), to: expect.stringMatching(/Z$/) })));
+    expect(download).toHaveBeenCalledTimes(1);
+    expect((download.mock.instances[0] as HTMLAnchorElement).download).toBe('fixture.csv');
+    expect(revoke).toHaveBeenCalledWith('blob:fixture-csv');
+    expect(view.queryByRole('heading', { name: 'Export Slow Queries' })).toBeNull();
+  });
+
+  it('reports invalid export times before submitting a request', async () => {
+    const view = render(<ApmDashboard />);
+    fireEvent.click(await view.findByRole('button', { name: 'Export' }));
+    fireEvent.change(view.getByPlaceholderText('11:03:55 PM'), { target: { value: 'invalid fixture time' } });
+    fireEvent.click(view.getByRole('button', { name: 'Download CSV' }));
+    expect(await view.findByText(/Invalid time format/)).toBeTruthy();
+    expect(mocks.exportSpans).not.toHaveBeenCalled();
+    expect((view.getByRole('button', { name: 'Download CSV' }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('keeps export errors visible and permits retry after a transport failure', async () => {
+    mocks.exportSpans.mockRejectedValue(new Error('Fixture unavailable'));
+    const view = render(<ApmDashboard />);
+    fireEvent.click(await view.findByRole('button', { name: 'Export' }));
+    fireEvent.click(view.getByRole('button', { name: 'Download CSV' }));
+    expect(await view.findByText('Network error: Fixture unavailable')).toBeTruthy();
+    expect((view.getByRole('button', { name: 'Download CSV' }) as HTMLButtonElement).disabled).toBe(false);
+    expect(view.getByRole('heading', { name: 'Export Slow Queries' })).toBeTruthy();
+  });
+
+  it('refreshes topology with relative and absolute time presets', async () => {
+    const view = render(<ApmDashboard />);
+    fireEvent.click(await view.findByRole('button', { name: 'Topology Map' }));
+    fireEvent.click(view.getByRole('button', { name: 'Last hour' }));
+    fireEvent.click(view.getByRole('button', { name: 'Last 5 minutes' }));
+    expect(mocks.refresh).toHaveBeenCalledWith({ timeRangeMs: 300000 });
+    expect(mocks.fetchMap).toHaveBeenCalledWith({ timeRangeMs: 300000 });
+    fireEvent.click(view.getByRole('button', { name: 'Last 5 minutes' }));
+    fireEvent.click(view.getByRole('button', { name: /Yesterday/ }));
+    expect(mocks.refresh).toHaveBeenCalledWith(expect.objectContaining({ fromMs: expect.any(Number), toMs: expect.any(Number), timeRangeMs: 86399999 }));
+    expect(mocks.fetchMap).toHaveBeenLastCalledWith(expect.objectContaining({ fromMs: expect.any(Number), toMs: expect.any(Number) }));
+  });
+
+  it('trims trace IDs for direct lookup and clears the current trace', async () => {
+    const view = render(<ApmDashboard />);
+    const search = await view.findByPlaceholderText('Paste Trace ID (e.g. 1a2b3c...)');
+    fireEvent.change(search, { target: { value: ' fixture-trace ' } });
+    fireEvent.keyDown(search, { key: 'Enter' });
+    expect(mocks.fetchTrace).toHaveBeenCalledWith('fixture-trace');
+    fireEvent.click(view.getByRole('button', { name: 'Search Trace' }));
+    expect(mocks.fetchTrace).toHaveBeenCalledTimes(2);
+    fireEvent.click(search.parentElement!.querySelector('button')!);
+    expect((search as HTMLInputElement).value).toBe('');
+    expect(mocks.clearTrace).toHaveBeenCalledTimes(1);
   });
 });

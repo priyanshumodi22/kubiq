@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   setToken: vi.fn(), clearToken: vi.fn(), register: vi.fn(),
   keycloakInit: vi.fn(),
   keycloakUpdate: vi.fn(),
+  keycloakLogin: vi.fn(), keycloakLogout: vi.fn(),
   keycloakToken: undefined as string | undefined,
 }));
 vi.mock('../services/api', () => ({ apiClient: {
@@ -19,6 +20,8 @@ vi.mock('../services/api', () => ({ apiClient: {
 vi.mock('keycloak-js', () => ({ default: class {
   init = mocks.keycloakInit;
   updateToken = mocks.keycloakUpdate;
+  login = mocks.keycloakLogin;
+  logout = mocks.keycloakLogout;
   clientId = 'kubiq';
   get token() { return mocks.keycloakToken; }
   tokenParsed = { sub: 'sso-1', preferred_username: 'reader', realm_access: { roles: ['kubiq-admin'] }, resource_access: { kubiq: { roles: ['kubiq-viewer'] } } };
@@ -40,6 +43,8 @@ beforeEach(() => {
   mocks.keycloakInit.mockResolvedValue(false);
   mocks.keycloakUpdate.mockResolvedValue(false);
   mocks.keycloakToken = undefined;
+  mocks.keycloakLogout.mockResolvedValue(undefined);
+  mocks.register.mockResolvedValue(undefined);
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); localStorage.clear(); });
 
@@ -137,5 +142,91 @@ describe('authentication lifecycle and permission refresh', () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(60000); });
     expect(latest().isAuthenticated).toBe(false);
     expect(latest().hasPermission('services.read')).toBe(false);
+  });
+
+  it('rotates a stored Native token and refreshes the server permission set', async () => {
+    localStorage.setItem('kubiq_token', 'stored-fixture');
+    mocks.current.mockResolvedValue({ ...initialUser, token: 'rotated-fixture' });
+    const { latest } = mount();
+    await waitFor(() => expect(latest().isAuthenticated).toBe(true));
+    expect(mocks.setToken).toHaveBeenCalledWith('stored-fixture');
+    expect(localStorage.getItem('kubiq_token')).toBe('rotated-fixture');
+    mocks.current.mockResolvedValue({ ...initialUser, token: 'newer-fixture', permissions: ['services.read'] });
+    await act(async () => { await latest().refreshCurrentUser(); });
+    expect(localStorage.getItem('kubiq_token')).toBe('newer-fixture');
+    expect(latest().hasPermission('users.manage')).toBe(false);
+  });
+
+  it('denies unconfirmed permissions when an older Native response cannot be refreshed', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    mocks.login.mockResolvedValue({ token: 'fixture', user: { ...initialUser, permissions: undefined } });
+    mocks.current.mockRejectedValue(new Error('Fixture permission service unavailable'));
+    const { latest } = mount();
+    await waitFor(() => expect(latest().isLoading).toBe(false));
+    await act(async () => { await latest().loginNative({ username: 'fixture', password: 'fixture-only' }); });
+    await waitFor(() => expect(latest().permissionsLoaded).toBe(true));
+    expect(latest().hasRole('kubiq-admin')).toBe(true);
+    expect(latest().hasPermission('users.manage')).toBe(false);
+    expect(latest().permissions).toEqual([]);
+  });
+
+  it('updates SSO tokens while keeping permissions server-controlled and cleans up its timer', async () => {
+    vi.useFakeTimers();
+    mocks.config.mockResolvedValue({ provider: 'keycloak', url: 'https://sso.example.test', realm: 'kubiq', clientId: 'kubiq' });
+    mocks.keycloakInit.mockResolvedValue(true); mocks.keycloakToken = 'sso-fixture';
+    mocks.current.mockResolvedValue({ ...initialUser, permissions: ['services.read'] });
+    const { latest, view } = mount();
+    await act(async () => { await Promise.resolve(); });
+    latest().loginKeycloak();
+    expect(mocks.keycloakLogin).toHaveBeenCalledTimes(1);
+    mocks.current.mockResolvedValue({ ...initialUser, permissions: [] });
+    await act(async () => { await latest().refreshCurrentUser(); });
+    expect(latest().hasPermission('services.read')).toBe(false);
+    mocks.keycloakUpdate.mockImplementation(async () => { mocks.keycloakToken = 'refreshed-sso-fixture'; return true; });
+    await act(async () => { await vi.advanceTimersByTimeAsync(60000); });
+    expect(mocks.setToken).toHaveBeenCalledWith('refreshed-sso-fixture');
+    view.unmount();
+    const calls = mocks.keycloakUpdate.mock.calls.length;
+    await act(async () => { await vi.advanceTimersByTimeAsync(120000); });
+    expect(mocks.keycloakUpdate).toHaveBeenCalledTimes(calls);
+  });
+
+  it('clears the local SSO session if provider logout fails', async () => {
+    vi.useFakeTimers();
+    mocks.config.mockResolvedValue({ provider: 'keycloak', url: 'https://sso.example.test', realm: 'kubiq', clientId: 'kubiq' });
+    mocks.keycloakInit.mockResolvedValue(true); mocks.keycloakToken = 'sso-fixture';
+    mocks.keycloakLogout.mockRejectedValue(new Error('Fixture logout failure'));
+    const { latest, view } = mount();
+    await act(async () => { await Promise.resolve(); });
+    act(() => latest().logout());
+    expect(view.getByText('Logging Out')).toBeTruthy();
+    await act(async () => { await vi.advanceTimersByTimeAsync(1500); });
+    expect(mocks.keycloakLogout).toHaveBeenCalledWith({ redirectUri: expect.stringMatching(/\/login$/) });
+    expect(latest().isAuthenticated).toBe(false);
+    expect(latest().permissions).toEqual([]);
+    expect(view.queryByText('Logging Out')).toBeNull();
+  });
+
+  it('registers without treating registration as an authenticated session', async () => {
+    const { latest } = mount();
+    await waitFor(() => expect(latest().isLoading).toBe(false));
+    const input = { username: 'fixture', password: 'fixture-password-only' };
+    await act(async () => { await latest().registerNative(input); });
+    expect(mocks.register).toHaveBeenCalledWith(input);
+    expect(latest().isAuthenticated).toBe(false);
+    expect(mocks.login).not.toHaveBeenCalled();
+  });
+
+  it('ignores an SSO initialization result that arrives after unmount', async () => {
+    let finish: (authenticated: boolean) => void = () => undefined;
+    mocks.config.mockResolvedValue({ provider: 'keycloak', url: 'https://sso.example.test', realm: 'kubiq', clientId: 'kubiq' });
+    mocks.keycloakInit.mockImplementation(() => new Promise<boolean>(resolve => { finish = resolve; }));
+    mocks.keycloakToken = 'late-sso-fixture';
+    const { view } = mount();
+    await act(async () => { await Promise.resolve(); });
+    view.unmount();
+    await act(async () => { finish(true); });
+    expect(mocks.setToken).not.toHaveBeenCalled();
+    expect(mocks.current).not.toHaveBeenCalled();
   });
 });
