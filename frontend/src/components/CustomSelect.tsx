@@ -34,6 +34,11 @@ export function CustomSelect<T extends string>({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const selected = options.find((option) => option.value === value) || options[0];
+  const activeOptionId = open && !disabled && options[active] ? `${listId}-${encodeURIComponent(options[active].value)}` : undefined;
+
+  useEffect(() => {
+    if (activeOptionId) document.getElementById(activeOptionId)?.scrollIntoView?.({ block: 'nearest' });
+  }, [activeOptionId]);
 
   useEffect(() => {
     const close = (event: MouseEvent) => {
@@ -74,7 +79,7 @@ export function CustomSelect<T extends string>({
         aria-haspopup="listbox"
         aria-expanded={open && !disabled}
         aria-controls={open && !disabled ? listId : undefined}
-        aria-activedescendant={open && options[active] ? `${listId}-${encodeURIComponent(options[active].value)}` : undefined}
+        aria-activedescendant={activeOptionId}
         aria-label={label}
         disabled={disabled}
         onClick={() => {

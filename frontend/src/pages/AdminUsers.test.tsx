@@ -39,6 +39,9 @@ describe('user management compatibility and authorization', () => {
     const expand = await view.findByRole('button', { name: 'Expand Fixture viewer details' });
     fireEvent.click(expand);
     expect(expand.getAttribute('aria-expanded')).toBe('true');
+    expect(expand.closest('tr')!.querySelectorAll('td')[1].classList.contains('flex')).toBe(true);
+    fireEvent.click(expand);
+    expect(expand.closest('tr')!.querySelectorAll('td')[1].classList.contains('hidden')).toBe(true);
     const self = view.getByRole('button', { name: 'Expand Current admin details' }).closest('tr')!;
     expect((within(self).getByRole('button', { name: 'Admin' }) as HTMLButtonElement).disabled).toBe(true);
     expect((within(self).getByRole('button', { name: 'Active' }) as HTMLButtonElement).disabled).toBe(true);

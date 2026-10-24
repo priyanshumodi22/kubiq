@@ -52,6 +52,17 @@ describe('custom select keyboard and focus', () => {
     expect(document.activeElement).toBe(view.getByRole('combobox'));
     expect(submit).not.toHaveBeenCalled();
   });
+
+  it('removes the active descendant when a currently open select is disabled', () => {
+    const view = render(<CustomSelect value="http" onChange={vi.fn()} options={options} label="Type" />);
+    const trigger = view.getByRole('combobox');
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' });
+    expect(trigger.getAttribute('aria-activedescendant')).toBeTruthy();
+    view.rerender(<CustomSelect value="http" onChange={vi.fn()} options={options} label="Type" disabled />);
+    expect(view.queryByRole('listbox')).toBeNull();
+    expect(trigger.hasAttribute('aria-activedescendant')).toBe(false);
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  });
 });
 
 describe('editable combobox', () => {
@@ -91,4 +102,27 @@ it('handles empty lists and wraps keyboard navigation', () => {
   expect(listboxIndex('ArrowUp', 0, 3)).toBe(2);
   expect(listboxIndex('ArrowDown', 2, 3)).toBe(0);
   expect(listboxIndex('Tab', 0, 3)).toBeUndefined();
+});
+
+it('scrolls the active option into view while retaining combobox focus', () => {
+  const original = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollIntoView');
+  const scroll = vi.fn();
+  Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', { configurable: true, value: scroll });
+  try {
+    const view = render(<><CustomSelect value="http" onChange={vi.fn()} options={options} label="Type" /><Combobox value="" onChange={vi.fn()} options={['Accept', 'Authorization']} label="Header" /></>);
+    const select = view.getByRole('combobox', { name: 'Type' });
+    select.focus();
+    fireEvent.keyDown(select, { key: 'End' });
+    expect(scroll).toHaveBeenLastCalledWith({ block: 'nearest' });
+    expect(document.activeElement).toBe(select);
+    scroll.mockClear();
+    const input = view.getByRole('combobox', { name: 'Header' });
+    input.focus();
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(scroll).toHaveBeenCalledWith({ block: 'nearest' });
+    expect(document.activeElement).toBe(input);
+  } finally {
+    if (original) Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', original);
+    else Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView');
+  }
 });

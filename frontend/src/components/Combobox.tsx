@@ -50,6 +50,11 @@ export default function Combobox({
   const filteredOptions = options.filter((option) =>
     option.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const activeOptionId = isOpen && filteredOptions[active] !== undefined ? `${listId}-${encodeURIComponent(filteredOptions[active])}` : undefined;
+
+  useEffect(() => {
+    if (activeOptionId) document.getElementById(activeOptionId)?.scrollIntoView?.({ block: 'nearest' });
+  }, [activeOptionId]);
 
   const handleSelect = (option: string) => {
     onChange(option);
@@ -88,7 +93,7 @@ export default function Combobox({
           aria-autocomplete="list"
           aria-expanded={isOpen && filteredOptions.length > 0}
           aria-controls={isOpen && filteredOptions.length > 0 ? listId : undefined}
-          aria-activedescendant={isOpen && filteredOptions[active] !== undefined ? `${listId}-${encodeURIComponent(filteredOptions[active])}` : undefined}
+          aria-activedescendant={activeOptionId}
           type="text"
           value={searchTerm}
           onChange={(e) => {

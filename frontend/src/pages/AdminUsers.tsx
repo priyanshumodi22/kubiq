@@ -28,6 +28,10 @@ function UserIdentity({ user }: Readonly<{ user: UserData }>) {
     </div>;
 }
 
+function expandedCellClass(expanded: boolean) {
+    return expanded ? 'flex' : 'hidden sm:table-cell';
+}
+
 export default function AdminUsers() {
     const { hasPermission, isLoading: authLoading, user: currentUser } = useAuth();
     const canManageUsers = hasPermission('users.manage');
@@ -241,7 +245,7 @@ export default function AdminUsers() {
                                                 <ChevronDown className={`sm:hidden w-5 h-5 text-gray-500 transition-transform ${expandedUserId === user.id ? 'rotate-180' : ''}`} />
                                               </button>
                                             </td>
-                                            <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 ${expandedUserId === user.id ? 'flex' : 'hidden sm:table-cell'}`}>
+                                            <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 ${expandedCellClass(expandedUserId === user.id)}`}>
                                                 <span className="sm:hidden text-xs text-text-dim uppercase tracking-wider font-semibold">Role</span>
                                                 <div className="flex items-center sm:justify-center gap-2">
                                                     <Shield className={`w-4 h-4 ${user.role === 'kubiq-admin' ? 'text-yellow-500' : 'text-blue-500'}`} />
@@ -267,17 +271,17 @@ export default function AdminUsers() {
                                                     </button>
                                                 </div>
                                             </td>
-                                            <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 text-sm text-text-dim sm:text-center ${expandedUserId === user.id ? 'flex' : 'hidden sm:table-cell'}`}>
+                                            <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 text-sm text-text-dim sm:text-center ${expandedCellClass(expandedUserId === user.id)}`}>
                                                 <span className="sm:hidden text-xs text-text-dim uppercase tracking-wider font-semibold">Allowed Namespaces</span>
                                                 <div className="flex flex-col items-start sm:items-center gap-1.5 max-w-full">
                                                     <AdminNamespaceScope user={user} editingNsUserId={editingNsUserId} selectedNsList={selectedNsList} customNsInput={customNsInput} clusterNamespaces={clusterNamespaces} toggleNamespaceSelect={toggleNamespaceSelect} setCustomNsInput={setCustomNsInput} handleAddCustomNs={handleAddCustomNs} setEditingNsUserId={setEditingNsUserId} handleSaveNs={handleSaveNs} handleStartEditNs={handleStartEditNs} />
                                                 </div>
                                             </td>
-                                            <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 text-sm text-text-dim sm:text-center ${expandedUserId === user.id ? 'flex' : 'hidden sm:table-cell'}`}>
+                                            <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 text-sm text-text-dim sm:text-center ${expandedCellClass(expandedUserId === user.id)}`}>
                                                 <span className="sm:hidden text-xs text-text-dim uppercase tracking-wider font-semibold">Joined</span>
                                                 <span>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}</span>
                                             </td>
-                                            <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 sm:text-center ${expandedUserId === user.id ? 'flex' : 'hidden sm:table-cell'}`}>
+                                            <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 sm:text-center ${expandedCellClass(expandedUserId === user.id)}`}>
                                                 <span className="sm:hidden text-xs text-text-dim uppercase tracking-wider font-semibold">Status</span>
                                                 <button
                                                     onClick={() => handleStatusToggle(user)}
@@ -295,7 +299,7 @@ export default function AdminUsers() {
                                                     )}
                                                 </button>
                                             </td>
-                                            <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 sm:text-center ${expandedUserId === user.id ? 'flex' : 'hidden sm:table-cell'}`}>
+                                            <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 sm:text-center ${expandedCellClass(expandedUserId === user.id)}`}>
                                                 <span className="sm:hidden text-xs text-text-dim uppercase tracking-wider font-semibold">Actions</span>
                                                 <div>
                                                     {String(user.id) === String(currentUser?.id) ? (
