@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -24,6 +24,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import Combobox from './Combobox';
+import { serviceStatusPresentation, statColorClass } from './serviceDetailPresentation';
 
 const COMMON_HEADERS = [
   'Accept',
@@ -80,14 +81,15 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
 
   // Custom check detailed state
   const [method, setMethod] = useState('GET');
-  const [requestHeaders, setRequestHeaders] = useState<{ key: string; value: string }[]>([]);
+  const [requestHeaders, setRequestHeaders] = useState<{ id: number; key: string; value: string }[]>([]);
+  const nextHeaderId = useRef(0);
   const [requestBody, setRequestBody] = useState('');
   const [showRequestOptions, setShowRequestOptions] = useState(false);
 
   const methods = ['GET', 'POST', 'PUT'];
 
   const addHeader = () => {
-    setRequestHeaders([...requestHeaders, { key: '', value: '' }]);
+    setRequestHeaders([...requestHeaders, { id: nextHeaderId.current++, key: '', value: '' }]);
   };
 
   const removeHeader = (index: number) => {
@@ -166,6 +168,7 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
     }
   };
 
+  const statusPresentation = serviceStatusPresentation(service.currentStatus);
   const modalContent = (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-100 flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-200">
       <div className="bg-bg-surface rounded-xl border border-gray-800 max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto scrollbar-hide scale-100 animate-in zoom-in-95 duration-200">
@@ -201,6 +204,7 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
             )}
           </div>
           <button
+            type="button" aria-label="Close service details"
             onClick={onClose}
             className="p-1.5 sm:p-2 hover:bg-bg-elevated rounded-lg transition-colors shrink-0"
           >
@@ -215,20 +219,8 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
             <StatCard
               icon={Activity}
               label="Status"
-              value={
-                service.currentStatus === 'healthy'
-                  ? 'Healthy'
-                  : service.currentStatus === 'unhealthy'
-                  ? 'Unhealthy'
-                  : 'Unknown'
-              }
-              color={
-                service.currentStatus === 'healthy'
-                  ? 'success'
-                  : service.currentStatus === 'unhealthy'
-                  ? 'error'
-                  : 'warning'
-              }
+              value={statusPresentation.label}
+              color={statusPresentation.color}
             />
             <StatCard
               icon={Clock}
@@ -312,6 +304,7 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
                   <div className="relative w-full sm:w-24 shrink-0">
                     <div className="relative">
                       <select
+                        aria-label="Custom check method"
                         value={method}
                         onChange={(e) => setMethod(e.target.value)}
                         className="w-full pl-3 pr-8 py-2 text-sm sm:text-base font-medium bg-bg rounded-lg border border-gray-700 focus:border-primary focus:outline-none appearance-none cursor-pointer hover:bg-bg-elevated transition-colors"
@@ -373,7 +366,7 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
 
                       <div className="space-y-2">
                         {requestHeaders.map((header, idx) => (
-                          <div key={idx} className="flex gap-2">
+                          <div key={header.id} className="flex gap-2">
                             <Combobox
                               value={header.key}
                               onChange={(val) => updateHeader(idx, 'key', val)}
@@ -389,6 +382,7 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
                               className="flex-1 min-w-0"
                             />
                             <button
+                              type="button" aria-label={`Remove request header ${idx + 1}`}
                               onClick={() => removeHeader(idx)}
                               className="p-1.5 text-error hover:bg-error/10 rounded self-start mt-0.5"
                             >
@@ -433,9 +427,9 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
                 {history
                   .slice(-10)
                   .reverse()
-                  .map((check, idx) => (
+                  .map((check) => (
                     <div
-                      key={idx}
+                      key={check.timestamp}
                       className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2 p-2.5 sm:p-3 bg-bg rounded-lg text-xs sm:text-sm"
                     >
                       <span className="text-text-dim truncate">
@@ -465,14 +459,7 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
 }
 
 function StatCard({ icon: Icon, label, value, color }: any) {
-  const colorClass =
-    color === 'success'
-      ? 'text-success'
-      : color === 'error'
-      ? 'text-error'
-      : color === 'warning'
-      ? 'text-warning'
-      : 'text-primary';
+  const colorClass = statColorClass(color);
 
   return (
     <div className="bg-bg-elevated rounded-lg p-3 sm:p-4">

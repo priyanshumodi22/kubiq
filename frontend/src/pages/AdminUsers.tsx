@@ -4,10 +4,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { apiClient } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { Users, Shield, ArrowLeft, RefreshCw, AlertTriangle, ChevronDown, Trash2, CheckCircle, XCircle, Pencil, Check, X } from 'lucide-react';
+import { Users, Shield, ArrowLeft, RefreshCw, AlertTriangle, ChevronDown, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { AdminNamespaceScope } from './AdminNamespaceScope';
 import { Link, Navigate } from 'react-router-dom';
 
-interface UserData {
+export interface UserData {
     id: string;
     username: string;
     email?: string;
@@ -23,6 +24,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 
 export default function AdminUsers() {
     const { hasPermission, isLoading: authLoading, user: currentUser } = useAuth();
+    const canManageUsers = hasPermission('users.manage');
     const { success, error: showError } = useToast();
     const [users, setUsers] = useState<UserData[]>([]);
     const [loading, setLoading] = useState(true);
@@ -86,9 +88,10 @@ export default function AdminUsers() {
 
     useEffect(() => {
         loadUsers();
-    }, []);
+    }, [authLoading, canManageUsers]);
 
     const loadUsers = async () => {
+        if (authLoading || !canManageUsers) return;
         setLoading(true);
         setError(null);
         try {
@@ -158,9 +161,13 @@ export default function AdminUsers() {
 
     if (authLoading) return null;
 
-    if (!hasPermission('users.manage')) {
+    if (!canManageUsers) {
         return <Navigate to="/dashboard" replace />;
     }
+
+    const emptyUsersRow = <tr><td colSpan={6} className="p-8 text-center text-text-dim">
+        {loading ? <><div className="animate-spin w-6 h-6 border-b-2 border-primary rounded-full mx-auto mb-2" />{'Loading users...'}</> : 'No users found.'}
+    </td></tr>;
 
     return (
         <div className="min-h-screen bg-bg flex flex-col">
@@ -212,24 +219,13 @@ export default function AdminUsers() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-800/50 block sm:table-row-group">
-                                {loading && users.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="p-8 text-center text-text-dim">
-                                            <div className="animate-spin w-6 h-6 border-b-2 border-primary rounded-full mx-auto mb-2"></div>
-                                            Loading users...
-                                        </td>
-                                    </tr>
-                                ) : users.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="p-8 text-center text-text-dim">No users found.</td>
-                                    </tr>
-                                ) : (
+                                {users.length === 0 ? emptyUsersRow : (
                                     users.map((user) => (
                                         <tr key={user.id} className="flex flex-col sm:table-row hover:bg-white/5 transition-colors group border-b sm:border-0 border-gray-800/50">
-                                            <td
-                                                className="p-4 flex items-center justify-between sm:table-cell bg-black/10 sm:bg-transparent cursor-pointer sm:cursor-default"
-                                                onClick={() => setExpandedUserId(prev => prev === user.id ? null : user.id)}
-                                            >
+                                            <td className="p-4 flex items-center justify-between sm:table-cell bg-black/10 sm:bg-transparent">
+                                              <button type="button" aria-label={`Expand ${user.username} details`} aria-expanded={expandedUserId === user.id}
+                                                className="w-full text-left flex items-center justify-between focus-visible:outline focus-visible:outline-primary"
+                                                onClick={() => setExpandedUserId(prev => prev === user.id ? null : user.id)}>
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
                                                         <Users className="w-4.5 h-4.5 text-primary" />
@@ -240,6 +236,7 @@ export default function AdminUsers() {
                                                     </div>
                                                 </div>
                                                 <ChevronDown className={`sm:hidden w-5 h-5 text-gray-500 transition-transform ${expandedUserId === user.id ? 'rotate-180' : ''}`} />
+                                              </button>
                                             </td>
                                             <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 ${expandedUserId === user.id ? 'flex' : 'hidden sm:table-cell'}`}>
                                                 <span className="sm:hidden text-xs text-text-dim uppercase tracking-wider font-semibold">Role</span>
@@ -270,109 +267,7 @@ export default function AdminUsers() {
                                             <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 text-sm text-text-dim sm:text-center ${expandedUserId === user.id ? 'flex' : 'hidden sm:table-cell'}`}>
                                                 <span className="sm:hidden text-xs text-text-dim uppercase tracking-wider font-semibold">Allowed Namespaces</span>
                                                 <div className="flex flex-col items-start sm:items-center gap-1.5 max-w-full">
-                                                    {user.role === 'kubiq-admin' ? (
-                                                        <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono font-bold rounded-full">
-                                                            * (All Cluster Namespaces)
-                                                        </span>
-                                                    ) : editingNsUserId === user.id ? (
-                                                        <div className="flex flex-col gap-2 bg-black/60 p-3 rounded-xl border border-primary/40 text-left min-w-[280px] max-w-sm shadow-2xl">
-                                                            <div className="text-xs font-semibold text-text flex items-center justify-between">
-                                                                <span>Cluster Namespaces (from API):</span>
-                                                                <span className="text-[10px] text-text-dim font-mono">{selectedNsList.length} selected</span>
-                                                            </div>
-
-                                                            {/* Live K8s Cluster Namespaces Pills */}
-                                                            <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto p-1 bg-black/30 rounded-lg border border-gray-800">
-                                                                {clusterNamespaces.length > 0 ? (
-                                                                    clusterNamespaces.map(ns => {
-                                                                        const isSelected = selectedNsList.includes(ns.toLowerCase());
-                                                                        return (
-                                                                            <button
-                                                                                key={ns}
-                                                                                type="button"
-                                                                                onClick={() => toggleNamespaceSelect(ns)}
-                                                                                className={`px-2 py-0.5 rounded-full text-xs font-mono transition-all flex items-center gap-1 cursor-pointer ${isSelected
-                                                                                    ? 'bg-primary/20 text-primary border border-primary/50 font-bold'
-                                                                                    : 'bg-gray-800/80 text-gray-400 border border-gray-700/60 hover:border-gray-500'
-                                                                                    }`}
-                                                                            >
-                                                                                <span>{ns}</span>
-                                                                                {isSelected ? <Check className="w-3 h-3 text-primary" /> : <span className="text-[10px] opacity-60">+</span>}
-                                                                            </button>
-                                                                        );
-                                                                    })
-                                                                ) : (
-                                                                    <div className="text-[11px] text-gray-500 p-1">No live cluster namespaces detected or K8s offline.</div>
-                                                                )}
-                                                            </div>
-
-                                                            {/* Custom Namespace Add Input */}
-                                                            <div className="flex items-center gap-1.5 mt-1">
-                                                                <input
-                                                                    type="text"
-                                                                    value={customNsInput}
-                                                                    onChange={(e) => setCustomNsInput(e.target.value)}
-                                                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomNs(); } }}
-                                                                    placeholder="Custom namespace..."
-                                                                    className="bg-black/40 border border-gray-700 rounded-lg text-xs text-white px-2 py-1 focus:outline-none font-mono grow"
-                                                                />
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={handleAddCustomNs}
-                                                                    className="px-2 py-1 bg-gray-800 text-xs text-gray-300 hover:text-white rounded-lg border border-gray-700"
-                                                                >
-                                                                    Add
-                                                                </button>
-                                                            </div>
-
-                                                            {/* Selected pills list */}
-                                                            {selectedNsList.length > 0 && (
-                                                                <div className="flex flex-wrap gap-1 mt-1">
-                                                                    <span className="text-[10px] text-gray-400 w-full font-semibold">Active Scope:</span>
-                                                                    {selectedNsList.map(ns => (
-                                                                        <span key={ns} className="px-2 py-0.5 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-[11px] font-mono flex items-center gap-1">
-                                                                            {ns}
-                                                                            <X
-                                                                                className="w-3 h-3 cursor-pointer hover:text-red-400"
-                                                                                onClick={() => toggleNamespaceSelect(ns)}
-                                                                            />
-                                                                        </span>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-
-                                                            {/* Save / Cancel buttons */}
-                                                            <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-gray-800">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setEditingNsUserId(null)}
-                                                                    className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-xs text-gray-300 rounded-lg transition-colors"
-                                                                >
-                                                                    Cancel
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleSaveNs(user.id)}
-                                                                    className="px-3 py-1 bg-primary text-black font-semibold text-xs rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-1"
-                                                                >
-                                                                    <Check className="w-3.5 h-3.5" /> Save
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => handleStartEditNs(user)}
-                                                            className="group flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-full text-xs font-mono font-bold transition-all cursor-pointer"
-                                                            title="Click to edit allowed namespaces from live cluster API"
-                                                        >
-                                                            <span>
-                                                                {(user.allowedNamespaces && user.allowedNamespaces.length > 0)
-                                                                    ? user.allowedNamespaces.join(', ')
-                                                                    : 'All Namespaces (Unrestricted)'}
-                                                            </span>
-                                                            <Pencil className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
-                                                        </button>
-                                                    )}
+                                                    <AdminNamespaceScope user={user} editingNsUserId={editingNsUserId} selectedNsList={selectedNsList} customNsInput={customNsInput} clusterNamespaces={clusterNamespaces} toggleNamespaceSelect={toggleNamespaceSelect} setCustomNsInput={setCustomNsInput} handleAddCustomNs={handleAddCustomNs} setEditingNsUserId={setEditingNsUserId} handleSaveNs={handleSaveNs} handleStartEditNs={handleStartEditNs} />
                                                 </div>
                                             </td>
                                             <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 text-sm text-text-dim sm:text-center ${expandedUserId === user.id ? 'flex' : 'hidden sm:table-cell'}`}>
@@ -384,23 +279,25 @@ export default function AdminUsers() {
                                                 <button
                                                     onClick={() => handleStatusToggle(user)}
                                                     disabled={String(user.id) === String(currentUser?.id)}
-                                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${user.enabled !== false
-                                                        ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20'
-                                                        : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${user.enabled === false
+                                                        ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                                                        : 'bg-green-500/10 text-green-500 hover:bg-green-500/20'
                                                         } ${String(user.id) === String(currentUser?.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                                                     title={String(user.id) === String(currentUser?.id) ? "Cannot disable yourself" : "Toggle Status"}
                                                 >
-                                                    {user.enabled !== false ? (
-                                                        <><CheckCircle className="w-3 h-3" /> Active</>
-                                                    ) : (
+                                                    {user.enabled === false ? (
                                                         <><XCircle className="w-3 h-3" /> Disabled</>
+                                                    ) : (
+                                                        <><CheckCircle className="w-3 h-3" /> Active</>
                                                     )}
                                                 </button>
                                             </td>
                                             <td className={`p-3 px-4 sm:p-4 items-center justify-between sm:table-cell border-t sm:border-0 border-gray-800/30 sm:text-center ${expandedUserId === user.id ? 'flex' : 'hidden sm:table-cell'}`}>
                                                 <span className="sm:hidden text-xs text-text-dim uppercase tracking-wider font-semibold">Actions</span>
                                                 <div>
-                                                    {String(user.id) !== String(currentUser?.id) ? (
+                                                    {String(user.id) === String(currentUser?.id) ? (
+                                                        <span className="sm:hidden text-sm text-text-dim">Current User</span>
+                                                    ) : (
                                                         <button
                                                             onClick={() => confirmDelete(user.id)}
                                                             className="flex items-center gap-2 p-1.5 px-3 sm:px-1.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded transition-colors"
@@ -409,8 +306,6 @@ export default function AdminUsers() {
                                                             <Trash2 className="w-4 h-4" />
                                                             <span className="sm:hidden text-sm font-medium">Delete</span>
                                                         </button>
-                                                    ) : (
-                                                        <span className="sm:hidden text-sm text-text-dim">Current User</span>
                                                     )}
                                                 </div>
                                             </td>
@@ -426,7 +321,7 @@ export default function AdminUsers() {
                 {openDropdownUserId && dropdownRect && createPortal(
                     <>
                         {/* Transparent overlay — click anywhere outside to close */}
-                        <div className="fixed inset-0 z-9998" onClick={() => setOpenDropdownUserId(null)} />
+                        <button type="button" aria-label="Close role choices" className="fixed inset-0 z-9998" onClick={() => setOpenDropdownUserId(null)} />
                         {/* Dropdown panel */}
                         <div
                             style={{ position: 'fixed', top: dropdownRect.top, left: dropdownRect.left, width: dropdownRect.width, zIndex: 9999 }}
