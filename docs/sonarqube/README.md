@@ -90,6 +90,13 @@ or greater in both states. Profile inputs now have associated labels, and parent
 save/rename flows have integration tests. All 202 frontend tests and the frontend
 build pass; source closures await a matching scan.
 
+The next mechanical backend batch removes the two redundant string aliases
+for extensible role names and permission keys and updates every internal
+consumer across JSON, MySQL, MongoDB and RBAC. It does not constrain custom
+strings, change serialized fields, run a data migration or alter authorization
+logic. All 284 backend tests and the backend TypeScript build pass. Its two
+findings are not counted closed until an exact-commit scan confirms them.
+
 Run 46 was not separately archived before the next analysis. The existing VM
 exporter selects the latest completed report when its queue is empty; this needs
 a per-analysis export barrier before promising every intermediate scan is saved.

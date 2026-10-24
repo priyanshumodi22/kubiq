@@ -1,5 +1,5 @@
 import { IUserRepository } from '../../interfaces/IUserRepository';
-import { User, UserRole } from '../../../types';
+import { User } from '../../../types';
 import { UserModel } from '../../schemas/UserSchema';
 
 export class MongoUserRepository implements IUserRepository {
@@ -33,7 +33,7 @@ export class MongoUserRepository implements IUserRepository {
     return this.mapToUser(newUser.toObject());
   }
 
-  async updateUserRole(id: string, role: UserRole): Promise<User> {
+  async updateUserRole(id: string, role: string): Promise<User> {
     const updated = await UserModel.findByIdAndUpdate(
         id,
         { $set: { role, roles: [role] } },

@@ -1,6 +1,6 @@
-import { PermissionKey, RoleDefinition, User } from '../types';
+import { RoleDefinition, User } from '../types';
 
-const all = (...permissions: PermissionKey[]) => permissions;
+const all = (...permissions: string[]) => permissions;
 
 /** The built-in RBAC catalogue. Custom role definitions extend this catalogue. */
 export const builtinRoleDefinitions: RoleDefinition[] = [
@@ -28,16 +28,16 @@ export class RbacService {
     return user?.role ? [user.role] : [];
   }
 
-  static effectivePermissions(user: Pick<User, 'role' | 'roles'> | { role?: string; roles?: string[] }, roleDefinitions = builtinRoleDefinitions): Set<PermissionKey> {
+  static effectivePermissions(user: Pick<User, 'role' | 'roles'> | { role?: string; roles?: string[] }, roleDefinitions = builtinRoleDefinitions): Set<string> {
     const assigned = new Set(this.userRoles(user));
-    const permissions = new Set<PermissionKey>();
+    const permissions = new Set<string>();
     for (const role of roleDefinitions) {
       if (assigned.has(role.id) || assigned.has(role.name)) role.permissions.forEach(permission => permissions.add(permission));
     }
     return permissions;
   }
 
-  static hasPermission(user: Pick<User, 'role' | 'roles'> | { role?: string; roles?: string[] }, permission: PermissionKey, roleDefinitions = builtinRoleDefinitions): boolean {
+  static hasPermission(user: Pick<User, 'role' | 'roles'> | { role?: string; roles?: string[] }, permission: string, roleDefinitions = builtinRoleDefinitions): boolean {
     const permissions = this.effectivePermissions(user, roleDefinitions);
     return permissions.has('*') || permissions.has(permission);
   }

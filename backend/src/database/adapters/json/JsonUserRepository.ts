@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { IUserRepository } from '../../interfaces/IUserRepository';
-import { User, UserRole } from '../../../types';
+import { User } from '../../../types';
 
 export class JsonUserRepository implements IUserRepository {
   private readonly dataDir: string;
@@ -86,7 +86,7 @@ export class JsonUserRepository implements IUserRepository {
     return newUser;
   }
 
-  async updateUserRole(id: string, role: UserRole): Promise<User> {
+  async updateUserRole(id: string, role: string): Promise<User> {
     const user = this.users.get(id);
     if (!user) throw new Error('User not found');
     

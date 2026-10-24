@@ -98,15 +98,11 @@ export type BuiltinUserRole = typeof BUILTIN_USER_ROLES[number];
  * Role names are intentionally extensible because system administrators can
  * create custom kubiq roles. The legacy `role` field remains during migration.
  */
-export type UserRole = string;
-
-export type PermissionKey = string;
-
 export interface RoleDefinition {
   id: string;
   name: string;
   description: string;
-  permissions: PermissionKey[];
+  permissions: string[];
   builtIn?: boolean;
 }
 
@@ -119,9 +115,9 @@ export interface User {
   avatarUrl?: string;
   firstName?: string;
   lastName?: string;
-  role: UserRole;
+  role: string;
   /** Multiple RBAC assignments. When absent, `role` is used for migration compatibility. */
-  roles?: UserRole[];
+  roles?: string[];
   allowedNamespaces?: string[];
   createdAt?: number;
   lastLogin?: number;

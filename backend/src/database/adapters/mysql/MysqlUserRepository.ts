@@ -1,6 +1,6 @@
 import mysql, { Pool, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import { IUserRepository } from '../../interfaces/IUserRepository';
-import { User, UserRole } from '../../../types';
+import { User } from '../../../types';
 
 export class MysqlUserRepository implements IUserRepository {
   private pool!: Pool;
@@ -113,7 +113,7 @@ export class MysqlUserRepository implements IUserRepository {
     }
   }
 
-  async updateUserRole(id: string, role: UserRole): Promise<User> {
+  async updateUserRole(id: string, role: string): Promise<User> {
     await this.pool.execute('UPDATE users SET role = ?, roles = ? WHERE id = ?', [role, JSON.stringify([role]), id]);
     const updated = await this.findById(id);
     if (!updated) throw new Error('User not found after update');
@@ -171,8 +171,8 @@ export class MysqlUserRepository implements IUserRepository {
       email: row.email,
       avatarUrl: row.avatar_url,
       passwordHash: row.password_hash,
-      role: row.role as UserRole,
-      roles: Array.isArray(roles) && roles.length ? roles : [row.role as UserRole],
+      role: row.role,
+      roles: Array.isArray(roles) && roles.length ? roles : [row.role],
       allowedNamespaces,
       createdAt: row.created_at ? new Date(row.created_at).getTime() : undefined,
       lastLogin: row.last_login ? new Date(row.last_login).getTime() : undefined,
