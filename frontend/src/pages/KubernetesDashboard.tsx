@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { KubernetesResourceHead } from './KubernetesResourceHead';
+import { KubernetesSpecialContent } from './KubernetesSpecialContent';
+import { formatContextName, getClusterProvider, persistentVolumeClass } from './kubernetesPresentation';
 import {
     Activity, Box, Network, Globe, Settings, Server, Database,
     AlertTriangle, Search, X, ChevronDown, FileJson, Layers, RefreshCw, Menu
@@ -9,10 +12,7 @@ import { useKubernetes, KubeMetric } from '../hooks/useKubernetes';
 import { apiClient } from '../services/api';
 import { K8sPodStatusBadge } from '../components/K8sPodStatusBadge';
 import { K8sMiniSparkline } from '../components/K8sMiniSparkline';
-import { K8sNamespaceOverview } from '../components/K8sNamespaceOverview';
-import { K8sRelationshipMap } from '../components/K8sRelationshipMap';
 import { K8sDetailPanel } from '../components/K8sDetailPanel';
-import { K8sRbacPermissionBanner } from '../components/K8sRbacPermissionBanner';
 import { 
     parseCpu, parseMemory, getMetricForPod, timeAgo 
 } from '../utils/k8sHelpers';
@@ -79,44 +79,6 @@ export default function KubernetesDashboard() {
         available, context, contexts, switchContext, namespaces, selectedNamespace, setSelectedNamespace,
     } = useKubernetes();
 
-    const formatContextName = (name: string) => {
-        if (!name) return '';
-        if (name === 'inClusterContext' || name === 'inCluster') {
-            const matchingCtx = contexts.find(c => c.name === name);
-            if (matchingCtx?.cluster && matchingCtx.cluster !== 'inClusterContext') {
-                return matchingCtx.cluster;
-            }
-            return 'In-Cluster Kubernetes';
-        }
-        if (name.startsWith('arn:aws:eks:')) {
-            const parts = name.split('/');
-            const clusterName = parts[parts.length - 1];
-            const regionMatch = name.match(/eks:([a-z0-9-]+):/);
-            const region = regionMatch ? regionMatch[1] : '';
-            return region ? `${clusterName} [EKS:${region}]` : `${clusterName} [EKS]`;
-        }
-        if (name.startsWith('gke_')) {
-            const parts = name.split('_');
-            return `${parts[parts.length - 1]} [GKE]`;
-        }
-        // Azure AKS: clusterName_resourceGroup_location
-        if (name.includes('_') && (name.toLowerCase().includes('aks') || name.toLowerCase().includes('azure'))) {
-            const parts = name.split('_');
-            return `${parts[0]} [AKS]`;
-        }
-        return name;
-    };
-
-    const getClusterProvider = (name: string) => {
-        if (!name) return 'Kubernetes Cluster';
-        if (name.startsWith('arn:aws:eks:')) return 'AWS Elastic Kubernetes Service';
-        if (name.startsWith('gke_')) return 'Google Kubernetes Engine';
-        if (name.toLowerCase().includes('aks') || name.toLowerCase().includes('azure')) return 'Azure Kubernetes Service';
-        if (name.includes('minikube')) return 'Minikube Local Development';
-        if (name.includes('kind')) return 'Kind Cluster';
-        if (name.includes('docker-desktop')) return 'Docker Desktop';
-        return 'Kubernetes Cluster';
-    };
 
     const [hoveredCtx, setHoveredCtx] = useState<string | null>(null);
 
@@ -430,7 +392,7 @@ export default function KubernetesDashboard() {
                                     className="bg-bg-surface border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2 transition-colors focus:outline-none w-full sm:w-[240px]"
                                 >
                                     <Server className="w-4 h-4 text-gray-400 shrink-0" />
-                                    <span className="flex-1 text-left truncate w-[170px] font-mono text-xs font-semibold">{formatContextName(context) || 'Select context'}</span>
+                                    <span className="flex-1 text-left truncate w-[170px] font-mono text-xs font-semibold">{formatContextName(context, contexts) || 'Select context'}</span>
                                     <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isCtxOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
@@ -442,7 +404,7 @@ export default function KubernetesDashboard() {
                                     >
                                         <div className="text-[10px] font-bold text-primary uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                                            Connection Details
+                                            {'Connection Details'}
                                         </div>
                                         <div className="space-y-2.5 font-mono text-[11px] text-gray-300">
                                             <div>
@@ -485,7 +447,7 @@ export default function KubernetesDashboard() {
                                     >
                                         <div className="text-[10px] font-bold text-primary uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                                            Connection Details
+                                            {'Connection Details'}
                                         </div>
                                         <div className="space-y-2.5 font-mono text-[11px] text-gray-300">
                                             <div>
@@ -537,7 +499,7 @@ export default function KubernetesDashboard() {
                                             >
                                                 <div className="flex items-center gap-2 w-full min-w-0">
                                                     <Server className="w-3.5 h-3.5 opacity-60 shrink-0 text-primary" />
-                                                    <span className="truncate block font-mono text-xs font-semibold">{formatContextName(ctx.name)}</span>
+                                                    <span className="truncate block font-mono text-xs font-semibold">{formatContextName(ctx.name, contexts)}</span>
                                                 </div>
                                                 <span className="text-[9px] text-gray-500 ml-5.5 truncate w-[90%] block font-mono">
                                                     Provider: {getClusterProvider(ctx.name).replace(' Elastic Kubernetes Service', ' EKS').replace(' Kubernetes Engine', ' GKE')}
@@ -602,9 +564,7 @@ export default function KubernetesDashboard() {
                 )}
             </div>
 
-            {!available ? (
-                <NotConfigured />
-            ) : (
+            {available ? (
                 <div className="flex flex-col lg:flex-row flex-1 overflow-visible lg:overflow-hidden gap-6 relative z-10 min-h-0">
                     {/* Mobile View Selector Dropdown */}
                     <div className="lg:hidden w-full relative z-60 mb-1 shrink-0">
@@ -714,31 +674,8 @@ export default function KubernetesDashboard() {
                             </div>
                         )}
 
-                        {rbacError ? (
-                            <K8sRbacPermissionBanner 
-                                resource={rbacError.resource}
-                                namespace={rbacError.namespace}
-                                message={rbacError.message}
-                                onRetry={fetchData}
-                            />
-                        ) : activeResource === 'overview' ? (
-                            <K8sNamespaceOverview 
-                                selectedNamespace={selectedNamespace}
-                                data={overviewData} 
-                                onSwitchTab={(tab) => { setActiveResource(tab); setSearchQuery(''); }}
-                                onSelectItem={setSelectedItem}
-                            />
-                        ) : activeResource === 'topology' ? (
-                            <K8sRelationshipMap
-                                namespace={selectedNamespace}
-                                pods={overviewData?.pods || []}
-                                services={overviewData?.services || []}
-                                ingresses={overviewData?.ingresses || []}
-                                configMaps={overviewData?.configMaps || []}
-                                secrets={overviewData?.secrets || []}
-                                onSelectItem={setSelectedItem}
-                            />
-                        ) : (
+                        <KubernetesSpecialContent error={rbacError} resource={activeResource} namespace={selectedNamespace} data={overviewData}
+                            onRetry={fetchData} onSwitchTab={tab => { setActiveResource(tab); setSearchQuery(''); }} onSelectItem={setSelectedItem}>
                             <>
                                 {/* Toolbar */}
                                 <div className="p-3 border-b border-gray-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-bg-surface shrink-0 text-left gap-2">
@@ -767,89 +704,7 @@ export default function KubernetesDashboard() {
                                 <div className="flex-1 overflow-auto custom-scrollbar">
                                     <table className="w-full text-sm">
                                         <thead className="bg-bg-surface sticky top-0 z-10 shadow-sm">
-                                            <tr className="text-xs text-gray-400 border-b border-gray-800">
-                                                <th className="text-left px-4 py-3 font-medium cursor-pointer hover:text-white" onClick={() => handleSort('name')}>
-                                                    Name {sortCol?.key === 'name' && (sortCol.asc ? '↑' : '↓')}
-                                                </th>
-                                                
-                                                {/* Dynamic columns based on type */}
-                                                {activeResource === 'pods' && (
-                                                    <>
-                                                        <th className="text-left px-4 py-3 font-medium">Ready</th>
-                                                        <th className="text-left px-4 py-3 font-medium">Status</th>
-                                                        <th className="text-center px-4 py-3 font-medium">CPU</th>
-                                                        <th className="text-center px-4 py-3 font-medium">RAM</th>
-                                                        <th className="text-center px-4 py-3 font-medium cursor-pointer hover:text-white" onClick={() => handleSort('restarts')}>
-                                                            Restarts {sortCol?.key === 'restarts' && (sortCol.asc ? '↑' : '↓')}
-                                                        </th>
-                                                        <th className="text-center px-4 py-3 font-medium cursor-pointer hover:text-white" onClick={() => handleSort('age')}>
-                                                            Age {sortCol?.key === 'age' && (sortCol.asc ? '↑' : '↓')}
-                                                        </th>
-                                                    </>
-                                                )}
-                                                {activeResource === 'deployments' && (
-                                                    <>
-                                                        <th className="text-center px-4 py-3 font-medium">Desired</th>
-                                                        <th className="text-center px-4 py-3 font-medium">Ready</th>
-                                                        <th className="text-left px-4 py-3 font-medium">Status</th>
-                                                    </>
-                                                )}
-                                                {activeResource === 'services' && (
-                                                    <>
-                                                        <th className="text-left px-4 py-3 font-medium">Type</th>
-                                                        <th className="text-left px-4 py-3 font-medium">Ports</th>
-                                                    </>
-                                                )}
-                                                {activeResource === 'endpoints' && (
-                                                    <th className="text-left px-4 py-3 font-medium">Endpoints</th>
-                                                )}
-                                                {activeResource === 'ingresses' && (
-                                                    <>
-                                                        <th className="text-left px-4 py-3 font-medium">Class</th>
-                                                        <th className="text-left px-4 py-3 font-medium">Hosts</th>
-                                                    </>
-                                                )}
-                                                {activeResource === 'persistentvolumes' && (
-                                                    <>
-                                                        <th className="text-left px-4 py-3 font-medium">Capacity</th>
-                                                        <th className="text-left px-4 py-3 font-medium">Status</th>
-                                                        <th className="text-left px-4 py-3 font-medium">Claim</th>
-                                                    </>
-                                                )}
-                                                {activeResource === 'persistentvolumeclaims' && (
-                                                    <>
-                                                        <th className="text-left px-4 py-3 font-medium">Status</th>
-                                                        <th className="text-left px-4 py-3 font-medium">Volume</th>
-                                                        <th className="text-left px-4 py-3 font-medium">Capacity</th>
-                                                    </>
-                                                )}
-                                                {activeResource === 'storageclasses' && (
-                                                    <>
-                                                        <th className="text-left px-4 py-3 font-medium">Provisioner</th>
-                                                        <th className="text-left px-4 py-3 font-medium">Binding Mode</th>
-                                                    </>
-                                                )}
-                                                {activeResource === 'configmaps' && (
-                                                    <th className="text-left px-4 py-3 font-medium">Keys</th>
-                                                )}
-                                                {activeResource === 'secrets' && (
-                                                    <>
-                                                        <th className="text-left px-4 py-3 font-medium">Type</th>
-                                                        <th className="text-left px-4 py-3 font-medium">Keys</th>
-                                                    </>
-                                                )}
-                                                {activeResource === 'nodes' && (
-                                                    <>
-                                                        <th className="text-left px-4 py-3 font-medium">Status</th>
-                                                        <th className="text-left px-4 py-3 font-medium">Roles</th>
-                                                        <th className="text-left px-4 py-3 font-medium">Version</th>
-                                                    </>
-                                                )}
-                                                {['services', 'endpoints', 'ingresses', 'persistentvolumes', 'persistentvolumeclaims', 'storageclasses', 'configmaps', 'secrets', 'nodes', 'events'].includes(activeResource) && (
-                                                    <th className="text-right px-4 py-3 font-medium">Age</th>
-                                                )}
-                                                <th className="w-10"></th>
-                                            </tr>
+                                            <KubernetesResourceHead resource={activeResource} sort={sortCol} onSort={handleSort} />
                                         </thead>
                                         <tbody className="divide-y divide-gray-800/40">
                                             {filteredAndSortedData.length === 0 ? (
@@ -961,9 +816,7 @@ export default function KubernetesDashboard() {
                                                                 </td>
                                                                 <td className="px-4 py-2.5 text-left text-xs">
                                                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                                                        item.status?.phase === 'Bound' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
-                                                                        item.status?.phase === 'Available' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' :
-                                                                        'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                                                                        persistentVolumeClass(item.status?.phase)
                                                                     }`}>
                                                                         {item.status?.phase || 'Bound'}
                                                                     </span>
@@ -1067,10 +920,10 @@ export default function KubernetesDashboard() {
                                     </table>
                                 </div>
                             </>
-                        )}
+                        </KubernetesSpecialContent>
                     </div>
                 </div>
-            )}
+            ) : <NotConfigured />}
             
             {/* Detail Panel Modal */}
             {selectedItem && (
