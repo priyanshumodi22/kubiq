@@ -34,6 +34,64 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe('service stream authentication and lifecycle', () => {
+  it('recovers polling errors and refreshes full data without overlapping requests', async () => {
+    vi.stubEnv('VITE_USE_SSE', 'false');
+    mocks.full.mockRejectedValueOnce(new Error('Full data unavailable'));
+    mocks.status.mockRejectedValueOnce(new Error('Status unavailable'));
+    const { useServices } = await import('./useServices');
+    const { result, unmount } = renderHook(useServices);
+    await act(async () => {});
+    expect(result.current.error).toBe('Full data unavailable');
+    expect(result.current.loading).toBe(false);
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+    expect(result.current.error).toBe('Status unavailable');
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+    expect(result.current.error).toBeNull();
+    let complete: ((value: { services: ServiceStatus[]; stats: Stats }) => void) | undefined;
+    mocks.full.mockImplementationOnce(() => new Promise(resolve => { complete = resolve; }));
+    act(() => { result.current.refresh(); result.current.refresh(); });
+    expect(mocks.full).toHaveBeenCalledTimes(2);
+    expect(result.current.loading).toBe(true);
+    await act(async () => { complete?.({ services: [service], stats }); });
+    expect(result.current.loading).toBe(false);
+    expect(result.current.services[0].name).toBe('api');
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('rejects structurally invalid stream entries and keeps the last good snapshot', async () => {
+    mocks.token.mockReturnValue(null);
+    const { useServices } = await import('./useServices');
+    const { result } = renderHook(useServices);
+    await act(async () => {});
+    const stream = Stream.instances[0];
+    expect(stream.url).toBe('https://backend.test/prefix/api/services/stream');
+    for (const snapshot of [null, {}, { services: [], stats: null }, { services: [null], stats }, { services: [{ name: 'broken', endpoint: 42 }], stats }]) {
+      act(() => { stream.onmessage?.({ data: JSON.stringify(snapshot) }); });
+    }
+    expect(result.current.services[0].name).toBe('api');
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+    expect(mocks.status).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles history failures, explicit retries, missing history and cleared selection', async () => {
+    mocks.history.mockRejectedValueOnce('unstructured failure');
+    const { useServiceHistory } = await import('./useServices');
+    const { result, rerender } = renderHook(({ name }: { name: string | null }) => useServiceHistory(name, 12), { initialProps: { name: 'api' as string | null } });
+    await act(async () => {});
+    expect(result.current.error).toBe('Failed to fetch history');
+    expect(result.current.loading).toBe(false);
+    mocks.history.mockResolvedValueOnce({});
+    await act(async () => { await result.current.refresh(); });
+    expect(mocks.history).toHaveBeenLastCalledWith('api', 12);
+    expect(result.current.error).toBeNull();
+    expect(result.current.history).toEqual([]);
+    rerender({ name: null });
+    await act(async () => {});
+    expect(result.current.loading).toBe(false);
+    expect(mocks.history).toHaveBeenCalledTimes(2);
+  });
+
   it('authenticates Native sessions with the REST credential and configured base path', async () => {
     const { useServices } = await import('./useServices');
     const { result, unmount } = renderHook(useServices);

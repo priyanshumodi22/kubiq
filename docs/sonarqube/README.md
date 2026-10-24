@@ -7,6 +7,19 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 59 verifies `5f7ba04ee3a5eb4c04c009a6ecb2dd4bb6d5d7c3`: zero open
+issues, zero unreviewed hotspots and 46.9% overall coverage. Pinned new-code
+coverage is 78.7%, below the unchanged 80% requirement, so production remains held.
+Source verification: 284 backend tests, 270 frontend tests and both builds pass.
+Archive: `gs://priyanshu-apps-sonarqube-backups/reports/20ea4d91-8cb1-46d6-87d7-bdaa2c95581b-1792866772.json`.
+Sheets tab: `Scan 2026-10-24 183246`.
+
+The next local batch passes 278 frontend tests and the production build. It adds
+pod metrics lifecycle coverage and service polling/retry/malformed-stream tests,
+stabilizes authorized explorer refresh and auth cleanup callbacks, and types
+topology resources and terminal sockets. All 96 production files remain in LCOV;
+local frontend line coverage is 62.12%. These changes still require a fresh scan.
+
 Run 58 verifies `a00694c86d5fac5d8bcc77aba5b904dab7714859`: zero open
 issues, zero unreviewed hotspots and 45.9% overall coverage. The bounded request
 error helpers and typing changes introduce no new issues. Standard gate remains

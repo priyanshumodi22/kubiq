@@ -3,17 +3,17 @@ import {
     Box, Globe, Settings,
     Search, ZoomIn, ZoomOut, Maximize2, Server, HelpCircle, Shield, Download
 } from 'lucide-react';
-import { exportNodeColors, podCardColor, relationshipCardClass, relationshipEdges, relationshipStatus, type RelationshipNode } from './k8sRelationshipData';
+import { exportNodeColors, podCardColor, relationshipCardClass, relationshipEdges, relationshipStatus, type RelationshipNode, type RelationshipResource } from './k8sRelationshipData';
 
 
 interface K8sRelationshipMapProps {
     namespace: string;
-    pods: any[];
-    services: any[];
-    ingresses: any[];
-    configMaps: any[];
-    secrets: any[];
-    onSelectItem: (item: { type: string, data: any }) => void;
+    pods: RelationshipResource[];
+    services: RelationshipResource[];
+    ingresses: RelationshipResource[];
+    configMaps: RelationshipResource[];
+    secrets: RelationshipResource[];
+    onSelectItem: (item: { type: string, data: RelationshipResource }) => void;
 }
 
 const getNodeIcon = (type: string) => {
@@ -222,7 +222,7 @@ export function K8sRelationshipMap({
         });
 
         return list;
-    }, [ingresses, services, pods, configMaps, secrets, height]);
+    }, [ingresses, services, pods, configMaps, secrets, height, xIngresses, xServices, xPods, xConfigs]);
 
     // Build relationship connections (Edges)
     const edges = useMemo(() => relationshipEdges(ingresses, services, pods, nodes), [ingresses, services, pods, nodes]);

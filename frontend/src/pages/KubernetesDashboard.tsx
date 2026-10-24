@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { KubernetesResourceHead } from './KubernetesResourceHead';
 import { KubernetesSpecialContent } from './KubernetesSpecialContent';
@@ -196,7 +196,7 @@ export default function KubernetesDashboard() {
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         if (!available || !selectedNamespace && activeResource !== 'nodes' && activeResource !== 'persistentvolumes' && activeResource !== 'storageclasses') return;
         setLoading(true);
         setRbacError(null);
@@ -275,7 +275,7 @@ export default function KubernetesDashboard() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [available, selectedNamespace, activeResource]);
 
     // Refetch and reset state when category or namespace changes
     useEffect(() => {
@@ -283,7 +283,7 @@ export default function KubernetesDashboard() {
         setOverviewData(null);
         setRbacError(null);
         fetchData();
-    }, [activeResource, selectedNamespace, available]);
+    }, [fetchData]);
 
     // Auto-refresh tick
     useEffect(() => {
@@ -295,7 +295,7 @@ export default function KubernetesDashboard() {
             });
         }, 1000);
         return () => clearInterval(timer);
-    }, [available, loading, activeResource, selectedNamespace]);
+    }, [available, loading, fetchData]);
 
 
     // Sorting and Filtering

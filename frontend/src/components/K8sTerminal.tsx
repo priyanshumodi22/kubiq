@@ -22,7 +22,7 @@ export default function K8sTerminal({ namespace, podName, containers }: Readonly
     const [error, setError] = useState<string | null>(null);
     const terminalRef = useRef<HTMLDivElement>(null);
     const xtermRef = useRef<XtermTerminal | null>(null);
-    const socketRef = useRef<any>(null);
+    const socketRef = useRef<ReturnType<typeof io> | null>(null);
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL || globalThis.location.origin;
     const contextPath = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
@@ -31,7 +31,7 @@ export default function K8sTerminal({ namespace, podName, containers }: Readonly
         if (!terminalRef.current) return;
 
         let term: XtermTerminal | null = null;
-        let socket: any = null;
+        let socket: ReturnType<typeof io> | null = null;
         let resizeObserver: ResizeObserver | null = null;
 
         // Delay terminal setup by a tiny tick to ensure browser layout engine
@@ -88,7 +88,7 @@ export default function K8sTerminal({ namespace, podName, containers }: Readonly
                 if (!term || !terminalRef.current) return;
                 try {
                     fitAddon.fit();
-                    socket.emit('k8s:terminal:resize', {
+                    socket?.emit('k8s:terminal:resize', {
                         cols: term.cols,
                         rows: term.rows
                     });
@@ -103,11 +103,11 @@ export default function K8sTerminal({ namespace, podName, containers }: Readonly
             resizeObserver.observe(terminalRef.current);
 
             term.onData((data) => {
-                socket.emit('k8s:terminal:input', { text: data });
+                socket?.emit('k8s:terminal:input', { text: data });
             });
 
             socket.on('connect', () => {
-                socket.emit('k8s:start:terminal', {
+                socket?.emit('k8s:start:terminal', {
                     namespace,
                     podName,
                     container: selectedContainer,
@@ -132,7 +132,7 @@ export default function K8sTerminal({ namespace, podName, containers }: Readonly
                 term!.write(data);
             });
 
-            socket.on('k8s:terminal:exit', (status: any) => {
+            socket.on('k8s:terminal:exit', (status: { code?: number } | null) => {
                 term!.write(`\r\n\u001b[1;31m[Session exited with code ${status?.code || 0}]\u001b[0m\r\n`);
                 setConnected(false);
             });
@@ -157,7 +157,7 @@ export default function K8sTerminal({ namespace, podName, containers }: Readonly
                 socket.disconnect();
             }
         };
-    }, [namespace, podName, selectedContainer]);
+    }, [namespace, podName, selectedContainer, backendUrl, contextPath]);
 
     const reconnect = () => {
         setError(null);
@@ -182,6 +182,7 @@ export default function K8sTerminal({ namespace, podName, containers }: Readonly
                         <div className="relative flex items-center bg-white/3 hover:bg-white/6 border border-white/10 rounded px-2 py-0.5 transition-colors cursor-pointer group whitespace-nowrap shrink-0">
                             <span className="text-[9px] text-gray-500 font-bold mr-1.5 uppercase select-none">Container:</span>
                             <select 
+                                aria-label="Terminal container"
                                 value={selectedContainer}
                                 onChange={(e) => setSelectedContainer(e.target.value)}
                                 className="bg-transparent text-[10px] text-gray-300 font-bold outline-none cursor-pointer pr-4 appearance-none relative z-10"

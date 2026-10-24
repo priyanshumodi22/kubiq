@@ -21,9 +21,10 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const generation = useRef(0);
   const logoutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const invalidateGeneration = useCallback(() => { generation.current++; }, []);
 
   const clearSession = useCallback(() => {
-    generation.current++;
+    invalidateGeneration();
     localStorage.removeItem('kubiq_token');
     apiClient.clearToken();
     setIsAuthenticated(false);
@@ -33,7 +34,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     setPermissionsLoaded(false);
     setProvider(null);
     setKeycloak(null);
-  }, []);
+  }, [invalidateGeneration]);
 
   const loadPermissions = useCallback(async (version: number) => {
     try {
@@ -114,8 +115,8 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       }
     };
     void initialize();
-    return () => { active = false; generation.current++; };
-  }, [initializeNative, initializeKeycloak]);
+    return () => { active = false; invalidateGeneration(); };
+  }, [initializeNative, initializeKeycloak, invalidateGeneration]);
 
   useEffect(() => {
     if (!isAuthenticated || provider !== 'native') return;
