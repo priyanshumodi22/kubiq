@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { apiClient } from '../services/api';
+import { requestErrorMessage } from '../utils/requestError';
 
 export interface IServiceDependency {
     source: string;
@@ -25,9 +26,9 @@ export function useServiceMap() {
 
             const data = await apiClient.getApmServiceMap(params);
             setDependencies(data);
-        } catch (err: any) {
+        } catch (err) {
             console.error('Service Map Fetch Error:', err);
-            setError(err?.response?.data?.error || err.message || 'An unknown error occurred while fetching service map.');
+            setError(requestErrorMessage(err, 'An unknown error occurred while fetching service map.', 'error'));
         } finally {
             setLoading(false);
         }

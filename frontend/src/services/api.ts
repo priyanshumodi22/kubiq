@@ -49,8 +49,8 @@ class ApiClient {
     // Response interceptor for error handling
     this.client.interceptors.response.use(
       (response) => response,
-      (error: AxiosError) => {
-        if (globalThis.window !== undefined && error.response?.status === 403 && (error.response.data as any)?.error === 'RBAC_FORBIDDEN') {
+      (error: AxiosError<{ error?: string }>) => {
+        if (globalThis.window !== undefined && error.response?.status === 403 && error.response.data?.error === 'RBAC_FORBIDDEN') {
           globalThis.window.dispatchEvent(new CustomEvent('kubiq:toast', {
             detail: { type: 'warning', message: 'You do not have permission to perform this action.' }
           }));
@@ -278,7 +278,7 @@ class ApiClient {
     return response.data;
   }
 
-  async registerPasskeyVerify(data: any) {
+  async registerPasskeyVerify(data: unknown) {
     const response = await this.client.post('/api/auth/webauthn/register/verify', data);
     return response.data;
   }
@@ -288,7 +288,7 @@ class ApiClient {
     return response.data;
   }
 
-  async loginPasskeyVerify(username: string, data: any) {
+  async loginPasskeyVerify(username: string, data: object) {
     const response = await this.client.post('/api/auth/webauthn/login/verify', {
       username,
       ...data,
@@ -302,7 +302,7 @@ class ApiClient {
     return response.data;
   }
 
-  async changePassword(data: any) {
+  async changePassword(data: unknown) {
     const response = await this.client.put('/api/auth/change-password', data);
     return response.data;
   }
@@ -354,7 +354,7 @@ class ApiClient {
     endpoint: string,
     method?: string,
     headers?: Record<string, string>,
-    body?: any
+    body?: unknown
   ) {
     const response = await this.client.post('/api/services/custom-check', {
       service,
@@ -436,12 +436,12 @@ class ApiClient {
     return response.data;
   }
 
-  async createNotificationChannel(data: any) {
+  async createNotificationChannel(data: unknown) {
     const response = await this.client.post('/api/notifications', data);
     return response.data;
   }
 
-  async updateNotificationChannel(id: string, data: any) {
+  async updateNotificationChannel(id: string, data: unknown) {
     const response = await this.client.put(`/api/notifications/${id}`, data);
     return response.data;
   }
@@ -700,7 +700,7 @@ class ApiClient {
     return response.data;
   }
 
-  async aiDiagnoseEvent(namespace: string, event: any) {
+  async aiDiagnoseEvent(namespace: string, event: unknown) {
     const response = await this.client.post(
       `/api/kubernetes/namespaces/${namespace}/events/ai-diagnose`,
       { event }
@@ -726,7 +726,7 @@ class ApiClient {
     return response.data;
   }
 
-  async summarizeLogs(logs: any[], serviceName?: string) {
+  async summarizeLogs(logs: unknown[], serviceName?: string) {
     // LLM API calls can take longer than the default 10s global timeout
     const response = await this.client.post(
       '/api/logs/summarize',

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { apiClient } from '../services/api';
+import { requestErrorMessage, requestErrorStatus } from '../utils/requestError';
 
 export interface ISpan {
     traceId: string;
@@ -12,7 +13,7 @@ export interface ISpan {
     endTimeUnixNano: number;
     durationMs: number;
     statusCode: number;
-    attributes: Record<string, any>;
+    attributes: Record<string, unknown>;
     timestamp: Date;
 }
 
@@ -33,12 +34,12 @@ export function useTrace() {
 
             const data = await apiClient.getApmTrace(traceId);
             setSpans(data);
-        } catch (err: any) {
+        } catch (err) {
             console.error('Trace Fetch Error:', err);
-            if (err?.response?.status === 404) {
+            if (requestErrorStatus(err) === 404) {
                 setError('Trace not found');
             } else {
-                setError(err?.response?.data?.error || err.message || 'An unknown error occurred while fetching trace.');
+                setError(requestErrorMessage(err, 'An unknown error occurred while fetching trace.', 'error'));
             }
             setSpans([]);
         } finally {

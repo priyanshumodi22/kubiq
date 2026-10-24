@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../services/api';
+import { requestErrorMessage } from '../utils/requestError';
 
 export interface ServiceMetrics {
     serviceName: string;
@@ -31,9 +32,9 @@ export function useApm() {
 
             const data = await apiClient.getApmServices(params);
             setMetrics(data);
-        } catch (err: any) {
+        } catch (err) {
             console.error('APM Hook Error:', err);
-            setError(err?.response?.data?.error || err.message || 'An unknown error occurred while fetching APM metrics.');
+            setError(requestErrorMessage(err, 'An unknown error occurred while fetching APM metrics.', 'error'));
         } finally {
             setLoading(false);
         }

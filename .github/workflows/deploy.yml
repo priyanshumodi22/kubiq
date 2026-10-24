@@ -45,6 +45,11 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable=${{ github.event_name == 'release' }}
 
+      - name: Recheck release gates before image publication
+        run: node .github/scripts/verify-sonar-release.cjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
@@ -120,6 +125,12 @@ jobs:
           # Zip them
           cd release-amd64 && zip -r ../kubiq-linux-amd64.zip . && cd ..
           cd release-arm64 && zip -r ../kubiq-linux-arm64.zip . && cd ..
+
+      - name: Recheck release gates before asset publication
+        if: github.event_name == 'release'
+        run: node .github/scripts/verify-sonar-release.cjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1

@@ -66,6 +66,96 @@
       "verifiedSonarStatus": "RESOLVED",
       "verificationScan": "5dba66d4-1596-4afc-bc3f-27cb1f6ca246",
       "verificationCommit": "7787e534e99674ba24c8bb674fffb714686942d1"
+    },
+    {
+      "id": "2172045e-d1e2-422e-a632-c14dec887ef4",
+      "rule": "typescript:S6819",
+      "file": "frontend/src/components/CustomSelect.tsx",
+      "proposedDisposition": "false_positive_reviewed",
+      "rationale": "Individually reviewed select-only combobox trigger implementing the W3C APG select-only combobox pattern. Named controls/listboxes, stable option IDs, aria-controls, aria-activedescendant and aria-selected preserve virtual focus and selection. Native element substitution changes the required custom popup presentation. Keyboard and pointer behavior is tested and Chrome-verified; no rule is disabled.",
+      "evidence": [
+        "https://www.w3.org/WAI/ARIA/apg/patterns/combobox/",
+        "selectKeyboard.test.tsx: eight tests cover keyboard, pointer, blur, disabled references, visibility and free text",
+        "Chrome 2026-10-24: ICMP selection, Authorization suggestion, Escape and focus return verified",
+        "docs/sonarqube/aria-review-20261024.md"
+      ],
+      "verifiedSourceRevision": "d7c95c9acf652313b61a3197116d10ca45f07a65",
+      "reviewedStatus": "False Positive",
+      "verifiedSonarStatus": "RESOLVED",
+      "verificationScan": "e707c02a-85d1-42db-8cd9-eb672b193254",
+      "verificationCommit": "d7c95c9acf652313b61a3197116d10ca45f07a65"
+    },
+    {
+      "id": "f335c5da-301a-4d83-bdf1-a450f7fa8cd3",
+      "rule": "typescript:S6819",
+      "file": "frontend/src/components/CustomSelect.tsx",
+      "proposedDisposition": "false_positive_reviewed",
+      "rationale": "Individually reviewed controlled listbox popup implementing the W3C APG select-only combobox pattern. Named controls/listboxes, stable option IDs, aria-controls, aria-activedescendant and aria-selected preserve virtual focus and selection. Native element substitution changes the required custom popup presentation. Keyboard and pointer behavior is tested and Chrome-verified; no rule is disabled.",
+      "evidence": [
+        "https://www.w3.org/WAI/ARIA/apg/patterns/combobox/",
+        "selectKeyboard.test.tsx: eight tests cover keyboard, pointer, blur, disabled references, visibility and free text",
+        "Chrome 2026-10-24: ICMP selection, Authorization suggestion, Escape and focus return verified",
+        "docs/sonarqube/aria-review-20261024.md"
+      ],
+      "verifiedSourceRevision": "d7c95c9acf652313b61a3197116d10ca45f07a65",
+      "reviewedStatus": "False Positive",
+      "verifiedSonarStatus": "RESOLVED",
+      "verificationScan": "e707c02a-85d1-42db-8cd9-eb672b193254",
+      "verificationCommit": "d7c95c9acf652313b61a3197116d10ca45f07a65"
+    },
+    {
+      "id": "e7b2a343-535e-4e7b-be83-e4a0586dc6fd",
+      "rule": "typescript:S6819",
+      "file": "frontend/src/components/CustomSelect.tsx",
+      "proposedDisposition": "false_positive_reviewed",
+      "rationale": "Individually reviewed single-select popup options implementing the W3C APG select-only combobox pattern. Named controls/listboxes, stable option IDs, aria-controls, aria-activedescendant and aria-selected preserve virtual focus and selection. Native element substitution changes the required custom popup presentation. Keyboard and pointer behavior is tested and Chrome-verified; no rule is disabled.",
+      "evidence": [
+        "https://www.w3.org/WAI/ARIA/apg/patterns/combobox/",
+        "selectKeyboard.test.tsx: eight tests cover keyboard, pointer, blur, disabled references, visibility and free text",
+        "Chrome 2026-10-24: ICMP selection, Authorization suggestion, Escape and focus return verified",
+        "docs/sonarqube/aria-review-20261024.md"
+      ],
+      "verifiedSourceRevision": "d7c95c9acf652313b61a3197116d10ca45f07a65",
+      "reviewedStatus": "False Positive",
+      "verifiedSonarStatus": "RESOLVED",
+      "verificationScan": "e707c02a-85d1-42db-8cd9-eb672b193254",
+      "verificationCommit": "d7c95c9acf652313b61a3197116d10ca45f07a65"
+    },
+    {
+      "id": "807087f8-d812-4aa9-9dc0-5a08c19094cf",
+      "rule": "typescript:S6819",
+      "file": "frontend/src/components/Combobox.tsx",
+      "proposedDisposition": "false_positive_reviewed",
+      "rationale": "Individually reviewed editable autocomplete listbox implementing the W3C APG editable free-text combobox pattern. Named controls/listboxes, stable option IDs, aria-controls, aria-activedescendant and aria-selected preserve virtual focus and selection. Native element substitution changes the required custom popup presentation or arbitrary header text behavior. Keyboard and pointer behavior is tested and Chrome-verified; no rule is disabled.",
+      "evidence": [
+        "https://www.w3.org/WAI/ARIA/apg/patterns/combobox/",
+        "selectKeyboard.test.tsx: eight tests cover keyboard, pointer, blur, disabled references, visibility and free text",
+        "Chrome 2026-10-24: ICMP selection, Authorization suggestion, Escape and focus return verified",
+        "docs/sonarqube/aria-review-20261024.md"
+      ],
+      "verifiedSourceRevision": "d7c95c9acf652313b61a3197116d10ca45f07a65",
+      "reviewedStatus": "False Positive",
+      "verifiedSonarStatus": "RESOLVED",
+      "verificationScan": "e707c02a-85d1-42db-8cd9-eb672b193254",
+      "verificationCommit": "d7c95c9acf652313b61a3197116d10ca45f07a65"
+    },
+    {
+      "id": "f11474e2-ce31-4bd7-b564-67a3ed40d8a7",
+      "rule": "typescript:S6819",
+      "file": "frontend/src/components/Combobox.tsx",
+      "proposedDisposition": "false_positive_reviewed",
+      "rationale": "Individually reviewed editable autocomplete options implementing the W3C APG editable free-text combobox pattern. Named controls/listboxes, stable option IDs, aria-controls, aria-activedescendant and aria-selected preserve virtual focus and selection. Native element substitution changes the required custom popup presentation or arbitrary header text behavior. Keyboard and pointer behavior is tested and Chrome-verified; no rule is disabled.",
+      "evidence": [
+        "https://www.w3.org/WAI/ARIA/apg/patterns/combobox/",
+        "selectKeyboard.test.tsx: eight tests cover keyboard, pointer, blur, disabled references, visibility and free text",
+        "Chrome 2026-10-24: ICMP selection, Authorization suggestion, Escape and focus return verified",
+        "docs/sonarqube/aria-review-20261024.md"
+      ],
+      "verifiedSourceRevision": "d7c95c9acf652313b61a3197116d10ca45f07a65",
+      "reviewedStatus": "False Positive",
+      "verifiedSonarStatus": "RESOLVED",
+      "verificationScan": "e707c02a-85d1-42db-8cd9-eb672b193254",
+      "verificationCommit": "d7c95c9acf652313b61a3197116d10ca45f07a65"
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { apiClient } from '../services/api';
@@ -6,13 +6,15 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Users, Shield, ArrowLeft, RefreshCw, AlertTriangle, ChevronDown, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { AdminNamespaceScope } from './AdminNamespaceScope';
+import { requestErrorMessage } from '../utils/requestError';
+import { apiErrorMessage } from '../utils/apiErrorMessage';
 import { Link, Navigate } from 'react-router-dom';
 
 export interface UserData {
     id: string;
     username: string;
     email?: string;
-    role: 'kubiq-admin' | 'kubiq-viewer';
+    role: string;
     allowedNamespaces?: string[];
     lastLogin?: number;
     createdAt?: number;
@@ -91,16 +93,12 @@ export default function AdminUsers() {
             setUsers(users.map(u => u.id === userId ? { ...u, allowedNamespaces: selectedNsList } : u));
             setEditingNsUserId(null);
             success('Allowed namespaces updated successfully!');
-        } catch (err: any) {
-            showError(err.response?.data?.message || 'Failed to update namespaces');
+        } catch (err) {
+            showError(apiErrorMessage(err, 'Failed to update namespaces'));
         }
     };
 
-    useEffect(() => {
-        loadUsers();
-    }, [authLoading, canManageUsers]);
-
-    const loadUsers = async () => {
+    const loadUsers = useCallback(async () => {
         if (authLoading || !canManageUsers) return;
         setLoading(true);
         setError(null);
@@ -117,20 +115,24 @@ export default function AdminUsers() {
             if (nsList.status === 'fulfilled' && Array.isArray(nsList.value)) {
                 setClusterNamespaces(nsList.value);
             }
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to load users');
+        } catch (err) {
+            setError(apiErrorMessage(err, 'Failed to load users'));
         } finally {
             setLoading(false);
         }
-    };
+    }, [authLoading, canManageUsers]);
+
+    useEffect(() => {
+        loadUsers();
+    }, [loadUsers]);
 
     const handleRoleChange = async (userId: string, newRole: string) => {
         try {
             await apiClient.updateUserRole(userId, newRole);
-            setUsers(users.map(u => u.id === userId ? { ...u, role: newRole as any } : u));
+            setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
             success('User role updated successfully');
-        } catch (err: any) {
-            showError('Failed to update role: ' + (err.response?.data?.message || err.message));
+        } catch (err) {
+            showError('Failed to update role: ' + requestErrorMessage(err, 'Unknown error'));
             loadUsers();
         }
     };
@@ -143,8 +145,8 @@ export default function AdminUsers() {
             await apiClient.updateUserStatus(user.id, newStatus);
             setUsers(users.map(u => u.id === user.id ? { ...u, enabled: newStatus } : u));
             success(`User ${newStatus ? 'enabled' : 'disabled'} successfully`);
-        } catch (err: any) {
-            showError('Failed to update status: ' + (err.response?.data?.message || err.message));
+        } catch (err) {
+            showError('Failed to update status: ' + requestErrorMessage(err, 'Unknown error'));
         }
     };
 
@@ -162,8 +164,8 @@ export default function AdminUsers() {
             setUsers(users.filter(u => u.id !== userToDelete));
             success('User deleted successfully');
             setConfirmOpen(false);
-        } catch (err: any) {
-            showError('Failed to delete user: ' + (err.response?.data?.message || err.message));
+        } catch (err) {
+            showError('Failed to delete user: ' + requestErrorMessage(err, 'Unknown error'));
         } finally {
             setIsDeleting(false);
         }

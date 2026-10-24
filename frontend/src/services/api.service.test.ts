@@ -59,3 +59,40 @@ describe('service update wire compatibility', () => {
     }
   });
 });
+
+describe('typed API payload compatibility', () => {
+  it('preserves WebAuthn registration and login payloads without transforming credential fields', async () => {
+    const credential = { id: 'fixture-credential', rawId: 'fixture-raw', type: 'public-key', response: { authenticatorData: 'fixture-data' } };
+    await apiClient.registerPasskeyVerify(credential);
+    await apiClient.loginPasskeyVerify('fixture-user', credential);
+    expect(requests.map(request => [request.method, request.url, JSON.parse(request.data)])).toEqual([
+      ['post', '/api/auth/webauthn/register/verify', credential],
+      ['post', '/api/auth/webauthn/login/verify', { username: 'fixture-user', ...credential }],
+    ]);
+  });
+
+  it('retains password and notification update fields at the transport boundary', async () => {
+    const password = { currentPassword: 'fixture-old', newPassword: 'fixture-new' };
+    const channel = { name: 'Fixture', type: 'webhook', enabled: false, config: { url: 'https://example.test', retries: 0 } };
+    await apiClient.changePassword(password);
+    await apiClient.createNotificationChannel(channel);
+    await apiClient.updateNotificationChannel('fixture-channel', channel);
+    expect(requests.map(request => [request.method, request.url, JSON.parse(request.data)])).toEqual([
+      ['put', '/api/auth/change-password', password],
+      ['post', '/api/notifications', channel],
+      ['put', '/api/notifications/fixture-channel', channel],
+    ]);
+  });
+
+  it('preserves diagnostic events, structured logs and the extended summary timeout', async () => {
+    const event = { type: 'Warning', count: 0, message: 'Fixture event' };
+    const logs = [{ message: 'Fixture log', attributes: { nested: true } }];
+    await apiClient.aiDiagnoseEvent('fixture-namespace', event);
+    await apiClient.summarizeLogs(logs, 'fixture-service');
+    expect(requests.map(request => [request.url, JSON.parse(request.data)])).toEqual([
+      ['/api/kubernetes/namespaces/fixture-namespace/events/ai-diagnose', { event }],
+      ['/api/logs/summarize', { logs, serviceName: 'fixture-service' }],
+    ]);
+    expect(requests[1].timeout).toBe(60000);
+  });
+});

@@ -7,6 +7,34 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 57 verifies `d7c95c9acf652313b61a3197116d10ca45f07a65`: **zero open
+issues and zero unreviewed hotspots**, with 44.3% overall coverage. The remaining
+user-row complexity finding is CLOSED. All five individually reviewed ARIA
+findings are RESOLVED with authenticated UI rationale and matching export.
+Archive: `gs://priyanshu-apps-sonarqube-backups/reports/459eb6a3-c156-46fc-9bd6-8bfed8d41e92-1792865165.json`.
+Sheets tab: `Scan 2026-10-24 180558`. This source passed 284 backend tests,
+248 frontend tests and both production builds. Standard gate remains ERROR;
+new-code coverage is 75.6% against the unchanged 80% requirement. Coverage and
+the separate zero-warning CI lint gate still need completion.
+Frontend ESLint currently has zero errors and 115 warnings before the next
+API-boundary typing batch. No production image has been published.
+
+The next typing/verification batch reduces frontend warnings from 115 to 95
+without disabling rules: typed pass-through API payloads, unknown span attributes,
+bounded transport error text/status and callback-stable authorized user loading.
+259 frontend tests and the production build pass. The explorer tests exercise
+resource routing, selection/filtering, RBAC denial/retry, polling cleanup and
+offline behavior; transport tests preserve WebAuthn, notification and diagnostic
+payloads. Fresh LCOV covers all 96 frontend production TS/TSX files.
+
+Release verification now also requires the latest exact-SHA application
+verification job to have passed lint, tests and builds. A successful Sonar run
+alone cannot authorize release images, binaries or npm publication. The helper
+rechecks main after reading the proofs, and release image/asset workflows recheck
+immediately before publication. Thirteen guard/setup tests pass, including failed,
+pending, stale-SHA and newer failed verification cases. No publishing workflow
+was dispatched during remediation.
+
 Run 56 verifies `ce8826f0959d29c2cd335b0f583f57cb20a08e48`: six open
 issues, 44.3% overall coverage and zero unreviewed hotspots. All ten Kubernetes
 findings are CLOSED. Remaining: one user-row complexity finding and five

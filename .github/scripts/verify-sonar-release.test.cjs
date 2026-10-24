@@ -6,8 +6,12 @@ const sha = 'a'.repeat(40);
 const options = { repository: 'owner/kubiq', token: 'test-only', sha };
 const validRun = { id: 1, head_sha: sha, head_branch: 'main', event: 'workflow_dispatch', status: 'completed', conclusion: 'success', repository: { full_name: options.repository } };
 const respond = value => ({ ok: true, json: async () => value });
-const mockGitHub = ({ head = sha, run = validRun, proof = true } = {}) => async url => {
+const verificationRun = { ...validRun, id: 2, run_number: 2, run_attempt: 1, event: 'push', status: 'in_progress', conclusion: null };
+const verificationJob = { name: 'Verify application builds', head_sha: sha, status: 'completed', conclusion: 'success' };
+const mockGitHub = ({ head = sha, run = validRun, proof = true, verificationRuns = [verificationRun], verificationJobs = [verificationJob] } = {}) => async url => {
   if (url.endsWith('/commits/main')) return respond({ sha: head });
+  if (url.includes('/gcp-k3s.yml/runs?')) return respond({ workflow_runs: verificationRuns });
+  if (url.includes('/jobs?')) return respond({ jobs: verificationJobs });
   if (url.includes('/artifacts?')) return respond({ artifacts: proof ? [{ name: `sonar-release-proof-${sha}`, expired: false }] : [] });
   return respond({ workflow_runs: [run] });
 };
@@ -18,6 +22,40 @@ test('stale main, wrong repository, missing proof and unavailable GitHub block r
   for (const request of [mockGitHub({ head: 'b'.repeat(40) }), mockGitHub({ proof: false }), mockGitHub({ run: { ...validRun, repository: { full_name: 'other/repo' } } }), async () => ({ ok: false, status: 503 })]) {
     await assert.rejects(verifyRelease({ ...options, request }));
   }
+});
+
+test('a passing Sonar scan cannot bypass missing, failed, pending or stale application verification', async () => {
+  for (const state of [
+    { verificationRuns: [] },
+    { verificationJobs: [] },
+    { verificationJobs: [{ ...verificationJob, conclusion: 'failure' }] },
+    { verificationJobs: [{ ...verificationJob, status: 'in_progress', conclusion: null }] },
+    { verificationJobs: [{ ...verificationJob, head_sha: 'b'.repeat(40) }] },
+    { verificationRuns: [{ ...verificationRun, repository: { full_name: 'other/repo' } }] },
+  ]) await assert.rejects(verifyRelease({ ...options, request: mockGitHub(state) }), /verification|lint, tests and builds/);
+});
+
+test('uses the latest verification run and permits its successful verify job while publishing is still running', async () => {
+  const result = await verifyRelease({ ...options, request: mockGitHub() });
+  assert.equal(result.verificationRunId, 2);
+  const requests = [];
+  const request = async url => {
+    requests.push(url);
+    if (url.includes('/gcp-k3s.yml/runs?')) return respond({ workflow_runs: [verificationRun, { ...verificationRun, id: 3, run_number: 3 }] });
+    if (url.includes('/runs/3/jobs?')) return respond({ jobs: [{ ...verificationJob, conclusion: 'failure' }] });
+    return mockGitHub()(url);
+  };
+  await assert.rejects(verifyRelease({ ...options, request }), /lint, tests and builds/);
+  assert.ok(requests.some(url => url.includes('/runs/3/jobs?filter=latest')));
+});
+
+test('rechecks main after verification and proof reads', async () => {
+  let headReads = 0;
+  const request = async url => {
+    if (url.endsWith('/commits/main') && ++headReads > 1) return respond({ sha: 'b'.repeat(40) });
+    return mockGitHub()(url);
+  };
+  await assert.rejects(verifyRelease({ ...options, request }), /Main changed/);
 });
 const mockSonar = ({ revision = sha, open = 0, hotspots = 0, coverage = 20, newCoverage = 85, gate = 'OK' } = {}) => async url => {
   if (url.includes('project_analyses')) return respond({ analyses: [{ key: 'analysis', revision }] });
