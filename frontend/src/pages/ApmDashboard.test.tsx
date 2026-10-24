@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ApmDashboard from './ApmDashboard';
 
@@ -137,6 +137,8 @@ describe('APM dashboard characterization', () => {
   });
 
   it('exports the selected service and filters as CSV and releases the download URL', async () => {
+    let complete!: (value: { data: string; headers: Record<string, string> }) => void;
+    mocks.exportSpans.mockImplementationOnce(() => new Promise(resolve => { complete = resolve; }));
     mocks.metrics = [{ serviceName: 'payments', requestCount: 20, errorCount: 0, avgDurationMs: 10, p95DurationMs: 20, rpm: 2, errorRate: 0 }];
     const create = vi.fn(() => 'blob:fixture-csv');
     const revoke = vi.fn();
@@ -154,10 +156,13 @@ describe('APM dashboard characterization', () => {
     fireEvent.click(view.getByRole('button', { name: 'Export errors only' }));
     fireEvent.click(view.getByRole('button', { name: 'Download CSV' }));
     await waitFor(() => expect(mocks.exportSpans).toHaveBeenCalledWith(expect.objectContaining({ service: 'payments', minDuration: '500', search: 'db.query', errorOnly: 'true', from: expect.stringMatching(/Z$/), to: expect.stringMatching(/Z$/) })));
+    expect(download).not.toHaveBeenCalled();
+    expect((view.getByRole('button', { name: 'Exporting...' }) as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => { complete({ data: 'fixture,csv', headers: { 'content-disposition': 'attachment; filename="fixture.csv"' } }); });
+    await waitFor(() => expect(view.queryByRole('heading', { name: 'Export Slow Queries' })).toBeNull());
     expect(download).toHaveBeenCalledTimes(1);
     expect((download.mock.instances[0] as HTMLAnchorElement).download).toBe('fixture.csv');
     expect(revoke).toHaveBeenCalledWith('blob:fixture-csv');
-    expect(view.queryByRole('heading', { name: 'Export Slow Queries' })).toBeNull();
   });
 
   it('reports invalid export times before submitting a request', async () => {
