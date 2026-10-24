@@ -1,6 +1,6 @@
 import { NamespaceScopeDialog } from '../components/NamespaceScopeDialog';
 import { addSelection, removeSelection } from '../utils/selection';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
 import {
   ChevronDown,
   ClipboardList,
@@ -16,6 +16,14 @@ import { KubiAiSettings } from '../components/KubiAiSettings';
 import { KubiAvatar } from '../components/KubiAvatar';
 import { apiClient } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import type { AuthConfig } from '../types/auth';
+import { requestServerErrorMessage } from '../utils/requestError';
+
+function settledValue<T>(result: PromiseSettledResult<T>): T | null {
+  return result.status === 'fulfilled' ? result.value : null;
+}
+
+type MigrationPreview = { current?: string | null; target: string; requirements: string[]; rollback: string };
 
 type Tab = 'overview' | 'users' | 'roles' | 'authentication' | 'kubi' | 'configuration';
 type Role = {
@@ -164,27 +172,28 @@ export default function SystemAdministration() {
     if (visibleTabs.length && !visibleTabs.some((tab) => tab.id === activeTab)) setActiveTab(visibleTabs[0].id);
   }, [activeTab, visibleTabs]);
 
-  const loadRoles = async () => {
+  const canManageRoles = hasPermission('roles.manage');
+  const loadRoles = useCallback(async () => {
     const [nextRoles, nextPermissions] = await Promise.all([
       apiClient.getRbacRoles(),
-      hasPermission('roles.manage') ? apiClient.getRbacPermissions() : Promise.resolve([]),
+      canManageRoles ? apiClient.getRbacPermissions() : Promise.resolve([]),
     ]);
     setRoles(nextRoles);
     setPermissions(nextPermissions);
-  };
-  const loadUsers = async () => {
+  }, [canManageRoles]);
+  const loadUsers = useCallback(async () => {
     setUsers(await apiClient.getUsers());
-  };
+  }, []);
   useEffect(() => {
     if (!['users', 'roles'].includes(activeTab)) return;
     setLoading(true);
     setMessage('');
     (activeTab === 'users' ? Promise.all([loadUsers(), loadRoles()]) : loadRoles())
-      .catch((error: any) =>
-        setMessage(error?.response?.data?.message || 'Administration data could not be loaded.')
+      .catch((error: unknown) =>
+        setMessage(requestServerErrorMessage(error, 'Administration data could not be loaded.'))
       )
       .finally(() => setLoading(false));
-  }, [activeTab]);
+  }, [activeTab, loadRoles, loadUsers]);
 
   const createUser = async (event: FormEvent) => {
     event.preventDefault();
@@ -195,16 +204,16 @@ export default function SystemAdministration() {
       setNewUser({ username: '', email: '', password: '', roles: [] });
       setShowCreateUser(false);
       setMessage('User created. The temporary password is never retained by kubiq.');
-    } catch (error: any) {
-      setMessage(error?.response?.data?.message || 'The user could not be created.');
+    } catch (error: unknown) {
+      setMessage(requestServerErrorMessage(error, 'The user could not be created.'));
     }
   };
   const toggleStatus = async (user: ManagedUser) => {
     try {
       const updated = await apiClient.updateUserStatus(user.id, user.enabled === false);
       setUsers((items) => items.map((item) => (item.id === updated.id ? updated : item)));
-    } catch (error: any) {
-      setMessage(error?.response?.data?.message || 'The account status could not be changed.');
+    } catch (error: unknown) {
+      setMessage(requestServerErrorMessage(error, 'The account status could not be changed.'));
     }
   };
   const toggleRole = async (user: ManagedUser, role: string) => {
@@ -216,8 +225,8 @@ export default function SystemAdministration() {
     try {
       const updated = await apiClient.updateUserRoles(user.id, next);
       setUsers((items) => items.map((item) => (item.id === updated.id ? updated : item)));
-    } catch (error: any) {
-      setMessage(error?.response?.data?.message || 'Role assignment could not be changed.');
+    } catch (error: unknown) {
+      setMessage(requestServerErrorMessage(error, 'Role assignment could not be changed.'));
     }
   };
   const resetPassword = async (user: ManagedUser) => {
@@ -231,8 +240,8 @@ export default function SystemAdministration() {
       setMessage(
         `Temporary password set for ${user.username}; it must be replaced at first sign-in.`
       );
-    } catch (error: any) {
-      setMessage(error?.response?.data?.message || 'Password reset failed.');
+    } catch (error: unknown) {
+      setMessage(requestServerErrorMessage(error, 'Password reset failed.'));
     }
   };
   const openNamespaceDialog = async (user: ManagedUser) => {
@@ -249,9 +258,9 @@ export default function SystemAdministration() {
           a.localeCompare(b)
         )
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       setAvailableNamespaces([]);
-      setMessage(error?.response?.data?.message || 'Cluster namespaces could not be loaded.');
+      setMessage(requestServerErrorMessage(error, 'Cluster namespaces could not be loaded.'));
     } finally {
       setNamespaceLoading(false);
     }
@@ -265,8 +274,8 @@ export default function SystemAdministration() {
       setUsers((items) => items.map((item) => (item.id === updated.id ? updated : item)));
       setMessage(`Namespace access updated for ${namespaceDialog.username}.`);
       setNamespaceDialog(null);
-    } catch (error: any) {
-      setMessage(error?.response?.data?.message || 'Namespace scope could not be changed.');
+    } catch (error: unknown) {
+      setMessage(requestServerErrorMessage(error, 'Namespace scope could not be changed.'));
     }
   };
   const deleteUser = async (user: ManagedUser) => {
@@ -274,8 +283,8 @@ export default function SystemAdministration() {
     try {
       await apiClient.deleteUser(user.id);
       setUsers((items) => items.filter((item) => item.id !== user.id));
-    } catch (error: any) {
-      setMessage(error?.response?.data?.message || 'The user could not be deleted.');
+    } catch (error: unknown) {
+      setMessage(requestServerErrorMessage(error, 'The user could not be deleted.'));
     }
   };
   const saveRole = async (event: FormEvent) => {
@@ -294,8 +303,8 @@ export default function SystemAdministration() {
       setEditingRole(null);
       setNewRole({ name: '', description: '', permissions: [] });
       setMessage('Role permissions saved and audited.');
-    } catch (error: any) {
-      setMessage(error?.response?.data?.message || 'Role could not be saved.');
+    } catch (error: unknown) {
+      setMessage(requestServerErrorMessage(error, 'Role could not be saved.'));
     }
   };
   const deleteRole = async (role: Role) => {
@@ -303,8 +312,8 @@ export default function SystemAdministration() {
     try {
       await apiClient.deleteRbacRole(role.id);
       setRoles((items) => items.filter((item) => item.id !== role.id));
-    } catch (error: any) {
-      setMessage(error?.response?.data?.message || 'Role could not be deleted.');
+    } catch (error: unknown) {
+      setMessage(requestServerErrorMessage(error, 'Role could not be deleted.'));
     }
   };
   const syncKeycloak = async () => {
@@ -313,8 +322,8 @@ export default function SystemAdministration() {
       setMessage(
         `Keycloak reconciliation created ${result.created.length} missing client role(s) and reported ${result.unexpected?.length || 0} unexpected role(s) without deleting them.`
       );
-    } catch (error: any) {
-      setMessage(error?.response?.data?.message || 'Keycloak reconciliation is unavailable.');
+    } catch (error: unknown) {
+      setMessage(requestServerErrorMessage(error, 'Keycloak reconciliation is unavailable.'));
     }
   };
 
@@ -744,15 +753,11 @@ function SystemOverview() {
       apiClient.getSystemStats(),
       apiClient.getAuditLogs(),
     ]).then((results) => {
-      const value = (index: number) =>
-        results[index].status === 'fulfilled'
-          ? (results[index] as PromiseFulfilledResult<any>).value
-          : null;
-      const auth = value(0);
-      const pro = value(1);
-      const kubi = value(2);
-      const stats = value(3);
-      const audit = value(4);
+      const auth = settledValue(results[0]);
+      const pro = settledValue(results[1]);
+      const kubi = settledValue(results[2]);
+      const stats = settledValue(results[3]);
+      const audit = settledValue(results[4]);
       setItems([
         {
           title: 'Authentication',
@@ -799,9 +804,9 @@ function SystemOverview() {
 }
 
 function AuthenticationStatus() {
-  const [config, setConfig] = useState<any>(null);
+  const [config, setConfig] = useState<AuthConfig | null>(null);
   const [health, setHealth] = useState<KeycloakHealth | null>(null);
-  const [preview, setPreview] = useState<any>(null);
+  const [preview, setPreview] = useState<MigrationPreview | null>(null);
   const [message, setMessage] = useState('');
   useEffect(() => {
     apiClient
@@ -817,8 +822,8 @@ function AuthenticationStatus() {
     try {
       setPreview(await apiClient.previewAuthMigration(target));
       setMessage('Migration preview recorded in audit history.');
-    } catch (error: any) {
-      setMessage(error?.response?.data?.message || 'Migration preview is unavailable.');
+    } catch (error: unknown) {
+      setMessage(requestServerErrorMessage(error, 'Migration preview is unavailable.'));
     }
   };
   return (

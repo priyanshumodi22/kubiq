@@ -33,6 +33,28 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('APM dashboard characterization', () => {
+  it('fetches once on service selection and applies filters to the latest inspector without reselecting a trace', async () => {
+    mocks.metrics = ['payments', 'inventory'].map(serviceName => ({ serviceName, requestCount: 20, errorCount: 0, avgDurationMs: 10, p95DurationMs: 20, rpm: 2, errorRate: 0 }));
+    mocks.getTraces.mockResolvedValue([{ traceId: 'trace-a', name: 'GET /pay', durationMs: 12, startTimeUnixNano: 1000000, statusCode: 0 }]);
+    const view = render(<ApmDashboard />);
+    await waitFor(() => expect(view.getByRole('button', { name: 'Inspect payments' })).toBeTruthy());
+    fireEvent.click(view.getByRole('button', { name: 'Inspect payments' }));
+    await waitFor(() => expect(mocks.fetchTrace).toHaveBeenCalledTimes(1));
+    expect(mocks.getTraces).toHaveBeenCalledTimes(1);
+    fireEvent.click(view.getByRole('button', { name: 'Errors Only' }));
+    await waitFor(() => expect(mocks.getTraces).toHaveBeenCalledTimes(2));
+    expect(mocks.getTraces).toHaveBeenLastCalledWith('payments', expect.objectContaining({ errorOnly: 'true' }));
+    expect(mocks.fetchTrace).toHaveBeenCalledTimes(1);
+    fireEvent.click(view.getByText('Back to Overview'));
+    fireEvent.click(view.getByRole('button', { name: 'Inspect inventory' }));
+    await waitFor(() => expect(mocks.fetchTrace).toHaveBeenCalledTimes(2));
+    expect(mocks.getTraces).toHaveBeenCalledTimes(3);
+    fireEvent.change(view.getByPlaceholderText('Filter by attribute (e.g. /checkout)...'), { target: { value: '/stock' } });
+    await waitFor(() => expect(mocks.getTraces).toHaveBeenCalledTimes(4));
+    expect(mocks.getTraces).toHaveBeenLastCalledWith('inventory', expect.objectContaining({ search: '/stock' }));
+    expect(mocks.fetchTrace).toHaveBeenCalledTimes(2);
+  });
+
   it('renders configuration loading before the supported empty state', async () => {
     const view = render(<ApmDashboard />);
     expect(view.getByText('Analyzing system configuration...')).toBeTruthy();

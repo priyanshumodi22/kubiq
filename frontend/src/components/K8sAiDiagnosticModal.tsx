@@ -4,6 +4,8 @@ import { X, Copy, Check, RefreshCw, AlertTriangle } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { ProUpgradeModal } from './ProUpgradeModal';
 import { AiStatusOrb } from './AiStatusOrb';
+import type { KubeEvent } from '../hooks/useKubernetes';
+import { errorMessage, requestErrorCode, requestErrorStatus } from '../utils/requestError';
 
 
 function contentKeys() {
@@ -136,7 +138,7 @@ export interface K8sAiDiagnosticModalProps {
     onClose: () => void;
     namespace: string;
     podName?: string;
-    event?: any;
+    event?: Partial<KubeEvent> | null;
     title?: string;
 }
 
@@ -171,13 +173,13 @@ export function K8sAiDiagnosticModal({
             } else {
                 setError('No target pod or event specified for diagnosis.');
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             if (generation !== requestGeneration.current) return;
-            if (err.response?.status === 402 || err.response?.data?.error === 'NO_LICENSE' || err.response?.data?.error === 'INVALID_LICENSE') {
+            if (requestErrorStatus(err) === 402 || requestErrorCode(err) === 'NO_LICENSE' || requestErrorCode(err) === 'INVALID_LICENSE') {
                 setShowUpgradeModal(true);
                 return;
             }
-            setError(err.message || 'Failed to generate AI diagnosis.');
+            setError(errorMessage(err, 'Failed to generate AI diagnosis.'));
         } finally {
             if (generation === requestGeneration.current) setLoading(false);
         }

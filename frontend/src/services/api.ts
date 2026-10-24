@@ -222,10 +222,10 @@ class ApiClient {
     return response.data;
   }
 
-  async streamKubiMessage(
+  async streamKubiMessage<T = unknown>(
     conversationId: string,
     message: string,
-    onEvent: (event: string, data: any) => void | Promise<void>
+    onEvent: (event: string, data: T) => void | Promise<void>
   ): Promise<void> {
     const response = await fetch(
       `${BASE_PATH}/api/kubi/conversations/${encodeURIComponent(conversationId)}/messages`,
@@ -262,7 +262,7 @@ class ApiClient {
         }
         // Completion handlers reload persisted messages; await them so failures
         // reach the panel instead of leaving the avatar permanently busy.
-        await onEvent(event, data);
+        await onEvent(event, data as T);
       }
       if (done) break;
     }

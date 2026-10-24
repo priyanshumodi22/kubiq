@@ -23,3 +23,15 @@ export function requestErrorStatus(error: unknown): number | undefined {
 export function requestServerErrorMessage(error: unknown, fallback: string): string {
   return text(record(record(record(error)?.response)?.data)?.message) || fallback;
 }
+
+export function requestErrorCode(error: unknown): string | undefined {
+  return text(record(record(record(error)?.response)?.data)?.error);
+}
+
+export function errorMessage(error: unknown, fallback: string): string {
+  return text(record(error)?.message) || fallback;
+}
+
+export function requestErrorData(error: unknown): Record<string, unknown> | undefined {
+  return record(record(record(error)?.response)?.data);
+}

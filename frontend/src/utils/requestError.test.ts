@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { requestErrorMessage, requestErrorStatus, requestServerErrorMessage } from './requestError';
+import { errorMessage, requestErrorCode, requestErrorData, requestErrorMessage, requestErrorStatus, requestServerErrorMessage } from './requestError';
 
 describe('request failure boundaries', () => {
+  it('keeps license codes, adapter data and root messages independently typed', () => {
+    const failure = { message: 'Transport', response: { data: { error: 'NO_LICENSE', message: 'Server', dbType: 'json' } } };
+    expect(errorMessage(failure, 'Fallback')).toBe('Transport');
+    expect(requestErrorCode(failure)).toBe('NO_LICENSE');
+    expect(requestErrorData(failure)?.dbType).toBe('json');
+    expect(errorMessage(null, 'Fallback')).toBe('Fallback');
+    expect(requestErrorCode({ response: { data: { error: [] } } })).toBeUndefined();
+    expect(requestErrorData(null)).toBeUndefined();
+  });
+
   it('keeps server-only forms from exposing transport or malformed payload text', () => {
     expect(requestServerErrorMessage({ message: 'Transport', response: { data: { message: 'Server' } } }, 'Fallback')).toBe('Server');
     for (const failure of [null, new Error('Transport'), { response: { data: { message: [] } } }, { response: { data: { message: '' } } }]) expect(requestServerErrorMessage(failure, 'Fallback')).toBe('Fallback');

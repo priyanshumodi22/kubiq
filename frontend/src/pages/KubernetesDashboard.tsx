@@ -1,4 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import type { ComponentProps } from 'react';
+import type { KubernetesResourceDetails, KubernetesSelection } from '../types/kubernetesResource';
+import { requestErrorCode, requestErrorMessage, requestErrorStatus } from '../utils/requestError';
 import { createPortal } from 'react-dom';
 import { KubernetesResourceHead } from './KubernetesResourceHead';
 import { KubernetesSpecialContent } from './KubernetesSpecialContent';
@@ -101,8 +104,8 @@ export default function KubernetesDashboard() {
 
     // Use our own state for all the resources
     const [activeResource, setActiveResource] = useState<string>('overview');
-    const [resourceData, setResourceData] = useState<any[]>([]);
-    const [overviewData, setOverviewData] = useState<any>(null);
+    const [resourceData, setResourceData] = useState<KubernetesResourceDetails[]>([]);
+    const [overviewData, setOverviewData] = useState<ComponentProps<typeof KubernetesSpecialContent>['data']>(null);
     const [metrics, setMetrics] = useState<KubeMetric[]>([]);
     const [metricsHistory, setMetricsHistory] = useState<Record<string, { cpu: number[], memory: number[], timestamps: number[] }>>(() => {
         try {
@@ -169,7 +172,7 @@ export default function KubernetesDashboard() {
     const [countdown, setCountdown] = useState(30);
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedItem, setSelectedItem] = useState<{type: string, data: any} | null>(null);
+    const [selectedItem, setSelectedItem] = useState<KubernetesSelection | null>(null);
 
     // Sidebar state
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
@@ -238,6 +241,7 @@ export default function KubernetesDashboard() {
                         ingresses: ing,
                         configMaps: cm,
                         secrets: sec,
+                        deployments: [], events: [], metrics: [],
                     });
                     setResourceData([]);
                     break;
@@ -262,14 +266,14 @@ export default function KubernetesDashboard() {
                 case 'secrets': setResourceData(await apiClient.getKubernetesSecrets(selectedNamespace)); break;
             }
             setCountdown(30);
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error('Error fetching data:', e);
-            const status = e.response?.status;
-            if (status === 403 || e.response?.data?.error === 'RBAC_FORBIDDEN') {
+            const status = requestErrorStatus(e);
+            if (status === 403 || requestErrorCode(e) === 'RBAC_FORBIDDEN') {
                 setRbacError({
                     resource: activeResource,
                     namespace: selectedNamespace || 'cluster',
-                    message: e.response?.data?.message || e.message || 'Permission denied by Kubernetes RBAC'
+                    message: requestErrorMessage(e, 'Permission denied by Kubernetes RBAC')
                 });
             }
         } finally {
@@ -321,12 +325,13 @@ export default function KubernetesDashboard() {
                 let va, vb;
                 if (activeResource === 'pods') {
                     if (sortCol.key === 'restarts') { va = a.restarts; vb = b.restarts; }
-                    else if (sortCol.key === 'age') { va = new Date(a.startTime).getTime(); vb = new Date(b.startTime).getTime(); }
+                    else if (sortCol.key === 'age') { va = new Date(a.startTime === null ? 0 : a.startTime ?? Number.NaN).getTime(); vb = new Date(b.startTime === null ? 0 : b.startTime ?? Number.NaN).getTime(); }
                     else { va = a.name; vb = b.name; }
                 } else {
                     va = a.metadata?.name || a.name || '';
                     vb = b.metadata?.name || b.name || '';
                 }
+                if (va === undefined || vb === undefined) return 0;
                 if (va < vb) return sortCol.asc ? -1 : 1;
                 if (va > vb) return sortCol.asc ? 1 : -1;
                 return 0;
@@ -712,6 +717,7 @@ export default function KubernetesDashboard() {
                                             ) : filteredAndSortedData.map((item, idx) => {
                                                 const name = item.name || item.metadata?.name;
                                                 const cTime = item.startTime || item.metadata?.creationTimestamp;
+                                                const structuredStatus = typeof item.status === 'object' ? item.status : undefined;
 
                                                 return (
                                                     <tr key={`${name}-${idx}`} className="hover:bg-white/4 transition-colors cursor-pointer group" onClick={() => setSelectedItem({type: activeResource, data: item})}>
@@ -732,7 +738,7 @@ export default function KubernetesDashboard() {
                                                                 <td className="px-4 py-2.5">
                                                                     <div className="flex items-center justify-center gap-2">
                                                                         <span className="font-mono text-xs text-yellow-400/80 min-w-[40px] text-right">
-                                                                            {parseCpu(getMetricForPod(metrics, name).cpu)}
+                                                                            {parseCpu(getMetricForPod(metrics, name || '').cpu)}
                                                                         </span>
                                                                         {metricsHistory[`${selectedNamespace}/${name}`]?.cpu ? (
                                                                             <K8sMiniSparkline data={metricsHistory[`${selectedNamespace}/${name}`].cpu.slice(-15)} color="#eab308" />
@@ -746,7 +752,7 @@ export default function KubernetesDashboard() {
                                                                 <td className="px-4 py-2.5">
                                                                     <div className="flex items-center justify-center gap-2">
                                                                         <span className="font-mono text-xs text-blue-400/80 min-w-[50px] text-right">
-                                                                            {parseMemory(getMetricForPod(metrics, name).memory)}
+                                                                            {parseMemory(getMetricForPod(metrics, name || '').memory)}
                                                                         </span>
                                                                         {metricsHistory[`${selectedNamespace}/${name}`]?.memory ? (
                                                                             <K8sMiniSparkline data={metricsHistory[`${selectedNamespace}/${name}`].memory.slice(-15)} color="#d946ef" />
@@ -758,7 +764,7 @@ export default function KubernetesDashboard() {
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-4 py-2.5 text-center text-xs font-medium text-gray-400">{item.restarts}</td>
-                                                                <td className="px-4 py-2.5 text-center text-xs text-gray-500">{timeAgo(cTime)}</td>
+                                                                <td className="px-4 py-2.5 text-center text-xs text-gray-500">{timeAgo(cTime ?? null)}</td>
                                                             </>
                                                         )}
 
@@ -767,10 +773,10 @@ export default function KubernetesDashboard() {
                                                             <>
                                                                 <td className="px-4 py-2.5 text-center text-gray-400 text-xs">{item.replicas}</td>
                                                                 <td className="px-4 py-2.5 text-center text-xs font-medium">
-                                                                    <span className={item.readyReplicas >= item.replicas ? 'text-green-400' : 'text-red-400'}>{item.readyReplicas}/{item.replicas}</span>
+                                                                    <span className={Number(item.readyReplicas) >= Number(item.replicas) ? 'text-green-400' : 'text-red-400'}>{item.readyReplicas}/{item.replicas}</span>
                                                                 </td>
                                                                 <td className="px-4 py-2.5 text-xs">
-                                                                    {item.readyReplicas >= item.replicas 
+                                                                    {Number(item.readyReplicas) >= Number(item.replicas)
                                                                         ? <span className="text-green-400">Healthy</span> 
                                                                         : <span className="text-red-400">Degraded</span>}
                                                                 </td>
@@ -784,15 +790,15 @@ export default function KubernetesDashboard() {
                                                                     {item.spec?.type || '—'}
                                                                 </td>
                                                                 <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
-                                                                    {item.spec?.ports?.map((p: any) => `${p.port}/${p.protocol}`).join(', ') || '—'}
+                                                                    {item.spec?.ports?.map((p) => `${p.port}/${p.protocol}`).join(', ') || '—'}
                                                                 </td>
                                                             </>
                                                         )}
 
                                                         {/* Endpoints Specific */}
                                                         {activeResource === 'endpoints' && (
-                                                            <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400 max-w-xs truncate" title={item.subsets?.map((s: any) => s.addresses?.map((a: any) => `${a.ip}:${s.ports?.[0]?.port || ''}`).join(', ')).join(', ') || '—'}>
-                                                                {item.subsets?.map((s: any) => s.addresses?.map((a: any) => `${a.ip}:${s.ports?.[0]?.port || ''}`).join(', ')).join(', ') || '—'}
+                                                            <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400 max-w-xs truncate" title={item.subsets?.map((s) => s.addresses?.map((a) => `${a.ip}:${s.ports?.[0]?.port || ''}`).join(', ')).join(', ') || '—'}>
+                                                                {item.subsets?.map((s) => s.addresses?.map((a) => `${a.ip}:${s.ports?.[0]?.port || ''}`).join(', ')).join(', ') || '—'}
                                                             </td>
                                                         )}
 
@@ -802,8 +808,8 @@ export default function KubernetesDashboard() {
                                                                 <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
                                                                     {item.spec?.ingressClassName || '—'}
                                                                 </td>
-                                                                <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400 max-w-xs truncate" title={item.spec?.rules?.map((r: any) => r.host).join(', ') || '*'}>
-                                                                    {item.spec?.rules?.map((r: any) => r.host).join(', ') || '*'}
+                                                                <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400 max-w-xs truncate" title={item.spec?.rules?.map((r) => r.host).join(', ') || '*'}>
+                                                                    {item.spec?.rules?.map((r) => r.host).join(', ') || '*'}
                                                                 </td>
                                                             </>
                                                         )}
@@ -816,9 +822,9 @@ export default function KubernetesDashboard() {
                                                                 </td>
                                                                 <td className="px-4 py-2.5 text-left text-xs">
                                                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                                                        persistentVolumeClass(item.status?.phase)
+                                                                        persistentVolumeClass(structuredStatus?.phase)
                                                                     }`}>
-                                                                        {item.status?.phase || 'Bound'}
+                                                                        {structuredStatus?.phase || 'Bound'}
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
@@ -832,17 +838,17 @@ export default function KubernetesDashboard() {
                                                             <>
                                                                 <td className="px-4 py-2.5 text-left text-xs">
                                                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                                                        item.status?.phase === 'Bound' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
+                                                                        structuredStatus?.phase === 'Bound' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
                                                                         'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
                                                                     }`}>
-                                                                        {item.status?.phase || 'Bound'}
+                                                                        {structuredStatus?.phase || 'Bound'}
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
                                                                     {item.spec?.volumeName || '—'}
                                                                 </td>
                                                                 <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
-                                                                    {item.status?.capacity?.storage || item.spec?.resources?.requests?.storage || '—'}
+                                                                    {structuredStatus?.capacity?.storage || item.spec?.resources?.requests?.storage || '—'}
                                                                 </td>
                                                             </>
                                                         )}
@@ -887,18 +893,18 @@ export default function KubernetesDashboard() {
                                                             <>
                                                                 <td className="px-4 py-2.5 text-left text-xs">
                                                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                                                        item.status?.conditions?.find((c: any) => c.type === 'Ready')?.status === 'True'
+                                                                        structuredStatus?.conditions?.find((c) => c.type === 'Ready')?.status === 'True'
                                                                             ? 'bg-green-500/10 text-green-400 border border-green-500/20'
                                                                             : 'bg-red-500/10 text-red-400 border border-red-500/20'
                                                                     }`}>
-                                                                        {item.status?.conditions?.find((c: any) => c.type === 'Ready')?.status === 'True' ? 'Ready' : 'NotReady'}
+                                                                        {structuredStatus?.conditions?.find((c) => c.type === 'Ready')?.status === 'True' ? 'Ready' : 'NotReady'}
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
                                                                     {Object.keys(item.metadata?.labels || {}).filter(l => l.startsWith('node-role.kubernetes.io/')).map(l => l.split('/').pop()).join(', ') || 'worker'}
                                                                 </td>
                                                                 <td className="px-4 py-2.5 text-left text-xs font-mono text-gray-400">
-                                                                    {item.status?.nodeInfo?.kubeletVersion || '—'}
+                                                                    {structuredStatus?.nodeInfo?.kubeletVersion || '—'}
                                                                 </td>
                                                             </>
                                                         )}

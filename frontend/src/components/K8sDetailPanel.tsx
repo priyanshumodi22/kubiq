@@ -16,10 +16,11 @@ import { AiStatusOrb } from './AiStatusOrb';
 import { K8sAiDiagnosticModal } from './K8sAiDiagnosticModal';
 import { copyToClipboard } from '../utils/k8sHelpers';
 import { historyIntervalLabel, historyLoadingText, imageSpecs, metricChartData } from './k8sDetailPresentation';
+import type { KubernetesSelection } from '../types/kubernetesResource';
 
 
 export interface K8sDetailPanelProps {
-    item: any;
+    item: KubernetesSelection | null;
     onClose: () => void;
     namespace: string;
     metricsHistory?: Record<string, { cpu: number[], memory: number[], timestamps?: number[] }>;
@@ -122,6 +123,7 @@ function K8sResourceOverview({ model }: Readonly<{ model: K8sDetailModel }>) {
         resNode,
         resLabels,
     } = model;
+    if (!item) return null;
     return (<div className="p-6 space-y-6">
                             {/* Resource Metrics Trend Chart */}
                             {(() => {
@@ -339,7 +341,7 @@ function K8sResourceOverview({ model }: Readonly<{ model: K8sDetailModel }>) {
                                         <span className="text-[10px] text-gray-500 font-mono">Click container name to inspect base image specs</span>
                                     </div>
                                     <div className="space-y-3">
-                                        {item.data.containers.map((c: any) => {
+                                        {item.data.containers.map(c => {
                                             const isExpanded = !!expandedContainers[c.name];
 
                                             const { registry, repository, tag, digest } = imageSpecs(c.image, c.imageID);
@@ -362,7 +364,7 @@ function K8sResourceOverview({ model }: Readonly<{ model: K8sDetailModel }>) {
 
                                                     <div className="flex gap-4 text-xs bg-black/20 px-3 py-2 rounded font-mono">
                                                         <span>State: <span className="text-white capitalize">{c.state}</span></span>
-                                                        <span>Restarts: <span className={c.restartCount > 0 ? 'text-orange-400 font-bold' : 'text-gray-300'}>{c.restartCount}</span></span>
+                                                        <span>Restarts: <span className={(c.restartCount || 0) > 0 ? 'text-orange-400 font-bold' : 'text-gray-300'}>{c.restartCount}</span></span>
                                                         {c.stateReason && <span className="text-orange-400">Reason: {c.stateReason}</span>}
                                                     </div>
 
@@ -440,7 +442,7 @@ function K8sResourceOverview({ model }: Readonly<{ model: K8sDetailModel }>) {
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-800/50">
-                                                {item.data.conditions.map((c: any) => (
+                                                {item.data.conditions.map(c => (
                                                     <tr key={c.type} className="align-top">
                                                         <td className="px-3 py-3 text-gray-200 font-medium">{c.type}</td>
                                                         <td className="px-3 py-3">
@@ -476,9 +478,10 @@ function K8sResourceContent({ model }: Readonly<{ model: K8sDetailModel }>) {
         yaml,
         loadingYaml,
     } = model;
-    if (activeTab === 'terminal' && item?.type === 'pods' && canUseTerminal) return (<K8sTerminal
+    if (!item) return null;
+    if (activeTab === 'terminal' && item.type === 'pods' && canUseTerminal) return (<K8sTerminal
                             namespace={item.data.namespace || item.data.metadata?.namespace || namespace}
-                            podName={item.data.name || item.data.metadata?.name}
+                            podName={item.data.name || item.data.metadata?.name || ''}
                             containers={
                                 item.data.containers ||
                                 item.data.spec?.containers ||
@@ -543,7 +546,7 @@ export function K8sDetailPanel(props: Readonly<K8sDetailPanelProps>) {
         resName,
         resNs,
     } = model;
-    if (!model.item) return null;
+    if (!item) return null;
     return createPortal(
         <div className="fixed inset-0 z-50 flex justify-end">
             <button type="button" tabIndex={-1} aria-label="Close resource details" className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={onClose} />

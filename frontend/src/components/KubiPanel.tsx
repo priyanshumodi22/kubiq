@@ -12,6 +12,7 @@ import './KubiPanel.css';
 import { kubiStateForEvent, type KubiAvatarState } from './kubiAvatarState';
 
 type Evidence = { type: string; label: string; href: string };
+type KubiStreamData = Partial<Evidence> & { state?: string; text?: string; message?: string };
 type Message = { id: string; role: 'user' | 'assistant'; content: string; createdAt: string; evidence?: Evidence[]; clarification?: { options: string[] } };
 type Conversation = { id: string; title: string; messages: Message[]; updatedAt: string };
 type Status = { enabled: boolean; proActive: boolean; providerConfigured: boolean; reason?: string };
@@ -145,15 +146,15 @@ export function KubiPanel() {
       if (!current) throw new Error('Unable to create kubi conversation.');
       const conversationId = current.id;
       let terminalEvent = false;
-      await apiClient.streamKubiMessage(conversationId, question, async (eventName, data) => {
+      await apiClient.streamKubiMessage<KubiStreamData>(conversationId, question, async (eventName, data) => {
         if (terminalEvent) return;
         currentState = kubiStateForEvent(currentState, eventName, data.state);
         setAvatarState(currentState);
         const eventState = currentState;
         setSteps(previous => recordKubiStep(previous, eventState));
-        if (eventName === 'status') setPhase(data.label || data.state);
+        if (eventName === 'status') setPhase(data.label || data.state || null);
         if (eventName === 'answer_delta') { setPhase('Writing the answer'); setDraft(previous => previous + (data.text || '')); }
-        if (eventName === 'evidence') setDraftEvidence(previous => [...previous, data]);
+        if (eventName === 'evidence') setDraftEvidence(previous => [...previous, data as Evidence]);
         if (eventName === 'error') { terminalEvent = true; setError(data.message || 'kubi could not complete that request.'); setInput(question); setPhase(null); }
         if (eventName === 'done') {
           terminalEvent = true;

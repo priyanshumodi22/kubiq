@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogSearch } from './LogSearch';
 import { apiClient } from '../services/api';
+import { requestErrorCode, requestErrorStatus } from '../utils/requestError';
 import { ProUpgradeModal } from './ProUpgradeModal';
 import { AiStatusOrb } from './AiStatusOrb';
 import { AiSummaryContent } from './AiSummaryContent';
@@ -296,10 +297,10 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
             } else {
                 setSummary('Failed to generate summary.');
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Summarize error:', err);
 
-            if (err.response?.status === 402 || err.response?.data?.error === 'NO_LICENSE' || err.response?.data?.error === 'INVALID_LICENSE') {
+            if (requestErrorStatus(err) === 402 || requestErrorCode(err) === 'NO_LICENSE' || requestErrorCode(err) === 'INVALID_LICENSE') {
                 setShowUpgradeModal(true);
                 return;
             }

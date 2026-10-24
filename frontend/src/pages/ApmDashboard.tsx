@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useEffectEvent } from 'react';
 import { apiClient } from '../services/api';
 import { createPortal } from 'react-dom';
 import { Activity, Clock, AlertTriangle, Search, Server, X, ChevronDown, CheckCircle2, Download, Code2, Settings } from 'lucide-react';
 import { useApm } from '../hooks/useApm';
 import { useTrace } from '../hooks/useTrace';
+import type { ISpan } from '../hooks/useTrace';
+import { errorMessage, requestErrorData, requestErrorStatus } from '../utils/requestError';
 import { useServiceMap } from '../hooks/useServiceMap';
 import TraceWaterfall from '../components/TraceWaterfall';
 import ServiceMap from '../components/ServiceMap';
@@ -81,15 +83,15 @@ function useApmDashboardModel() {
             try {
                 const data = await apiClient.getApmStatus();
                 setStatus(data);
-            } catch (e: any) {
+            } catch (e: unknown) {
                 // If the API returned an error response with JSON body, use it
-                if (e?.response?.data) {
-                    const data = e.response.data;
+                const data = requestErrorData(e);
+                if (data) {
                     setStatus({
                         supported: false,
-                        dbType: data.dbType || 'json',
-                        reason: data.reason || 'APM is not supported with the current database adapter.',
-                        fix: data.fix || 'Configure MySQL or MongoDB.'
+                        dbType: typeof data.dbType === 'string' && data.dbType || 'json',
+                        reason: typeof data.reason === 'string' && data.reason || 'APM is not supported with the current database adapter.',
+                        fix: typeof data.fix === 'string' && data.fix || 'Configure MySQL or MongoDB.'
                     });
                 } else {
                     console.error('Failed to check APM status:', e);
@@ -120,7 +122,7 @@ function useApmDashboardModel() {
 
     // Split Layout State
     const [selectedInspectorService, setSelectedInspectorService] = useState<string | null>(null);
-    const [tracesList, setTracesList] = useState<any[]>([]);
+    const [tracesList, setTracesList] = useState<ISpan[]>([]);
     const [isFetchingTraces, setIsFetchingTraces] = useState(false);
 
     // Trace Filters
@@ -235,7 +237,7 @@ function useApmDashboardModel() {
             params.fromMs = from.toString();
             params.toMs = to.toString();
 
-            const data = await apiClient.getApmServiceTraces(serviceName, params);
+            const data: ISpan[] = await apiClient.getApmServiceTraces(serviceName, params);
             setTracesList(data);
             if (data.length > 0 && autoSelectFirst) {
                 const recentTraceId = data[0].traceId;
@@ -246,7 +248,7 @@ function useApmDashboardModel() {
                 setTraceIdInput('');
             } else if (!autoSelectFirst) {
                 // Check if the currently viewed trace still matches the new filters
-                const stillExists = data.some((t: any) => t.traceId === traceIdInput);
+                const stillExists = data.some(t => t.traceId === traceIdInput);
                 if (!stillExists) {
                     clearTrace();
                     setTraceIdInput('');
@@ -260,12 +262,13 @@ function useApmDashboardModel() {
         }
     };
 
-    // Re-fetch traces when filters change
-    useEffect(() => {
+    // Read the latest selection without treating service clicks or trace selection as filter changes.
+    const refreshFilteredTraces = useEffectEvent(() => {
         if (selectedInspectorService) {
             fetchTracesWithFilters(selectedInspectorService, minDurationFilter, errorOnlyFilter, routeSearch, false);
         }
-    }, [minDurationFilter, errorOnlyFilter, routeSearch, timeFilter]);
+    });
+    useEffect(() => { refreshFilteredTraces(); }, [minDurationFilter, errorOnlyFilter, routeSearch, timeFilter]);
 
     const handleEdgeClick = async (source: string, target: string) => {
         try {
@@ -276,8 +279,8 @@ function useApmDashboardModel() {
                 // Scroll to the Trace Waterfall view
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
-        } catch (e: any) {
-            if (e?.response?.status === 404) {
+        } catch (e: unknown) {
+            if (requestErrorStatus(e) === 404) {
                 console.warn('No recent traces found traversing this specific edge.');
             } else {
                 console.error('Failed to quick-fetch trace for edge:', e);
@@ -902,8 +905,8 @@ function ApmExportDialog({ model }: Readonly<{ model: ApmDashboardModel }>) {
                                     link.click();
                                     URL.revokeObjectURL(link.href);
                                     setIsExportModalOpen(false);
-                                } catch (e: any) {
-                                    setExportError('Network error: ' + e.message);
+                                } catch (e: unknown) {
+                                    setExportError('Network error: ' + errorMessage(e, 'Export failed'));
                                 } finally {
                                     setIsExporting(false);
                                 }
@@ -1156,17 +1159,17 @@ function ApmPercentilePicker({ model }: Readonly<{ model: ApmDashboardModel }>) 
                                 <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-500 border-b border-gray-800 uppercase tracking-wider bg-[#151515]">
                                     Latency Percentiles
                                 </div>
-                                {[
+                                {([
                                     { value: 'p50', label: 'P50 Latency (Median)' },
                                     { value: 'p90', label: 'P90 Latency' },
                                     { value: 'p95', label: 'P95 Latency (Standard)' },
                                     { value: 'p99', label: 'P99 Latency (Tail SRE)' },
-                                ].map(opt => (
+                                ] as const).map(opt => (
                                     <button
                                         key={opt.value}
                                         type="button"
                                         onClick={() => {
-                                            setPercentileFilter(opt.value as any);
+                                            setPercentileFilter(opt.value);
                                             setIsLatencyOpen(false);
                                         }}
                                         className={`w-full text-left px-4 py-2.5 text-xs transition-colors hover:bg-primary/20 block border-b border-gray-800/40 last:border-0 ${percentileFilter === opt.value ? 'text-primary font-bold bg-primary/5' : 'text-gray-300'}`}

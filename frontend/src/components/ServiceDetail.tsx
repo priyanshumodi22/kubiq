@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -25,6 +26,7 @@ import {
 } from 'recharts';
 import Combobox from './Combobox';
 import { serviceStatusPresentation, statColorClass } from './serviceDetailPresentation';
+import { errorMessage } from '../utils/requestError';
 
 const COMMON_HEADERS = [
   'Accept',
@@ -74,7 +76,7 @@ interface ServiceDetailProps {
 export default function ServiceDetail({ service, onClose }: ServiceDetailProps) {
   const { history, loading, refresh } = useServiceHistory(service.name, 50);
   const [customEndpoint, setCustomEndpoint] = useState('');
-  const [customResult, setCustomResult] = useState<any>(null);
+  const [customResult, setCustomResult] = useState<unknown>(null);
   const [checkingCustom, setCheckingCustom] = useState(false);
   const [manualChecking, setManualChecking] = useState(false);
   const [showHeaders, setShowHeaders] = useState(false);
@@ -158,10 +160,10 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
         bodyData
       );
       setCustomResult(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setCustomResult({
         status: 'error',
-        message: error.message,
+        message: errorMessage(error, 'Custom check failed'),
       });
     } finally {
       setCheckingCustom(false);
@@ -411,7 +413,7 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
                 )}
               </div>
 
-              {customResult && (
+              {Boolean(customResult) && (
                 <div className="mt-4 p-4 bg-bg rounded-lg border border-gray-700 font-mono text-sm overflow-x-auto">
                   <pre className="text-text-dim">{JSON.stringify(customResult, null, 2)}</pre>
                 </div>
@@ -458,7 +460,7 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
   return createPortal(modalContent, document.body);
 }
 
-function StatCard({ icon: Icon, label, value, color }: any) {
+function StatCard({ icon: Icon, label, value, color }: Readonly<{ icon: LucideIcon; label: string; value: string; color?: string }>) {
   const colorClass = statColorClass(color);
 
   return (

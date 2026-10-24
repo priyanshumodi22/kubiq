@@ -7,6 +7,16 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+The final frontend lint batch passes **zero errors and zero warnings**, without
+rule exclusions or threshold changes. Local verification passes 284 backend tests,
+303 frontend tests, both builds, all 17 analysis/release/coverage guard tests and
+both SDK exporter suites. Frontend coverage is 64.74% across all 97 production
+files. New types preserve the mixed normalized/raw Kubernetes contracts; APM
+filter tests verify single requests and the latest service selection without
+reselecting a trace. This source still requires its matching fresh Sonar scan.
+Backend lint passes its existing configured gate, with pre-existing advisory
+typing warnings; those warnings are not represented as a zero-warning result.
+
 The following unscanned typing batch passes 301 frontend tests and the production
 build. Frontend ESLint is down to zero errors and 47 warnings, with rules intact.
 Namespace resource/quota models, Kubernetes discovery failures and Profile
