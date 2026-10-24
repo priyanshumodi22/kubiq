@@ -8,7 +8,7 @@ test('pins only the approved kubiq main analysis and revokes the temporary token
   const calls = [];
   const request = async (url, options) => {
     calls.push({ url, ...options });
-    return { ok: true, json: async () => ({ type: baseline.type, value: baseline.value, inherited: false }) };
+    return { ok: true, json: async () => ({ projectKey: 'kubiq', branchKey: 'main', type: baseline.type, value: baseline.value }) };
   };
   assert.equal((await pinBaseline({ ...args, request })).analysisId, baseline.value);
   assert.deepEqual(Object.fromEntries(new URLSearchParams(calls[0].body)), { project: 'kubiq', branch: 'main', type: 'SPECIFIC_ANALYSIS', value: baseline.value });

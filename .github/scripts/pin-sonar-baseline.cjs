@@ -15,7 +15,7 @@ async function pinBaseline({ host, adminToken, analysisToken, tokenName, request
     await call('/api/new_code_periods/set', adminToken, { project: baseline.project, branch: baseline.branch, type: baseline.type, value: baseline.value });
     const response = await call('/api/new_code_periods/show?project=kubiq&branch=main', analysisToken);
     const actual = await response.json();
-    if (actual.type !== baseline.type || actual.value !== baseline.value || actual.inherited !== false) throw new Error('Fixed Sonar baseline did not match the approved analysis.');
+    if (actual.projectKey !== baseline.project || actual.branchKey !== baseline.branch || actual.type !== baseline.type || actual.value !== baseline.value || (actual.inherited !== undefined && actual.inherited !== false)) throw new Error('Fixed Sonar baseline did not match the approved analysis.');
     return { project: baseline.project, branch: baseline.branch, type: actual.type, analysisId: actual.value };
   } finally {
     // No persistent administrator credential is retained by the workflow.

@@ -7,6 +7,33 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 51 verifies `d1936eb673c9c925d76359a757108037a3761958`: 51 open
+issues, 40.5% combined coverage, zero unreviewed hotspots and standard gate OK.
+All nine log-page, protocol-state and send-contrast findings in that batch are
+CLOSED. Archive: `gs://priyanshu-apps-sonarqube-backups/reports/9dbac5e1-9f7a-404b-9f1f-1e6e776970c2-1792837374.json`.
+The original ledger has 793 explicit closures, 44 pending findings, two safe
+reviews and two false positives; additional findings are still reconciled.
+Production remains blocked by the strict zero-issue gate.
+
+After this scan the user approved pinning the first coverage-enabled analysis:
+`1571c7e1-ac6e-42a0-82b0-ac4229db5f8f`, source `2f73b35`, on kubiq/main.
+The one-use setup run `40085754467` applied SPECIFIC_ANALYSIS successfully,
+then reported a read-back mismatch because this server omits the false/default
+inherited field. Authenticated UI and the exact API JSON confirm projectKey
+kubiq, branchKey main, type SPECIFIC_ANALYSIS and the approved value. The
+verifier now accepts omitted/false inherited only for that exact project,
+branch, type and analysis, while rejecting rolling, inherited or mismatched
+definitions. Routine scans check scope before and after analysis and bind the
+scope proof to their SHA; ten workflow guard/setup tests pass.
+
+The temporary administrator token was revoked automatically and its absence
+was confirmed in a refreshed Sonar token inventory. Deleting the unusable
+GitHub secret copy requires the user's GitHub Confirm access reauthentication;
+that cleanup remains pending. The one-use workflow is removed from source.
+Normal scan/read credentials are unchanged, with no administrator secret used
+by the routine scan workflow. The next analysis must verify metrics against
+the newly pinned scope; the prior rolling-scope gate is not fixed-scope evidence.
+
 Run 50 verifies `52c95ebdd19dd75df7098ffb23be6bf79147b44a`: 60 open
 issues, 39.1% combined coverage and zero unreviewed hotspots. All four Profile
 findings are CLOSED. The standard quality gate is ERROR: authenticated UI
@@ -16,10 +43,10 @@ failed gate: `gs://priyanshu-apps-sonarqube-backups/reports/29071a56-9b56-468a-9
 and tab `Scan 2026-10-24 101040`. The original ledger has 784 explicit closures,
 53 pending findings, two reviewed-safe hotspots and two individual false positives.
 
-The new-code settings UI currently follows the instance default Previous version.
+At run 50, the new-code settings UI followed the instance default Previous version.
 Because scanner versions are commit SHAs, this scope moves between batches; it
-is NOT the planned fixed remediation baseline. Pinning and verifying that scope
-remains a release prerequisite, not something the current gate proves.
+was NOT the planned fixed remediation baseline. It was subsequently pinned as
+described above; fresh verification against that scope remains required.
 
 Run 49 verifies `5bb8caaae1dbe05e5d24403125ec95f50cec4338`: 64 open
 issues, 39.0% combined coverage, zero unreviewed hotspots and standard gate OK.
