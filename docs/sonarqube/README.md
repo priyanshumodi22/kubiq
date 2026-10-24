@@ -7,6 +7,14 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 49 verifies `5bb8caaae1dbe05e5d24403125ec95f50cec4338`: 64 open
+issues, 39.0% combined coverage, zero unreviewed hotspots and standard gate OK.
+All five read APIs work with the Browse-only credential. The strict gate
+correctly fails on the remaining findings, not authentication. Its archive is
+`gs://priyanshu-apps-sonarqube-backups/reports/c3cc40be-bb45-43bd-a486-0b651a83bc4d-1792799300.json`.
+The original ledger now has 780 explicit closures, 57 pending findings, two
+reviewed-safe hotspots and two individually reviewed false positives.
+
 Run 48 verifies `3dc7714d106e9154151f02da3f7c3cc5cddb1a08`: 68 open
 issues, 38.5% combined coverage, no unreviewed hotspots and standard gate OK.
 The five Tailwind directives and four monitor findings are closed. Four exact
