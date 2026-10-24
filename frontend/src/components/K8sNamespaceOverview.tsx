@@ -4,7 +4,12 @@ import { timeAgo } from '../utils/k8sHelpers';
 import { apiClient } from '../services/api';
 import { K8sAiDiagnosticModal } from './K8sAiDiagnosticModal';
 import { AiStatusOrb } from './AiStatusOrb';
-import type { KubeEvent } from '../hooks/useKubernetes';
+import type { KubeDeployment, KubeEvent, KubeMetric, KubePod } from '../hooks/useKubernetes';
+import type { RelationshipResource } from './k8sRelationshipData';
+
+type NamespaceQuota = { name: string; namespace: string; hard?: Record<string, string>; used?: Record<string, string> };
+type NamespacePod = Pick<KubePod, 'status' | 'namespace'> & { isTerminating?: boolean };
+type NamespaceDeployment = Pick<KubeDeployment, 'namespace' | 'readyReplicas' | 'replicas'>;
 
 function quotaBarColor(percent: number): string {
     if (percent > 90) return 'bg-red-500';
@@ -14,16 +19,16 @@ function quotaBarColor(percent: number): string {
 export interface K8sNamespaceOverviewProps {
     selectedNamespace?: string;
     data: {
-        pods: any[];
-        deployments: any[];
-        services: any[];
-        configMaps: any[];
-        secrets: any[];
-        events: any[];
-        metrics: any[];
+        pods: NamespacePod[];
+        deployments: NamespaceDeployment[];
+        services: RelationshipResource[];
+        configMaps: RelationshipResource[];
+        secrets: RelationshipResource[];
+        events: KubeEvent[];
+        metrics: KubeMetric[];
     } | null;
     onSwitchTab: (tab: string) => void;
-    onSelectItem: (item: any) => void;
+    onSelectItem: (item: { type: string; data: KubeEvent | RelationshipResource }) => void;
 }
 
 function K8sMiniSparkline({ values, color }: Readonly<{ values: number[]; color: string }>) {
@@ -52,10 +57,10 @@ function K8sMiniSparkline({ values, color }: Readonly<{ values: number[]; color:
 }
 
 export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onSelectItem }: Readonly<K8sNamespaceOverviewProps>) {
-    const [quotasData, setQuotasData] = useState<{ quotas: any[]; limitRanges: any[]; rbacForbidden?: boolean }>({ quotas: [], limitRanges: [] });
+    const [quotasData, setQuotasData] = useState<{ quotas: NamespaceQuota[]; limitRanges: unknown[]; rbacForbidden?: boolean }>({ quotas: [], limitRanges: [] });
     const [selectedEventForAi, setSelectedEventForAi] = useState<KubeEvent | null>(null);
 
-    const targetNs = selectedNamespace || data?.pods?.[0]?.namespace || data?.deployments?.[0]?.namespace;
+    const targetNs = selectedNamespace || data?.pods?.[0]?.namespace || data?.deployments?.[0]?.namespace || '';
 
     useEffect(() => {
         if (targetNs) {
@@ -78,12 +83,12 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
 
     // 1. Pod Health Calculations
     const totalPods = pods.length;
-    const runningPods = pods.filter((p: any) => {
+    const runningPods = pods.filter(p => {
         const s = String(p.status || '').toLowerCase();
         return (s.includes('running') || s.includes('completed')) && !p.isTerminating;
     }).length;
-    const terminatingPods = pods.filter((p: any) => p.isTerminating).length;
-    const failingPods = pods.filter((p: any) => {
+    const terminatingPods = pods.filter(p => p.isTerminating).length;
+    const failingPods = pods.filter(p => {
         const s = String(p.status || '').toLowerCase();
         return s.includes('error') || s.includes('fail') || s.includes('crash') || s.includes('backoff') || s.includes('imagepull');
     }).length;
@@ -91,7 +96,7 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
 
     // 2. Deployment Health Calculations
     const totalDeployments = deployments.length;
-    const healthyDeployments = deployments.filter((d: any) => d.readyReplicas >= d.replicas).length;
+    const healthyDeployments = deployments.filter(d => d.readyReplicas >= d.replicas).length;
     const degradedDeployments = totalDeployments - healthyDeployments;
 
     // 3. Resource Metric parsing and summing
@@ -100,10 +105,10 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
 
     const podUsageList: { name: string; cpu: number; memory: number; cpuSparkline: number[]; memSparkline: number[] }[] = [];
 
-    metrics.forEach((m: any) => {
+    metrics.forEach(m => {
         let podCpu = 0;
         let podMem = 0;
-        m.containers.forEach((c: any) => {
+        m.containers.forEach(c => {
             const cpu = c.cpu || '0';
             if (cpu.endsWith('n')) podCpu += Number.parseInt(cpu) / 1_000_000;
             else if (cpu.endsWith('m')) podCpu += Number.parseInt(cpu);
@@ -128,7 +133,7 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
     const topCpuPods = [...podUsageList].sort((a, b) => b.cpu - a.cpu).slice(0, 3);
     const topMemPods = [...podUsageList].sort((a, b) => b.memory - a.memory).slice(0, 3);
 
-    const warningEvents = events.filter((e: any) => e.type === 'Warning');
+    const warningEvents = events.filter(e => e.type === 'Warning');
 
     return (
         <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar h-full">
@@ -244,7 +249,7 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
 
                         <div className="space-y-1 text-xs">
                             <div className="text-gray-300">
-                                Desired Replicas: <span className="font-mono text-white font-bold">{deployments.reduce((acc: number, d: any) => acc + (d.replicas || 0), 0)}</span>
+                                Desired Replicas: <span className="font-mono text-white font-bold">{deployments.reduce((acc, d) => acc + (d.replicas || 0), 0)}</span>
                             </div>
                             {degradedDeployments > 0 && (
                                 <div className="text-red-400 font-medium animate-pulse">
@@ -310,7 +315,7 @@ export function K8sNamespaceOverview({ selectedNamespace, data, onSwitchTab, onS
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {quotasData.quotas.map((q: any) => {
+                        {quotasData.quotas.map(q => {
                             const hard = q.hard || {};
                             const used = q.used || {};
                             const keys = Array.from(new Set([...Object.keys(hard), ...Object.keys(used)]));

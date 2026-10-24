@@ -19,3 +19,7 @@ export function requestErrorStatus(error: unknown): number | undefined {
   const status = record(record(error)?.response)?.status;
   return typeof status === 'number' ? status : undefined;
 }
+
+export function requestServerErrorMessage(error: unknown, fallback: string): string {
+  return text(record(record(record(error)?.response)?.data)?.message) || fallback;
+}

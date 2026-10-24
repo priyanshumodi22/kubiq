@@ -23,7 +23,7 @@ export interface HealthCheck {
   timestamp: number;
   success: boolean;
   error?: string;
-  data?: any;
+  data?: unknown;
 }
 
 export interface ServiceStatus {

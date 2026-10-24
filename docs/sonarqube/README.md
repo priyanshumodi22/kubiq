@@ -7,6 +7,14 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+The following unscanned typing batch passes 301 frontend tests and the production
+build. Frontend ESLint is down to zero errors and 47 warnings, with rules intact.
+Namespace resource/quota models, Kubernetes discovery failures and Profile
+callbacks are typed explicitly. Tests cover unit parsing, health counts, quota
+thresholds, unavailable contexts, explicit refresh and preservation of unsaved
+profile edits. Frontend line coverage is 64.53%, with all 96 production files in
+LCOV. The next exact-SHA scan and application lint pass remain required.
+
 Run 60 verifies `af6d63c87a081046f0090b8e4a11dd3c8a4fcf82`: zero open
 issues, zero unreviewed hotspots, 47.2% overall coverage and a passing quality
 gate with the fixed new-code baseline. The GitHub scan completes successfully.

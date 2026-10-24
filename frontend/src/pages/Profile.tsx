@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useId } from 'react';
+import React, { useState, useEffect, useRef, useId, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { startRegistration } from '@simplewebauthn/browser';
 import { apiClient, type PasskeyAuthenticatorAttachment } from '../services/api';
@@ -30,6 +30,7 @@ import { twMerge } from 'tailwind-merge';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { readAvatarFile } from '../utils/readAvatarFile';
 import { ProfilePasskeys, type ProfilePasskey } from './ProfilePasskeys';
+import { requestServerErrorMessage } from '../utils/requestError';
 
 // --- Utility for Tailwind Classes ---
 function cn(...inputs: (string | undefined | null | false)[]) {
@@ -144,11 +145,7 @@ const Profile: React.FC = () => {
   const [showPasskeyModal, setShowPasskeyModal] = useState(false);
   const [newPasskeyName, setNewPasskeyName] = useState('');
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       if (token) apiClient.setToken(token);
@@ -171,7 +168,9 @@ const Profile: React.FC = () => {
     } finally {
       setLoading(p => ({ ...p, passkeys: false }));
     }
-  };
+  }, [error]);
+
+  useEffect(() => { void loadData(); }, [loadData]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,8 +179,8 @@ const Profile: React.FC = () => {
       await apiClient.updateProfile(profile);
       await refreshCurrentUser();
       success('Profile updated successfully');
-    } catch (err: any) {
-      error(err.response?.data?.message || 'Failed to update');
+    } catch (err: unknown) {
+      error(requestServerErrorMessage(err, 'Failed to update'));
     } finally {
       setLoading(p => ({ ...p, profile: false }));
     }
@@ -256,8 +255,8 @@ const Profile: React.FC = () => {
       });
       success('Password changed successfully');
       setPasswords({ current: '', new: '', confirm: '' });
-    } catch (err: any) {
-      error(err.response?.data?.message || 'Failed to change password');
+    } catch (err: unknown) {
+      error(requestServerErrorMessage(err, 'Failed to change password'));
     } finally {
       setLoading(p => ({ ...p, password: false }));
     }
@@ -284,8 +283,8 @@ const Profile: React.FC = () => {
       } else {
         error('Verification failed');
       }
-    } catch (err: any) {
-      if (err.name === 'InvalidStateError') error('Device already registered');
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'name' in err && err.name === 'InvalidStateError') error('Device already registered');
       else error('Registration failed');
     } finally {
       setLoading(p => ({ ...p, register: false }));
@@ -400,13 +399,13 @@ const Profile: React.FC = () => {
             </div>
 
             <nav className="w-full flex flex-col justify-center space-y-2">
-              {[
+              {([
                 { id: 'details', label: 'Personal Details', icon: User },
                 { id: 'security', label: 'Login & Security', icon: Shield },
-              ].map((tab) => (
+              ] as const).map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id)}
                   className={cn(
                     "w-full flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl transition-all duration-200 text-sm md:text-base",
                     activeTab === tab.id

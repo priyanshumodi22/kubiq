@@ -1,6 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../services/api';
 
+function failureMessage(error: unknown, fallback: string): string {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') return error.message;
+    return fallback;
+}
+
+export interface KubeContext { name: string; cluster: string; user: string }
+
 export interface KubeContainer {
     name: string;
     image: string;
@@ -67,7 +74,7 @@ export interface KubeDeployment {
 export function useKubernetes() {
     const [available, setAvailable] = useState<boolean | null>(null);
     const [context, setContext] = useState<string>('');
-    const [contexts, setContexts] = useState<any[]>([]);
+    const [contexts, setContexts] = useState<KubeContext[]>([]);
     const [namespaces, setNamespaces] = useState<string[]>([]);
     const [selectedNamespace, setSelectedNamespace] = useState<string>('');
     const [pods, setPods] = useState<KubePod[]>([]);
@@ -95,7 +102,7 @@ export function useKubernetes() {
             const data: string[] = await apiClient.getKubernetesNamespaces();
             setNamespaces(data);
             if (data.length > 0) setSelectedNamespace(data[0]);
-        } catch (e: any) { setError(e.message); }
+        } catch (e: unknown) { setError(failureMessage(e, 'Failed to load namespaces')); }
     };
 
     const fetchContexts = async () => {
@@ -133,8 +140,8 @@ export function useKubernetes() {
                 setEvents([]);
                 setDeployments([]);
             }
-        } catch (e: any) { 
-            setError(e.message); 
+        } catch (e: unknown) {
+            setError(failureMessage(e, 'Failed to switch context'));
         } finally { 
             setLoading(false); 
         }
@@ -152,7 +159,7 @@ export function useKubernetes() {
                 apiClient.getKubernetesDeployments(ns),
             ]);
             setPods(p); setMetrics(m); setEvents(ev); setDeployments(d);
-        } catch (e: any) { setError(e.message); }
+        } catch (e: unknown) { setError(failureMessage(e, 'Failed to load namespace resources')); }
         finally { setLoading(false); }
     }, []);
 

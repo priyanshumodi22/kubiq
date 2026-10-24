@@ -44,7 +44,7 @@ describe('kubi SSE client', () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(stream, { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
     apiClient.setToken('test-token');
-    const events: Array<{ event: string; data: any }> = [];
+    const events: Array<{ event: string; data: unknown }> = [];
 
     await apiClient.streamKubiMessage('c-1', 'Which services are unhealthy?', (event, data) => { events.push({ event, data }); });
 

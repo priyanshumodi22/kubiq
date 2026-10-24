@@ -18,6 +18,20 @@ vi.mock('../services/api', () => ({ apiClient: {
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 describe('profile page integration', () => {
+  it('retains unsaved input on rerender and reports server update failures through kubiq toasts', async () => {
+    mocks.update.mockRejectedValueOnce({ response: { data: { message: 'Profile denied' } } });
+    const view = render(<MemoryRouter><Profile /></MemoryRouter>);
+    const username = await view.findByRole('textbox', { name: 'Username' });
+    await waitFor(() => expect(username.getAttribute('value')).toBe('fixture'));
+    fireEvent.change(username, { target: { value: 'unsaved' } });
+    view.rerender(<MemoryRouter><Profile /></MemoryRouter>);
+    expect(username.getAttribute('value')).toBe('unsaved');
+    fireEvent.click(view.getByRole('button', { name: 'Save Changes' }));
+    await waitFor(() => expect(mocks.error).toHaveBeenCalledWith('Profile denied'));
+    expect(mocks.refresh).not.toHaveBeenCalled();
+    expect(username.getAttribute('value')).toBe('unsaved');
+  });
+
   it('keeps first kubiq role selection and submits the labelled profile fields', async () => {
     const view = render(<MemoryRouter><Profile /></MemoryRouter>);
     await waitFor(() => expect(view.getByRole('textbox', { name: 'Username' }).getAttribute('value')).toBe('fixture'));

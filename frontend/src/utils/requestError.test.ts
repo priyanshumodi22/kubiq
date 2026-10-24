@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { requestErrorMessage, requestErrorStatus } from './requestError';
+import { requestErrorMessage, requestErrorStatus, requestServerErrorMessage } from './requestError';
 
 describe('request failure boundaries', () => {
+  it('keeps server-only forms from exposing transport or malformed payload text', () => {
+    expect(requestServerErrorMessage({ message: 'Transport', response: { data: { message: 'Server' } } }, 'Fallback')).toBe('Server');
+    for (const failure of [null, new Error('Transport'), { response: { data: { message: [] } } }, { response: { data: { message: '' } } }]) expect(requestServerErrorMessage(failure, 'Fallback')).toBe('Fallback');
+  });
+
   it('preserves explicit server text before the transport message', () => {
     const failure = { message: 'Network fixture', response: { status: 403, data: { message: 'Denied fixture', error: 'APM fixture' } } };
     expect(requestErrorMessage(failure, 'Fallback')).toBe('Denied fixture');
