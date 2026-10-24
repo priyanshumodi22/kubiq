@@ -7,6 +7,15 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 64 verifies `ccfac4beaf429ea3ac779e3527ac439c0a5a23f1`: zero
+open issues, zero unreviewed hotspots, 49.1% overall coverage and 79.7% fixed
+new-code coverage. The 80% gate correctly blocks release. Its 915-row report is
+preserved in `Scan 2026-10-24 233121` and
+`gs://priyanshu-apps-sonarqube-backups/reports/67a265de-51a1-4ee0-bcde-6244ac84f1cb-1792884685.json`.
+The next test batch covers rejected APM adapter responses, malformed payloads,
+status transport failure, and Kubernetes diagnosis license-code/error handling.
+The fixed new-code baseline and its 80% requirement remain unchanged.
+
 Run 63 verifies `3f3e2df4c10307e3021351eee5bf4473615e5c7f`: zero
 open issues and zero unreviewed hotspots. Both run-62 findings are CLOSED.
 Overall coverage is 48.7%, but fixed new-code coverage is 78.7%, so release is

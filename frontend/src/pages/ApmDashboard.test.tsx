@@ -77,6 +77,28 @@ describe('APM dashboard characterization', () => {
     expect(view.queryByText('No Service Data Found')).toBeNull();
   });
 
+  it.each([
+    { dbType: 'json', reason: 'Adapter unavailable', fix: 'Configure MongoDB' },
+    { dbType: '', reason: '', fix: '' },
+    { dbType: 42, reason: [], fix: null },
+  ])('keeps rejected adapter responses out of telemetry with safe text defaults: %j', async data => {
+    mocks.getStatus.mockRejectedValue({ response: { data } });
+    const view = render(<ApmDashboard />);
+    expect(await view.findByText('APM is Disabled (json mode)')).toBeTruthy();
+    expect(view.queryByPlaceholderText('Search Service (e.g. auth-api)')).toBeNull();
+    expect(view.queryByText('Analyzing system configuration...')).toBeNull();
+  });
+
+  it('retains the telemetry view when the status request has no adapter response', async () => {
+    const failure = new Error('Status transport unavailable');
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mocks.getStatus.mockRejectedValue(failure);
+    const view = render(<ApmDashboard />);
+    expect(await view.findByText('No Service Data Found')).toBeTruthy();
+    expect(logged).toHaveBeenCalledWith('Failed to check APM status:', failure);
+    expect(view.queryByText('APM is Disabled (json mode)')).toBeNull();
+  });
+
   it('opens a service, auto-selects its trace, and returns to overview', async () => {
     mocks.metrics = [{ serviceName: 'payments', requestCount: 20, errorCount: 0, avgDurationMs: 10, p95DurationMs: 20, rpm: 2, errorRate: 0 }];
     mocks.getTraces.mockResolvedValue([{ traceId: 'trace-a', name: 'GET /pay', durationMs: 12, startTimeUnixNano: 1000000, statusCode: 0 }]);

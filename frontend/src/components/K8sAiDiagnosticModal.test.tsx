@@ -50,6 +50,23 @@ describe('Kubernetes diagnosis compatibility', () => {
         expect(view.queryByText('Stale target diagnosis')).toBeNull();
     });
 
+    it.each(['NO_LICENSE', 'INVALID_LICENSE'])('opens the upgrade flow for the %s machine code without an HTTP status', async error => {
+        mocks.pod.mockRejectedValue({ response: { data: { error } } });
+        const view = render(<K8sAiDiagnosticModal isOpen namespace="apps" podName="api" onClose={vi.fn()} />);
+        expect(await view.findByText('Upgrade required')).toBeTruthy();
+        expect(view.queryByText('Failed to generate AI diagnosis.')).toBeNull();
+    });
+
+    it.each([
+        [new Error('Diagnostic transport unavailable'), 'Diagnostic transport unavailable'],
+        [{ response: { data: { error: 'UNAVAILABLE' } } }, 'Failed to generate AI diagnosis.'],
+    ])('reports ordinary failures without requiring an upgrade: %j', async (failure, message) => {
+        mocks.pod.mockRejectedValue(failure);
+        const view = render(<K8sAiDiagnosticModal isOpen namespace="apps" podName="api" onClose={vi.fn()} />);
+        expect(await view.findByText(message as string)).toBeTruthy();
+        expect(view.queryByText('Upgrade required')).toBeNull();
+    });
+
     it('ignores a stale license failure after changing targets', async () => {
         let rejectFirst!: (reason: unknown) => void;
         mocks.pod.mockReturnValueOnce(new Promise((_resolve, reject) => { rejectFirst = reject; }))
