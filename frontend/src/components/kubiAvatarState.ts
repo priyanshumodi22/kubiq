@@ -16,7 +16,7 @@ export function kubiStateForEvent(current: KubiAvatarState, event: string, state
   if (event === 'done') return current === 'error' ? 'error' : 'finished';
   if (current === 'error') return current;
   if (event === 'answer_delta') return 'composing';
-  if (event === 'status' && typeof state === 'string' && Object.prototype.hasOwnProperty.call(kubiAvatarStates, state)) {
+  if (event === 'status' && typeof state === 'string' && Object.hasOwn(kubiAvatarStates, state)) {
     return state as KubiAvatarState;
   }
   return current;

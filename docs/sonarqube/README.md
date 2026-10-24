@@ -7,6 +7,20 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 50 verifies `52c95ebdd19dd75df7098ffb23be6bf79147b44a`: 60 open
+issues, 39.1% combined coverage and zero unreviewed hotspots. All four Profile
+findings are CLOSED. The standard quality gate is ERROR: authenticated UI
+inspection shows new-code coverage 75.8%, below 80%, on 20 lines to cover.
+No threshold was lowered. Archive and Sheets export completed, including this
+failed gate: `gs://priyanshu-apps-sonarqube-backups/reports/29071a56-9b56-468a-95f8-1821914253ac-1792836647.json`
+and tab `Scan 2026-10-24 101040`. The original ledger has 784 explicit closures,
+53 pending findings, two reviewed-safe hotspots and two individual false positives.
+
+The new-code settings UI currently follows the instance default Previous version.
+Because scanner versions are commit SHAs, this scope moves between batches; it
+is NOT the planned fixed remediation baseline. Pinning and verifying that scope
+remains a release prerequisite, not something the current gate proves.
+
 Run 49 verifies `5bb8caaae1dbe05e5d24403125ec95f50cec4338`: 64 open
 issues, 39.0% combined coverage, zero unreviewed hotspots and standard gate OK.
 All five read APIs work with the Browse-only credential. The strict gate
@@ -54,7 +68,7 @@ The subsequent source batch replaces index keys with semantic day/now tick IDs
 and uptime units, removes a commented debug statement and makes model-label
 spacing explicit. All 187 frontend tests and the frontend build pass. Tick
 retention, midnight collisions and uptime DOM identity have regression tests.
-These subsequent changes still require their own exact-commit scan.
+Run 49 confirms these four findings closed.
 
 The profile batch additionally narrows FileReader results to real strings,
 preserves first matching kubiq role selection via find, uses concise avatar alt
@@ -62,7 +76,19 @@ text, and extracts passkey loading/empty/list rendering with named native
 actions and visible keyboard focus. Existing stored passkey IDs and backend
 requests are unchanged. All 194 frontend tests and the frontend build pass;
 seven new tests cover image read success/failure and passkey rendering/actions.
-This batch is not yet counted as a verified Sonar closure.
+Run 50 confirms these four profile findings closed.
+
+The subsequent batch uses separate native log-selection buttons and sibling
+edit/remove actions, with focus visibility and no nested buttons. It also
+removes the duplicate React import and extracts viewer selection without changing
+viewer keys or requests. Header Pro status reads now require system.read, avoiding
+denied requests from management-only users. Avatar protocol state checks use
+Object.hasOwn with only the ES2022.Object library declaration added, consistent
+with the existing ES2022.Array runtime baseline. The send control retains its
+geometry with darker blue backgrounds; white-content contrast is tested at 4.5:1
+or greater in both states. Profile inputs now have associated labels, and parent
+save/rename flows have integration tests. All 202 frontend tests and the frontend
+build pass; source closures await a matching scan.
 
 Run 46 was not separately archived before the next analysis. The existing VM
 exporter selects the latest completed report when its queue is empty; this needs
@@ -78,10 +104,8 @@ Verification passes 282 backend tests, 182 frontend tests, both builds, four
 release-guard tests and complete frontend LCOV records. Source changes still
 await the next exact-commit scan.
 
-The dedicated Sonar verification account was approved; creation is waiting for
-the user's private password entry in the Sonar Create User dialog. No account
-or verification token has been created yet. Default memberships/global grants
-must be removed or audited before assigning kubiq-only Browse and issuing a token.
+The dedicated Sonar verification account and separate token are now provisioned
+and live-verified as described above; no user password is stored in the repository.
 
 Run 45 verifies `eb9507f821a055c954b082bc9edd6330d47a1e69`: 88 open
 issues, 38.0% combined coverage, no unreviewed hotspots and standard gate OK.

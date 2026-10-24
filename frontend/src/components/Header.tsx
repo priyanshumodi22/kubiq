@@ -19,6 +19,7 @@ export function UserAvatar({ avatarUrl, initials, className = 'w-8 h-8' }: Reado
 
 export default function Header() {
   const { isAuthenticated, user, roles, logout, hasPermission } = useAuth();
+  const canReadSystem = hasPermission('system.read');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isProActive, setIsProActive] = useState(false);
@@ -38,7 +39,7 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !canReadSystem) {
       setIsProActive(false);
       return;
     }
@@ -55,7 +56,7 @@ export default function Header() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, canReadSystem]);
 
   const userDisplayName =
     user?.name ||

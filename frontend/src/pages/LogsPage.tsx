@@ -1,15 +1,45 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useServices } from '../hooks/useServices';
 import { useAuth } from '../contexts/AuthContext';
 import { LogViewer } from '../components/LogViewer';
 import { K8sLogViewer } from '../components/K8sLogViewer';
 import { apiClient } from '../services/api';
-import { useEffect } from 'react';
 import { ConfigureLogModal } from '../components/ConfigureLogModal';
 import { DeleteLogDialog } from '../components/DeleteLogDialog';
 import { Plus, Search, Server, AlertCircle, FileText, Trash2, Edit2 } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { ServiceStatus } from '../types';
+
+export function SelectedLogViewer({ serviceName, service }: Readonly<{ serviceName: string | null; service?: ServiceStatus }>) {
+    if (serviceName?.startsWith('k8s:')) return (
+        <K8sLogViewer
+            key={serviceName}
+            namespace={serviceName.split(':')[1] || 'default'}
+            deploymentName={serviceName.split(':')[2] || serviceName.split(':')[1] || 'unknown'}
+            containers={[{ name: 'main', image: '' }]}
+        />
+    );
+    if (service) return (
+        <LogViewer
+            key={`${service.id}-${service.logSources?.length || 0}`}
+            logPath={service.logPath!}
+            logSources={service.logSources}
+            isOpen={true}
+            onClose={() => {}}
+            serviceName={service.name}
+            isEmbedded={true}
+        />
+    );
+    return (
+        <div className="flex-1 flex flex-col items-center justify-center text-gray-500 select-none">
+            <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-4 text-gray-600">
+                <FileText className="w-8 h-8" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-300 mb-2">No Service Selected</h3>
+            <p className="text-gray-500 text-sm max-w-xs text-center">Select a service from the sidebar to view its real-time logs.</p>
+        </div>
+    );
+}
 
 export default function LogsPage() {
     const { services, refresh } = useServices();
@@ -45,7 +75,6 @@ export default function LogsPage() {
     );
 
     const selectedService = services.find(s => s.name === selectedServiceName);
-    const isK8sSelected = selectedServiceName?.startsWith('k8s:');
 
     const handleDeleteClick = (e: React.MouseEvent, service: ServiceStatus) => {
         e.stopPropagation(); // Prevent selecting the service when clicking delete
@@ -135,17 +164,17 @@ export default function LogsPage() {
                         filteredServices.map(service => (
                             <div
                                 key={service.id || service.name} // Fallback to name if ID is missing
-                                onClick={() => setSelectedServiceName(service.name)}
-                                className={`w-full text-left px-3 py-3 rounded-lg flex items-center space-x-3 transition-colors cursor-pointer group relative ${
+                                className={`w-full text-left px-3 py-3 rounded-lg flex items-center gap-3 transition-colors cursor-pointer group relative ${
                                     selectedServiceName === service.name 
                                     ? 'bg-primary/10 border border-primary/20' 
                                     : 'hover:bg-white/5 border border-transparent'
                                 }`}
                             >
-                                <div className={`p-1 rounded ${selectedServiceName === service.name ? 'text-primary' : 'text-gray-400'}`}>
+                                <button type="button" onClick={() => setSelectedServiceName(service.name)} aria-label={`View logs for ${service.name}`} aria-pressed={selectedServiceName === service.name} className="absolute inset-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
+                                <div className={`pointer-events-none p-1 rounded ${selectedServiceName === service.name ? 'text-primary' : 'text-gray-400'}`}>
                                     <Server className="w-4 h-4" />
                                 </div>
-                                <div className="flex-1 min-w-0 pr-6">
+                                <div className="pointer-events-none flex-1 min-w-0 pr-6">
                                     <div className={`text-sm font-medium truncate ${selectedServiceName === service.name ? 'text-white' : 'text-gray-300'}`}>
                                         {service.name}
                                     </div>
@@ -154,11 +183,11 @@ export default function LogsPage() {
                                     </div>
                                 </div>
                                 {service.currentStatus === 'unhealthy' && (
-                                    <AlertCircle className="w-3 h-3 text-red-500 mr-2" />
+                                    <AlertCircle className="pointer-events-none w-3 h-3 text-red-500 mr-2" />
                                 )}
                                 
                                 {isAdmin && (
-                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="absolute z-10 right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                                         <button
                                             onClick={(e) => handleEditClick(e, service)}
                                             className="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded-md transition-colors"
@@ -198,17 +227,17 @@ export default function LogsPage() {
                                     return (
                                         <div
                                             key={serviceName}
-                                            onClick={() => setSelectedServiceName(serviceName)}
-                                            className={`w-full text-left px-3 py-3 rounded-lg flex items-center space-x-3 transition-colors cursor-pointer group relative ${
+                                            className={`w-full text-left px-3 py-3 rounded-lg flex items-center gap-3 transition-colors cursor-pointer group relative ${
                                                 selectedServiceName === serviceName 
                                                 ? 'bg-primary/10 border border-primary/20' 
                                                 : 'hover:bg-white/5 border border-transparent'
                                             }`}
                                         >
-                                            <div className={`p-1 rounded ${selectedServiceName === serviceName ? 'text-primary' : 'text-gray-400'}`}>
+                                            <button type="button" onClick={() => setSelectedServiceName(serviceName)} aria-label={`View logs for ${serviceName}`} aria-pressed={selectedServiceName === serviceName} className="absolute inset-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
+                                            <div className={`pointer-events-none p-1 rounded ${selectedServiceName === serviceName ? 'text-primary' : 'text-gray-400'}`}>
                                                 <Server className="w-4 h-4" />
                                             </div>
-                                            <div className="flex-1 min-w-0">
+                                            <div className="pointer-events-none flex-1 min-w-0">
                                                 <div className={`text-sm font-medium truncate ${selectedServiceName === serviceName ? 'text-white' : 'text-gray-300'}`}>
                                                     {deploy}
                                                 </div>
@@ -227,32 +256,7 @@ export default function LogsPage() {
 
             {/* Main Log Viewer Area */}
             <div className="flex-1 flex flex-col min-h-0 bg-bg-surface/30 border border-gray-800 rounded-xl overflow-hidden backdrop-blur-sm relative z-10">
-                {isK8sSelected && selectedServiceName ? (
-                     <K8sLogViewer 
-                        key={selectedServiceName}
-                        namespace={selectedServiceName.split(':')[1] || 'default'}
-                        deploymentName={selectedServiceName.split(':')[2] || selectedServiceName.split(':')[1] || 'unknown'}
-                        containers={[{ name: 'main', image: '' }]}
-                     />
-                ) : selectedService ? (
-                     <LogViewer 
-                        key={`${selectedService.id}-${selectedService.logSources?.length || 0}`} 
-                        logPath={selectedService.logPath!} 
-                        logSources={selectedService.logSources} 
-                        isOpen={true} 
-                        onClose={() => {}} 
-                        serviceName={selectedService.name}
-                        isEmbedded={true}
-                     />
-                ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-gray-500 select-none">
-                        <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-4 text-gray-600">
-                             <FileText className="w-8 h-8" />
-                        </div>
-                        <h3 className="text-lg font-medium text-gray-300 mb-2">No Service Selected</h3>
-                        <p className="text-gray-500 text-sm max-w-xs text-center">Select a service from the sidebar to view its real-time logs.</p>
-                    </div>
-                )}
+                <SelectedLogViewer serviceName={selectedServiceName} service={selectedService} />
             </div>
 
             <ConfigureLogModal 

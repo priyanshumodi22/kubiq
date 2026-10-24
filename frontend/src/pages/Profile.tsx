@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
 import { Link } from 'react-router-dom';
 import { startRegistration } from '@simplewebauthn/browser';
 import { apiClient, type PasskeyAuthenticatorAttachment } from '../services/api';
@@ -61,15 +61,20 @@ const SectionHeader = ({ title, description }: { title: string; description: str
 const InputGroup = ({
   label,
   icon: Icon,
+  id,
   ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & { label: string; icon: React.ElementType }) => (
+}: React.InputHTMLAttributes<HTMLInputElement> & { label: string; icon: React.ElementType }) => {
+  const generatedId = useId();
+  const inputId = id || generatedId;
+  return (
   <div className="space-y-2">
-    <label className="text-sm font-medium text-text-dim ml-1">{label}</label>
+    <label htmlFor={inputId} className="text-sm font-medium text-text-dim ml-1">{label}</label>
     <div className="relative group">
       <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dim group-focus-within:text-primary transition-colors">
         <Icon className="w-5 h-5" />
       </div>
       <input
+        id={inputId}
         className={cn(
           "w-full bg-bg-surface/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-text placeholder:text-neutral-600",
           "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all",
@@ -79,7 +84,8 @@ const InputGroup = ({
       />
     </div>
   </div>
-);
+  );
+};
 
 const Button = ({
   children,
