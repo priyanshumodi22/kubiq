@@ -5,7 +5,7 @@ import { requestErrorCode, requestErrorMessage, requestErrorStatus } from '../ut
 import { createPortal } from 'react-dom';
 import { KubernetesResourceHead } from './KubernetesResourceHead';
 import { KubernetesSpecialContent } from './KubernetesSpecialContent';
-import { formatContextName, getClusterProvider, persistentVolumeClass } from './kubernetesPresentation';
+import { compareKubernetesResources, formatContextName, getClusterProvider, persistentVolumeClass } from './kubernetesPresentation';
 import {
     Activity, Box, Network, Globe, Settings, Server, Database,
     AlertTriangle, Search, X, ChevronDown, FileJson, Layers, RefreshCw, Menu
@@ -321,21 +321,7 @@ export default function KubernetesDashboard() {
         }
         // Sort
         if (sortCol) {
-            d.sort((a, b) => {
-                let va, vb;
-                if (activeResource === 'pods') {
-                    if (sortCol.key === 'restarts') { va = a.restarts; vb = b.restarts; }
-                    else if (sortCol.key === 'age') { va = new Date(a.startTime === null ? 0 : a.startTime ?? Number.NaN).getTime(); vb = new Date(b.startTime === null ? 0 : b.startTime ?? Number.NaN).getTime(); }
-                    else { va = a.name; vb = b.name; }
-                } else {
-                    va = a.metadata?.name || a.name || '';
-                    vb = b.metadata?.name || b.name || '';
-                }
-                if (va === undefined || vb === undefined) return 0;
-                if (va < vb) return sortCol.asc ? -1 : 1;
-                if (va > vb) return sortCol.asc ? 1 : -1;
-                return 0;
-            });
+            d.sort((a, b) => compareKubernetesResources(a, b, activeResource, sortCol));
         }
         return d;
     }, [resourceData, searchQuery, sortCol, activeResource]);

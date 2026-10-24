@@ -299,7 +299,7 @@ function K8sResourceOverview({ model }: Readonly<{ model: K8sDetailModel }>) {
                                         <div className="flex flex-wrap gap-1.5">
                                             {Object.entries(resLabels).map(([k, v]) => (
                                                 <span key={k} className="text-[10px] font-mono bg-white/5 border border-white/10 text-gray-300 px-2 py-1 rounded">
-                                                    <span className="text-gray-500">{k}:</span> {v as string}
+                                                    <span className="text-gray-500">{k}:</span> {v}
                                                 </span>
                                             ))}
                                         </div>

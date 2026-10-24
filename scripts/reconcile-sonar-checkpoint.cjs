@@ -63,6 +63,7 @@ const verifiedRevisions = {
   'a00694c86d5fac5d8bcc77aba5b904dab7714859': [284, 259],
   '5f7ba04ee3a5eb4c04c009a6ecb2dd4bb6d5d7c3': [284, 270],
   'af6d63c87a081046f0090b8e4a11dd3c8a4fcf82': [284, 278],
+  'b903adbc234eeeffba619ce30689dab66912f4fd': [284, 303],
 };
 const checks = verifiedRevisions[report.metadata.revision];
 assert.ok(checks, 'Record actual local verification for this exact revision before importing its scan.');

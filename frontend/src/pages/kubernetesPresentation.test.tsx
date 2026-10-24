@@ -1,11 +1,33 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { formatContextName, getClusterProvider, persistentVolumeClass } from './kubernetesPresentation';
+import { compareKubernetesResources, formatContextName, getClusterProvider, persistentVolumeClass } from './kubernetesPresentation';
 import { KubernetesResourceHead } from './KubernetesResourceHead';
 
 afterEach(cleanup);
 describe('Kubernetes presentation compatibility', () => {
+  it('sorts pod restart counts and names in both directions while keeping missing values tied', () => {
+    expect(compareKubernetesResources({ restarts: 1 }, { restarts: 3 }, 'pods', { key: 'restarts', asc: true })).toBe(-1);
+    expect(compareKubernetesResources({ restarts: 1 }, { restarts: 3 }, 'pods', { key: 'restarts', asc: false })).toBe(1);
+    expect(compareKubernetesResources({}, { restarts: 3 }, 'pods', { key: 'restarts', asc: true })).toBe(0);
+    expect(compareKubernetesResources({ name: 'z' }, { name: 'a' }, 'pods', { key: 'name', asc: true })).toBe(1);
+    expect(compareKubernetesResources({ name: 'a' }, { name: 'z' }, 'pods', { key: 'name', asc: false })).toBe(1);
+    expect(compareKubernetesResources({ name: 'a' }, { name: 'a' }, 'pods', { key: 'name', asc: true })).toBe(0);
+  });
+
+  it('preserves null epoch and invalid date ties in age sorting', () => {
+    const older = { startTime: null };
+    const newer = { startTime: '2026-01-01T00:00:00Z' };
+    expect(compareKubernetesResources(older, newer, 'pods', { key: 'age', asc: true })).toBe(-1);
+    expect(compareKubernetesResources({}, newer, 'pods', { key: 'age', asc: true })).toBe(0);
+    expect(compareKubernetesResources({ startTime: 'invalid' }, newer, 'pods', { key: 'age', asc: false })).toBe(0);
+  });
+
+  it('prefers raw resource metadata names over normalized names', () => {
+    expect(compareKubernetesResources({ name: 'z', metadata: { name: 'a' } }, { name: 'b' }, 'services', { key: 'name', asc: true })).toBe(-1);
+    expect(compareKubernetesResources({}, { name: 'b' }, 'services', { key: 'name', asc: true })).toBe(-1);
+  });
+
   it('formats supported context identifiers without changing raw IDs', () => {
     expect(formatContextName('', [])).toBe('');
     expect(formatContextName('inCluster', [{ name: 'inCluster', cluster: 'fixture-cluster' }])).toBe('fixture-cluster');

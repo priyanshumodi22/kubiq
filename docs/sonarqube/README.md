@@ -7,6 +7,29 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Latest local verification: frontend lint has zero warnings/errors, all 306
+frontend tests pass, the production build passes, and LCOV contains all 97
+production files (64.94% frontend line coverage). Both new run-62 findings are
+corrected and await the next exact-revision scan. Production remains held.
+
+Run 62 verifies `b903adbc234eeeffba619ce30689dab66912f4fd`: 48.5%
+overall coverage, no unreviewed hotspots and two newly introduced cleanup
+findings (redundant cast and comparator complexity). All 841 baseline findings
+retain verified dispositions. The matching archived report has 915 rows:
+`gs://priyanshu-apps-sonarqube-backups/reports/6e5082ab-06ba-41d8-aa8b-67810057cb11-1792883728.json`.
+Sheets tab: `Scan 2026-10-24 231522`. Both findings are fixed in the following
+source batch, with characterization tests for name/restart/age sorting, including
+null dates and missing-value ties. A fresh scan must verify their closure.
+GitHub application verification passed for b903adb. Scan 61 stopped before
+analysis because of an asynchronous CSV test assertion; that test now controls
+the response promise and waits for modal closure after the download completes.
+
+Rollback image retained: `priyanshumodi22/kubiq:main-56`, digest
+`sha256:eebbccbf53e4b173de1e2daeb25cb029504f9c555d69e953ca3a90907b6ed874`.
+The cluster is Ready and its Flux applications remain Ready. A fresh backup
+`postgres/20261024T231736Z.dump` was restored into a disposable verification
+database and matched all 915 issue records; the live database was not overwritten.
+
 The final frontend lint batch passes **zero errors and zero warnings**, without
 rule exclusions or threshold changes. Local verification passes 284 backend tests,
 303 frontend tests, both builds, all 17 analysis/release/coverage guard tests and

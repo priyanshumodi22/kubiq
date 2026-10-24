@@ -1,3 +1,21 @@
+import type { KubernetesResourceDetails } from '../types/kubernetesResource';
+
+function resourceSortValue(item: KubernetesResourceDetails, resource: string, key: string) {
+  if (resource !== 'pods') return item.metadata?.name || item.name || '';
+  if (key === 'restarts') return item.restarts;
+  if (key === 'age') return new Date(item.startTime === null ? 0 : item.startTime ?? Number.NaN).getTime();
+  return item.name;
+}
+
+export function compareKubernetesResources(a: KubernetesResourceDetails, b: KubernetesResourceDetails, resource: string, sort: { key: string; asc: boolean }): number {
+  const left = resourceSortValue(a, resource, sort.key);
+  const right = resourceSortValue(b, resource, sort.key);
+  if (left === undefined || right === undefined) return 0;
+  if (left < right) return sort.asc ? -1 : 1;
+  if (left > right) return sort.asc ? 1 : -1;
+  return 0;
+}
+
 export function formatContextName(name: string, contexts: Array<{ name: string; cluster?: string | null }>) {
   if (!name) return '';
   if (name === 'inClusterContext' || name === 'inCluster') {

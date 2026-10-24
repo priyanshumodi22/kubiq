@@ -1,6 +1,6 @@
 {
-  "coverage": 47.2,
-  "analysisId": "682e6700-7acb-4c2f-854b-f31bbce1805e",
-  "commit": "af6d63c87a081046f0090b8e4a11dd3c8a4fcf82",
+  "coverage": 48.5,
+  "analysisId": "5382066a-6d0a-4882-b5f8-c96f016dd6ff",
+  "commit": "b903adbc234eeeffba619ce30689dab66912f4fd",
   "note": "Observed combined Sonar coverage after backend and frontend LCOV import. This is a regression floor, not an acceptable new-code target. New-code coverage still requires at least 80%; unresolved issues and missing new-code scope continue to block release."
 }
