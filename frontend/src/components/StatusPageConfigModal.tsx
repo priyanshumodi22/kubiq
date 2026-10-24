@@ -93,7 +93,6 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
                 <p>Loading configuration...</p>
              </div>
           ) : (
-            <>
               <div className="space-y-4">
                  {/* Title Input */}
                 <div className="space-y-1.5">
@@ -177,7 +176,6 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
                   </div>
                 )}
               </div>
-            </>
           )}
 
           <div className="flex gap-3 pt-2">
@@ -196,7 +194,7 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
               {saving ? (
                  <>
                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                   Saving...
+                   {'Saving...'}
                  </>
               ) : (
                  <>

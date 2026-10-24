@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { X, ChevronDown, Activity, Link as LinkIcon, Database, Terminal } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
+import { serviceEndpointPlaceholder } from '../utils/serviceForm';
 
 type MonitorType = 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp';
 
@@ -15,7 +16,6 @@ interface EditServiceModalProps {
   currentEndpoint: string;
   currentHeaders?: Record<string, string>;
   currentIgnoreSSL?: boolean;
-  currentLogPath?: string;
   currentInterval?: number;
   currentRetries?: number;
   type?: MonitorType;
@@ -292,7 +292,7 @@ export function EditServiceModal({
                         type="text"
                         value={endpoint}
                         onChange={(e) => setEndpoint(e.target.value)}
-                        placeholder={type === 'http' ? "https://..." : type === 'mysql' ? "mysql://..." : "mongodb://..."}
+                        placeholder={serviceEndpointPlaceholder(type, true)}
                         className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
                         disabled={isSubmitting}
                     />

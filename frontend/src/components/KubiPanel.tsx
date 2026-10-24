@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Activity, Boxes, FileText, History, Plus, Send, ShieldCheck, Trash2, Waypoints, X } from 'lucide-react';
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
+import { KubiMarkdown } from './KubiMarkdown';
 import { useAuth } from '../contexts/AuthContext';
 import { apiClient } from '../services/api';
 import { ProUpgradeModal } from './ProUpgradeModal';
@@ -22,6 +22,16 @@ const suggestions = [
   'Which traces are slow in the last hour?',
   'What do these Kubernetes pod events indicate?',
 ];
+
+function HistoryItems({ loading, history, error, disabled, onSelect }: Readonly<{
+  loading: boolean; history: Conversation[]; error: string | null;
+  disabled: boolean; onSelect: (id: string) => void;
+}>) {
+  if (loading) return <output className="kubi-history-empty" style={{ display: 'block' }}>Loading conversations…</output>;
+  if (history.length) return history.map(item => <button type="button" key={item.id} disabled={disabled} onClick={() => onSelect(item.id)} className="kubi-history-item"><span>{item.title}</span><small>{new Date(item.updatedAt).toLocaleString()}</small></button>);
+  if (error) return null;
+  return <p className="kubi-history-empty">Your conversations will appear here.</p>;
+}
 
 export function KubiPanel() {
   const { isAuthenticated } = useAuth();
@@ -195,7 +205,7 @@ export function KubiPanel() {
               <div className="kubi-history-heading"><span>Private history · 90 days</span><button type="button" disabled={Boolean(phase) || historyBusy || !history.length} onClick={() => setConfirmClear(true)} className="kubi-icon-button" aria-label="Clear kubi history"><Trash2 size={16} /></button></div>
               {confirmClear && <div className="kubi-clear-confirm"><p>Delete all your kubi conversations? This cannot be undone.</p><div><button type="button" disabled={historyBusy} onClick={() => setConfirmClear(false)}>Cancel</button><button type="button" disabled={historyBusy} onClick={clearHistory}>{historyBusy ? 'Deleting…' : 'Delete history'}</button></div></div>}
               {historyError && <p className="kubi-error" role="alert">{historyError}</p>}
-              {historyLoading ? <p role="status" className="kubi-history-empty">Loading conversations…</p> : history.length ? history.map(item => <button type="button" key={item.id} disabled={Boolean(phase) || historyBusy} onClick={() => selectConversation(item.id)} className="kubi-history-item"><span>{item.title}</span><small>{new Date(item.updatedAt).toLocaleString()}</small></button>) : !historyError && <p className="kubi-history-empty">Your conversations will appear here.</p>}
+              <HistoryItems loading={historyLoading} history={history} error={historyError} disabled={Boolean(phase) || historyBusy} onSelect={selectConversation} />
             </div>}
 
             <div ref={bodyRef} className="kubi-body" onScroll={event => { const el = event.currentTarget; nearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }}>
@@ -204,13 +214,13 @@ export function KubiPanel() {
                 return <button key={suggestion} type="button" onClick={() => ask(undefined, suggestion)} className="kubi-suggestion"><span><Icon size={16} />{['Services', 'Logs', 'Traces', 'Kubernetes'][index]}</span><p>{suggestion}</p></button>;
               })}</div></div>}
               <div className="kubi-conversation">{messages.map(message => <div key={message.id} className={message.role === 'user' ? 'kubi-user-message' : 'kubi-answer'}>
-                {message.role === 'assistant' ? <><div className="kubi-answer-author"><KubiAvatar size={30} paused />kubi{Boolean(message.evidence?.length) && <span>{message.evidence?.some(item => item.type === 'documentation') ? 'From kubiq docs' : 'From your telemetry'}</span>}</div><ReactMarkdown components={{ a: ({ href, children }) => <button type="button" onClick={() => navigateFromKubi(href)} className="kubi-inline-link">{children}</button>, img: ({ alt }) => <span>{alt || 'Image omitted'}</span> }}>{message.content}</ReactMarkdown></> : message.content}
-                {message.clarification && <div className="kubi-clarification" role="group" aria-label="Clarification choices">{message.clarification.options.map(option => <button key={option} type="button" disabled={Boolean(phase) || historyBusy || message.id !== messages[messages.length - 1]?.id} onClick={() => void ask(undefined, option)}>{option}</button>)}<small>You can also type your answer below.</small></div>}
+                {message.role === 'assistant' ? <><div className="kubi-answer-author"><KubiAvatar size={30} paused />kubi{Boolean(message.evidence?.length) && <span>{message.evidence?.some(item => item.type === 'documentation') ? 'From kubiq docs' : 'From your telemetry'}</span>}</div><KubiMarkdown content={message.content} onNavigate={navigateFromKubi} /></> : message.content}
+                {message.clarification && <fieldset className="kubi-clarification" style={{ border: 0, padding: 0, marginInline: 0, minWidth: 0 }} aria-label="Clarification choices">{message.clarification.options.map(option => <button key={option} type="button" disabled={Boolean(phase) || historyBusy || message.id !== messages.at(-1)?.id} onClick={() => void ask(undefined, option)}>{option}</button>)}<small>You can also type your answer below.</small></fieldset>}
                 {message.evidence?.length ? <details className="kubi-evidence" open><summary>{message.evidence.length} evidence reference{message.evidence.length === 1 ? '' : 's'}</summary><div className="kubi-evidence-links">{message.evidence.map((item, index) => <button type="button" key={`${item.href}-${index}`} onClick={() => navigateFromKubi(item.href)}><FileText size={14} /><span>{item.label}</span></button>)}</div></details> : null}
               </div>)}</div>
               {steps.includes('searching') && <KubiActivity state={avatarState} steps={steps} phase={phase} />}
-              {phase && !steps.includes('searching') && <div className="kubi-understanding" role="status"><KubiAvatar size={32} state="thinking" /><span>Understanding your question…</span></div>}
-              {draft && <article className="kubi-answer"><div className="kubi-answer-author">kubi<span>{phase ? 'Composing' : 'Partial answer'}</span></div><ReactMarkdown components={{ a: ({ href, children }) => <button type="button" onClick={() => navigateFromKubi(href)} className="kubi-inline-link">{children}</button>, img: ({ alt }) => <span>{alt || 'Image omitted'}</span> }}>{draft}</ReactMarkdown>{draftEvidence.length > 0 && <div className="kubi-evidence-links">{draftEvidence.map((item, index) => <button type="button" key={`${item.href}-${index}`} onClick={() => navigateFromKubi(item.href)}><FileText size={14} /><span>{item.label}</span></button>)}</div>}</article>}
+              {phase && !steps.includes('searching') && <output className="kubi-understanding"><KubiAvatar size={32} state="thinking" /><span>Understanding your question…</span></output>}
+              {draft && <article className="kubi-answer"><div className="kubi-answer-author">kubi<span>{phase ? 'Composing' : 'Partial answer'}</span></div><KubiMarkdown content={draft} onNavigate={navigateFromKubi} />{draftEvidence.length > 0 && <div className="kubi-evidence-links">{draftEvidence.map((item, index) => <button type="button" key={`${item.href}-${index}`} onClick={() => navigateFromKubi(item.href)}><FileText size={14} /><span>{item.label}</span></button>)}</div>}</article>}
             </div>
 
             <footer className="kubi-footer">{error && <p role="alert" className="kubi-error">{error}</p>}<form noValidate onSubmit={ask} className="kubi-composer"><label htmlFor="kubi-question">Ask kubi</label><div className="kubi-composer-row"><textarea id="kubi-question" ref={inputRef} value={input} onChange={event => setInput(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void ask(); } }} rows={2} maxLength={4000} placeholder={messages.length ? 'Ask a follow-up…' : 'What would you like to investigate?'} aria-describedby="kubi-trust" /><button type="submit" disabled={!input.trim() || Boolean(phase) || historyBusy} className="kubi-send" aria-label="Send kubi question"><Send size={18} /></button></div></form><p id="kubi-trust" className="kubi-trust"><ShieldCheck size={12} />Read-only · Permitted evidence only</p></footer>

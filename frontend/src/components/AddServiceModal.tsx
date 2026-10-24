@@ -4,6 +4,7 @@ import { apiErrorMessage } from '../utils/apiErrorMessage';
 import { createPortal } from 'react-dom';
 import { X, Server, Link as LinkIcon, AlertCircle, Database, Activity, ChevronDown, Terminal } from 'lucide-react';
 import { apiClient } from '../services/api';
+import { isHttpEndpoint, serviceEndpointPlaceholder } from '../utils/serviceForm';
 
 interface AddServiceModalProps {
   isOpen: boolean;
@@ -85,14 +86,9 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
       }
 
       // Basic Validation depending on type
-      if (type === 'http') {
-          try {
-            const baseUrl = finalEndpoint.includes('|') ? finalEndpoint.split('|')[0] : finalEndpoint;
-            new URL(baseUrl);
-          } catch {
-            setError('Invalid endpoint URL');
-            return;
-          }
+      if (type === 'http' && !isHttpEndpoint(finalEndpoint)) {
+          setError('Invalid endpoint URL');
+          return;
       }
 
       await apiClient.createService(name.trim(), finalEndpoint, type, interval, retries);
@@ -282,11 +278,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
                       type="text"
                       value={endpoint}
                       onChange={(e) => setEndpoint(e.target.value)}
-                      placeholder={
-                          type === 'http' ? "https://api.example.com/health" :
-                          type === 'mysql' ? "mysql://user:pass@host:3306" :
-                          "mongodb://user:pass@host:27017"
-                      }
+                      placeholder={serviceEndpointPlaceholder(type)}
                       className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
                       disabled={isSubmitting}
                     />
@@ -393,7 +385,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
               {isSubmitting ? (
                  <>
                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                   Adding...
+                   {'Adding...'}
                  </>
               ) : 'Add Service'}
             </button>
