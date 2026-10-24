@@ -28,14 +28,13 @@ export function DeleteLogDialog({
 
     try {
       // Pass all original service details, but clear the logPath
-      await apiClient.updateService(
-        service.name,
-        service.endpoint,
-        service.type,
-        service.ignoreSSL,
-        '', // logPath cleared
-        [] // logSources cleared
-      );
+      await apiClient.updateService(service.name, {
+        endpoint: service.endpoint,
+        type: service.type,
+        ignoreSSL: service.ignoreSSL,
+        logPath: '',
+        logSources: [],
+      });
       onSuccess();
       onClose();
     } catch (err) {

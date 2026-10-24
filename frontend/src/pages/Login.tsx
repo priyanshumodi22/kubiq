@@ -164,11 +164,11 @@ export default function Login() {
                                     type="button"
                                     onClick={handleBiometricLogin}
                                     disabled={submitting || biometricLoading || !username}
-                                    className={`flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold transition-all border ${!username
-                                            ? 'bg-gray-800/50 text-gray-500 border-gray-700 cursor-not-allowed'
-                                            : 'bg-bg-surface hover:bg-gray-800 text-text border-primary/50 hover:border-primary'
+                                    className={`flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold transition-all border ${username
+                                            ? 'bg-bg-surface hover:bg-gray-800 text-text border-primary/50 hover:border-primary'
+                                            : 'bg-gray-800/50 text-gray-500 border-gray-700 cursor-not-allowed'
                                         }`}
-                                    title={!username ? "Enter username first" : "Use your passkey"}
+                                    title={username ? "Use your passkey" : "Enter username first"}
                                 >
                                     {biometricLoading ? 'Verifying...' : <><Fingerprint className="w-5 h-5" /> Use passkey</>}
                                 </button>

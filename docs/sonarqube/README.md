@@ -7,6 +7,14 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Run 52 verifies `8905362130cd0e3c8ebe4180f31a1c7c577f3444`: 49 open
+issues, 40.5% combined coverage and zero unreviewed hotspots. Both redundant
+backend type aliases are explicitly CLOSED. The standard gate is ERROR after
+pinning the approved fixed new-code scope; production remains blocked.
+Archive: `gs://priyanshu-apps-sonarqube-backups/reports/484aa65b-b6f9-4b78-8b83-8114fbf4f724-1792838207.json`.
+Sheets tab: `Scan 2026-10-24 103640`. Login and API caller changes are source
+fixes awaiting their own scan, not counted as verified closures here.
+
 Run 51 verifies `d1936eb673c9c925d76359a757108037a3761958`: 51 open
 issues, 40.5% combined coverage, zero unreviewed hotspots and standard gate OK.
 All nine log-page, protocol-state and send-contrast findings in that batch are
@@ -28,8 +36,9 @@ scope proof to their SHA; ten workflow guard/setup tests pass.
 
 The temporary administrator token was revoked automatically and its absence
 was confirmed in a refreshed Sonar token inventory. Deleting the unusable
-GitHub secret copy requires the user's GitHub Confirm access reauthentication;
-that cleanup remains pending. The one-use workflow is removed from source.
+GitHub secret copy was removed after the user's Confirm access reauthentication;
+a fresh repository-secrets inventory confirms SONAR_BASELINE_ADMIN_TOKEN is absent.
+The one-use workflow is removed from source.
 Normal scan/read credentials are unchanged, with no administrator secret used
 by the routine scan workflow. The next analysis must verify metrics against
 the newly pinned scope; the prior rolling-scope gate is not fixed-scope evidence.

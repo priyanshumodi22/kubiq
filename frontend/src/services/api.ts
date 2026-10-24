@@ -1,6 +1,8 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
 export type PasskeyAuthenticatorAttachment = 'platform' | 'cross-platform';
+export type ServiceUpdate = Pick<import('../types').ServiceConfig,
+  'endpoint' | 'type' | 'ignoreSSL' | 'logPath' | 'logSources' | 'interval' | 'retries'>;
 
 // Automatically detect backend DNS - use window.location.origin if not specified
 const getBackendDNS = () => {
@@ -48,7 +50,7 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error: AxiosError) => {
-        if (typeof globalThis.window !== 'undefined' && error.response?.status === 403 && (error.response.data as any)?.error === 'RBAC_FORBIDDEN') {
+        if (globalThis.window !== undefined && error.response?.status === 403 && (error.response.data as any)?.error === 'RBAC_FORBIDDEN') {
           globalThis.window.dispatchEvent(new CustomEvent('kubiq:toast', {
             detail: { type: 'warning', message: 'You do not have permission to perform this action.' }
           }));
@@ -382,16 +384,8 @@ class ApiClient {
     return response.data;
   }
 
-  async updateService(
-    name: string,
-    endpoint: string,
-    type?: 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp',
-    ignoreSSL?: boolean,
-    logPath?: string,
-    logSources?: any[],
-    interval?: number,
-    retries?: number
-  ) {
+  async updateService(name: string, update: ServiceUpdate) {
+    const { endpoint, type, ignoreSSL, logPath, logSources, interval, retries } = update;
     const response = await this.client.put(`/api/services/${name}`, {
       endpoint,
       type,

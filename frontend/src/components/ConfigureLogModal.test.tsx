@@ -44,7 +44,7 @@ describe('log configuration draft and keyboard lifecycle', () => {
     expect(view.queryByLabelText('Remove Stored')).toBeNull();
     expect(view.getByLabelText('Remove Draft')).toBeTruthy();
     fireEvent.click(view.getByRole('button', { name: 'Save Changes' }));
-    await waitFor(() => expect(mocks.update).toHaveBeenCalledWith('api', 'https://example.test', undefined, undefined, '', [expect.objectContaining({ name: 'Draft', path: '/draft.log', id: expect.any(String) })]));
+    await waitFor(() => expect(mocks.update).toHaveBeenCalledWith('api', { endpoint: 'https://example.test', type: undefined, ignoreSSL: undefined, logPath: '', logSources: [expect.objectContaining({ name: 'Draft', path: '/draft.log', id: expect.any(String) })] }));
     view.rerender(<ConfigureLogModal {...props} preSelectedService="worker" />);
     expect(view.getByLabelText('Remove Stored')).toBeTruthy();
     expect(view.queryByLabelText('Remove Draft')).toBeNull();

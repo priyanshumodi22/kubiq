@@ -42,14 +42,12 @@ export function EditLogDialog({
 
     try {
       // We must pass all service properties properly to avoid overwriting them with invalid data
-      // API expects: name, endpoint, type, ignoreSSL, logPath
-      await apiClient.updateService(
-        service.name,
-        service.endpoint,
-        service.type,
-        service.ignoreSSL,
-        logPath.trim()
-      );
+      await apiClient.updateService(service.name, {
+        endpoint: service.endpoint,
+        type: service.type,
+        ignoreSSL: service.ignoreSSL,
+        logPath: logPath.trim(),
+      });
       onSuccess();
       onClose();
     } catch (err) {

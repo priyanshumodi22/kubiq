@@ -159,14 +159,13 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
       // Deprecate logPath by sending empty string.
       const primaryPath = ''; // Force clear legacy path logic
 
-      await apiClient.updateService(
-          service.name, 
-          service.endpoint, 
-          service.type, 
-          service.ignoreSSL, 
-          primaryPath, 
-          logSources
-      );
+      await apiClient.updateService(service.name, {
+          endpoint: service.endpoint,
+          type: service.type,
+          ignoreSSL: service.ignoreSSL,
+          logPath: primaryPath,
+          logSources,
+      });
       
       toast.success('Log configuration updated successfully');
       onSuccess();

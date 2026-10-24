@@ -144,7 +144,7 @@ export function EditServiceModal({
 
       // Pass the CURRENT type state to updateService
       // Note: We deliberately do NOT pass logPath here, as logs are managed via the Logs tab now.
-      await apiClient.updateService(serviceName, finalEndpoint, type, ignoreSSL, undefined, undefined, interval, retries);
+      await apiClient.updateService(serviceName, { endpoint: finalEndpoint, type, ignoreSSL, interval, retries });
 
       toast.success('Service updated successfully');
       onSuccess();
