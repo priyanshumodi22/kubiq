@@ -53,6 +53,7 @@ docs/*
 !docs/sonarqube/
 !docs/sonarqube/**
 .sonar-release-proof.json
+.sonar-export-proof.json
 __pycache__/
 
 

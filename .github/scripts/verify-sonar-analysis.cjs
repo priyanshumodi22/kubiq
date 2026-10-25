@@ -31,7 +31,9 @@ if (require.main === module) {
     if (!process.env.SONAR_READ_TOKEN) throw new Error('A read-only verification token is required.');
     const scope = require('./verify-sonar-baseline.cjs').readBaselineProof(process.env.GITHUB_SHA);
     const proof = await verifyAnalysis({ host: process.env.SONAR_HOST_URL, token: process.env.SONAR_READ_TOKEN, sha: process.env.GITHUB_SHA, baseline: JSON.parse(fs.readFileSync('docs/sonarqube/coverage-baseline.json', 'utf8')) });
-    return { ...proof, newCodeBaseline: scope };
+    const exported = JSON.parse(fs.readFileSync('.sonar-export-proof.json', 'utf8'));
+    if (exported.format !== 3 || exported.revision !== proof.sha || exported.analysisId !== proof.analysisId) throw new Error('The exact release analysis export has not been verified.');
+    return { ...proof, newCodeBaseline: scope, exportReceipt: exported };
   })
     .then(proof => fs.writeFileSync('.sonar-release-proof.json', JSON.stringify(proof, null, 2)))
     .catch(error => { console.error(error.message); process.exitCode = 1; });

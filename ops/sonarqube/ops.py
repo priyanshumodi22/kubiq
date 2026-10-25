@@ -17,6 +17,7 @@ import urllib.parse
 import urllib.request
 
 ROOT = Path('/var/lib/sonarqube-ops')
+RECEIPT_ROOT = Path('/run/sonar-report-status')
 BUCKET = 'priyanshu-apps-sonarqube-backups'
 SHEET = '1C7G0-c7mjQkQ3ur57u20mdv-XPIXWVBxWwgwyNHQqGY'
 DEADLINE = dt.datetime(2026, 12, 22, tzinfo=dt.timezone.utc).timestamp()
@@ -95,6 +96,15 @@ def analysis_metadata(task):
         raise ValueError('Analysis metadata unavailable; export not marked complete')
     return metadata
 
+def publish_export_receipt(value):
+    # Only non-secret completion metadata is readable by the local status service.
+    RECEIPT_ROOT.mkdir(mode=0o755, parents=True, exist_ok=True)
+    target = RECEIPT_ROOT / 'latest.json'
+    temporary = RECEIPT_ROOT / 'latest.tmp'
+    temporary.write_text(json.dumps(value))
+    temporary.chmod(0o644)
+    temporary.replace(target)
+
 def export():
     if int(sql('SELECT count(*) FROM ce_queue')):
         return
@@ -105,6 +115,7 @@ def export():
     if previous.exists():
         previous_value = json.loads(previous.read_text())
         if previous_value.get('task') == task and previous_value.get('format') == 3:
+            publish_export_receipt(previous_value)
             return
     metadata = analysis_metadata(task)
     query = """SELECT coalesce(json_agg(x), '[]') FROM (
@@ -146,6 +157,7 @@ def export():
                          'revision': metadata.get('revision'), 'analysisId': metadata['analysisId'],
                          'qualityGate': measures.get('alert_status'), 'coverage': measures.get('coverage'),
                          'unreviewedHotspots': metadata['unreviewedHotspots']})
+    publish_export_receipt(json.loads(previous.read_text()))
 
 def idle_check(dry=False):
     now = time.time()

@@ -2,6 +2,8 @@
 set -eu
 install -d -m 700 /var/lib/sonarqube-ops
 install -m 700 "$(dirname "$0")/ops.py" /usr/local/sbin/sonar-ops
+install -m 755 "$(dirname "$0")/report_status.py" /usr/local/lib/sonar-report-status.py
+printf '[Unit]\nDescription=Authenticated read-only Sonar export receipt\nAfter=docker.service\n[Service]\nUser=nobody\nGroup=nogroup\nExecStart=/usr/bin/python3 /usr/local/lib/sonar-report-status.py\nRestart=on-failure\nNoNewPrivileges=true\nProtectSystem=strict\nProtectHome=true\nPrivateTmp=true\n[Install]\nWantedBy=multi-user.target\n' > /etc/systemd/system/sonar-report-status.service
 for job in idle export backup; do
   case "$job" in
     idle) interval=60s ;;
@@ -15,4 +17,5 @@ printf '[Unit]\nDescription=Stop SonarQube before credit expiry\n[Service]\nType
 printf '[Unit]\nDescription=SonarQube credit expiry cutoff\n[Timer]\nOnCalendar=2026-12-22 00:00:00 UTC\nPersistent=true\n[Install]\nWantedBy=timers.target\n' > /etc/systemd/system/sonar-deadline.timer
 systemctl daemon-reload
 systemctl enable --now sonar-idle.timer sonar-export.timer sonar-backup.timer sonar-deadline.timer
+systemctl enable --now sonar-report-status.service
 shutdown -c || true

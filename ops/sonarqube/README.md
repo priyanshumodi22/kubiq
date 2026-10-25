@@ -62,6 +62,24 @@ Export state is marked successful only after the Sheets write and archive upload
 an export failure continues to prevent idle shutdown. Format-3 export was verified
 against analysis `1571c7e1-ac6e-42a0-82b0-ac4229db5f8f` (gate ERROR).
 
+The scan workflow now requires an exact completion receipt before starting the
+next scan, and waits for this scan's receipt even when its quality gate fails.
+The receipt is published only after both Sheets and the JSON archive succeed.
+The preflight barrier prevents back-to-back workflow scans from skipping an
+intermediate report. Strict release proof includes the matching export receipt.
+An offline exporter, stale SHA/task, denied authentication or timeout fails closed.
+
+`sonar-report-status.service` runs as `nobody`, binds only `127.0.0.1:19001`,
+and serves only the task/analysis/revision completion metadata. It has no cloud
+credentials or write operations. Every request must authenticate with existing
+Sonar Browse access to private project `kubiq`. The exact tunnel route
+`^/_kubiq/sonar-export-status$` precedes the general Sonar route and remains
+inside the same Cloudflare Access application, including its existing service
+authentication policy. No new IAM grant, service token or GitHub secret is needed.
+The original Sonar route continues to use `http://127.0.0.1:9000`.
+Use the serialized GitHub workflow for scans; independent direct submissions
+outside that workflow do not participate in its preservation barrier.
+
 Maintenance commands (via IAP SSH):
 
 ```sh

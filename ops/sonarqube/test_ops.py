@@ -18,6 +18,7 @@ class ExportMetadataTests(unittest.TestCase):
                  'severity': 'MAJOR', 'status': 'OPEN', 'issue_type': 1, 'message': '=not a formula',
                  'effort': 5, 'rule': 'typescript:S1', 'rule_name': 'Rule'}]
         with tempfile.TemporaryDirectory() as folder, patch.object(ops, 'ROOT', Path(folder)), \
+             patch.object(ops, 'RECEIPT_ROOT', Path(folder) / 'receipt'), \
              patch.object(ops, 'sql', side_effect=['0', task, ops.json.dumps(metadata), ops.json.dumps(rows)]), \
              patch.object(ops, 'api') as sheets, patch.object(ops, 'upload') as upload:
             ops.export()
@@ -33,6 +34,18 @@ class ExportMetadataTests(unittest.TestCase):
             state = ops.json.loads((Path(folder) / 'export.json').read_text())
             self.assertEqual(state['qualityGate'], 'ERROR')
             self.assertEqual(state['format'], 3)
+            self.assertEqual(ops.json.loads((Path(folder) / 'receipt/latest.json').read_text()), state)
+
+    def test_existing_completed_export_republishes_receipt_after_reboot_without_a_new_sheet(self):
+        task = 'ac87f101-0834-43a1-a03f-5de3cbcd5008'
+        state = {'task': task, 'format': 3, 'revision': 'a' * 40, 'analysisId': task}
+        with tempfile.TemporaryDirectory() as folder, patch.object(ops, 'ROOT', Path(folder)), \
+             patch.object(ops, 'RECEIPT_ROOT', Path(folder) / 'receipt'), \
+             patch.object(ops, 'sql', side_effect=['0', task]), patch.object(ops, 'api') as sheets:
+            (Path(folder) / 'export.json').write_text(ops.json.dumps(state))
+            ops.export()
+            sheets.assert_not_called()
+            self.assertEqual(ops.json.loads((Path(folder) / 'receipt/latest.json').read_text()), state)
 
     def test_invalid_task_cannot_be_interpolated_into_metadata_query(self):
         with patch.object(ops, 'sql') as query:

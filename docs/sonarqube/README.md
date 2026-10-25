@@ -7,6 +7,36 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Current checkpoint
 
+Release source `80af4c4d19d1f5e4f546b5ed0c4c6befdff7dcc7` passed
+Sonar run 65 and the strict release verifier: zero open/confirmed issues, zero
+unreviewed hotspots, 49.2% overall coverage, 80.1% fixed new-code coverage and
+0.23278% new-code duplication. No threshold, baseline or application exclusion
+was relaxed. All 841 baseline findings have verified dispositions (835 fixed,
+two reviewed safe, four individually reviewed false positives). The 74 later
+findings comprise 69 CLOSED and five individually reviewed false positives.
+Archive: `gs://priyanshu-apps-sonarqube-backups/reports/9726ac00-740b-4016-92ee-75a0d40841cd-1792885082.json`.
+Sheets tab `Scan 2026-10-24 233757` has all 915 records and 21 preserved/appended
+columns, including exact SHA and both new-code gate measurements.
+
+Application verification and manual publish run 135 succeeded for that exact
+source. Flux deployed `priyanshumodi22/kubiq:main-135` with digest
+`sha256:206a101c164f69af26bb381cfc7dcafc556f481f3263a377de308fd9f4ceb882`.
+The deployment is ready; all four Flux applications remain ready. The prior
+`main-56` image/digest is retained for rollback. Local verification passed 284
+backend tests and 328 frontend tests, backend/frontend builds, and frontend lint
+with zero warnings/errors. Existing advisory backend lint warnings are retained.
+Production Chrome checks cover desktop/mobile APM, no mobile horizontal overflow,
+the export filter's keyboard activation and state, and monitor-type selection
+with correctly labelled TCP fields. No production service was created or changed.
+
+The next operations-only checkpoint adds a per-analysis export barrier, using
+existing Browse-only and Cloudflare credentials. It is verified separately from
+the deployed application source and does not change application behavior. The
+recovery backup `postgres/20261024T233835Z.dump` restored into a fresh temporary
+database with all 915 issue records. The two-hour idle policy remains active.
+
+### Earlier checkpoint history
+
 Run 64 verifies `ccfac4beaf429ea3ac779e3527ac439c0a5a23f1`: zero
 open issues, zero unreviewed hotspots, 49.1% overall coverage and 79.7% fixed
 new-code coverage. The 80% gate correctly blocks release. Its 915-row report is
