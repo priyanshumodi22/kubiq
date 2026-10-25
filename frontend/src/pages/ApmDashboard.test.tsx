@@ -33,6 +33,46 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('APM dashboard characterization', () => {
+  it('keeps the percentile and trace-duration menus independent in the inspector', async () => {
+    mocks.metrics = [{ serviceName: 'payments', requestCount: 20, errorCount: 0, avgDurationMs: 10, p95DurationMs: 20, rpm: 2, errorRate: 0 }];
+    const view = render(<ApmDashboard />);
+    fireEvent.click(await view.findByRole('button', { name: 'Inspect payments' }));
+    const percentile = view.getByTitle('Latency Percentile Metric');
+    const duration = view.getByRole('button', { name: 'Any Latency' });
+    vi.spyOn(percentile, 'getBoundingClientRect').mockReturnValue({ bottom: 80, left: 600, width: 180 } as DOMRect);
+    vi.spyOn(duration, 'getBoundingClientRect').mockReturnValue({ bottom: 300, left: 220, width: 130 } as DOMRect);
+    fireEvent.click(percentile);
+    expect(view.getByText('Latency Percentiles').parentElement?.style.top).toBe('84px');
+    expect(view.queryByRole('button', { name: '> 100ms' })).toBeNull();
+    fireEvent.click(view.getByRole('button', { name: 'P99 Latency (Tail SRE)' }));
+    expect(percentile.textContent).toContain('P99 Latency (Tail SRE)');
+    expect(duration.textContent).toContain('Any Latency');
+    fireEvent.click(duration);
+    const threshold = view.getByRole('button', { name: '> 100ms' });
+    expect(threshold.parentElement?.style.top).toBe('304px');
+    expect(view.queryByText('Latency Percentiles')).toBeNull();
+    fireEvent.mouseDown(threshold);
+    expect(view.getByRole('button', { name: '> 100ms' })).toBe(threshold);
+    fireEvent.click(threshold);
+    await waitFor(() => expect(mocks.getTraces).toHaveBeenLastCalledWith('payments', expect.objectContaining({ minDuration: '100' })));
+    expect(percentile.textContent).toContain('P99 Latency (Tail SRE)');
+    fireEvent.click(percentile);
+    fireEvent.keyDown(document, { key: 'ArrowDown' });
+    expect(view.getByText('Latency Percentiles')).toBeTruthy();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(view.queryByText('Latency Percentiles')).toBeNull();
+    expect(document.activeElement).toBe(percentile);
+    fireEvent.click(duration);
+    fireEvent.mouseDown(duration);
+    expect(view.getByRole('button', { name: '> 500ms' })).toBeTruthy();
+    fireEvent.mouseDown(percentile);
+    fireEvent.click(percentile);
+    expect(view.queryByRole('button', { name: '> 500ms' })).toBeNull();
+    expect(view.getByText('Latency Percentiles')).toBeTruthy();
+    fireEvent.mouseDown(document.body);
+    expect(view.queryByText('Latency Percentiles')).toBeNull();
+  });
+
   it('fetches once on service selection and applies filters to the latest inspector without reselecting a trace', async () => {
     mocks.metrics = ['payments', 'inventory'].map(serviceName => ({ serviceName, requestCount: 20, errorCount: 0, avgDurationMs: 10, p95DurationMs: 20, rpm: 2, errorRate: 0 }));
     mocks.getTraces.mockResolvedValue([{ traceId: 'trace-a', name: 'GET /pay', durationMs: 12, startTimeUnixNano: 1000000, statusCode: 0 }]);

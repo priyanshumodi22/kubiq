@@ -3,6 +3,7 @@ import { apiClient } from '../services/api';
 import { createPortal } from 'react-dom';
 import { Activity, Clock, AlertTriangle, Search, Server, X, ChevronDown, CheckCircle2, Download, Code2, Settings } from 'lucide-react';
 import { useApm } from '../hooks/useApm';
+import { useApmLatencyDropdown } from './useApmLatencyDropdown';
 import { useTrace } from '../hooks/useTrace';
 import type { ISpan } from '../hooks/useTrace';
 import { errorMessage, requestErrorData, requestErrorStatus } from '../utils/requestError';
@@ -155,11 +156,6 @@ function useApmDashboardModel() {
     const [isTimeRangeOpen, setIsTimeRangeOpen] = useState(false);
     const [timeRangeRect, setTimeRangeRect] = useState<{ top: number; left: number; width: number } | null>(null);
 
-    // Latency Dropdown State
-    const latencyTriggerRef = useRef<HTMLButtonElement>(null);
-    const latencyPanelRef = useRef<HTMLDivElement>(null);
-    const [isLatencyOpen, setIsLatencyOpen] = useState(false);
-    const [latencyRect, setLatencyRect] = useState<{ top: number; left: number; width: number } | null>(null);
 
     const filteredMetrics = metrics.filter(m =>
         m.serviceName.toLowerCase().includes(serviceFilter.toLowerCase().trim())
@@ -186,9 +182,6 @@ function useApmDashboardModel() {
             const t = e.target as Node;
             if (!timeRangeTriggerRef.current?.contains(t) && !timeRangePanelRef.current?.contains(t)) {
                 setIsTimeRangeOpen(false);
-            }
-            if (!latencyTriggerRef.current?.contains(t) && !latencyPanelRef.current?.contains(t)) {
-                setIsLatencyOpen(false);
             }
         };
         document.addEventListener('mousedown', handler);
@@ -366,7 +359,7 @@ function useApmDashboardModel() {
     const pad = (n: number) => String(n).padStart(2, '0');
     const todayString = `${todayObj.getFullYear()}-${pad(todayObj.getMonth() + 1)}-${pad(todayObj.getDate())}`;
 
-        return { isAdmin, canExport, status, checkingStatus, metrics, apmLoading, apmError, refresh, spans, traceLoading, traceError, fetchTrace, clearTrace, dependencies, mapLoading, mapError, fetchServiceMap, timeFilter, setTimeFilter, customFromDate, setCustomFromDate, customFromTime, setCustomFromTime, customToDate, setCustomToDate, customToTime, setCustomToTime, traceIdInput, setTraceIdInput, isTraceDropdownOpen, setIsTraceDropdownOpen, serviceFilter, setServiceFilter, activeView, setActiveView, selectedMapService, setSelectedMapService, selectedInspectorService, setSelectedInspectorService, tracesList, isFetchingTraces, minDurationFilter, setMinDurationFilter, errorOnlyFilter, setErrorOnlyFilter, routeSearch, setRouteSearch, isConfigModalOpen, setIsConfigModalOpen, isInstrumentationModalOpen, setIsInstrumentationModalOpen, percentileFilter, setPercentileFilter, isExportModalOpen, setIsExportModalOpen, isExporting, setIsExporting, exportError, setExportError, exportService, setExportService, exportFromTime, setExportFromTime, exportToTime, setExportToTime, exportMinDuration, setExportMinDuration, exportErrorOnly, setExportErrorOnly, exportSpanSearch, setExportSpanSearch, isExportServiceOpen, setIsExportServiceOpen, isExportDurationOpen, setIsExportDurationOpen, sidebarRef, timeRangeTriggerRef, timeRangePanelRef, isTimeRangeOpen, setIsTimeRangeOpen, timeRangeRect, setTimeRangeRect, latencyTriggerRef, latencyPanelRef, isLatencyOpen, setIsLatencyOpen, latencyRect, setLatencyRect, filteredMetrics, handleRefresh, handleServiceClick, handleEdgeClick, selectedTraceObj, applyCustomTime, handleSliderChange, sliderMaxMs, sliderMinMs, sliderFromMs, sliderToMs, todayString };
+        return { isAdmin, canExport, status, checkingStatus, metrics, apmLoading, apmError, refresh, spans, traceLoading, traceError, fetchTrace, clearTrace, dependencies, mapLoading, mapError, fetchServiceMap, timeFilter, setTimeFilter, customFromDate, setCustomFromDate, customFromTime, setCustomFromTime, customToDate, setCustomToDate, customToTime, setCustomToTime, traceIdInput, setTraceIdInput, isTraceDropdownOpen, setIsTraceDropdownOpen, serviceFilter, setServiceFilter, activeView, setActiveView, selectedMapService, setSelectedMapService, selectedInspectorService, setSelectedInspectorService, tracesList, isFetchingTraces, minDurationFilter, setMinDurationFilter, errorOnlyFilter, setErrorOnlyFilter, routeSearch, setRouteSearch, isConfigModalOpen, setIsConfigModalOpen, isInstrumentationModalOpen, setIsInstrumentationModalOpen, percentileFilter, setPercentileFilter, isExportModalOpen, setIsExportModalOpen, isExporting, setIsExporting, exportError, setExportError, exportService, setExportService, exportFromTime, setExportFromTime, exportToTime, setExportToTime, exportMinDuration, setExportMinDuration, exportErrorOnly, setExportErrorOnly, exportSpanSearch, setExportSpanSearch, isExportServiceOpen, setIsExportServiceOpen, isExportDurationOpen, setIsExportDurationOpen, sidebarRef, timeRangeTriggerRef, timeRangePanelRef, isTimeRangeOpen, setIsTimeRangeOpen, timeRangeRect, setTimeRangeRect, filteredMetrics, handleRefresh, handleServiceClick, handleEdgeClick, selectedTraceObj, applyCustomTime, handleSliderChange, sliderMaxMs, sliderMinMs, sliderFromMs, sliderToMs, todayString };
 }
 
 type ApmDashboardModel = ReturnType<typeof useApmDashboardModel>;
@@ -463,6 +456,7 @@ function ApmHeader({ model }: Readonly<{ model: ApmDashboardModel }>) {
 }
 
 function ApmInspector({ model }: Readonly<{ model: ApmDashboardModel }>) {
+    const { latencyTriggerRef, latencyPanelRef, isLatencyOpen, setIsLatencyOpen, latencyRect, setLatencyRect } = useApmLatencyDropdown();
     const {
         clearTrace,
         setTraceIdInput,
@@ -475,12 +469,6 @@ function ApmInspector({ model }: Readonly<{ model: ApmDashboardModel }>) {
         routeSearch,
         setRouteSearch,
         percentileFilter,
-        latencyTriggerRef,
-        latencyPanelRef,
-        isLatencyOpen,
-        setIsLatencyOpen,
-        latencyRect,
-        setLatencyRect,
         filteredMetrics,
         handleServiceClick,
     } = model;
@@ -548,6 +536,7 @@ function ApmInspector({ model }: Readonly<{ model: ApmDashboardModel }>) {
                                     <button
                                         ref={latencyTriggerRef}
                                         type="button"
+                                        aria-expanded={isLatencyOpen}
                                         onClick={() => {
                                             if (!isLatencyOpen && latencyTriggerRef.current) {
                                                 const r = latencyTriggerRef.current.getBoundingClientRect();
@@ -1117,20 +1106,16 @@ function ApmTimeRangePicker({ model }: Readonly<{ model: ApmDashboardModel }>) {
 }
 
 function ApmPercentilePicker({ model }: Readonly<{ model: ApmDashboardModel }>) {
+    const { latencyTriggerRef, latencyPanelRef, isLatencyOpen, setIsLatencyOpen, latencyRect, setLatencyRect } = useApmLatencyDropdown();
     const {
         percentileFilter,
         setPercentileFilter,
-        latencyTriggerRef,
-        latencyPanelRef,
-        isLatencyOpen,
-        setIsLatencyOpen,
-        latencyRect,
-        setLatencyRect,
     } = model;
     return (<div className="relative">
                         <button
                             ref={latencyTriggerRef}
                             type="button"
+                            aria-expanded={isLatencyOpen}
                             onClick={() => {
                                 if (!isLatencyOpen && latencyTriggerRef.current) {
                                     const r = latencyTriggerRef.current.getBoundingClientRect();
