@@ -7,6 +7,38 @@ closures until an actual follow-up scan supplies that evidence.
 
 ## Completed release
 
+Follow-up live APM verification on October 25 used a temporary, internal k3s HTTP
+canary with the unchanged Node SDK. Six real requests preserved distributed
+context through two services, including slow requests and deliberate HTTP 503s.
+The stored trace, attributes, latency metrics and six-call/two-error service-map
+edge remained available after both test resources were removed. No existing
+business application was instrumented or restarted for this check. See the
+[fixture and evidence](../../ops/apm-live-check/README.md).
+
+That verification uncovered a trace-to-log link that omitted the `/kubiq` base
+path and a log page that discarded the trace query. Source `04a5512` fixes both,
+preserving source selection and permission checks; seven added tests cover the
+link, query validation and VM/Kubernetes historical-search handoff.
+[Scan 68](https://github.com/priyanshumodi22/kubiq/actions/runs/40183657170)
+passed with zero open/confirmed issues, zero unreviewed hotspots, **80.3% fixed
+new-code coverage and 49.4% overall coverage**. Its automatic
+[Sheets report](https://docs.google.com/spreadsheets/d/1C7G0-c7mjQkQ3ur57u20mdv-XPIXWVBxWwgwyNHQqGY/edit#gid=148172346)
+and archive were verified before publication. All 284 backend and 340 frontend
+tests passed, along with lint and builds. The overall regression floor was raised
+to 49.4%; the fixed 80% new-code requirement remains unchanged.
+
+[Publish 140](https://github.com/priyanshumodi22/kubiq/actions/runs/40184017157)
+published that exact source. Flux rolled out `priyanshumodi22/kubiq:main-140`,
+digest `sha256:e696d8c4679ce816bf9addf7247dfac095005e56fabfb0fb645e2b70c29f2bda`.
+The ready production pod, all four Flux applications, HTTP health and ingestion
+authentication checks passed. Chrome confirmed the corrected `/kubiq/logs` link
+and retained trace hint after rollout. No log sources are configured, so matching
+log records are not claimed; those require actual log ingestion containing trace
+IDs. `main-138` remains the immediate rollback image. Exact evidence is in
+`release-verification-04a5512.json` and `checkpoint-04a5512.json`.
+
+### Original remediation release
+
 The remediation release is complete for source
 `97d418e8809e7f25c04b2d7242c3b18554aae99e` (October 25, 2026).
 [Scan 67](https://github.com/priyanshumodi22/kubiq/actions/runs/40178534883)

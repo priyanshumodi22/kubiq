@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "verifiedOn": "2026-10-25",
+  "sourceCommit": "04a55120ce14d47ee988f9141adf31de841d535c",
+  "sonar": {
+    "runId": 40183657170,
+    "taskId": "bc44fff3-2818-4fc9-a2ce-48d7c5473b28",
+    "analysisId": "e8feddf1-a47c-48d2-bb58-44f79d912b19",
+    "qualityGate": "OK",
+    "openOrConfirmedIssues": 0,
+    "unreviewedHotspots": 0,
+    "overallCoveragePercent": 49.4,
+    "newCodeCoveragePercent": 80.3,
+    "newCodeDuplicationPercent": 0.23061,
+    "fixedNewCodeBaselineChanged": false
+  },
+  "verification": {
+    "backendTestsPassed": 284,
+    "frontendTestsPassed": 340,
+    "frontendProductionCoverageFiles": 97,
+    "frontendLintWarnings": 0,
+    "frontendLintErrors": 0,
+    "backendLint": "passed with existing advisory warnings",
+    "builds": "backend and frontend passed",
+    "normalVerificationRunId": 40183149663,
+    "strictExactCommitReleaseProof": "passed before building and immediately before publishing"
+  },
+  "report": {
+    "sheetUrl": "https://docs.google.com/spreadsheets/d/1C7G0-c7mjQkQ3ur57u20mdv-XPIXWVBxWwgwyNHQqGY/edit#gid=148172346",
+    "tab": "Scan 2026-10-25 101428",
+    "historicalRecords": 915,
+    "archive": "gs://priyanshu-apps-sonarqube-backups/reports/bc44fff3-2818-4fc9-a2ce-48d7c5473b28-1792923273.json",
+    "automaticAuthenticatedExportReceipt": "passed"
+  },
+  "deployment": {
+    "publishRunId": 40184017157,
+    "gitOpsCommit": "dfa8b333ad70cfab170fa36f4c9b01f4bae7af8b",
+    "image": "priyanshumodi22/kubiq:main-140",
+    "digest": "sha256:e696d8c4679ce816bf9addf7247dfac095005e56fabfb0fb645e2b70c29f2bda",
+    "pod": "kubiq-777b75fd94-bshfh",
+    "podReady": true,
+    "rollout": "successfully rolled out",
+    "fluxApplicationsReady": ["kubiq", "kubiq-web", "portfolio", "portfolio-studio"],
+    "rollbackImage": "priyanshumodi22/kubiq:main-138",
+    "rollbackDigest": "sha256:f35115de803af49e878d7f0f8b1ac22979dbfe9c8e2e2d98b5974c204fb17685"
+  },
+  "runtimeChecks": {
+    "publicHealthHttpStatus": 200,
+    "frontendHttpStatus": 200,
+    "unauthenticatedServicesHttpStatus": 401,
+    "unauthenticatedOtlpHttpStatus": 401,
+    "retainedTraceAfterRollout": "29a74ad1415a68c437baccbe5289e648",
+    "spanCount": 3,
+    "workerHttpStatus": 503,
+    "workerSpanStatus": "Error",
+    "correctedLogLink": "/kubiq/logs?search=29a74ad1415a68c437baccbe5289e648",
+    "logPageRetainsTraceHint": true,
+    "actualMatchingLogRecordsVerified": false,
+    "matchingLogsLimitation": "No configured log sources; historical-query handoff is regression-tested for both VM and Kubernetes viewers. Live matching rows require ingestion of logs containing the trace ID."
+  },
+  "liveApmEvidence": "../../ops/apm-live-check/evidence-2026-10-25.json",
+  "scope": "Real internal canary requests using the existing SDK and private authenticated ingestion. Existing business apps were not instrumented; temporary Job and ConfigMap were removed."
+}
