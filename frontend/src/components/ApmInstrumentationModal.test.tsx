@@ -35,7 +35,7 @@ describe('shared APM instrumentation guide', () => {
         expect(text).toContain('Verify delivery');
         expect(text).toContain('ingestion');
         expect(text.includes('collector.yaml')).toBe(runtime.collector);
-        expect(view.getByRole('button', { name: 'Copied guide' })).toBeTruthy();
+        await waitFor(() => expect(view.getByRole('button', { name: 'Copied guide' })).toBeTruthy());
     });
     it('copies only the selected file block, resets copy state on language change, and expires feedback', async () => {
         vi.useFakeTimers();
