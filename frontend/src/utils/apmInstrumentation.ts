@@ -1,6 +1,6 @@
 import guide from './generated/apmGuide.json';
 
-export const APM_GUIDE = guide;
+export { default as APM_GUIDE } from './generated/apmGuide.json';
 export type InstrumentationBlock = Readonly<{ id: string; title: string; language: string; code: string; filename?: string }>;
 export type InstrumentationRuntime = Readonly<{ id: string; label: string; anchor: string; description: string; collector: boolean; blocks: readonly InstrumentationBlock[] }>;
 

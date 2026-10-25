@@ -9,6 +9,7 @@ source['driver.cjs'] = fs.readFileSync(path.join(__dirname,'../apm-live-check/dr
 source['collector.yaml'] = guide.collector.blocks.find(block => block.id === 'collector-config').code;
 source['tracing.go'] = guide.runtimes.find(item => item.id === 'go').blocks.find(block => block.id === 'source').code;
 source['instrumentation.ts'] = guide.runtimes.find(item => item.id === 'nextjs').blocks.find(block => block.id === 'source').code;
+source['next.config.mjs'] = 'export default { experimental: { cpus: 1 } };';
 const name = 'kubiq-guide-' + runtimeId + '-' + mode;
 const binaryData = mode === 'candidate' ? {
  'kubiq-apm.tgz': fs.readFileSync(npmArtifact).toString('base64'),
@@ -57,7 +58,7 @@ if (runtimeId === 'go') {
 if (runtimeId === 'nextjs') {
  source['next-package.json']=JSON.stringify({private:true,scripts:{build:'next build',start:'next start --hostname 0.0.0.0 --port 18080'},dependencies:{'kubiq-apm':nodePackage,next:'16.1.6',react:'19.2.3','react-dom':'19.2.3','@vercel/otel':'1.13.0'},devDependencies:{typescript:'5.9.3','@types/node':'22.10.10','@types/react':'19.0.8'}});
  source['layout.js']='export default function Layout({children}) { return <html><body>{children}</body></html> }';
- init.push(container('next-build',nodeImage,"mkdir -p '/work/next/app/apm-validation/[route]' /work/next/app/ready && cp /fixture/next-package.json /work/next/package.json && cp /fixture/instrumentation.ts /work/next/ && cp /fixture/layout.js /work/next/app/ && cp /fixture/ready.js /work/next/app/ready/route.js && cp /fixture/route.js '/work/next/app/apm-validation/[route]/route.js' && cd /work/next && npm install --ignore-scripts --no-audit --no-fund --cache=/work/npm-cache && npm run build",'768Mi','500m',[{name:'NEXT_TELEMETRY_DISABLED',value:'1'},{name:'HOME',value:'/work'},{name:'NODE_OPTIONS',value:'--max-old-space-size=512'}]));
+ init.push(container('next-build',nodeImage,"mkdir -p '/work/next/app/apm-validation/[route]' /work/next/app/ready && cp /fixture/next-package.json /work/next/package.json && cp /fixture/instrumentation.ts /work/next/ && cp /fixture/layout.js /work/next/app/ && cp /fixture/ready.js /work/next/app/ready/route.js && cp /fixture/route.js '/work/next/app/apm-validation/[route]/route.js' && cp /fixture/next.config.mjs /work/next/ && cd /work/next && npm install --ignore-scripts --no-audit --no-fund --cache=/work/npm-cache && npm run build",'768Mi','500m',[{name:'NEXT_TELEMETRY_DISABLED',value:'1'},{name:'HOME',value:'/work'},{name:'NODE_OPTIONS',value:'--max-old-space-size=512'}]));
  start='cd /work/next && npm run start';
 }
 if (runtime.collector) {
