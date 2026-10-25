@@ -5,7 +5,55 @@ Baseline: `Scan 2026-10-21 115552`, analysis task
 The ledger accounts for all 841 findings; source changes are NOT verified Sonar
 closures until an actual follow-up scan supplies that evidence.
 
-## Current checkpoint
+## Completed release
+
+The remediation release is complete for source
+`97d418e8809e7f25c04b2d7242c3b18554aae99e` (October 25, 2026).
+[Scan 67](https://github.com/priyanshumodi22/kubiq/actions/runs/40178534883)
+passed both the quality gate and strict release checks: **zero open/confirmed
+issues, zero unreviewed hotspots, 80.2% fixed new-code coverage and 49.3% overall
+coverage**. All 841 baseline findings and 74 subsequent findings have explicit
+final dispositions. No blanket exclusions, threshold reductions or mass acceptance
+were used; historical reviewed/closed findings remain in the reports.
+
+[Publish 138](https://github.com/priyanshumodi22/kubiq/actions/runs/40178819042)
+verified the same commit, built and published its image, and Flux successfully
+rolled out `priyanshumodi22/kubiq:main-138`. The ready pod runs digest
+`sha256:f35115de803af49e878d7f0f8b1ac22979dbfe9c8e2e2d98b5974c204fb17685`.
+The k3s node and all four Flux applications are ready. Both the previous verified
+`main-135` image and original `main-56` image are retained for rollback.
+
+Production verification also found and repaired an audit-overview compatibility
+bug: the paginated audit response was being mistaken for unavailable access.
+The live overview now shows 25 loaded records. The overview does not request
+audit history without `audit.read`; tests cover current/legacy payloads, denied
+setup reads and unavailable data. Final verification passes 284 backend and 333
+frontend tests, builds, 20 gate/coverage checks and 12 Linux operations checks.
+Frontend lint has zero warnings/errors; the configured backend lint gate passes
+with its existing advisory warnings.
+
+The [latest report](https://docs.google.com/spreadsheets/d/1C7G0-c7mjQkQ3ur57u20mdv-XPIXWVBxWwgwyNHQqGY/edit#gid=735188032)
+was read back and verified: 915 historical records, 21 columns, exact source SHA,
+and matching gate measurements. Automatic receipt verification passed in scans
+66 and 67. A scan waits for the previous report before submission, and preserves
+its own completed analysis even if its quality gate fails. Missing/stale reports,
+unavailable authentication and timeouts block further scans/releases.
+
+The final backup `postgres/20261025T090229Z.dump` restored successfully into a
+fresh temporary database, including one project, 63 analyses, 915 issue records
+and the exact latest revision. The temporary database was removed. The on-demand
+VM recovered its containers, tunnel and receipt service after idle shutdown; its
+two-hour idle policy remains unchanged. APM was verified with synthetic ingestion,
+exporter and lifecycle fixtures; no live instrumented k3s workload was available.
+
+Machine-readable evidence is in `release-verification-97d418e.json` and the final
+`checkpoint-97d418e.json`. Documentation/checkpoint commits after release do not
+alter the verified application source or publish another image.
+
+## Earlier checkpoint history
+
+The remaining sections retain the chronological audit trail. References to
+pending work below describe those earlier checkpoints, not the completed release.
 
 Release source `80af4c4d19d1f5e4f546b5ed0c4c6befdff7dcc7` passed
 Sonar run 65 and the strict release verifier: zero open/confirmed issues, zero
@@ -35,7 +83,7 @@ the deployed application source and does not change application behavior. The
 recovery backup `postgres/20261024T233835Z.dump` restored into a fresh temporary
 database with all 915 issue records. The two-hour idle policy remains active.
 
-### Earlier checkpoint history
+### Earlier intermediate scans
 
 Run 64 verifies `ccfac4beaf429ea3ac779e3527ac439c0a5a23f1`: zero
 open issues, zero unreviewed hotspots, 49.1% overall coverage and 79.7% fixed

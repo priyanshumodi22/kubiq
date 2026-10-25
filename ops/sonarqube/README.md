@@ -21,7 +21,7 @@ Issue values use RAW input to prevent spreadsheet formula injection. Code text,
 paths and rule names remain available in Sheets while the VM is stopped; the
 SonarQube issue links require the VM to be running.
 
-Timers run idle checks each minute, export new analyses each five minutes, and
+Timers run idle checks and check for completed analysis exports each minute, and
 back up PostgreSQL every six hours while running. Browser/scanner HTTP requests
 and queued/processing analysis prevent idle shutdown. Internal health polling
 does not. The VM stops after two hours without activity, after export and backup
