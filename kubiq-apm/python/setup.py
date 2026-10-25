@@ -1,9 +1,12 @@
 from setuptools import setup, find_packages
+from pathlib import Path
 
 setup(
     name="kubiq-apm",
-    version="1.0.0",
-    description="Official zero-config APM wrapper for kubiq (Python)",
+    version="1.0.1",
+    description="Python auto-instrumentation wrapper for kubiq via a local OpenTelemetry Collector",
+    long_description=Path(__file__).with_name("README.md").read_text(encoding="utf-8"),
+    long_description_content_type="text/markdown",
     author="Priyanshu Modi",
     packages=find_packages(),
     install_requires=[

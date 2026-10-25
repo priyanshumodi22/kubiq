@@ -1,68 +1,93 @@
-# kubiq-apm (Python)
+<!-- Generated from docs/apm/instrumentation.json; edit the source, then regenerate. SHA256: d10839b991ce613985d5c96decbe41662145d6c5cc45eae7b914c41aa21bf572 -->
 
-The Python auto-instrumentation wrapper for **kubiq**.
+# kubiq APM Integration Guide
 
-## Required transport setup
+Connect Node.js, Python, Java, Go and Next.js applications with tested, authenticated tracing.
 
-The bundled Python exporter sends OTLP HTTP protobuf, whereas kubiq's direct
-`/api/apm/v1/traces` endpoint accepts HTTP JSON. Run a separate OpenTelemetry
-Collector beside the application to convert protobuf to JSON. kubiq does not
-automatically expose a Collector on port 4318. The wrapper rejects a direct kubiq
-URL with a protobuf configuration instead of silently losing spans.
+## Environment Variables Configuration
 
-Configure the Collector with a loopback receiver, a batch maximum of 50, and an
-`otlp_http` exporter using `encoding: json`, `compression: none`,
-`traces_endpoint: ${env:KUBIQ_TRACES_ENDPOINT}` and
-`headers: {Authorization: "Bearer ${env:KUBIQ_INGESTION_TOKEN}"}`.
-Set the Collector's `KUBIQ_TRACES_ENDPOINT` to the complete HTTPS kubiq URL,
-including any configured backend context prefix and `/api/apm/v1/traces`.
-The APM instrumentation dialog includes the complete configuration. Older
-Collector releases name this exporter `otlphttp`.
+kubiq accepts OTLP HTTP JSON at /api/apm/v1/traces, not direct protobuf. Use the complete backend URL, including its optional prefix. Example production URL: https://priyanshumodi.in/kubiq-api/api/apm/v1/traces. Local development may use http://localhost:3001/api/apm/v1/traces. Use HTTPS for remote ingestion. Set a distinct OTEL_SERVICE_NAME per application. Never expose the ingestion token in browser/client code.
 
-The ingestion token belongs in the Collector environment, not in source code.
-Keep the local protobuf receiver private; use HTTPS for remote kubiq traffic.
+Commands below use POSIX shell syntax. In PowerShell, set environment variables with $env:NAME = "value"; start the application in that same environment. Values are placeholders; never paste real secrets into documentation.
 
-This package bundles OpenTelemetry and provides a seamless auto-instrumentation wrapper so you can connect your Django, Flask, FastAPI, or generic Python apps to kubiq without modifying a single line of code.
+Collector examples are pinned to 0.123.0. Node/Python package versions are 1.0.1/1.0.1.
 
-## Installation
+## 2. Python (Django, Flask, FastAPI)
+
+Run the local Collector first. Bootstrap plugins in the application virtual environment, then start your application with the wrapper. The bundled exporter uses protobuf; changing its protocol string does not make it a JSON exporter.
+
+### Install and bootstrap the wrapper
 
 ```bash
-pip install kubiq-apm
-```
-
-After installing, run the one-time install command to download the relevant plugins for your project (like Flask, SQLAlchemy, etc):
-
-```bash
+python -m pip install kubiq-apm==1.0.1
 kubiq-apm install
 ```
 
-## Usage
-
-Instead of running your python app normally (e.g. `python main.py`), simply prepend `kubiq-apm`:
+### Configure the application environment
 
 ```bash
-export OTEL_SERVICE_NAME="my-python-api"
-
-kubiq-apm python main.py
+export OTEL_SERVICE_NAME="my-service"
+export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="http://127.0.0.1:4318/v1/traces"
+export OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"
+export OTEL_METRICS_EXPORTER="none"
+export OTEL_LOGS_EXPORTER="none"
+# Do not forward kubiq's ingestion token to this local receiver.
 ```
 
-### Advanced (Gunicorn / Uvicorn)
-
-It works perfectly with production web servers too:
+### Start your existing application
 
 ```bash
-kubiq-apm uvicorn main:app --host 0.0.0.0 --port 8000
+# Flask example; install Flask in this virtual environment first.
+kubiq-apm flask --app app run --host 0.0.0.0 --port 8000
+# Alternatives:
+# kubiq-apm uvicorn main:app --host 0.0.0.0 --port 8000
+# kubiq-apm python manage.py runserver
 ```
 
-## Configuration
+### Required local Collector
 
-kubiq-apm automatically configures defaults optimized for the kubiq dashboard. You can override them via standard environment variables:
+Run the pinned Collector beside the application in the same network namespace (same Pod or host). Its receiver binds to loopback; a separate Docker network needs an explicitly private listener and access restriction, not a public port. The Collector forwards JSON with bearer authentication. This Collector is separately installed; kubiq does not automatically provide one.
 
-| Variable | Default | Description |
-|---|---|---|
-| `OTEL_SERVICE_NAME` | `unknown-python-service` | The name of your service on the dashboard |
-| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | `http://127.0.0.1:4318/v1/traces` | The separately operated local Collector |
-| `OTEL_EXPORTER_OTLP_HEADERS` | unset | Optional SDK-to-Collector authentication; kubiq ingestion authentication is configured on the Collector |
-| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | The Collector converts this to JSON before sending to kubiq |
-| `OTEL_BSP_MAX_EXPORT_BATCH_SIZE` | `50` | Batched spans limit |
-| `OTEL_BSP_SCHEDULE_DELAY` | `2000` | Flush delay (ms) |
+### Collector configuration
+
+File: `collector.yaml`
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 127.0.0.1:4318
+processors:
+  batch:
+    send_batch_size: 50
+    send_batch_max_size: 50
+exporters:
+  otlphttp/kubiq:
+    traces_endpoint: ${env:KUBIQ_TRACES_ENDPOINT}
+    encoding: json
+    compression: none
+    headers:
+      Authorization: Bearer ${env:KUBIQ_INGESTION_TOKEN}
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/kubiq]
+```
+
+### Start the Collector in its own environment
+
+```bash
+# These variables belong to the Collector process, not the application.
+export KUBIQ_TRACES_ENDPOINT="https://<kubiq-host><backend-context>/api/apm/v1/traces"
+# Supply KUBIQ_INGESTION_TOKEN using your secret manager.
+# Download and verify the official otelcol-contrib v0.123.0 binary for your OS.
+otelcol-contrib validate --config=collector.yaml
+otelcol-contrib --config=collector.yaml
+```
+
+## Verify real delivery
+
+Send real requests to an instrumented HTTP route, then find OTEL_SERVICE_NAME in APM & Traces. Check a trace waterfall and downstream parent/child spans. Allow the batch interval or graceful shutdown to flush. HTTP 401 means ingestion authentication failed; HTTP 415 indicates the wrong wire format; a private Collector must be running before protobuf clients start. An HTTP acceptance response alone is not proof of persisted spans. MongoDB or MySQL APM storage must be enabled; JSON-only storage does not persist APM traces. Log correlation additionally requires log ingestion containing the trace ID.

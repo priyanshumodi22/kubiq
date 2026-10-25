@@ -8,7 +8,9 @@ on:
 
 jobs:
   build-and-publish:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: npm
     
     # CRITICAL: These permissions are absolutely required for NPM Provenance (OIDC) to work!
     # It gives the GitHub Action permission to request the cryptographically signed JWT token from GitHub.
@@ -24,13 +26,19 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
       # Go into the kubiq-apm sub-directory where the package lives
       - name: Install dependencies
         working-directory: ./kubiq-apm/node
         run: npm ci
+
+      - name: Verify generated guide and SDK compatibility
+        run: |
+          node scripts/generate-apm-guide.cjs --check
+          node --test kubiq-apm/node/exporter.test.cjs
+          python3 -m unittest discover -s kubiq-apm/python -p test_wrapper.py
 
       # If this was triggered manually via workflow_dispatch, bump the version
       - name: Require exact-commit Sonar release approval
@@ -42,5 +50,36 @@ jobs:
       - name: Publish to NPM with Provenance
         working-directory: ./kubiq-apm/node
         run: |
+          npm install -g npm@11
           npm config delete //registry.npmjs.org/:_authToken || true
           npm publish --provenance --access public
+
+  publish-python:
+    name: Publish verified Python package
+    needs: build-and-publish
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install build==1.2.2.post1
+      - run: python -m unittest discover -s kubiq-apm/python -p test_wrapper.py
+      - run: node scripts/generate-apm-guide.cjs --check
+      - run: python -m build kubiq-apm/python --outdir dist
+      - name: Require exact-commit release approval
+        run: node .github/scripts/verify-sonar-release.cjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/

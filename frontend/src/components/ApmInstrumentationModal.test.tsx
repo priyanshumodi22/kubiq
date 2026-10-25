@@ -1,46 +1,94 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { load } from 'js-yaml';
 import { ApmInstrumentationModal } from './ApmInstrumentationModal';
-import { COLLECTOR_CONFIG, INSTRUMENTATION_SNIPPETS } from '../utils/apmInstrumentation';
-
+import { APM_GUIDE, instrumentationBlocks, instrumentationMarkdown } from '../utils/apmInstrumentation';
 const mocks = vi.hoisted(() => ({ error: vi.fn(), copy: vi.fn() }));
 vi.mock('../contexts/ToastContext', () => ({ useToast: () => ({ error: mocks.error }) }));
-beforeEach(() => { vi.clearAllMocks(); mocks.copy.mockResolvedValue(undefined); Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: mocks.copy } }); });
-afterEach(cleanup);
-
-describe('APM instrumentation wire-format guidance', () => {
-  it('keeps Java shell continuations as one literal backslash per line', () => {
-    expect(INSTRUMENTATION_SNIPPETS.java.code).toContain('\\\n');
-    expect(INSTRUMENTATION_SNIPPETS.java.code).not.toContain('\\\\\n');
-  });
-  it('uses JSON and ingestion authentication for the direct Node endpoint', () => {
-    const snippet = INSTRUMENTATION_SNIPPETS.node;
-    expect(snippet.install).toContain('@opentelemetry/exporter-trace-otlp-http');
-    expect(snippet.code).toContain("require('@opentelemetry/exporter-trace-otlp-http')");
-    expect(snippet.code).toContain('process.env.KUBIQ_INGESTION_TOKEN');
-    expect(snippet.code).toContain('Authorization:');
-    expect(snippet.code).not.toContain(':4318');
-  });
-  it('provides a private Collector receiver and authenticated JSON forwarding', () => {
-    const config = load(COLLECTOR_CONFIG) as { receivers: { otlp: { protocols: { http: { endpoint: string } } } }; exporters: Record<string, { encoding: string; compression: string; traces_endpoint: string; headers: { Authorization: string } }> };
-    expect(config.receivers.otlp.protocols.http.endpoint).toBe('127.0.0.1:4318');
-    expect(config.exporters['otlp_http/kubiq']).toEqual({ encoding: 'json', compression: 'none', traces_endpoint: '${env:KUBIQ_TRACES_ENDPOINT}', headers: { Authorization: 'Bearer ${env:KUBIQ_INGESTION_TOKEN}' } });
-  });
-  it('copies the required bridge alongside protobuf SDK instructions', async () => {
-    const view = render(<ApmInstrumentationModal isOpen onClose={vi.fn()} />);
-    fireEvent.click(view.getByRole('button', { name: 'Python' }));
-    expect(view.getByRole('heading', { name: '3. Required local Collector configuration' })).toBeTruthy();
-    fireEvent.click(view.getByRole('button', { name: 'Copy Snippet' }));
-    await waitFor(() => expect(mocks.copy).toHaveBeenCalledWith(expect.stringContaining(COLLECTOR_CONFIG)));
-    expect(view.getByRole('button', { name: 'Copied Code' })).toBeTruthy();
-  });
-  it('reports clipboard failure using the kubiq toast without claiming a copy', async () => {
-    mocks.copy.mockRejectedValue(new Error('Denied'));
-    const view = render(<ApmInstrumentationModal isOpen onClose={vi.fn()} />);
-    fireEvent.click(view.getByRole('button', { name: 'Copy Snippet' }));
-    await waitFor(() => expect(mocks.error).toHaveBeenCalled());
-    expect(view.queryByRole('button', { name: 'Copied Code' })).toBeNull();
-  });
+const originalShow = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, 'showModal');
+const originalClose = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, 'close');
+beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.copy.mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: mocks.copy } });
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value() { this.open = true; } });
+    Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value() { this.open = false; } });
+});
+afterEach(() => {
+    cleanup();
+    if (originalShow) Object.defineProperty(HTMLDialogElement.prototype, 'showModal', originalShow);
+    else Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal');
+    if (originalClose) Object.defineProperty(HTMLDialogElement.prototype, 'close', originalClose);
+    else Reflect.deleteProperty(HTMLDialogElement.prototype, 'close');
+    vi.useRealTimers();
+});
+describe('shared APM instrumentation guide', () => {
+    it.each(APM_GUIDE.runtimes)('copies complete, labelled $label instructions and links to the matching docs', async runtime => {
+        const view = render(<ApmInstrumentationModal isOpen onClose={vi.fn()} />);
+        fireEvent.click(view.getByRole('button', { name: runtime.label }));
+        expect(view.getByRole('button', { name: runtime.label }).getAttribute('aria-pressed')).toBe('true');
+        expect(view.getByRole('link', { name: 'Read ' + runtime.label + ' documentation' }).getAttribute('href')).toContain('#' + runtime.anchor);
+        fireEvent.click(view.getByRole('button', { name: 'Copy complete guide' }));
+        await waitFor(() => expect(mocks.copy).toHaveBeenCalledWith(instrumentationMarkdown(runtime)));
+        const text = mocks.copy.mock.calls[0][0];
+        expect(text).toContain('Verify delivery');
+        expect(text).toContain('ingestion');
+        expect(text.includes('collector.yaml')).toBe(runtime.collector);
+        expect(view.getByRole('button', { name: 'Copied guide' })).toBeTruthy();
+    });
+    it('copies only the selected file block, resets copy state on language change, and expires feedback', async () => {
+        vi.useFakeTimers();
+        const view = render(<ApmInstrumentationModal isOpen onClose={vi.fn()} />);
+        fireEvent.click(view.getByRole('button', { name: 'Copy Install the wrapper' }));
+        await act(() => vi.advanceTimersByTimeAsync(0));
+        expect(mocks.copy).toHaveBeenCalledWith('npm install kubiq-apm@1.0.1');
+        expect(view.getByText('Copied')).toBeTruthy();
+        await act(() => vi.advanceTimersByTimeAsync(2000));
+        expect(view.queryByText('Copied')).toBeNull();
+        fireEvent.click(view.getByRole('button', { name: 'Copy Configure private environment' }));
+        await act(() => vi.advanceTimersByTimeAsync(0));
+        fireEvent.click(view.getByRole('button', { name: 'Next.js' }));
+        expect(view.queryByText('Copied')).toBeNull();
+        expect(view.getByText('File:')).toBeTruthy();
+    });
+    it('reports clipboard failures with the kubiq toast without claiming success', async () => {
+        mocks.copy.mockRejectedValue(new Error('Denied'));
+        const view = render(<ApmInstrumentationModal isOpen onClose={vi.fn()} />);
+        fireEvent.click(view.getByRole('button', { name: 'Copy complete guide' }));
+        await waitFor(() => expect(mocks.error).toHaveBeenCalled());
+        expect(view.queryByRole('button', { name: 'Copied guide' })).toBeNull();
+    });
+    it('uses native modal semantics, Escape cancellation, close controls and focus restoration', () => {
+        const trigger = document.createElement('button');
+        document.body.append(trigger);
+        trigger.focus();
+        const close = vi.fn();
+        const view = render(<ApmInstrumentationModal isOpen onClose={close} />);
+        const dialog = view.getByRole('dialog', { name: 'Instrument New Service' }) as HTMLDialogElement;
+        expect(dialog.open).toBe(true);
+        fireEvent(dialog, new Event('cancel', { cancelable: true }));
+        fireEvent.click(view.getByRole('button', { name: 'Close instrumentation guide' }));
+        fireEvent.click(view.getByRole('button', { name: 'Close' }));
+        expect(close).toHaveBeenCalledTimes(3);
+        view.rerender(<ApmInstrumentationModal isOpen={false} onClose={close} />);
+        expect(view.queryByRole('dialog')).toBeNull();
+        expect(document.activeElement).toBe(trigger);
+        trigger.remove();
+    });
+    it('keeps unauthenticated protobuf off the direct receiver and provides complete conversion', () => {
+        const block = APM_GUIDE.collector.blocks.find(item => item.id === 'collector-config')!;
+        const config = load(block.code) as { receivers: { otlp: { protocols: { http: { endpoint: string } } } }; exporters: Record<string, { encoding: string; compression: string; headers: { Authorization: string } }> };
+        expect(config.receivers.otlp.protocols.http.endpoint).toBe('127.0.0.1:4318');
+        expect(config.exporters['otlphttp/kubiq'].encoding).toBe('json');
+        expect(config.exporters['otlphttp/kubiq'].compression).toBe('none');
+        expect(config.exporters['otlphttp/kubiq'].headers.Authorization).toBe('Bearer ${env:KUBIQ_INGESTION_TOKEN}');
+        const node = instrumentationBlocks(APM_GUIDE.runtimes[0]).map(item => item.code).join('\n');
+        expect(node).toContain('kubiq-apm/auto');
+        expect(node).toContain('OTEL_EXPORTER_OTLP_TRACES_HEADERS');
+        expect(node).not.toContain(':4318');
+        const next = APM_GUIDE.runtimes.find(item => item.id === 'nextjs')!;
+        expect(instrumentationMarkdown(next)).toContain('KubiqExporter');
+        expect(instrumentationMarkdown(next)).toContain("process.env.NEXT_RUNTIME !== 'nodejs'");
+    });
 });

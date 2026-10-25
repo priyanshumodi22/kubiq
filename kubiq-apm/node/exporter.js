@@ -18,7 +18,9 @@ class KubiqExporter extends OTLPTraceExporter {
         );
         const kubiqConfig = {
             url: process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:3001/api/apm/v1/traces',
-            headers: environmentHeaders,
+            headers: process.env.KUBIQ_INGESTION_TOKEN
+                ? { Authorization: 'Bearer ' + process.env.KUBIQ_INGESTION_TOKEN, ...environmentHeaders }
+                : environmentHeaders,
             ...config
         };
         super(kubiqConfig);

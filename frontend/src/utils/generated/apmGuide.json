@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 1,
+  "revision": "apm-guide-1.0.1",
+  "title": "kubiq APM Integration Guide",
+  "description": "Connect Node.js, Python, Java, Go and Next.js applications with tested, authenticated tracing.",
+  "nodeVersion": "1.0.1",
+  "pythonVersion": "1.0.1",
+  "collectorVersion": "0.123.0",
+  "endpointNotes": "kubiq accepts OTLP HTTP JSON at /api/apm/v1/traces, not direct protobuf. Use the complete backend URL, including its optional prefix. Example production URL: https://priyanshumodi.in/kubiq-api/api/apm/v1/traces. Local development may use http://localhost:3001/api/apm/v1/traces. Use HTTPS for remote ingestion. Set a distinct OTEL_SERVICE_NAME per application. Never expose the ingestion token in browser/client code.",
+  "collector": {
+    "description": "Run the pinned Collector beside the application in the same network namespace (same Pod or host). Its receiver binds to loopback; a separate Docker network needs an explicitly private listener and access restriction, not a public port. The Collector forwards JSON with bearer authentication. This Collector is separately installed; kubiq does not automatically provide one.",
+    "blocks": [
+      {
+        "id": "collector-config",
+        "title": "Collector configuration",
+        "language": "yaml",
+        "code": "receivers:\n  otlp:\n    protocols:\n      http:\n        endpoint: 127.0.0.1:4318\nprocessors:\n  batch:\n    send_batch_size: 50\n    send_batch_max_size: 50\nexporters:\n  otlphttp/kubiq:\n    traces_endpoint: ${env:KUBIQ_TRACES_ENDPOINT}\n    encoding: json\n    compression: none\n    headers:\n      Authorization: Bearer ${env:KUBIQ_INGESTION_TOKEN}\nservice:\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [otlphttp/kubiq]",
+        "filename": "collector.yaml"
+      },
+      {
+        "id": "collector-start",
+        "title": "Start the Collector in its own environment",
+        "language": "bash",
+        "code": "# These variables belong to the Collector process, not the application.\nexport KUBIQ_TRACES_ENDPOINT=\"https://<kubiq-host><backend-context>/api/apm/v1/traces\"\n# Supply KUBIQ_INGESTION_TOKEN using your secret manager.\n# Download and verify the official otelcol-contrib v0.123.0 binary for your OS.\notelcol-contrib validate --config=collector.yaml\notelcol-contrib --config=collector.yaml"
+      }
+    ]
+  },
+  "verification": "Send real requests to an instrumented HTTP route, then find OTEL_SERVICE_NAME in APM & Traces. Check a trace waterfall and downstream parent/child spans. Allow the batch interval or graceful shutdown to flush. HTTP 401 means ingestion authentication failed; HTTP 415 indicates the wrong wire format; a private Collector must be running before protobuf clients start. An HTTP acceptance response alone is not proof of persisted spans. MongoDB or MySQL APM storage must be enabled; JSON-only storage does not persist APM traces. Log correlation additionally requires log ingestion containing the trace ID.",
+  "runtimes": [
+    {
+      "id": "node",
+      "label": "Node.js",
+      "anchor": "1-nodejs-express-nestjs-fastify",
+      "description": "Preload the kubiq wrapper before importing HTTP, Express, NestJS or Fastify. It instruments supported installed modules; it does not cover every database or framework automatically.",
+      "collector": false,
+      "blocks": [
+        {
+          "id": "install",
+          "title": "Install the wrapper",
+          "language": "bash",
+          "code": "npm install kubiq-apm@1.0.1"
+        },
+        {
+          "id": "environment",
+          "title": "Configure private environment",
+          "language": "bash",
+          "code": "# Supply the token using your secret manager; never commit it.\nexport KUBIQ_TRACES_ENDPOINT=\"https://<kubiq-host><backend-context>/api/apm/v1/traces\"\nexport OTEL_SERVICE_NAME=\"my-service\"\nexport OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=\"$KUBIQ_TRACES_ENDPOINT\"\nexport OTEL_EXPORTER_OTLP_TRACES_HEADERS=\"Authorization=Bearer ${KUBIQ_INGESTION_TOKEN:?Set the ingestion token securely}\""
+        },
+        {
+          "id": "start",
+          "title": "Start your existing application",
+          "language": "bash",
+          "code": "node --require kubiq-apm/auto app.js"
+        },
+        {
+          "id": "advanced",
+          "title": "Advanced alternative: manual OpenTelemetry (do not combine with wrapper preload)",
+          "language": "bash",
+          "code": "# Use this only instead of kubiq-apm/auto.\nnpm install @opentelemetry/sdk-node@0.48.0 @opentelemetry/auto-instrumentations-node@0.41.1 @opentelemetry/exporter-trace-otlp-http@0.48.0\n# Configure the same endpoint, service name and authorization header above.\n# Create tracing.cjs using the next block, then run:\nnode --require ./tracing.cjs app.js"
+        },
+        {
+          "id": "advanced-source",
+          "title": "Advanced alternative configuration",
+          "filename": "tracing.cjs",
+          "language": "javascript",
+          "code": "const { NodeSDK } = require('@opentelemetry/sdk-node');\nconst { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');\nconst { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');\nconst sdk = new NodeSDK({\n  serviceName: process.env.OTEL_SERVICE_NAME,\n  traceExporter: new OTLPTraceExporter(),\n  instrumentations: [getNodeAutoInstrumentations()],\n});\nsdk.start();\nprocess.on('SIGTERM', () => { sdk.shutdown().catch(console.error); });"
+        }
+      ]
+    },
+    {
+      "id": "python",
+      "label": "Python",
+      "anchor": "2-python-django-flask-fastapi",
+      "description": "Run the local Collector first. Bootstrap plugins in the application virtual environment, then start your application with the wrapper. The bundled exporter uses protobuf; changing its protocol string does not make it a JSON exporter.",
+      "collector": true,
+      "blocks": [
+        {
+          "id": "install",
+          "title": "Install and bootstrap the wrapper",
+          "language": "bash",
+          "code": "python -m pip install kubiq-apm==1.0.1\nkubiq-apm install"
+        },
+        {
+          "id": "environment",
+          "title": "Configure the application environment",
+          "language": "bash",
+          "code": "export OTEL_SERVICE_NAME=\"my-service\"\nexport OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=\"http://127.0.0.1:4318/v1/traces\"\nexport OTEL_EXPORTER_OTLP_PROTOCOL=\"http/protobuf\"\nexport OTEL_METRICS_EXPORTER=\"none\"\nexport OTEL_LOGS_EXPORTER=\"none\"\n# Do not forward kubiq's ingestion token to this local receiver."
+        },
+        {
+          "id": "start",
+          "title": "Start your existing application",
+          "language": "bash",
+          "code": "# Flask example; install Flask in this virtual environment first.\nkubiq-apm flask --app app run --host 0.0.0.0 --port 8000\n# Alternatives:\n# kubiq-apm uvicorn main:app --host 0.0.0.0 --port 8000\n# kubiq-apm python manage.py runserver"
+        }
+      ]
+    },
+    {
+      "id": "java",
+      "label": "Java",
+      "anchor": "3-java-spring-boot",
+      "description": "Download opentelemetry-javaagent v2.14.0 from its official GitHub release and verify its checksum. Start the local Collector first. The existing authenticated Zipkin receiver remains supported for previously configured clients; OTLP through the Collector is the recommended setup.",
+      "collector": true,
+      "blocks": [
+        {
+          "id": "install",
+          "title": "Download and verify the official Java agent",
+          "language": "bash",
+          "code": "curl --fail --location --output opentelemetry-javaagent.jar https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.14.0/opentelemetry-javaagent.jar\nprintf '16f8e28fa1ddcd56ed85bf633bd1d1fbc78ea7c4cc50e8c5726b2a319f5058c8  opentelemetry-javaagent.jar\\n' | sha256sum --check"
+        },
+        {
+          "id": "environment",
+          "title": "Configure the application environment",
+          "language": "bash",
+          "code": "export OTEL_SERVICE_NAME=\"my-service\"\nexport OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=\"http://127.0.0.1:4318/v1/traces\"\nexport OTEL_EXPORTER_OTLP_PROTOCOL=\"http/protobuf\"\nexport OTEL_METRICS_EXPORTER=\"none\"\nexport OTEL_LOGS_EXPORTER=\"none\"\n# Do not forward kubiq's ingestion token to this local receiver."
+        },
+        {
+          "id": "start",
+          "title": "Start your existing Spring Boot jar",
+          "language": "bash",
+          "code": "java -javaagent:opentelemetry-javaagent.jar \\\n  -Dotel.traces.exporter=otlp \\\n  -jar my-app.jar"
+        }
+      ]
+    },
+    {
+      "id": "go",
+      "label": "Go",
+      "anchor": "5-go-nethttp",
+      "description": "Unlike the Java agent or Node/Python wrappers, Go needs explicit tracing initialization and HTTP handler/client wrappers. Start the local Collector first.",
+      "collector": true,
+      "blocks": [
+        {
+          "id": "install",
+          "title": "Install compatible OpenTelemetry modules",
+          "language": "bash",
+          "code": "go get go.opentelemetry.io/otel@v1.34.0 go.opentelemetry.io/otel/sdk@v1.34.0 go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp@v1.34.0 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp@v0.59.0"
+        },
+        {
+          "id": "environment",
+          "title": "Configure the application environment",
+          "language": "bash",
+          "code": "export OTEL_SERVICE_NAME=\"my-service\"\nexport OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=\"http://127.0.0.1:4318/v1/traces\"\nexport OTEL_EXPORTER_OTLP_PROTOCOL=\"http/protobuf\"\nexport OTEL_METRICS_EXPORTER=\"none\"\nexport OTEL_LOGS_EXPORTER=\"none\"\n# Do not forward kubiq's ingestion token to this local receiver."
+        },
+        {
+          "id": "source",
+          "title": "Initialize tracing and instrument HTTP",
+          "language": "go",
+          "code": "package main\n\nimport (\n  \"context\"\n  \"net/http\"\n  \"go.opentelemetry.io/otel\"\n  \"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp\"\n  \"go.opentelemetry.io/otel/sdk/resource\"\n  sdktrace \"go.opentelemetry.io/otel/sdk/trace\"\n  \"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp\"\n)\n\nfunc initTracer(ctx context.Context) (*sdktrace.TracerProvider, error) {\n  exporter, err := otlptracehttp.New(ctx)\n  if err != nil { return nil, err }\n  res, err := resource.New(ctx, resource.WithFromEnv(), resource.WithTelemetrySDK())\n  if err != nil { return nil, err }\n  provider := sdktrace.NewTracerProvider(sdktrace.WithBatcher(exporter), sdktrace.WithResource(res))\n  otel.SetTracerProvider(provider)\n  return provider, nil\n}\n\n// Wrap your server handler and use this client for outgoing HTTP calls.\nfunc tracedHandler(handler http.Handler) http.Handler {\n  return otelhttp.NewHandler(handler, \"http.server\")\n}\nfunc tracedClient() *http.Client {\n  return &http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}\n}\n// Call initTracer before serving, propagate request.Context() to outgoing calls,\n// and await provider.Shutdown(ctx) with a timeout during graceful shutdown.",
+          "filename": "tracing.go"
+        },
+        {
+          "id": "start",
+          "title": "Start your application",
+          "language": "bash",
+          "code": "go run ."
+        }
+      ]
+    },
+    {
+      "id": "nextjs",
+      "label": "Next.js",
+      "anchor": "4-nextjs-13-app-router",
+      "description": "For Next.js 15/16 App Router on the Node runtime, use instrumentation.ts at the project root (or src/). Do not preload kubiq-apm/auto as well: that would initialize tracing twice. Edge/browser instrumentation is not included. Next.js 13/14 requires its legacy experimental.instrumentationHook setting; current versions do not.",
+      "collector": false,
+      "blocks": [
+        {
+          "id": "install",
+          "title": "Install compatible tracing packages",
+          "language": "bash",
+          "code": "npm install kubiq-apm@1.0.1 @vercel/otel@1.13.0"
+        },
+        {
+          "id": "environment",
+          "title": "Configure server-only environment",
+          "language": "bash",
+          "code": "# Supply the token using your secret manager; never commit it.\nexport KUBIQ_TRACES_ENDPOINT=\"https://<kubiq-host><backend-context>/api/apm/v1/traces\"\nexport OTEL_SERVICE_NAME=\"my-service\"\nexport OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=\"$KUBIQ_TRACES_ENDPOINT\"\nexport OTEL_EXPORTER_OTLP_TRACES_HEADERS=\"Authorization=Bearer ${KUBIQ_INGESTION_TOKEN:?Set the ingestion token securely}\""
+        },
+        {
+          "id": "source",
+          "title": "Register tracing before requests",
+          "language": "typescript",
+          "code": "export async function register() {\n  if (process.env.NEXT_RUNTIME !== 'nodejs') return;\n  const { registerOTel } = await import('@vercel/otel');\n  const { KubiqExporter } = await import('kubiq-apm/exporter');\n  registerOTel({\n    serviceName: process.env.OTEL_SERVICE_NAME || 'my-nextjs-service',\n    traceExporter: new KubiqExporter(),\n  });\n}",
+          "filename": "instrumentation.ts"
+        },
+        {
+          "id": "start",
+          "title": "Build and start the Node server",
+          "language": "bash",
+          "code": "npm run build\nnpm run start"
+        }
+      ]
+    }
+  ]
+}

@@ -38,6 +38,7 @@ jobs:
             backend/package-lock.json
             frontend/package-lock.json
       - run: npm ci --prefix backend
+      - run: node scripts/generate-apm-guide.cjs --check
       - run: node --test .github/scripts/*.test.cjs
       - run: python3 -m unittest discover -s ops/sonarqube -p 'test_*.py'
       - run: node scripts/verify-sonar-ledger.cjs

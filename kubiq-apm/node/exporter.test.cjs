@@ -37,6 +37,15 @@ test('explicit exporter configuration preserves the public override contract', (
   assert.deepEqual(JSON.parse(JSON.stringify(observed[0].headers)), { 'x-custom': 'override' });
 });
 
+test('token convenience supports authenticated setup but standard headers retain precedence', () => {
+  const { Exporter, observed } = loadExporter({ KUBIQ_INGESTION_TOKEN: 'fixture-only' });
+  new Exporter();
+  assert.equal(observed[0].headers.Authorization, 'Bearer fixture-only');
+  const custom = loadExporter({ KUBIQ_INGESTION_TOKEN: 'fallback', OTEL_EXPORTER_OTLP_TRACES_HEADERS: 'Authorization=Bearer explicit' });
+  new custom.Exporter();
+  assert.equal(custom.observed[0].headers.Authorization, 'Bearer explicit');
+});
+
 test('auto instrumentation uses the same JSON exporter and registers graceful shutdown', async () => {
   const { Exporter } = loadExporter({ OTEL_EXPORTER_OTLP_HEADERS: 'Authorization=fixture' });
   const signals = new Map();

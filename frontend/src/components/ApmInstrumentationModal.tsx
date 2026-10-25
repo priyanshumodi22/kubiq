@@ -1,123 +1,78 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Copy, Check, Code2 } from 'lucide-react';
-import { COLLECTOR_CONFIG, INSTRUMENTATION_SNIPPETS } from '../utils/apmInstrumentation';
-import type { SDKLanguage } from '../utils/apmInstrumentation';
+import { APM_GUIDE, instrumentationBlocks, instrumentationMarkdown } from '../utils/apmInstrumentation';
+import type { InstrumentationBlock } from '../utils/apmInstrumentation';
 import { useToast } from '../contexts/ToastContext';
 
-export interface ApmInstrumentationModalProps {
-    isOpen: boolean;
-    onClose: () => void;
+export interface ApmInstrumentationModalProps { isOpen: boolean; onClose: () => void }
+
+function GuideBlock({ block, copied, copy }: Readonly<{ block: InstrumentationBlock; copied: boolean; copy: () => void }>) {
+    return <section className="space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+            <h4 className="text-sm font-semibold text-gray-200">{block.title}</h4>
+            <button type="button" onClick={copy} aria-label={'Copy ' + block.title} className="inline-flex items-center gap-1.5 rounded border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary focus-visible:outline-2 focus-visible:outline-primary">
+                {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copied ? 'Copied' : 'Copy'}
+            </button>
+        </div>
+        {block.filename && <p className="text-xs text-gray-400">File: <code>{block.filename}</code></p>}
+        <pre className="max-w-full overflow-x-auto rounded-xl border border-gray-800 bg-[#181818] p-4 text-xs leading-relaxed text-gray-200"><code>{block.code}</code></pre>
+    </section>;
 }
 
-
 export function ApmInstrumentationModal({ isOpen, onClose }: Readonly<ApmInstrumentationModalProps>) {
-    const [lang, setLang] = useState<SDKLanguage>('node');
-    const [copied, setCopied] = useState(false);
+    const [current, setCurrent] = useState(APM_GUIDE.runtimes[0]);
+    const [copied, setCopied] = useState<string | null>(null);
     const { error } = useToast();
     const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    useEffect(() => () => { if (copyTimer.current !== null) clearTimeout(copyTimer.current); }, []);
-
-    if (!isOpen) return null;
-
-    const current = INSTRUMENTATION_SNIPPETS[lang];
-
-    const handleCopy = async () => {
-        try {
-            await navigator.clipboard.writeText(`${current.install}\n\n${current.code}${lang === 'node' ? '' : '\n\n' + COLLECTOR_CONFIG}`);
-            setCopied(true);
+    const dialogRef = useRef<HTMLDialogElement>(null);
+    useEffect(() => {
+        if (!isOpen || !dialogRef.current) return;
+        const dialog = dialogRef.current;
+        const trigger = document.activeElement;
+        dialog.showModal();
+        return () => {
+            if (dialog.open) dialog.close();
+            if (trigger instanceof HTMLElement) trigger.focus();
             if (copyTimer.current !== null) clearTimeout(copyTimer.current);
-            copyTimer.current = setTimeout(() => setCopied(false), 2000);
-        } catch {
-            error('Unable to copy the instrumentation guide. Copy the displayed configuration manually.');
-        }
+        };
+    }, [isOpen]);
+    const copy = async (id: string, text: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopied(id);
+            if (copyTimer.current !== null) clearTimeout(copyTimer.current);
+            copyTimer.current = setTimeout(() => setCopied(null), 2000);
+        } catch { error('Unable to copy the instrumentation guide. Copy the displayed configuration manually.'); }
     };
-
+    if (!isOpen) return null;
     return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <button type="button" aria-label="Close instrumentation guide backdrop" className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity" onClick={onClose} />
-            <div className="relative w-full max-w-3xl bg-[#111111] border border-gray-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-
-                {/* Header */}
-                <div className="flex items-center justify-between p-5 border-b border-gray-800 bg-[#161616]">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-primary/10 border border-primary/20 text-primary">
-                            <Code2 className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <h3 className="text-base font-bold text-white flex items-center gap-2">
-                                Instrument New Service
-                            </h3>
-                            <p className="text-xs text-gray-400 font-mono">
-                                Copy OpenTelemetry SDK snippets to start sending trace spans to kubiq APM
-                            </p>
-                        </div>
-                    </div>
-                    <button type="button" aria-label="Close instrumentation guide" onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
-
-                {/* Tabs */}
-                <div className="flex border-b border-gray-800 bg-[#141414] px-5 gap-2 pt-3">
-                    {[
-                        { id: 'node', label: 'Node.js' },
-                        { id: 'python', label: 'Python' },
-                        { id: 'go', label: 'Go' },
-                        { id: 'java', label: 'Java' },
-                    ].map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setLang(tab.id as SDKLanguage)}
-                            className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-colors border-b-2 ${lang === tab.id ? 'border-primary text-primary bg-primary/5' : 'border-transparent text-gray-400 hover:text-gray-200'}`}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Code Body */}
-                <div className="p-6 overflow-y-auto space-y-4 font-mono text-xs custom-scrollbar flex-1">
-                    <div className="space-y-1">
-                        <span className="text-gray-400 text-[10px] uppercase tracking-wider font-bold">1. Package Installation</span>
-                        <div className="bg-black/40 border border-gray-800 rounded-lg p-3 text-cyan-400 flex items-center justify-between">
-                            <span>{current.install}</span>
-                        </div>
-                    </div>
-
-                    <div className="space-y-1">
-                        <div className="flex justify-between items-center">
-                            <span className="text-gray-400 text-[10px] uppercase tracking-wider font-bold">2. Tracing Configuration ({current.filename})</span>
-                            <button
-                                onClick={handleCopy}
-                                className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded text-[11px] font-semibold transition-all"
-                            >
-                                {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
-                                {copied ? 'Copied Code' : 'Copy Snippet'}
-                            </button>
-                        </div>
-                        <pre className="bg-[#181818] border border-gray-800 rounded-xl p-4 text-gray-200 overflow-x-auto text-[11px] leading-relaxed">
-                            {current.code}
-                        </pre>
-                    </div>
-                    {lang !== 'node' && <section className="space-y-2">
-                        <h4 className="text-gray-400 text-[10px] uppercase tracking-wider font-bold">3. Required local Collector configuration</h4>
-                        <p className="text-gray-400">Run a separate OpenTelemetry Collector with this configuration. Keep its receiver on loopback; it forwards authenticated JSON to kubiq over HTTPS.</p>
-                        <pre className="bg-[#181818] border border-gray-800 rounded-xl p-4 text-gray-200 overflow-x-auto text-[11px] leading-relaxed">{COLLECTOR_CONFIG}</pre>
-                    </section>}
-                </div>
-
-                {/* Footer */}
-                <div className="flex items-center justify-between p-4 border-t border-gray-800 bg-[#161616]">
-                    <span className="text-[11px] text-gray-500 font-mono">
-                        Direct kubiq ingestion: <span className="text-primary font-bold">/api/apm/v1/traces (HTTP JSON)</span>
-                    </span>
-                    <button onClick={onClose} className="px-5 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-xs font-medium transition-colors">
-                        Close
-                    </button>
-                </div>
+        <dialog ref={dialogRef} aria-modal="true" aria-labelledby="apm-guide-title"
+            onCancel={event => { event.preventDefault(); onClose(); }}
+            className="fixed inset-0 m-auto flex max-h-[85vh] w-[calc(100%_-_2rem)] max-w-3xl flex-col overflow-hidden rounded-2xl border border-gray-800 bg-[#111111] p-0 text-inherit shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-md">
+            <header className="flex items-center justify-between gap-3 border-b border-gray-800 bg-[#161616] p-5">
+                <div className="flex items-center gap-3"><Code2 className="size-6 shrink-0 text-primary" /><div>
+                    <h3 id="apm-guide-title" className="text-base font-bold text-white">Instrument New Service</h3>
+                    <p className="text-xs text-gray-400">The same tested setup as the kubiq documentation.</p>
+                </div></div>
+                <button type="button" aria-label="Close instrumentation guide" onClick={onClose} className="rounded-lg p-2 text-gray-400 hover:text-white focus-visible:outline-2 focus-visible:outline-primary"><X className="size-5" /></button>
+            </header>
+            <nav aria-label="Instrumentation language" className="flex shrink-0 gap-2 overflow-x-auto border-b border-gray-800 bg-[#141414] px-5 pt-3">
+                {APM_GUIDE.runtimes.map(runtime => <button key={runtime.id} type="button" aria-pressed={current.id === runtime.id}
+                    onClick={() => { setCurrent(runtime); setCopied(null); }}
+                    className={'whitespace-nowrap rounded-t-lg border-b-2 px-4 py-2 text-xs font-bold focus-visible:outline-2 focus-visible:outline-primary ' + (current.id === runtime.id ? 'border-primary bg-primary/5 text-primary' : 'border-transparent text-gray-400 hover:text-gray-200')}>{runtime.label}</button>)}
+            </nav>
+            <div className="custom-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto p-5 text-sm">
+                <p className="text-gray-300">{current.description}</p>
+                <p className="text-xs leading-relaxed text-gray-400">{APM_GUIDE.endpointNotes}</p>
+                {current.collector && <p className="text-xs leading-relaxed text-gray-400">{APM_GUIDE.collector.description}</p>}
+                {instrumentationBlocks(current).map(block => <GuideBlock key={block.id} block={block} copied={copied === block.id} copy={() => { void copy(block.id, block.code); }} />)}
+                <section className="space-y-2 text-gray-300"><h4 className="font-semibold">Verify real delivery</h4><p className="text-xs leading-relaxed">{APM_GUIDE.verification}</p></section>
             </div>
-        </div>,
-        document.body
-    );
+            <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-800 bg-[#161616] p-4 text-xs">
+                <a href={'https://kubiq.priyanshumodi.in/docs/apm#' + current.anchor} target="_blank" rel="noreferrer" className="text-primary underline">Read {current.label} documentation</a>
+                <button type="button" onClick={() => { void copy('guide', instrumentationMarkdown(current)); }} className="rounded-lg bg-primary/10 px-3 py-2 text-primary">{copied === 'guide' ? 'Copied guide' : 'Copy complete guide'}</button>
+                <button type="button" onClick={onClose} className="rounded-xl bg-gray-800 px-5 py-2 font-medium text-white">Close</button>
+            </footer>
+        </dialog>, document.body);
 }

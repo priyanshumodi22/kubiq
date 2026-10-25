@@ -1,12 +1,14 @@
 {
     "name": "kubiq-apm",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Unified OpenTelemetry APM wrapper for Kubiq",
     "main": "index.js",
     "files": [
         "index.js",
         "auto.js",
-        "exporter.js"
+        "exporter.js",
+        "index.d.ts",
+        "exporter.d.ts"
     ],
     "scripts": {
         "test": "node --test exporter.test.cjs"

@@ -33,8 +33,7 @@ def main():
     os.environ.setdefault("OTEL_LOGS_EXPORTER", "none")
 
     endpoint = os.environ["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"]
-    protocol = os.environ.get("OTEL_EXPORTER_OTLP_TRACES_PROTOCOL", os.environ["OTEL_EXPORTER_OTLP_PROTOCOL"])
-    if "/api/apm/v1/traces" in endpoint and protocol != "http/json":
+    if "/api/apm/v1/traces" in endpoint:
         print("[kubiq-apm] kubiq accepts HTTP JSON, not protobuf. Configure a local Collector with encoding: json and point this SDK at that Collector. See the package README.")
         sys.exit(1)
         
