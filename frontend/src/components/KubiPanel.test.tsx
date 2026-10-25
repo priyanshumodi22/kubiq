@@ -94,7 +94,7 @@ describe('kubi panel completion and history', () => {
     fireEvent.click(view.getByRole('button', { name: 'Clear kubi history' }));
     fireEvent.click(view.getByRole('button', { name: 'Delete history' }));
     await waitFor(() => expect(mocks.clear).toHaveBeenCalledTimes(1));
-    expect(view.queryByText('Delete all your kubi conversations? This cannot be undone.')).toBeNull();
+    await waitFor(() => expect(view.queryByText('Delete all your kubi conversations? This cannot be undone.')).toBeNull());
     expect(view.getByRole('button', { name: 'New kubi conversation' })).toBeTruthy();
   });
 
