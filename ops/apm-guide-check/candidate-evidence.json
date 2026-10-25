@@ -1,0 +1,279 @@
+{
+  "status": "passed",
+  "verifiedOn": "2026-10-25",
+  "scope": "Private temporary k3s canaries; existing business applications unchanged",
+  "receiverImage": "priyanshumodi22/kubiq:main-140",
+  "requests": {
+    "node": [
+      {
+        "event": "verified-http-request",
+        "runId": "a9bb50f3-2cba-42b1-a8ab-7a32c981eec8",
+        "status": 200,
+        "elapsedMs": 44,
+        "workerTraceId": "6323880bf4c6bc5186d9ac2272120800",
+        "frontTraceId": "6323880bf4c6bc5186d9ac2272120800"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "a9bb50f3-2cba-42b1-a8ab-7a32c981eec8",
+        "status": 200,
+        "elapsedMs": 126,
+        "workerTraceId": "5c0612785a26bdec3c5b7c74cd354956",
+        "frontTraceId": "5c0612785a26bdec3c5b7c74cd354956"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "a9bb50f3-2cba-42b1-a8ab-7a32c981eec8",
+        "status": 503,
+        "elapsedMs": 5,
+        "workerTraceId": "6c04e0f9563db7fd027e6070b9df53db",
+        "frontTraceId": "6c04e0f9563db7fd027e6070b9df53db"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "a9bb50f3-2cba-42b1-a8ab-7a32c981eec8",
+        "status": 200,
+        "elapsedMs": 5,
+        "workerTraceId": "ceebf00194b9816c2a1ffee0c1c5d6fe",
+        "frontTraceId": "ceebf00194b9816c2a1ffee0c1c5d6fe"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "a9bb50f3-2cba-42b1-a8ab-7a32c981eec8",
+        "status": 200,
+        "elapsedMs": 124,
+        "workerTraceId": "a140865f9f953c77fba6e38a4583dc43",
+        "frontTraceId": "a140865f9f953c77fba6e38a4583dc43"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "a9bb50f3-2cba-42b1-a8ab-7a32c981eec8",
+        "status": 503,
+        "elapsedMs": 3,
+        "workerTraceId": "67578052b765c574b6335accd15d93a0",
+        "frontTraceId": "67578052b765c574b6335accd15d93a0"
+      }
+    ],
+    "python": [
+      {
+        "event": "verified-http-request",
+        "runId": "0669eeff-489b-4e3a-a753-8438ae0bdf3f",
+        "status": 200,
+        "elapsedMs": 62,
+        "frontTraceId": "8f6dd35f27a2d2632c4050cc2fd7e8bc",
+        "workerTraceId": "8f6dd35f27a2d2632c4050cc2fd7e8bc"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "0669eeff-489b-4e3a-a753-8438ae0bdf3f",
+        "status": 200,
+        "elapsedMs": 127,
+        "frontTraceId": "cdceb32fee931813541c1c8c711cc54d",
+        "workerTraceId": "cdceb32fee931813541c1c8c711cc54d"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "0669eeff-489b-4e3a-a753-8438ae0bdf3f",
+        "status": 503,
+        "elapsedMs": 6,
+        "frontTraceId": "699163cd81705a966cdcc159b868fc6a",
+        "workerTraceId": "699163cd81705a966cdcc159b868fc6a"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "0669eeff-489b-4e3a-a753-8438ae0bdf3f",
+        "status": 200,
+        "elapsedMs": 6,
+        "frontTraceId": "38bcf6e815f2f7afcfeb64d8537c1714",
+        "workerTraceId": "38bcf6e815f2f7afcfeb64d8537c1714"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "0669eeff-489b-4e3a-a753-8438ae0bdf3f",
+        "status": 200,
+        "elapsedMs": 126,
+        "frontTraceId": "1f72fcfc56693e9cc091ba692f410070",
+        "workerTraceId": "1f72fcfc56693e9cc091ba692f410070"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "0669eeff-489b-4e3a-a753-8438ae0bdf3f",
+        "status": 503,
+        "elapsedMs": 7,
+        "frontTraceId": "e58e4868f9af61c92599a45e6dd89813",
+        "workerTraceId": "e58e4868f9af61c92599a45e6dd89813"
+      }
+    ],
+    "java": [
+      {
+        "event": "verified-http-request",
+        "runId": "1ded92ad-eca5-4478-8a37-5e65f70d14e7",
+        "status": 200,
+        "elapsedMs": 1391,
+        "workerTraceId": "b65cd7df8aa0e7a539a5bcab9b753993",
+        "frontTraceId": "b65cd7df8aa0e7a539a5bcab9b753993"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "1ded92ad-eca5-4478-8a37-5e65f70d14e7",
+        "status": 200,
+        "elapsedMs": 276,
+        "workerTraceId": "e5e2212f3e0b2a9e9ce11cd3d0ac5aad",
+        "frontTraceId": "e5e2212f3e0b2a9e9ce11cd3d0ac5aad"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "1ded92ad-eca5-4478-8a37-5e65f70d14e7",
+        "status": 503,
+        "elapsedMs": 49,
+        "workerTraceId": "3dc8db11c9240af0f1f3a86fb61bd092",
+        "frontTraceId": "3dc8db11c9240af0f1f3a86fb61bd092"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "1ded92ad-eca5-4478-8a37-5e65f70d14e7",
+        "status": 200,
+        "elapsedMs": 63,
+        "workerTraceId": "d3daa5c1425571b5a87fa134df518c21",
+        "frontTraceId": "d3daa5c1425571b5a87fa134df518c21"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "1ded92ad-eca5-4478-8a37-5e65f70d14e7",
+        "status": 200,
+        "elapsedMs": 187,
+        "workerTraceId": "edd37fe3b3bb8c16cf5300078c190303",
+        "frontTraceId": "edd37fe3b3bb8c16cf5300078c190303"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "1ded92ad-eca5-4478-8a37-5e65f70d14e7",
+        "status": 503,
+        "elapsedMs": 17,
+        "workerTraceId": "9ecd04aeb1c345b507d7a93d9fedd765",
+        "frontTraceId": "9ecd04aeb1c345b507d7a93d9fedd765"
+      }
+    ],
+    "go": [
+      {
+        "event": "verified-http-request",
+        "runId": "f76699c7-38d9-4a84-abd0-67201a48401c",
+        "status": 200,
+        "elapsedMs": 3,
+        "frontTraceId": "8b41c79316aec4b12b2e358577930221",
+        "workerTraceId": "8b41c79316aec4b12b2e358577930221"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "f76699c7-38d9-4a84-abd0-67201a48401c",
+        "status": 200,
+        "elapsedMs": 128,
+        "frontTraceId": "b39ec29d5782a943fea0b71976a77c5d",
+        "workerTraceId": "b39ec29d5782a943fea0b71976a77c5d"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "f76699c7-38d9-4a84-abd0-67201a48401c",
+        "status": 503,
+        "elapsedMs": 10,
+        "frontTraceId": "16f985dcdd0b351e24cd41d41308e973",
+        "workerTraceId": "16f985dcdd0b351e24cd41d41308e973"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "f76699c7-38d9-4a84-abd0-67201a48401c",
+        "status": 200,
+        "elapsedMs": 13,
+        "frontTraceId": "8c0ffe655bb495f431d360528b8c617e",
+        "workerTraceId": "8c0ffe655bb495f431d360528b8c617e"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "f76699c7-38d9-4a84-abd0-67201a48401c",
+        "status": 200,
+        "elapsedMs": 127,
+        "frontTraceId": "60e8da8af0603f7c19447d9655a3e65f",
+        "workerTraceId": "60e8da8af0603f7c19447d9655a3e65f"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "f76699c7-38d9-4a84-abd0-67201a48401c",
+        "status": 503,
+        "elapsedMs": 10,
+        "frontTraceId": "738576cbc88edc0f9c19efb807911277",
+        "workerTraceId": "738576cbc88edc0f9c19efb807911277"
+      }
+    ],
+    "nextjs": [
+      {
+        "event": "verified-http-request",
+        "runId": "86c7b106-8c6d-4a9e-bb14-8ee21713a542",
+        "status": 200,
+        "elapsedMs": 95,
+        "workerTraceId": "fb5ed6f3b333aa28bab129e5fcea49ea",
+        "frontTraceId": "fb5ed6f3b333aa28bab129e5fcea49ea"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "86c7b106-8c6d-4a9e-bb14-8ee21713a542",
+        "status": 200,
+        "elapsedMs": 135,
+        "workerTraceId": "7abaf53dc5a7e6be3964310ca8b784a8",
+        "frontTraceId": "7abaf53dc5a7e6be3964310ca8b784a8"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "86c7b106-8c6d-4a9e-bb14-8ee21713a542",
+        "status": 503,
+        "elapsedMs": 12,
+        "workerTraceId": "6a13b19d2193cb435879362789de01e0",
+        "frontTraceId": "6a13b19d2193cb435879362789de01e0"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "86c7b106-8c6d-4a9e-bb14-8ee21713a542",
+        "status": 200,
+        "elapsedMs": 18,
+        "workerTraceId": "8f5c6ff79713930575f48edb0e77c9d9",
+        "frontTraceId": "8f5c6ff79713930575f48edb0e77c9d9"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "86c7b106-8c6d-4a9e-bb14-8ee21713a542",
+        "status": 200,
+        "elapsedMs": 160,
+        "workerTraceId": "908cfe472a4c71df1e33e74992d2854d",
+        "frontTraceId": "908cfe472a4c71df1e33e74992d2854d"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "86c7b106-8c6d-4a9e-bb14-8ee21713a542",
+        "status": 503,
+        "elapsedMs": 25,
+        "workerTraceId": "2afe172ace74932c36ff81a45d2af54b",
+        "frontTraceId": "2afe172ace74932c36ff81a45d2af54b"
+      }
+    ]
+  },
+  "productionNegativeChecks": {
+    "missingToken": 401,
+    "wrongToken": 401,
+    "directProtobuf": 415
+  },
+  "storedTraceUiVerified": [
+    "node",
+    "python",
+    "java",
+    "go",
+    "nextjs"
+  ],
+  "remaining": [
+    "published SDK package acceptance",
+    "final release scan and deployments"
+  ],
+  "temporaryJobsAndConfigMapsRemoved": true,
+  "regressionsFoundAndFixed": [
+    "Go required explicit W3C trace-context propagation",
+    "Next.js required an explicit trusted-origin propagation allowlist"
+  ]
+}

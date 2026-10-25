@@ -53,7 +53,7 @@ test('auto instrumentation uses the same JSON exporter and registers graceful sh
   class NodeSDK {
     constructor(config) { this.config = config; sdk = this; }
     start() { this.started = true; }
-    async shutdown() { this.stopped = true; }
+    async shutdown() { this.stopped = true; this.shutdownCalls = (this.shutdownCalls || 0) + 1; }
   }
   const context = {
     process: { env: { OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: 'https://kubiq.example.test/api/apm/v1/traces', OTEL_SERVICE_NAME: 'fixture' }, on: (signal, callback) => signals.set(signal, callback), exit: () => {} },
@@ -70,6 +70,8 @@ test('auto instrumentation uses the same JSON exporter and registers graceful sh
   assert.equal(sdk.config.traceExporter.config.url, 'https://kubiq.example.test/api/apm/v1/traces');
   assert.equal(sdk.config.traceExporter.config.headers.Authorization, 'fixture');
   signals.get('SIGTERM')();
+  signals.get('SIGINT')();
   await Promise.resolve();
   assert.equal(sdk.stopped, true);
+  assert.equal(sdk.shutdownCalls, 1);
 });

@@ -11,9 +11,9 @@ const fence = block => `### ${block.title}\n\n${block.filename ? 'File: `' + blo
 const runtimeHeading = { node: '1. Node.js (Express, NestJS, Fastify)', python: '2. Python (Django, Flask, FastAPI)', java: '3. Java (Spring Boot)', nextjs: '4. Next.js 13+ (App Router)', go: '5. Go (net/http)' };
 function runtimeMarkdown(runtime) {
   const collector = runtime.collector ? '\n### Required local Collector\n\n' + guide.collector.description + '\n\n' + guide.collector.blocks.map(fence).join('\n') : '';
-  return `## ${runtimeHeading[runtime.id]}\n\n${runtime.description}\n\n${runtime.blocks.map(fence).join('\n')}${collector}`;
+  return `## ${runtimeHeading[runtime.id]}\n\n${runtime.description}\n\n${collector}\n${runtime.blocks.map(fence).join('\n')}`;
 }
-const intro = `<!-- Generated from docs/apm/instrumentation.json; edit the source, then regenerate. SHA256: ${hash} -->\n\n# ${guide.title}\n\n${guide.description}\n\n## Environment Variables Configuration\n\n${guide.endpointNotes}\n\nCommands below use POSIX shell syntax. In PowerShell, set environment variables with $env:NAME = "value"; start the application in that same environment. Values are placeholders; never paste real secrets into documentation.\n\nCollector examples are pinned to ${guide.collectorVersion}. Node/Python package versions are ${guide.nodeVersion}/${guide.pythonVersion}.\n\n`;
+const intro = `<!-- Generated from docs/apm/instrumentation.json; edit the source, then regenerate. SHA256: ${hash} -->\n\n# ${guide.title}\n\n${guide.description}\n\n## Environment Variables Configuration\n\n${guide.endpointNotes}\n\n${guide.shellNotes}\n\nCollector examples are pinned to ${guide.collectorVersion}. Node/Python package versions are ${guide.nodeVersion}/${guide.pythonVersion}.\n\n`;
 const verification = '\n## Verify real delivery\n\n' + guide.verification + '\n';
 const agents = Object.fromEntries(['node', 'python'].map(id => [id, intro + guide.runtimes.filter(r => r.id === id || (id === 'node' && r.id === 'nextjs')).map(runtimeMarkdown).join('\n') + verification]));
 const outputs = {

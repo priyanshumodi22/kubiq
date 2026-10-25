@@ -24,6 +24,8 @@ jobs:
           node-version: '20'
       - run: npm ci --prefix backend
       - run: node scripts/generate-apm-guide.cjs --check
+      - run: npm ci --prefix kubiq-apm/node --ignore-scripts
+      - run: node --test ops/apm-guide-check/exporter-failure.test.cjs
       - run: npm ci --prefix frontend
       - run: python3 -m unittest discover -s kubiq-apm/python -p test_wrapper.py
       - run: node --test kubiq-apm/node/exporter.test.cjs

@@ -22,13 +22,18 @@ const sdk = new opentelemetry.NodeSDK({
     serviceName: serviceName,
 });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
+// Flush once for service termination and interactive Ctrl+C.
+let shutdownStarted = false;
+const shutdownTracing = () => {
+    if (shutdownStarted) return;
+    shutdownStarted = true;
     sdk.shutdown()
         .then(() => console.log('[kubiq-apm] Tracing terminated'))
         .catch((error) => console.log('[kubiq-apm] Error terminating tracing', error))
         .finally(() => process.exit(0));
-});
+};
+process.on('SIGTERM', shutdownTracing);
+process.on('SIGINT', shutdownTracing);
 
 try {
     sdk.start();

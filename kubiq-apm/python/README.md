@@ -1,4 +1,4 @@
-<!-- Generated from docs/apm/instrumentation.json; edit the source, then regenerate. SHA256: d10839b991ce613985d5c96decbe41662145d6c5cc45eae7b914c41aa21bf572 -->
+<!-- Generated from docs/apm/instrumentation.json; edit the source, then regenerate. SHA256: 766ee70469200b4d40c1fa07b5f5961975e91868630e0885b26a584e10d1c323 -->
 
 # kubiq APM Integration Guide
 
@@ -8,7 +8,7 @@ Connect Node.js, Python, Java, Go and Next.js applications with tested, authenti
 
 kubiq accepts OTLP HTTP JSON at /api/apm/v1/traces, not direct protobuf. Use the complete backend URL, including its optional prefix. Example production URL: https://priyanshumodi.in/kubiq-api/api/apm/v1/traces. Local development may use http://localhost:3001/api/apm/v1/traces. Use HTTPS for remote ingestion. Set a distinct OTEL_SERVICE_NAME per application. Never expose the ingestion token in browser/client code.
 
-Commands below use POSIX shell syntax. In PowerShell, set environment variables with $env:NAME = "value"; start the application in that same environment. Values are placeholders; never paste real secrets into documentation.
+Commands use POSIX shell syntax. In PowerShell, set environment variables with $env:NAME = "value", then start the application in that same environment. The ingestion token must come from your secret manager, never client-side code.
 
 Collector examples are pinned to 0.123.0. Node/Python package versions are 1.0.1/1.0.1.
 
@@ -16,33 +16,6 @@ Collector examples are pinned to 0.123.0. Node/Python package versions are 1.0.1
 
 Run the local Collector first. Bootstrap plugins in the application virtual environment, then start your application with the wrapper. The bundled exporter uses protobuf; changing its protocol string does not make it a JSON exporter.
 
-### Install and bootstrap the wrapper
-
-```bash
-python -m pip install kubiq-apm==1.0.1
-kubiq-apm install
-```
-
-### Configure the application environment
-
-```bash
-export OTEL_SERVICE_NAME="my-service"
-export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="http://127.0.0.1:4318/v1/traces"
-export OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"
-export OTEL_METRICS_EXPORTER="none"
-export OTEL_LOGS_EXPORTER="none"
-# Do not forward kubiq's ingestion token to this local receiver.
-```
-
-### Start your existing application
-
-```bash
-# Flask example; install Flask in this virtual environment first.
-kubiq-apm flask --app app run --host 0.0.0.0 --port 8000
-# Alternatives:
-# kubiq-apm uvicorn main:app --host 0.0.0.0 --port 8000
-# kubiq-apm python manage.py runserver
-```
 
 ### Required local Collector
 
@@ -86,6 +59,34 @@ export KUBIQ_TRACES_ENDPOINT="https://<kubiq-host><backend-context>/api/apm/v1/t
 # Download and verify the official otelcol-contrib v0.123.0 binary for your OS.
 otelcol-contrib validate --config=collector.yaml
 otelcol-contrib --config=collector.yaml
+```
+
+### Install and bootstrap the wrapper
+
+```bash
+python -m pip install kubiq-apm==1.0.1
+kubiq-apm install
+```
+
+### Configure the application environment
+
+```bash
+export OTEL_SERVICE_NAME="my-service"
+export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="http://127.0.0.1:4318/v1/traces"
+export OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"
+export OTEL_METRICS_EXPORTER="none"
+export OTEL_LOGS_EXPORTER="none"
+# Do not forward kubiq's ingestion token to this local receiver.
+```
+
+### Start your existing application
+
+```bash
+# Flask example; install Flask in this virtual environment first.
+kubiq-apm flask --app app run --host 0.0.0.0 --port 8000
+# Alternatives:
+# kubiq-apm uvicorn main:app --host 0.0.0.0 --port 8000
+# kubiq-apm python manage.py runserver
 ```
 
 ## Verify real delivery

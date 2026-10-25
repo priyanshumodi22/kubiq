@@ -49,6 +49,11 @@ export function ApmInstrumentationModal({ isOpen, onClose }: Readonly<ApmInstrum
     return createPortal(
         <dialog ref={dialogRef} aria-modal="true" aria-labelledby="apm-guide-title"
             onCancel={event => { event.preventDefault(); onClose(); }}
+            onClick={event => {
+                if (event.target !== event.currentTarget) return;
+                const bounds = event.currentTarget.getBoundingClientRect();
+                if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose();
+            }}
             className="fixed inset-0 m-auto flex max-h-[85vh] w-[calc(100%_-_2rem)] max-w-3xl flex-col overflow-hidden rounded-2xl border border-gray-800 bg-[#111111] p-0 text-inherit shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-md">
             <header className="flex items-center justify-between gap-3 border-b border-gray-800 bg-[#161616] p-5">
                 <div className="flex items-center gap-3"><Code2 className="size-6 shrink-0 text-primary" /><div>
@@ -65,6 +70,7 @@ export function ApmInstrumentationModal({ isOpen, onClose }: Readonly<ApmInstrum
             <div className="custom-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto p-5 text-sm">
                 <p className="text-gray-300">{current.description}</p>
                 <p className="text-xs leading-relaxed text-gray-400">{APM_GUIDE.endpointNotes}</p>
+                <p className="text-xs leading-relaxed text-gray-400">{APM_GUIDE.shellNotes}</p>
                 {current.collector && <p className="text-xs leading-relaxed text-gray-400">{APM_GUIDE.collector.description}</p>}
                 {instrumentationBlocks(current).map(block => <GuideBlock key={block.id} block={block} copied={copied === block.id} copy={() => { void copy(block.id, block.code); }} />)}
                 <section className="space-y-2 text-gray-300"><h4 className="font-semibold">Verify real delivery</h4><p className="text-xs leading-relaxed">{APM_GUIDE.verification}</p></section>

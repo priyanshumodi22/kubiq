@@ -38,9 +38,11 @@ class WrapperCompatibilityTests(unittest.TestCase):
             self.run_wrapper({"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": "https://kubiq.example.test/api/apm/v1/traces"})
         self.assertEqual(result.exception.code, 1)
 
-    def test_protocol_string_cannot_enable_an_uninstalled_json_exporter(self):
-        with self.assertRaises(SystemExit):
-            self.run_wrapper({"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": "https://kubiq.example.test/api/apm/v1/traces", "OTEL_EXPORTER_OTLP_PROTOCOL": "http/json"})
+    def test_explicit_custom_json_exporter_configuration_is_preserved(self):
+        supplied = {"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": "https://kubiq.example.test/api/apm/v1/traces", "OTEL_EXPORTER_OTLP_PROTOCOL": "http/json", "OTEL_TRACES_EXPORTER": "custom_json"}
+        environment = self.run_wrapper(supplied)
+        for key, value in supplied.items():
+            self.assertEqual(environment[key], value)
 
 
 if __name__ == "__main__":

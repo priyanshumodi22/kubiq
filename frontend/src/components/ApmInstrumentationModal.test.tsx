@@ -71,6 +71,10 @@ describe('shared APM instrumentation guide', () => {
         fireEvent.click(view.getByRole('button', { name: 'Close instrumentation guide' }));
         fireEvent.click(view.getByRole('button', { name: 'Close' }));
         expect(close).toHaveBeenCalledTimes(3);
+        fireEvent.click(view.getByRole('heading', { name: 'Instrument New Service' }));
+        expect(close).toHaveBeenCalledTimes(3);
+        fireEvent.click(dialog, { clientX: -10, clientY: -10 });
+        expect(close).toHaveBeenCalledTimes(4);
         view.rerender(<ApmInstrumentationModal isOpen={false} onClose={close} />);
         expect(view.queryByRole('dialog')).toBeNull();
         expect(document.activeElement).toBe(trigger);
@@ -90,5 +94,9 @@ describe('shared APM instrumentation guide', () => {
         const next = APM_GUIDE.runtimes.find(item => item.id === 'nextjs')!;
         expect(instrumentationMarkdown(next)).toContain('KubiqExporter');
         expect(instrumentationMarkdown(next)).toContain("process.env.NEXT_RUNTIME !== 'nodejs'");
+        expect(instrumentationMarkdown(next)).toContain('propagateContextUrls: trustedOrigins');
+        expect(instrumentationMarkdown(next)).toContain("new URL(value).origin + '/'");
+        const go = APM_GUIDE.runtimes.find(item => item.id === 'go')!;
+        expect(instrumentationMarkdown(go)).toContain('otel.SetTextMapPropagator');
     });
 });

@@ -122,6 +122,40 @@
       ]
     },
     {
+      "id": "nextjs",
+      "label": "Next.js",
+      "anchor": "4-nextjs-13-app-router",
+      "description": "For Next.js 15/16 App Router on the Node runtime, use instrumentation.ts at the project root (or src/). Do not preload kubiq-apm/auto as well: that would initialize tracing twice. Edge/browser instrumentation is not included. Next.js 13/14 requires its legacy experimental.instrumentationHook setting; current versions do not. Set KUBIQ_TRACE_PROPAGATION_ORIGINS to the trusted downstream service origins that should receive trace context; external destinations are not enabled by default.",
+      "collector": false,
+      "blocks": [
+        {
+          "id": "install",
+          "title": "Install compatible tracing packages",
+          "language": "bash",
+          "code": "npm install kubiq-apm@1.0.1 @vercel/otel@1.13.0"
+        },
+        {
+          "id": "environment",
+          "title": "Configure server-only environment",
+          "language": "bash",
+          "code": "# Supply the token using your secret manager; never commit it.\nexport KUBIQ_TRACES_ENDPOINT=\"https://<kubiq-host><backend-context>/api/apm/v1/traces\"\nexport OTEL_SERVICE_NAME=\"my-service\"\nexport OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=\"$KUBIQ_TRACES_ENDPOINT\"\nexport OTEL_EXPORTER_OTLP_TRACES_HEADERS=\"Authorization=Bearer ${KUBIQ_INGESTION_TOKEN:?Set the ingestion token securely}\"\n# Comma-separated origins of your own trusted downstream services only.\nexport KUBIQ_TRACE_PROPAGATION_ORIGINS=\"https://your-internal-api.example.test\""
+        },
+        {
+          "id": "source",
+          "title": "Register tracing before requests",
+          "language": "typescript",
+          "code": "export async function register() {\n  if (process.env.NEXT_RUNTIME !== 'nodejs') return;\n  const { registerOTel } = await import('@vercel/otel');\n  const { KubiqExporter } = await import('kubiq-apm/exporter');\n  const trustedOrigins = (process.env.KUBIQ_TRACE_PROPAGATION_ORIGINS || '')\n    .split(',').map(value => value.trim()).filter(Boolean)\n    .map(value => new URL(value).origin + '/');\n  registerOTel({\n    serviceName: process.env.OTEL_SERVICE_NAME || 'my-nextjs-service',\n    traceExporter: new KubiqExporter(),\n    instrumentationConfig: { fetch: { propagateContextUrls: trustedOrigins } },\n  });\n}",
+          "filename": "instrumentation.ts"
+        },
+        {
+          "id": "start",
+          "title": "Build and start the Node server",
+          "language": "bash",
+          "code": "npm run build\nnpm run start"
+        }
+      ]
+    },
+    {
       "id": "go",
       "label": "Go",
       "anchor": "5-go-nethttp",
@@ -144,7 +178,7 @@
           "id": "source",
           "title": "Initialize tracing and instrument HTTP",
           "language": "go",
-          "code": "package main\n\nimport (\n  \"context\"\n  \"net/http\"\n  \"go.opentelemetry.io/otel\"\n  \"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp\"\n  \"go.opentelemetry.io/otel/sdk/resource\"\n  sdktrace \"go.opentelemetry.io/otel/sdk/trace\"\n  \"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp\"\n)\n\nfunc initTracer(ctx context.Context) (*sdktrace.TracerProvider, error) {\n  exporter, err := otlptracehttp.New(ctx)\n  if err != nil { return nil, err }\n  res, err := resource.New(ctx, resource.WithFromEnv(), resource.WithTelemetrySDK())\n  if err != nil { return nil, err }\n  provider := sdktrace.NewTracerProvider(sdktrace.WithBatcher(exporter), sdktrace.WithResource(res))\n  otel.SetTracerProvider(provider)\n  return provider, nil\n}\n\n// Wrap your server handler and use this client for outgoing HTTP calls.\nfunc tracedHandler(handler http.Handler) http.Handler {\n  return otelhttp.NewHandler(handler, \"http.server\")\n}\nfunc tracedClient() *http.Client {\n  return &http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}\n}\n// Call initTracer before serving, propagate request.Context() to outgoing calls,\n// and await provider.Shutdown(ctx) with a timeout during graceful shutdown.",
+          "code": "package main\n\nimport (\n  \"context\"\n  \"net/http\"\n  \"go.opentelemetry.io/otel\"\n  \"go.opentelemetry.io/otel/propagation\"\n  \"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp\"\n  \"go.opentelemetry.io/otel/sdk/resource\"\n  sdktrace \"go.opentelemetry.io/otel/sdk/trace\"\n  \"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp\"\n)\n\nfunc initTracer(ctx context.Context) (*sdktrace.TracerProvider, error) {\n  exporter, err := otlptracehttp.New(ctx)\n  if err != nil { return nil, err }\n  res, err := resource.New(ctx, resource.WithFromEnv(), resource.WithTelemetrySDK())\n  if err != nil { return nil, err }\n  provider := sdktrace.NewTracerProvider(sdktrace.WithBatcher(exporter), sdktrace.WithResource(res))\n  otel.SetTracerProvider(provider)\n  otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))\n  return provider, nil\n}\n\n// Wrap your server handler and use this client for outgoing HTTP calls.\nfunc tracedHandler(handler http.Handler) http.Handler {\n  return otelhttp.NewHandler(handler, \"http.server\")\n}\nfunc tracedClient() *http.Client {\n  return &http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}\n}\n// Call initTracer before serving, propagate request.Context() to outgoing calls,\n// and await provider.Shutdown(ctx) with a timeout during graceful shutdown.",
           "filename": "tracing.go"
         },
         {
@@ -154,40 +188,7 @@
           "code": "go run ."
         }
       ]
-    },
-    {
-      "id": "nextjs",
-      "label": "Next.js",
-      "anchor": "4-nextjs-13-app-router",
-      "description": "For Next.js 15/16 App Router on the Node runtime, use instrumentation.ts at the project root (or src/). Do not preload kubiq-apm/auto as well: that would initialize tracing twice. Edge/browser instrumentation is not included. Next.js 13/14 requires its legacy experimental.instrumentationHook setting; current versions do not.",
-      "collector": false,
-      "blocks": [
-        {
-          "id": "install",
-          "title": "Install compatible tracing packages",
-          "language": "bash",
-          "code": "npm install kubiq-apm@1.0.1 @vercel/otel@1.13.0"
-        },
-        {
-          "id": "environment",
-          "title": "Configure server-only environment",
-          "language": "bash",
-          "code": "# Supply the token using your secret manager; never commit it.\nexport KUBIQ_TRACES_ENDPOINT=\"https://<kubiq-host><backend-context>/api/apm/v1/traces\"\nexport OTEL_SERVICE_NAME=\"my-service\"\nexport OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=\"$KUBIQ_TRACES_ENDPOINT\"\nexport OTEL_EXPORTER_OTLP_TRACES_HEADERS=\"Authorization=Bearer ${KUBIQ_INGESTION_TOKEN:?Set the ingestion token securely}\""
-        },
-        {
-          "id": "source",
-          "title": "Register tracing before requests",
-          "language": "typescript",
-          "code": "export async function register() {\n  if (process.env.NEXT_RUNTIME !== 'nodejs') return;\n  const { registerOTel } = await import('@vercel/otel');\n  const { KubiqExporter } = await import('kubiq-apm/exporter');\n  registerOTel({\n    serviceName: process.env.OTEL_SERVICE_NAME || 'my-nextjs-service',\n    traceExporter: new KubiqExporter(),\n  });\n}",
-          "filename": "instrumentation.ts"
-        },
-        {
-          "id": "start",
-          "title": "Build and start the Node server",
-          "language": "bash",
-          "code": "npm run build\nnpm run start"
-        }
-      ]
     }
-  ]
+  ],
+  "shellNotes": "Commands use POSIX shell syntax. In PowerShell, set environment variables with $env:NAME = \"value\", then start the application in that same environment. The ingestion token must come from your secret manager, never client-side code."
 }

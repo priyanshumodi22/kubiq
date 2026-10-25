@@ -38,6 +38,7 @@ jobs:
         run: |
           node scripts/generate-apm-guide.cjs --check
           node --test kubiq-apm/node/exporter.test.cjs
+          node --test ops/apm-guide-check/exporter-failure.test.cjs
           python3 -m unittest discover -s kubiq-apm/python -p test_wrapper.py
 
       # If this was triggered manually via workflow_dispatch, bump the version

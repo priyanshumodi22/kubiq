@@ -1,4 +1,4 @@
-<!-- Generated from docs/apm/instrumentation.json; edit the source, then regenerate. SHA256: d10839b991ce613985d5c96decbe41662145d6c5cc45eae7b914c41aa21bf572 -->
+<!-- Generated from docs/apm/instrumentation.json; edit the source, then regenerate. SHA256: 766ee70469200b4d40c1fa07b5f5961975e91868630e0885b26a584e10d1c323 -->
 
 # kubiq APM Integration Guide
 
@@ -8,13 +8,14 @@ Connect Node.js, Python, Java, Go and Next.js applications with tested, authenti
 
 kubiq accepts OTLP HTTP JSON at /api/apm/v1/traces, not direct protobuf. Use the complete backend URL, including its optional prefix. Example production URL: https://priyanshumodi.in/kubiq-api/api/apm/v1/traces. Local development may use http://localhost:3001/api/apm/v1/traces. Use HTTPS for remote ingestion. Set a distinct OTEL_SERVICE_NAME per application. Never expose the ingestion token in browser/client code.
 
-Commands below use POSIX shell syntax. In PowerShell, set environment variables with $env:NAME = "value"; start the application in that same environment. Values are placeholders; never paste real secrets into documentation.
+Commands use POSIX shell syntax. In PowerShell, set environment variables with $env:NAME = "value", then start the application in that same environment. The ingestion token must come from your secret manager, never client-side code.
 
 Collector examples are pinned to 0.123.0. Node/Python package versions are 1.0.1/1.0.1.
 
 ## 1. Node.js (Express, NestJS, Fastify)
 
 Preload the kubiq wrapper before importing HTTP, Express, NestJS or Fastify. It instruments supported installed modules; it does not cover every database or framework automatically.
+
 
 ### Install the wrapper
 
@@ -67,7 +68,8 @@ process.on('SIGTERM', () => { sdk.shutdown().catch(console.error); });
 
 ## 4. Next.js 13+ (App Router)
 
-For Next.js 15/16 App Router on the Node runtime, use instrumentation.ts at the project root (or src/). Do not preload kubiq-apm/auto as well: that would initialize tracing twice. Edge/browser instrumentation is not included. Next.js 13/14 requires its legacy experimental.instrumentationHook setting; current versions do not.
+For Next.js 15/16 App Router on the Node runtime, use instrumentation.ts at the project root (or src/). Do not preload kubiq-apm/auto as well: that would initialize tracing twice. Edge/browser instrumentation is not included. Next.js 13/14 requires its legacy experimental.instrumentationHook setting; current versions do not. Set KUBIQ_TRACE_PROPAGATION_ORIGINS to the trusted downstream service origins that should receive trace context; external destinations are not enabled by default.
+
 
 ### Install compatible tracing packages
 
@@ -83,6 +85,8 @@ export KUBIQ_TRACES_ENDPOINT="https://<kubiq-host><backend-context>/api/apm/v1/t
 export OTEL_SERVICE_NAME="my-service"
 export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="$KUBIQ_TRACES_ENDPOINT"
 export OTEL_EXPORTER_OTLP_TRACES_HEADERS="Authorization=Bearer ${KUBIQ_INGESTION_TOKEN:?Set the ingestion token securely}"
+# Comma-separated origins of your own trusted downstream services only.
+export KUBIQ_TRACE_PROPAGATION_ORIGINS="https://your-internal-api.example.test"
 ```
 
 ### Register tracing before requests
@@ -94,9 +98,13 @@ export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
   const { registerOTel } = await import('@vercel/otel');
   const { KubiqExporter } = await import('kubiq-apm/exporter');
+  const trustedOrigins = (process.env.KUBIQ_TRACE_PROPAGATION_ORIGINS || '')
+    .split(',').map(value => value.trim()).filter(Boolean)
+    .map(value => new URL(value).origin + '/');
   registerOTel({
     serviceName: process.env.OTEL_SERVICE_NAME || 'my-nextjs-service',
     traceExporter: new KubiqExporter(),
+    instrumentationConfig: { fetch: { propagateContextUrls: trustedOrigins } },
   });
 }
 ```

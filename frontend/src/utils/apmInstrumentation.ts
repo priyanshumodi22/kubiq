@@ -11,6 +11,6 @@ export function instrumentationBlocks(runtime: InstrumentationRuntime): readonly
 export function instrumentationMarkdown(runtime: InstrumentationRuntime): string {
     const blocks = instrumentationBlocks(runtime).map(block =>
         ['### ' + block.title, block.filename || '', '```' + block.language, block.code, '```'].join('\n'));
-    return ['# ' + runtime.label, guide.endpointNotes, runtime.description,
+    return ['# ' + runtime.label, guide.endpointNotes, guide.shellNotes, runtime.description,
         runtime.collector ? guide.collector.description : '', ...blocks, '## Verify delivery', guide.verification].join('\n\n');
 }

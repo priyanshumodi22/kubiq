@@ -29,6 +29,7 @@ const directEnv = [
 const appEnv = [
  {name:'NODE_PATH',value:'/work/node/node_modules'}, {name:'OTEL_METRICS_EXPORTER',value:'none'}, {name:'OTEL_LOGS_EXPORTER',value:'none'},
  {name:'OTEL_BSP_SCHEDULE_DELAY',value:'2000'},...contextEnv,
+ {name:'KUBIQ_TRACE_PROPAGATION_ORIGINS',value:'http://127.0.0.1:18081'},
 ];
 const mounts = [{name:'source',mountPath:'/fixture',readOnly:true},{name:'work',mountPath:'/work'}];
 function container(name,image,command,memory='192Mi',cpu='150m',env=[]) {
@@ -41,25 +42,25 @@ function sidecar(spec,port) {
 }
 const init = [container('node-dependencies',nodeImage,'npm install --prefix /work/node --ignore-scripts --no-audit --no-fund --cache=/work/npm-cache '+nodePackage,'384Mi','300m')];
 let image = nodeImage;
-let start = 'node --require kubiq-apm/auto /fixture/node.cjs';
+let start = 'exec node --require kubiq-apm/auto /fixture/node.cjs';
 if (runtimeId === 'python') {
  init.push(container('python-dependencies',pythonImage,'python -m venv /work/venv && /work/venv/bin/pip install --no-cache-dir '+pythonPackage+' Flask==3.1.0 requests==2.32.3 && /work/venv/bin/kubiq-apm install','512Mi','400m', [{name:'PATH',value:'/work/venv/bin:/usr/local/bin:/usr/bin:/bin'}]));
- image=pythonImage;start='cd /fixture && /work/venv/bin/kubiq-apm flask --app app run --host 0.0.0.0 --port 18080';
+ image=pythonImage;start='cd /fixture && exec /work/venv/bin/kubiq-apm flask --app app run --host 0.0.0.0 --port 18080';
 }
 if (runtimeId === 'java') {
 init.push(container('java-build',javaImage,'mkdir -p /work/java/src/main/java/in/kubiq/validation && cp /fixture/pom.xml /work/java/ && cp /fixture/Canary.java /work/java/src/main/java/in/kubiq/validation/ && cd /work/java && mvn -q -Dmaven.repo.local=/work/m2 -DskipTests package && curl --fail --location --silent --show-error https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.14.0/opentelemetry-javaagent.jar -o /work/java/agent.jar && echo 16f8e28fa1ddcd56ed85bf633bd1d1fbc78ea7c4cc50e8c5726b2a319f5058c8 /work/java/agent.jar | sha256sum --check','768Mi','500m',[{name:'MAVEN_OPTS',value:'-Xmx384m -Duser.home=/work'}]));
- image=javaImage;start='$JAVA_HOME/bin/java -Xmx256m -javaagent:/work/java/agent.jar -Dotel.traces.exporter=otlp -Dserver.port=18080 -Djava.io.tmpdir=/work -jar /work/java/target/canary-1.0.0.jar';
+ image=javaImage;start='exec $JAVA_HOME/bin/java -Xmx256m -javaagent:/work/java/agent.jar -Dotel.traces.exporter=otlp -Dserver.port=18080 -Djava.io.tmpdir=/work -jar /work/java/target/canary-1.0.0.jar';
 }
 if (runtimeId === 'go') {
  const install=runtime.blocks.find(block=>block.id==='install').code;
  init.push(container('go-build','golang:1.23-bookworm','mkdir -p /work/go && cp /fixture/main.go /fixture/tracing.go /work/go/ && cd /work/go && go mod init kubiq.validation/canary && '+install+' && go mod tidy && go build -p 1 -o /work/go-canary .','512Mi','500m',[{name:'GOCACHE',value:'/work/go-cache'},{name:'GOPATH',value:'/work/go-path'},{name:'GOMAXPROCS',value:'1'}]));
- start='/work/go-canary';
+ start='exec /work/go-canary';
 }
 if (runtimeId === 'nextjs') {
  source['next-package.json']=JSON.stringify({private:true,scripts:{build:'next build',start:'next start --hostname 0.0.0.0 --port 18080'},dependencies:{'kubiq-apm':nodePackage,next:'16.1.6',react:'19.2.3','react-dom':'19.2.3','@vercel/otel':'1.13.0'},devDependencies:{typescript:'5.9.3','@types/node':'22.10.10','@types/react':'19.0.8'}});
  source['layout.js']='export default function Layout({children}) { return <html><body>{children}</body></html> }';
  init.push(container('next-build',nodeImage,"mkdir -p '/work/next/app/apm-validation/[route]' /work/next/app/ready && cp /fixture/next-package.json /work/next/package.json && cp /fixture/instrumentation.ts /work/next/ && cp /fixture/layout.js /work/next/app/ && cp /fixture/ready.js /work/next/app/ready/route.js && cp /fixture/route.js '/work/next/app/apm-validation/[route]/route.js' && cp /fixture/next.config.mjs /work/next/ && cd /work/next && npm install --ignore-scripts --no-audit --no-fund --cache=/work/npm-cache && npm run build",'768Mi','500m',[{name:'NEXT_TELEMETRY_DISABLED',value:'1'},{name:'HOME',value:'/work'},{name:'NODE_OPTIONS',value:'--max-old-space-size=512'}]));
- start='cd /work/next && npm run start';
+ start='cd /work/next && exec npm run start';
 }
 if (runtime.collector) {
  const collector = container('collector','otel/opentelemetry-collector-contrib:0.123.0','', '128Mi','100m',[
@@ -67,7 +68,7 @@ if (runtime.collector) {
  collector.command=['/otelcol-contrib','--config=/fixture/collector.yaml'];
  init.push({...collector,restartPolicy:'Always'});
 }
-const worker = container('worker',nodeImage,'node --require kubiq-apm/auto /fixture/worker.cjs','192Mi','150m',[...appEnv,...directEnv,{name:'OTEL_SERVICE_NAME',value:name+'-worker'}]);
+const worker = container('worker',nodeImage,'exec node --require kubiq-apm/auto /fixture/worker.cjs','192Mi','150m',[...appEnv,...directEnv,{name:'OTEL_SERVICE_NAME',value:name+'-worker'}]);
 init.push(sidecar(worker,18081));
 const receiverEnv=runtime.collector ? [{name:'OTEL_EXPORTER_OTLP_TRACES_ENDPOINT',value:'http://127.0.0.1:4318/v1/traces'},{name:'OTEL_EXPORTER_OTLP_PROTOCOL',value:'http/protobuf'}] : directEnv;
 init.push(sidecar(container('frontend',image,start,runtimeId==='java'?'512Mi':'256Mi','300m',[...appEnv,...receiverEnv,{name:'OTEL_SERVICE_NAME',value:name+'-frontend'},{name:'PATH',value:'/work/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'},{name:'HOME',value:'/work'},{name:'PYTHONDONTWRITEBYTECODE',value:'1'},{name:'NEXT_TELEMETRY_DISABLED',value:'1'}]),18080));
