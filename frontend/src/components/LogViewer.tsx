@@ -21,6 +21,7 @@ interface LogViewerProps {
     onClose: () => void;
     serviceName: string; // For context
     isEmbedded?: boolean; // New: If true, renders without modal overlay
+    initialSearchQuery?: string;
 }
 
 // Log line structure: timestamp usually implicit in content, but we wrap it
@@ -237,7 +238,7 @@ function renderLogRow(index: number, log: LogLine) {
     );
 }
 
-export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpen, onClose, serviceName, isEmbedded = false }) => {
+export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpen, onClose, serviceName, isEmbedded = false, initialSearchQuery = '' }) => {
     const { hasPermission } = useAuth();
     // Determine effective sources
     const effectiveSources = useMemo(() => resolveLogSources(logSources, logPath), [logSources, logPath]);
@@ -250,7 +251,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
     const [isPaused, setIsPaused] = useState(false);
     const [atBottom, setAtBottom] = useState(true);
     const [newLogsCount, setNewLogsCount] = useState(0);
-    const [activeTab, setActiveTab] = useState<'live' | 'search'>('live');
+    const [activeTab, setActiveTab] = useState<'live' | 'search'>(initialSearchQuery ? 'search' : 'live');
 
     // AI Summary State
     const [summary, setSummary] = useState<string | null>(null);
@@ -619,7 +620,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                 )}
 
                 {activeTab === 'search' ? (
-                    <LogSearch serviceName={serviceName} />
+                    <LogSearch serviceName={serviceName} initialQuery={initialSearchQuery} />
                 ) : (
                     <div className="flex-1 relative bg-[#0d0d0d] font-mono text-xs">
                         {/* Floating Actions inside Terminal */}

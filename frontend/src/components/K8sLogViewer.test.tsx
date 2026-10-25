@@ -12,7 +12,7 @@ vi.mock('socket.io-client', () => ({ default: () => {
 } }));
 vi.mock('react-virtuoso', () => ({ Virtuoso: ({ data, itemContent }: { data: Array<{ id: number }>; itemContent: (index: number, item: { id: number }) => React.ReactNode }) => <div>{data.map((item, index) => <div key={item.id}>{itemContent(index, item)}</div>)}</div> }));
 vi.mock('../services/api', () => ({ apiClient: { getToken: () => 'test-token', getRecentSummary: vi.fn().mockResolvedValue({ available: false }) } }));
-vi.mock('./LogSearch', () => ({ LogSearch: () => <div>Historical search</div> }));
+vi.mock('./LogSearch', () => ({ LogSearch: ({ initialQuery }: { initialQuery?: string }) => <div>Historical search{initialQuery ? `: ${initialQuery}` : ''}</div> }));
 vi.mock('./ProUpgradeModal', () => ({ ProUpgradeModal: () => null }));
 vi.mock('./AiStatusOrb', () => ({ AiStatusOrb: () => null }));
 beforeEach(() => { mocks.sockets.length = 0; });
@@ -21,6 +21,10 @@ const props = { namespace: 'apps', podName: 'api-123', containers: [{ name: 'api
 const send = (event: string, data?: unknown) => act(() => { mocks.sockets.at(-1)!.handlers.get(event)?.(data); });
 
 describe('Kubernetes log viewer compatibility', () => {
+    it('opens historical search with the trace correlation filter', async () => {
+        const view = render(<K8sLogViewer {...props} initialSearchQuery="trace-fixture" />);
+        expect(view.getByText('Historical search: trace-fixture')).toBeTruthy();
+    });
     it('subscribes with the selected target and filters classified log rows', async () => {
         const view = render(<K8sLogViewer {...props} />);
         await act(async () => {});

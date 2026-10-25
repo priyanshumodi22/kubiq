@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useServices } from '../hooks/useServices';
 import { useAuth } from '../contexts/AuthContext';
 import { LogViewer } from '../components/LogViewer';
@@ -10,10 +11,11 @@ import { Plus, Search, Server, AlertCircle, FileText, Trash2, Edit2 } from 'luci
 import { useToast } from '../contexts/ToastContext';
 import { ServiceStatus } from '../types';
 
-export function SelectedLogViewer({ serviceName, service }: Readonly<{ serviceName: string | null; service?: ServiceStatus }>) {
+export function SelectedLogViewer({ serviceName, service, initialSearchQuery = '' }: Readonly<{ serviceName: string | null; service?: ServiceStatus; initialSearchQuery?: string }>) {
     if (serviceName?.startsWith('k8s:')) return (
         <K8sLogViewer
-            key={serviceName}
+            key={`${serviceName}-${initialSearchQuery}`}
+            initialSearchQuery={initialSearchQuery}
             namespace={serviceName.split(':')[1] || 'default'}
             deploymentName={serviceName.split(':')[2] || serviceName.split(':')[1] || 'unknown'}
             containers={[{ name: 'main', image: '' }]}
@@ -21,7 +23,8 @@ export function SelectedLogViewer({ serviceName, service }: Readonly<{ serviceNa
     );
     if (service) return (
         <LogViewer
-            key={`${service.id}-${service.logSources?.length || 0}`}
+            key={`${service.id}-${service.logSources?.length || 0}-${initialSearchQuery}`}
+            initialSearchQuery={initialSearchQuery}
             logPath={service.logPath!}
             logSources={service.logSources}
             isOpen={true}
@@ -37,11 +40,15 @@ export function SelectedLogViewer({ serviceName, service }: Readonly<{ serviceNa
             </div>
             <h3 className="text-lg font-medium text-gray-300 mb-2">No Service Selected</h3>
             <p className="text-gray-500 text-sm max-w-xs text-center">Select a service from the sidebar to view its real-time logs.</p>
+            {initialSearchQuery && <p className="mt-3 max-w-sm break-all text-center text-xs text-text-dim">Trace {initialSearchQuery}: select a source to search its retained logs.</p>}
         </div>
     );
 }
 
 export default function LogsPage() {
+    const [params] = useSearchParams();
+    const requestedTrace = params.get('search') || '';
+    const traceSearch = /^[a-f\d]{16}(?:[a-f\d]{16})?$/i.test(requestedTrace) ? requestedTrace : '';
     const { services, refresh } = useServices();
     const { hasPermission } = useAuth();
     const isAdmin = hasPermission('services.manage') && hasPermission('logs.raw.read');
@@ -256,7 +263,7 @@ export default function LogsPage() {
 
             {/* Main Log Viewer Area */}
             <div className="flex-1 flex flex-col min-h-0 bg-bg-surface/30 border border-gray-800 rounded-xl overflow-hidden backdrop-blur-sm relative z-10">
-                <SelectedLogViewer serviceName={selectedServiceName} service={selectedService} />
+                <SelectedLogViewer serviceName={selectedServiceName} service={selectedService} initialSearchQuery={traceSearch} />
             </div>
 
             <ConfigureLogModal 

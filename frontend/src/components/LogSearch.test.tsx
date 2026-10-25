@@ -12,6 +12,14 @@ beforeEach(() => { vi.clearAllMocks(); mocks.query.mockResolvedValue([]); mocks.
 afterEach(cleanup);
 
 describe('log search filter controls', () => {
+  it('submits a correlated trace filter on the initial historical query', async () => {
+    const trace = '29a74ad1415a68c437baccbe5289e648';
+    const view = render(<LogSearch serviceName="api" initialQuery={trace} />);
+    expect((view.getByLabelText('Search Text') as HTMLInputElement).value).toBe(trace);
+    await waitFor(() => expect(mocks.query).toHaveBeenCalled());
+    expect(mocks.query.mock.calls[0][0].get('search')).toBe(trace);
+    expect(mocks.query.mock.calls[0][0].get('serviceName')).toBe('api');
+  });
   it('renders historical row timestamp, severity, source and message', async () => {
     mocks.query.mockResolvedValue([{ _id: 'record', message: 'Connection failed', timestamp: '2026-10-23T00:00:00Z', level: 'ERROR', sourceName: '/app/error.log' }]);
     const view = render(<LogSearch serviceName="api" />);

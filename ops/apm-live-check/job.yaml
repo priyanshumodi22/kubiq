@@ -1,0 +1,113 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kubiq-apm-live-check
+  namespace: kubiq-system
+  labels:
+    app.kubernetes.io/name: kubiq-apm-live-check
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 1800
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubiq-apm-live-check
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 20
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      volumes:
+        - name: source
+          configMap:
+            name: kubiq-apm-live-check
+        - name: work
+          emptyDir:
+            sizeLimit: 512Mi
+      initContainers:
+        - name: dependencies
+          image: priyanshumodi22/kubiq@sha256:f35115de803af49e878d7f0f8b1ac22979dbfe9c8e2e2d98b5974c204fb17685
+          command: [sh, -c]
+          args:
+            - cp /fixture/* /work/ && cd /work && npm ci --omit=dev --ignore-scripts --no-audit --no-fund --cache=/work/.npm-cache
+          volumeMounts:
+            - { name: source, mountPath: /fixture, readOnly: true }
+            - { name: work, mountPath: /work }
+          resources:
+            requests: { cpu: 25m, memory: 64Mi }
+            limits: { cpu: 250m, memory: 512Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+            readOnlyRootFilesystem: true
+        - name: worker
+          restartPolicy: Always
+          image: priyanshumodi22/kubiq@sha256:f35115de803af49e878d7f0f8b1ac22979dbfe9c8e2e2d98b5974c204fb17685
+          command: [node, --require, /work/auto.js, /work/service.cjs]
+          env:
+            - { name: CANARY_ROLE, value: worker }
+            - name: CANARY_RUN_ID
+              valueFrom:
+                fieldRef: { fieldPath: metadata.uid }
+            - { name: OTEL_SERVICE_NAME, value: kubiq-live-worker }
+            - { name: OTEL_METRICS_EXPORTER, value: none }
+            - { name: OTEL_LOGS_EXPORTER, value: none }
+            - { name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, value: 'http://kubiq.kubiq-system.svc.cluster.local/kubiq-api/api/apm/v1/traces' }
+            - name: KUBIQ_INGESTION_TOKEN
+              valueFrom:
+                secretKeyRef: { name: kubiq-runtime, key: KUBIQ_INGESTION_TOKEN }
+            - { name: OTEL_EXPORTER_OTLP_TRACES_HEADERS, value: 'Authorization=Bearer $(KUBIQ_INGESTION_TOKEN)' }
+          startupProbe:
+            tcpSocket: { port: 18081 }
+            periodSeconds: 2
+            failureThreshold: 30
+          volumeMounts:
+            - { name: work, mountPath: /work }
+          resources:
+            requests: { cpu: 10m, memory: 48Mi }
+            limits: { cpu: 100m, memory: 192Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+            readOnlyRootFilesystem: true
+      containers:
+        - name: frontend
+          image: priyanshumodi22/kubiq@sha256:f35115de803af49e878d7f0f8b1ac22979dbfe9c8e2e2d98b5974c204fb17685
+          command: [sh, -c]
+          args:
+            - |
+              node --require /work/auto.js /work/service.cjs &
+              server=$!
+              trap 'kill -TERM "$server" 2>/dev/null || true' EXIT
+              node /work/driver.cjs
+              result=$?
+              kill -TERM "$server" 2>/dev/null || true
+              wait "$server"
+              exit "$result"
+          env:
+            - { name: CANARY_ROLE, value: frontend }
+            - name: CANARY_RUN_ID
+              valueFrom:
+                fieldRef: { fieldPath: metadata.uid }
+            - { name: OTEL_SERVICE_NAME, value: kubiq-live-frontend }
+            - { name: OTEL_METRICS_EXPORTER, value: none }
+            - { name: OTEL_LOGS_EXPORTER, value: none }
+            - { name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, value: 'http://kubiq.kubiq-system.svc.cluster.local/kubiq-api/api/apm/v1/traces' }
+            - name: KUBIQ_INGESTION_TOKEN
+              valueFrom:
+                secretKeyRef: { name: kubiq-runtime, key: KUBIQ_INGESTION_TOKEN }
+            - { name: OTEL_EXPORTER_OTLP_TRACES_HEADERS, value: 'Authorization=Bearer $(KUBIQ_INGESTION_TOKEN)' }
+          volumeMounts:
+            - { name: work, mountPath: /work }
+          resources:
+            requests: { cpu: 10m, memory: 64Mi }
+            limits: { cpu: 150m, memory: 256Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+            readOnlyRootFilesystem: true

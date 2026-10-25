@@ -17,6 +17,7 @@ interface K8sLogViewerProps {
     podName?: string;
     deploymentName?: string;
     containers: Array<{ name: string; image: string }>;
+    initialSearchQuery?: string;
 }
 
 interface LogLine {
@@ -144,7 +145,7 @@ function K8sLogModals({ showSummaryModal, summary, summarizing, showUpgradeModal
     );
 }
 
-export function K8sLogViewer({ namespace, podName, deploymentName, containers }: Readonly<K8sLogViewerProps>) {
+export function K8sLogViewer({ namespace, podName, deploymentName, containers, initialSearchQuery = '' }: Readonly<K8sLogViewerProps>) {
     const [selectedContainer, setSelectedContainer] = useState(containers[0]?.name ?? '');
     const [tailLines, setTailLines] = useState(100);
     const [containerDropdownOpen, setContainerDropdownOpen] = useState(false);
@@ -157,7 +158,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
     const [newLogsCount, setNewLogsCount] = useState(0);
     const [streamEnded, setStreamEnded] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'live' | 'search'>('live');
+    const [activeTab, setActiveTab] = useState<'live' | 'search'>(initialSearchQuery ? 'search' : 'live');
 
     const socketRef = useRef<ReturnType<typeof io> | null>(null);
     const virtuosoRef = useRef<VirtuosoHandle | null>(null);
@@ -438,7 +439,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers }:
 
             {activeTab === 'search' ? (
                 <div className="flex-1 overflow-hidden relative">
-                    <LogSearch serviceName={k8sServiceName} />
+                    <LogSearch serviceName={k8sServiceName} initialQuery={initialSearchQuery} />
                 </div>
             ) : (
             <>

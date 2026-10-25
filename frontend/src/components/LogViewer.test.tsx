@@ -13,7 +13,7 @@ vi.mock('socket.io-client', () => ({ default: () => {
 vi.mock('react-virtuoso', () => ({ Virtuoso: ({ data, itemContent }: { data: Array<{ id: number }>; itemContent: (index: number, item: { id: number }) => React.ReactNode }) => <div>{data.map((item, index) => <div key={item.id}>{itemContent(index, item)}</div>)}</div> }));
 vi.mock('../services/api', () => ({ apiClient: { getToken: () => 'test-token', getRecentSummary: vi.fn().mockResolvedValue({ available: false }) } }));
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ hasPermission: () => true }) }));
-vi.mock('./LogSearch', () => ({ LogSearch: () => null }));
+vi.mock('./LogSearch', () => ({ LogSearch: ({ initialQuery }: { initialQuery?: string }) => <p>Historical filter: {initialQuery}</p> }));
 vi.mock('./ProUpgradeModal', () => ({ ProUpgradeModal: () => null }));
 vi.mock('./AiStatusOrb', () => ({ AiStatusOrb: () => null }));
 beforeEach(() => { mocks.sockets.length = 0; });
@@ -22,6 +22,10 @@ const props = { logPath: '/var/log/app.log', isOpen: true, onClose: vi.fn(), ser
 const send = (event: string, data?: unknown) => act(() => { mocks.sockets.at(-1)!.handlers.get(event)?.(data); });
 
 describe('raw log subscription compatibility', () => {
+    it('opens historical search with the trace correlation filter', async () => {
+        const view = render(<LogViewer {...props} initialSearchQuery="trace-fixture" />);
+        expect(view.getByText('Historical filter: trace-fixture')).toBeTruthy();
+    });
     it('switches configured sources without leaving the menu or old subscription active', async () => {
         const sources = [{ id: 'app', name: 'Application', path: '/logs/app.log' }, { id: 'worker', name: 'Worker', path: '/logs/worker.log' }];
         const view = render(<LogViewer {...props} logSources={sources} />);

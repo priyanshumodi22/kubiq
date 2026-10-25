@@ -11,6 +11,7 @@ import { LogSummaryBody } from './LogSummaryBody';
 
 interface LogSearchProps {
     serviceName: string;
+    initialQuery?: string;
 }
 
 interface LogEntry {
@@ -127,7 +128,7 @@ const CustomSelect = ({ id, value, onChange, options, disabled }: Readonly<Custo
     );
 };
 
-export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
+export const LogSearch: React.FC<LogSearchProps> = ({ serviceName, initialQuery = '' }) => {
     const fieldId = useId();
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [loading, setLoading] = useState(false);
@@ -137,7 +138,7 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName }) => {
     const [timeRange, setTimeRange] = useState<number>(24 * 60 * 60 * 1000); // 24h default
     const [level, setLevel] = useState<string>('ALL');
     const [source, setSource] = useState<string>('ALL');
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(initialQuery);
 
     // AI Summary
     const [summary, setSummary] = useState<string | null>(null);

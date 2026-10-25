@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ISpan } from '../hooks/useTrace';
 import { Clock, Server, FileText } from 'lucide-react';
 import { SpanDetailsSidebar } from './SpanDetailsSidebar';
@@ -158,8 +159,8 @@ export default function TraceWaterfall({ spans }: Readonly<TraceWaterfallProps>)
                 </h3>
                 <div className="flex items-center gap-4">
                     {traceId && (
-                        <a
-                            href={`/logs?search=${traceId}`}
+                        <Link
+                            to={`/logs?search=${encodeURIComponent(traceId)}`}
                             target="_blank"
                             rel="noreferrer"
                             className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-semibold transition-all"
@@ -167,7 +168,7 @@ export default function TraceWaterfall({ spans }: Readonly<TraceWaterfallProps>)
                         >
                             <FileText className="w-3.5 h-3.5" />
                             <span>View Spanned Logs</span>
-                        </a>
+                        </Link>
                     )}
                     <div className="text-sm font-mono text-gray-400">
                         Total Duration: <span className="text-white font-bold">{totalDurationMs.toFixed(2)}ms</span>

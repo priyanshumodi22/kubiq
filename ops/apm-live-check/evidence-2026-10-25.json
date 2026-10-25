@@ -1,0 +1,133 @@
+{
+  "verifiedOn": "2026-10-25",
+  "scope": "Temporary internal k3s HTTP canary; existing business applications were not instrumented or restarted.",
+  "receiver": {
+    "image": "priyanshumodi22/kubiq:main-138",
+    "digest": "sha256:f35115de803af49e878d7f0f8b1ac22979dbfe9c8e2e2d98b5974c204fb17685",
+    "namespace": "kubiq-system"
+  },
+  "job": {
+    "name": "kubiq-apm-live-check",
+    "completion": "Complete 1/1",
+    "durationSeconds": 55,
+    "runId": "8eac2a26-5e86-4b31-b26a-9fd0b8e7aae8",
+    "jobAndConfigMapRemoved": true,
+    "serviceAccountTokenMounted": false,
+    "publicIngressCreated": false
+  },
+  "instrumentation": {
+    "sdk": "Unmodified kubiq-apm Node wrapper from this repository, loaded before node:http",
+    "dependencies": "Existing package-lock.json installed with npm ci --ignore-scripts",
+    "services": [
+      "kubiq-live-frontend",
+      "kubiq-live-worker"
+    ],
+    "secretReference": "kubiq-runtime/KUBIQ_INGESTION_TOKEN; value never exported",
+    "hashes": [
+      {
+        "sha256": "dbbf544b0338f29d347340467548334e7ab7f60b1674ccda88daa3b2ac4ed142",
+        "file": "auto.js"
+      },
+      {
+        "sha256": "322974c4be17b2d1f82d9ab426eb5d9183527547802f04c2dda0f73a94a2858d",
+        "file": "exporter.js"
+      },
+      {
+        "sha256": "bd4ae0e4347a363e3379eef97389225d7d2d8b7e8d7545ea73444054fc55c90d",
+        "file": "package-lock.json"
+      },
+      {
+        "sha256": "9c405de30254078d578c7272ecdadf064e0f10cbab19edc5110514a7578ea139",
+        "file": "service.cjs"
+      },
+      {
+        "sha256": "80c14e5bfee88edfee29b1a2442ab762dae954470c9f31f2ce2b0a96b4c3e7ce",
+        "file": "driver.cjs"
+      },
+      {
+        "sha256": "7e650cb3d9177e13e762e5598aca32956e71dd8d8dc4d4f0d9e8facc2a4cfb4e",
+        "file": "job.yaml"
+      }
+    ]
+  },
+  "requests": [
+    {
+      "event": "verified-http-request",
+      "runId": "8eac2a26-5e86-4b31-b26a-9fd0b8e7aae8",
+      "status": 200,
+      "elapsedMs": 112,
+      "frontTraceId": "898b525d2df5d69e6087fb8977611274",
+      "workerTraceId": "898b525d2df5d69e6087fb8977611274",
+      "route": "/apm-validation/ok"
+    },
+    {
+      "event": "verified-http-request",
+      "runId": "8eac2a26-5e86-4b31-b26a-9fd0b8e7aae8",
+      "status": 200,
+      "elapsedMs": 126,
+      "frontTraceId": "5768cb73bf1b425c4f3fd54e9e4a7adc",
+      "workerTraceId": "5768cb73bf1b425c4f3fd54e9e4a7adc",
+      "route": "/apm-validation/slow"
+    },
+    {
+      "event": "verified-http-request",
+      "runId": "8eac2a26-5e86-4b31-b26a-9fd0b8e7aae8",
+      "status": 503,
+      "elapsedMs": 21,
+      "frontTraceId": "4cc6d886ca7a3b72143fd925085c9bac",
+      "workerTraceId": "4cc6d886ca7a3b72143fd925085c9bac",
+      "route": "/apm-validation/error"
+    },
+    {
+      "event": "verified-http-request",
+      "runId": "8eac2a26-5e86-4b31-b26a-9fd0b8e7aae8",
+      "status": 200,
+      "elapsedMs": 19,
+      "frontTraceId": "24b95d249c522a66b0c0d2106d3c5c83",
+      "workerTraceId": "24b95d249c522a66b0c0d2106d3c5c83",
+      "route": "/apm-validation/ok"
+    },
+    {
+      "event": "verified-http-request",
+      "runId": "8eac2a26-5e86-4b31-b26a-9fd0b8e7aae8",
+      "status": 200,
+      "elapsedMs": 125,
+      "frontTraceId": "657ec828dcf627905e3c85cffbd716f2",
+      "workerTraceId": "657ec828dcf627905e3c85cffbd716f2",
+      "route": "/apm-validation/slow"
+    },
+    {
+      "event": "verified-http-request",
+      "runId": "8eac2a26-5e86-4b31-b26a-9fd0b8e7aae8",
+      "status": 503,
+      "elapsedMs": 18,
+      "frontTraceId": "29a74ad1415a68c437baccbe5289e648",
+      "workerTraceId": "29a74ad1415a68c437baccbe5289e648",
+      "route": "/apm-validation/error"
+    }
+  ],
+  "browserVerification": {
+    "authenticatedChrome": true,
+    "persistedMetricsAfterJobRemovalAndFullReload": true,
+    "workerP95Milliseconds": 121,
+    "frontendP95Milliseconds": 124,
+    "workerErrorPercent": 33.33,
+    "dependency": {
+      "source": "kubiq-live-frontend",
+      "target": "kubiq-live-worker",
+      "requests": 6,
+      "errorPercent": 33
+    },
+    "errorTrace": {
+      "traceId": "29a74ad1415a68c437baccbe5289e648",
+      "spanCount": 3,
+      "workerStatus": "Error",
+      "httpStatusCode": 503,
+      "workerSpanId": "4ecafcd735afa491",
+      "workerParentSpanId": "976599e4795a8979",
+      "runAttributeMatches": true
+    }
+  },
+  "existingDeploymentHealthyAfterCleanup": true,
+  "retention": "Canary traces remain subject to the existing APM retention policy; no telemetry records were deleted."
+}
