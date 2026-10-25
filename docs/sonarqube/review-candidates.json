@@ -3,6 +3,32 @@
   "note": "Individual reviews only. Each listed issue was reviewed as False Positive in the authenticated Sonar UI, with a matching RESOLVED status verified in the archived exact-commit analysis. No rule is disabled.",
   "issues": [
     {
+      "id": "33332a45-797e-4bbb-8c38-4bdcdae02dfa",
+      "rule": "typescript:S1082",
+      "file": "frontend/src/components/ApmInstrumentationModal.tsx",
+      "proposedDisposition": "false_positive_reviewed",
+      "rationale": "Backdrop-only light dismissal on a native modal dialog already has equivalent native Escape/cancel handling and two native close buttons. Child clicks are ignored; no content is converted into a mouse-only control. Adding a duplicate keyboard handler or button role to the dialog would be inappropriate.",
+      "evidence": ["https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog", "ApmInstrumentationModal.test.tsx covers cancel, close buttons, backdrop bounds and focus restoration", "Chrome 2026-10-26: showModal, initial close-button focus, Escape dismissal and trigger-focus restoration verified"],
+      "verifiedSourceRevision": "456615f6ccf657f9930bf9ad205d554cb1dc7a0f",
+      "reviewedStatus": "False Positive",
+      "verifiedSonarStatus": "RESOLVED",
+      "verificationScan": "30d83db0-6a36-4c43-82d2-9170ee5d30a2",
+      "verificationCommit": "456615f6ccf657f9930bf9ad205d554cb1dc7a0f"
+    },
+    {
+      "id": "3b5e4e24-e42f-4e3c-a3f1-891032694dac",
+      "rule": "typescript:S6847",
+      "file": "frontend/src/components/ApmInstrumentationModal.tsx",
+      "proposedDisposition": "false_positive_reviewed",
+      "rationale": "The native dialog click handler implements only backdrop light dismissal using target and bounds checks. It does not assign control behavior to non-interactive content. Native modal semantics, Escape/cancel and explicit native close buttons remain available; adding an artificial interactive role would damage dialog semantics.",
+      "evidence": ["https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog", "ApmInstrumentationModal.test.tsx verifies backdrop-only dismissal and ignores content clicks", "Chrome 2026-10-26: native modal state, Escape dismissal and focus restoration verified"],
+      "verifiedSourceRevision": "456615f6ccf657f9930bf9ad205d554cb1dc7a0f",
+      "reviewedStatus": "False Positive",
+      "verifiedSonarStatus": "RESOLVED",
+      "verificationScan": "30d83db0-6a36-4c43-82d2-9170ee5d30a2",
+      "verificationCommit": "456615f6ccf657f9930bf9ad205d554cb1dc7a0f"
+    },
+    {
       "id": "254f95af-53c3-4cf2-a0f8-b3c7d6f83b87",
       "rule": "typescript:S6843",
       "file": "frontend/src/components/KubiAvatar.tsx",

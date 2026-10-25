@@ -40,7 +40,7 @@ jobs:
       - run: npm ci --prefix backend
       - run: node scripts/generate-apm-guide.cjs --check
       - run: npm ci --prefix kubiq-apm/node --ignore-scripts
-      - run: node --test ops/apm-guide-check/exporter-failure.test.cjs
+      - run: node --test ops/apm-guide-check/exporter-failure.test.cjs ops/apm-guide-check/manifest.test.cjs
       - run: node --test .github/scripts/*.test.cjs
       - run: python3 -m unittest discover -s ops/sonarqube -p 'test_*.py'
       - run: node scripts/verify-sonar-ledger.cjs
