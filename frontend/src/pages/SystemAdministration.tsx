@@ -744,6 +744,8 @@ export default function SystemAdministration() {
 }
 
 function SystemOverview() {
+  const { hasPermission } = useAuth();
+  const canReadAudit = hasPermission('audit.read');
   const [items, setItems] = useState<Array<{ title: string; text: string }>>([]);
   useEffect(() => {
     Promise.allSettled([
@@ -751,13 +753,14 @@ function SystemOverview() {
       apiClient.getProStatus(),
       apiClient.getKubiStatus(),
       apiClient.getSystemStats(),
-      apiClient.getAuditLogs(),
+      canReadAudit ? apiClient.getAuditLogs() : Promise.resolve(null),
     ]).then((results) => {
       const auth = settledValue(results[0]);
       const pro = settledValue(results[1]);
       const kubi = settledValue(results[2]);
       const stats = settledValue(results[3]);
       const audit = settledValue(results[4]);
+      const auditRecords = Array.isArray(audit) ? audit : audit?.records;
       setItems([
         {
           title: 'Authentication',
@@ -781,13 +784,13 @@ function SystemOverview() {
         },
         {
           title: 'Recent administration',
-          text: Array.isArray(audit)
-            ? `${audit.length} retained audit records loaded.`
+          text: Array.isArray(auditRecords)
+            ? `${auditRecords.length} retained audit records loaded.`
             : 'Audit access unavailable.',
         },
       ]);
     });
-  }, []);
+  }, [canReadAudit]);
   return (
     <div>
       <h2 className="text-2xl font-bold">Administration overview</h2>

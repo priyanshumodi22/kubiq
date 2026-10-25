@@ -10,7 +10,7 @@ vi.mock('../components/KubiAiSettings', () => ({ KubiAiSettings: () => null }));
 vi.mock('../components/KubiAvatar', () => ({ KubiAvatar: () => null }));
 vi.mock('../services/api', () => ({ apiClient: {
   getAuthConfig: vi.fn(async () => ({ provider: 'native' })), getProStatus: vi.fn(async () => ({ active: false })),
-  getKubiStatus: vi.fn(async () => ({})), getSystemStats: vi.fn(async () => ({})), getAuditLogs: vi.fn(async () => []),
+  getKubiStatus: vi.fn(async () => ({})), getSystemStats: vi.fn(async () => ({})), getAuditLogs: vi.fn(async () => ({ records: [], total: 0 })),
   getRbacRoles: vi.fn(async () => [{ id: 'viewer', name: 'kubiq-viewer', description: 'Viewer', permissions: ['logs.read'], builtIn: true }]), getRbacPermissions: vi.fn(async () => [{ key: 'logs.read', label: 'Read logs' }, { key: 'logs.export', label: 'Export logs' }]),
   getUsers: vi.fn(async () => []), createUser: mocks.createUser, getKeycloakHealth: mocks.health,
   createRbacRole: mocks.createRole, getMonitoredDisksConfig: mocks.diskConfig,
@@ -26,6 +26,31 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 describe('system administration compatibility', () => {
+  it.each([
+    [{ records: [{ id: 'audit-fixture' }], total: 213 }, '1 retained audit records loaded.'],
+    [[{ id: 'legacy-audit-fixture' }], '1 retained audit records loaded.'],
+    [{ records: null }, 'Audit access unavailable.'],
+  ])('reads overview audit records from the supported response shape: %j', async (response, expected) => {
+    vi.mocked(apiClient.getAuditLogs).mockResolvedValueOnce(response);
+    const view = render(<SystemAdministration />);
+    expect(await view.findByText(expected)).toBeTruthy();
+  });
+
+  it('does not request audit history from an overview without audit.read', async () => {
+    mocks.can.mockImplementation(permission => permission === 'system.read');
+    const view = render(<SystemAdministration />);
+    expect(await view.findByText('Live system metrics are available.')).toBeTruthy();
+    expect(apiClient.getAuditLogs).not.toHaveBeenCalled();
+  });
+
+  it('distinguishes an unavailable audit request from an empty audit history', async () => {
+    vi.mocked(apiClient.getAuditLogs).mockRejectedValueOnce({ response: { status: 503 } });
+    const view = render(<SystemAdministration />);
+    expect(await view.findByText('Audit access unavailable.')).toBeTruthy();
+    expect(view.getByText('Live system metrics are available.')).toBeTruthy();
+    expect(view.queryByText('0 retained audit records loaded.')).toBeNull();
+  });
+
   it('loads configuration-only setup without requesting live metrics or audit history', async () => {
     mocks.can.mockImplementation(permission => permission === 'system.configure');
     const view = render(<SystemAdministration />);
