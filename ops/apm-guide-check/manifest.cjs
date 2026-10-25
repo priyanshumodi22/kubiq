@@ -47,7 +47,7 @@ if (runtimeId === 'python') {
 }
 if (runtimeId === 'java') {
 init.push(container('java-build',javaImage,'mkdir -p /work/java/src/main/java/in/kubiq/validation && cp /fixture/pom.xml /work/java/ && cp /fixture/Canary.java /work/java/src/main/java/in/kubiq/validation/ && cd /work/java && mvn -q -Dmaven.repo.local=/work/m2 -DskipTests package && curl --fail --location --silent --show-error https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.14.0/opentelemetry-javaagent.jar -o /work/java/agent.jar && echo 16f8e28fa1ddcd56ed85bf633bd1d1fbc78ea7c4cc50e8c5726b2a319f5058c8 /work/java/agent.jar | sha256sum --check','768Mi','500m',[{name:'MAVEN_OPTS',value:'-Xmx384m -Duser.home=/work'}]));
- image=javaImage;start='java -Xmx256m -javaagent:/work/java/agent.jar -Dotel.traces.exporter=otlp -Dserver.port=18080 -Djava.io.tmpdir=/work -jar /work/java/target/canary-1.0.0.jar';
+ image=javaImage;start='$JAVA_HOME/bin/java -Xmx256m -javaagent:/work/java/agent.jar -Dotel.traces.exporter=otlp -Dserver.port=18080 -Djava.io.tmpdir=/work -jar /work/java/target/canary-1.0.0.jar';
 }
 if (runtimeId === 'go') {
  const install=runtime.blocks.find(block=>block.id==='install').code;

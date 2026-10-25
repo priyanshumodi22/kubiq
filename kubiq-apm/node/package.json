@@ -3,6 +3,11 @@
     "version": "1.0.1",
     "description": "Unified OpenTelemetry APM wrapper for Kubiq",
     "main": "index.js",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/priyanshumodi22/kubiq.git",
+        "directory": "kubiq-apm/node"
+    },
     "files": [
         "index.js",
         "auto.js",
