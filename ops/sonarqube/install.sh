@@ -7,7 +7,7 @@ printf '[Unit]\nDescription=Authenticated read-only Sonar export receipt\nAfter=
 for job in idle export backup; do
   case "$job" in
     idle) interval=60s ;;
-    export) interval=5min ;;
+    export) interval=60s ;;
     backup) interval=6h ;;
   esac
   printf '[Unit]\nDescription=SonarQube %s\nAfter=docker.service\n[Service]\nType=oneshot\nExecStart=/usr/local/sbin/sonar-ops %s\nTimeoutStartSec=15min\n' "$job" "$job" > "/etc/systemd/system/sonar-$job.service"

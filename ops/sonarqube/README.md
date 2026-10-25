@@ -68,6 +68,8 @@ The receipt is published only after both Sheets and the JSON archive succeed.
 The preflight barrier prevents back-to-back workflow scans from skipping an
 intermediate report. Strict release proof includes the matching export receipt.
 An offline exporter, stale SHA/task, denied authentication or timeout fails closed.
+The export timer checks once per minute; unchanged analyses reuse their existing
+receipt without creating another spreadsheet tab or archive object.
 
 `sonar-report-status.service` runs as `nobody`, binds only `127.0.0.1:19001`,
 and serves only the task/analysis/revision completion metadata. It has no cloud
