@@ -2,7 +2,7 @@ const methods = new Set(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIO
 const safeAttributes = new Set(['db.system', 'db.operation.name', 'server.address', 'http.request.method', 'http.response.status_code', 'http.route', 'error.type']);
 function method(value) { return methods.has(value) ? value : 'OTHER'; }
 function pathOf(request) {
-    try { return new URL(request.url || '/', 'http://local').pathname; }
+    try { return new URL(request.url || '/', 'https://local').pathname; }
     catch { return '/'; }
 }
 function excluded(request, profile) {

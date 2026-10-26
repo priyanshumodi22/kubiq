@@ -14,7 +14,7 @@ class BoundedProcessor {
         this.batchSize = options.maxExportBatchSize ?? 50;
         this.transform = options.transform ?? (span => span);
         this.report = options.report ?? (counts => console.warn('[kubiq-apm]', JSON.stringify(counts)));
-        this.timer = setInterval(() => { void this.forceFlush(); }, options.scheduledDelayMillis ?? 2000);
+        this.timer = setInterval(() => { this.forceFlush().catch(() => this.notify()); }, options.scheduledDelayMillis ?? 2000);
         this.timer.unref();
     }
     onStart() { /* Context is supplied by the provider. */ }
