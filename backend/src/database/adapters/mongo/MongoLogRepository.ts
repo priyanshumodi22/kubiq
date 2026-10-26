@@ -1,11 +1,11 @@
 import { ILogRepository } from '../../interfaces/ILogRepository';
 import { LogModel } from '../../schemas/LogSchema';
+import { ensureRetentionIndex } from './ensureRetentionIndex';
+import { retentionSeconds } from '../../../utils/RetentionPolicy';
 
 export class MongoLogRepository implements ILogRepository {
     async initialize(): Promise<void> {
-        // Mongoose handles initialization and index creation automatically
-        // but we can ensure indexes are built here if needed.
-        await LogModel.syncIndexes();
+        await ensureRetentionIndex(LogModel, retentionSeconds('LOG'));
     }
 
     async insertLogs(logs: any[]): Promise<void> {

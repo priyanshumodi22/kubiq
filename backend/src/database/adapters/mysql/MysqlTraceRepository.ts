@@ -1,3 +1,5 @@
+import { retentionSeconds } from '../../../utils/RetentionPolicy';
+import { scheduleRetentionSweep } from '../../../utils/RetentionScheduler';
 import mysql, { Pool, RowDataPacket } from 'mysql2/promise';
 import { ITraceRepository, ISpan, IServiceMetrics } from '../../interfaces/ITraceRepository';
 
@@ -23,8 +25,10 @@ export class MysqlTraceRepository implements ITraceRepository {
     async initialize(): Promise<void> {
         if (this.isInitialized) return;
 
+        const seconds = retentionSeconds('APM');
         try {
             const connection = await this.pool.getConnection();
+            try {
 
             // Auto-create table if missing
             await connection.query(`
@@ -47,7 +51,13 @@ export class MysqlTraceRepository implements ITraceRepository {
         )
       `);
 
-            connection.release();
+            } finally { connection.release(); }
+            await scheduleRetentionSweep(async () => {
+                await this.pool.execute(
+                    'DELETE FROM apm_spans WHERE timestamp < ? ORDER BY timestamp LIMIT 1000',
+                    [new Date(Date.now() - seconds * 1000)]
+                );
+            });
             this.isInitialized = true;
             console.log('MySQL Trace Repository Initialized');
         } catch (error) {

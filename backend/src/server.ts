@@ -209,6 +209,7 @@ const serviceMonitor = ServiceMonitor.getInstance();
 const notificationManager = NotificationManager.getInstance();
 import { SystemMonitorService } from './services/SystemMonitorService'; // Lazy import to avoid circular dependency issues if any
 import { clickhouseService } from './services/ClickhouseService';
+import { stopRetentionSweeps } from './utils/RetentionScheduler';
 import { kubernetesMetricsScraper } from './services/KubernetesMetricsScraper';
 
 const startServer = async () => {
@@ -228,6 +229,19 @@ const startServer = async () => {
     await DatabaseFactory.getSystemRepository();
     await DatabaseFactory.getAuditLogRepository();
     await DatabaseFactory.getKubiConversationRepository();
+
+    // Verify retention for every enabled telemetry adapter before accepting ingestion.
+    const databaseType = (process.env.DB_TYPE || '').toLowerCase();
+    if (clickhouseService.isConfigured()) {
+      await clickhouseService.initialize();
+      await DatabaseFactory.getTraceRepository();
+      await DatabaseFactory.getLogRepository();
+    } else if (['mongo', 'mongodb'].includes(databaseType)) {
+      await DatabaseFactory.getTraceRepository();
+      await DatabaseFactory.getLogRepository();
+    } else if (['mysql', 'mariadb'].includes(databaseType)) {
+      await DatabaseFactory.getTraceRepository();
+    }
 
     // Start server
     // app.listen Replaced by httpServer.listen for Socket.IO support
@@ -287,12 +301,14 @@ startServer();
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM signal received: closing HTTP server');
+  stopRetentionSweeps();
   serviceMonitor.stop();
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
   console.log('SIGINT signal received: closing HTTP server');
+  stopRetentionSweeps();
   serviceMonitor.stop();
   process.exit(0);
 });

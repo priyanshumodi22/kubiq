@@ -1,0 +1,44 @@
+name: Database retention regression
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/src/database/**'
+      - 'backend/src/utils/Retention*'
+      - 'ops/retention-check/**'
+      - '.github/workflows/retention.yml'
+  pull_request:
+    paths:
+      - 'backend/src/database/**'
+      - 'backend/src/utils/Retention*'
+      - 'ops/retention-check/**'
+      - '.github/workflows/retention.yml'
+permissions:
+  contents: read
+jobs:
+  expiry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        adapter: [mongo, mysql, mariadb, clickhouse]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci --prefix backend
+      - run: npm run build --prefix backend
+      - name: Verify real database expiry and preservation
+        shell: bash
+        run: |
+          set -o pipefail
+          node ops/retention-check/run.cjs ${{ matrix.adapter }} | tee retention-${{ matrix.adapter }}.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: retention-${{ matrix.adapter }}-${{ github.sha }}
+          path: retention-${{ matrix.adapter }}.log
+          if-no-files-found: error

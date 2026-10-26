@@ -1,0 +1,3 @@
+# Retention regression fixtures
+
+Run `npm ci --prefix backend`, `npm run build --prefix backend`, then `node ops/retention-check/run.cjs mongo` (or mysql, mariadb, clickhouse) on a machine with Docker. The runner creates a disposable database with only loopback host ports, uses fixture-only credentials, and removes its container/volumes even on failure. Never point these fixtures at application databases. MySQL/MariaDB tests wait 65 seconds to prove recurring cleanup. ClickHouse forces a merge only in its disposable fixture to verify native TTL application without waiting hours. CI runs all four adapters and retains logs per commit.

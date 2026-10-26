@@ -1,3 +1,5 @@
+import { retentionSeconds } from '../../../utils/RetentionPolicy';
+import { ensureClickhouseRetention } from './ensureClickhouseRetention';
 import { ILogRepository } from '../../interfaces/ILogRepository';
 import { clickhouseService } from '../../../services/ClickhouseService';
 
@@ -9,12 +11,12 @@ export class ClickhouseLogRepository implements ILogRepository {
         
         const client = clickhouseService.getClient();
         if (!client) {
-            console.error('ClickhouseLogRepository: client is null');
-            return;
+            throw new Error('ClickHouse is not configured for retention setup');
         }
 
         const dbName = clickhouseService.getDatabase();
 
+        const seconds = retentionSeconds('LOG');
         try {
             await client.command({
                 query: `
@@ -28,10 +30,12 @@ export class ClickhouseLogRepository implements ILogRepository {
                     ORDER BY (serviceName, sourceName, timestamp)
                 `
             });
+            await ensureClickhouseRetention(client, dbName, 'app_logs', seconds);
             this.isInitialized = true;
             console.log('Clickhouse Log Repository Initialized');
         } catch (err) {
             console.error('Failed to initialize ClickhouseLogRepository:', err);
+            throw err;
         }
     }
 

@@ -1,19 +1,15 @@
-import mongoose from 'mongoose';
 import { ITraceRepository, ISpan, IServiceMetrics } from '../../interfaces/ITraceRepository';
 import { ApmSpanModel } from '../../schemas/ApmSpanSchema';
+import { ensureRetentionIndex } from './ensureRetentionIndex';
+import { retentionSeconds } from '../../../utils/RetentionPolicy';
 
 export class MongoTraceRepository implements ITraceRepository {
     private isInitialized = false;
 
     async initialize(): Promise<void> {
-        if (this.isInitialized || mongoose.connection.readyState === 1) {
-            return;
-        }
-
-        // Logic for connection is already handled generally in the app via user/system repos
-        // We just mark it initialized. Mongoose binds models globally.
+        if (this.isInitialized) return;
+        await ensureRetentionIndex(ApmSpanModel, retentionSeconds('APM'));
         this.isInitialized = true;
-        console.log('MongoDB Trace Repository Initialized');
     }
 
     async insertSpans(spans: ISpan[]): Promise<void> {
@@ -29,7 +25,7 @@ export class MongoTraceRepository implements ITraceRepository {
         // Use insertMany for high-throughput batch insertion.
         // ordered: false ensures that if one span fails (e.g. duplicate spanId), the rest still insert.
         try {
-            console.log(`[MongoTraceRepository] Attempting insert. Mongoose ReadyState: ${mongoose.connection.readyState}`);
+            console.log(`[MongoTraceRepository] Attempting insert. Mongoose ReadyState: ${ApmSpanModel.db.readyState}`);
             console.log(`[MongoTraceRepository] Sample doc to insert:`, JSON.stringify(docs[0]).substring(0, 500));
             // Bypass Mongoose validation/casting with native driver
             const result = await ApmSpanModel.collection.insertMany(docs, { ordered: false });

@@ -1,3 +1,5 @@
+import { retentionSeconds } from '../../../utils/RetentionPolicy';
+import { ensureClickhouseRetention } from './ensureClickhouseRetention';
 import { ITraceRepository, ISpan, IServiceMetrics, ITraceSummary, IServiceDependency } from '../../interfaces/ITraceRepository';
 import { clickhouseService } from '../../../services/ClickhouseService';
 
@@ -9,12 +11,12 @@ export class ClickhouseTraceRepository implements ITraceRepository {
         
         const client = clickhouseService.getClient();
         if (!client) {
-            console.error('ClickhouseTraceRepository: client is null');
-            return;
+            throw new Error('ClickHouse is not configured for retention setup');
         }
 
         const dbName = clickhouseService.getDatabase();
 
+        const seconds = retentionSeconds('APM');
         try {
             await client.command({
                 query: `
@@ -35,10 +37,12 @@ export class ClickhouseTraceRepository implements ITraceRepository {
                     ORDER BY (serviceName, timestamp, traceId)
                 `
             });
+            await ensureClickhouseRetention(client, dbName, 'apmspans', seconds);
             this.isInitialized = true;
             console.log('Clickhouse Trace Repository Initialized');
         } catch (err) {
             console.error('Failed to initialize ClickhouseTraceRepository:', err);
+            throw err;
         }
     }
 

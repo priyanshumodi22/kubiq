@@ -1,0 +1,20 @@
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const base = process.env.COMPILED_BACKEND || '/work';
+const { MysqlTraceRepository } = require(path.join(base,'database/adapters/mysql/MysqlTraceRepository'));
+const { stopRetentionSweeps } = require(path.join(base,'utils/RetentionScheduler'));
+const mysql = require('mysql2/promise');
+(async () => {
+ const client = await mysql.createConnection({host:process.env.DB_HOST,port:Number(process.env.DB_PORT || 3306),user:process.env.DB_USER,password:process.env.DB_PASSWORD,database:process.env.DB_NAME});
+ const first = new MysqlTraceRepository(); await first.initialize(); stopRetentionSweeps();
+ const span = (id, time) => ({spanId:id,traceId:'fixture',serviceName:'fixture',name:'GET /fixture',startTimeUnixNano:time*1000000,endTimeUnixNano:(time+5)*1000000,durationMs:5});
+ await first.insertSpans([span('old',Date.now()-3600000),span('recent',Date.now()+3600000)]);
+ const second = new MysqlTraceRepository(); await second.initialize(); await second.initialize();
+ let [rows] = await client.query('SELECT span_id FROM apm_spans ORDER BY span_id'); assert.deepEqual(rows.map(x=>x.span_id),['recent']);
+ await second.insertSpans([span('late-old',Date.now()-3600000)]);
+ await new Promise(resolve=>setTimeout(resolve,65000));
+ [rows] = await client.query('SELECT span_id FROM apm_spans ORDER BY span_id'); assert.deepEqual(rows.map(x=>x.span_id),['recent']);
+ const [version] = await client.query('SELECT VERSION() AS version');
+ console.log(JSON.stringify({passed:true,version:version[0].version,tests:['fresh table','startup expiry','recent preserved','idempotent initialization','recurring expiry']}));
+ stopRetentionSweeps(); await client.end(); process.exit(0);
+})().catch(e=>{console.error(e);process.exit(1);});

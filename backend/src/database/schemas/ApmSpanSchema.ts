@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { parseTTLToSeconds } from '../../utils/TTLParser';
+import { retentionSeconds } from '../../utils/RetentionPolicy';
 
 export interface IApmSpanDocument extends Document {
     traceId: string;
@@ -29,9 +29,10 @@ const ApmSpanSchema: Schema = new Schema(
         durationMs: { type: Number, required: true, index: true }, // Index for finding slow queries
         statusCode: { type: Number, default: 0 },
         attributes: { type: Map, of: Schema.Types.Mixed },
-        timestamp: { type: Date, required: true, index: true } // Index for time-series queries
+        timestamp: { type: Date, required: true } // Index for time-series queries
     },
     {
+        autoIndex: false,
         timestamps: false // We use our own timestamp based on the OTel data
     }
 );
@@ -41,7 +42,7 @@ const ApmSpanSchema: Schema = new Schema(
 ApmSpanSchema.index({ serviceName: 1, timestamp: -1 });
 
 // TTL index to automatically delete old APM spans
-const apmTTL = parseTTLToSeconds(process.env.APM_RETENTION_PERIOD, 3 * 24 * 60 * 60); // Default 3 days
+const apmTTL = retentionSeconds('APM'); // Default 3 days
 ApmSpanSchema.index({ timestamp: 1 }, { expireAfterSeconds: apmTTL });
 
 export const ApmSpanModel = mongoose.models.ApmSpan || mongoose.model<IApmSpanDocument>('ApmSpan', ApmSpanSchema);

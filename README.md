@@ -226,3 +226,7 @@ This project is licensed under the [Elastic License 2.0 (ELv2)](LICENSE). See
 <p align="center">
   Built with ❤️ by <a href="https://github.com/priyanshumodi22">Priyanshu Modi</a>
 </p>
+
+### Telemetry retention
+
+See [retention configuration and adapter support](docs/apm/retention.md) for APM/log expiry, legacy environment aliases, and rollout precautions.

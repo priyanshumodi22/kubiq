@@ -1,0 +1,36 @@
+{
+  "mongo": {
+    "version": "8.0.15",
+    "passed": true,
+    "expiredRemoved": true,
+    "recentPreserved": true,
+    "legacyMigration": true,
+    "freshInstallation": true,
+    "idempotent": true,
+    "expiryChange": true
+  },
+  "mysql": {
+    "version": "8.4.13",
+    "passed": true,
+    "startupExpiry": true,
+    "recurringExpiry": true,
+    "recentPreserved": true
+  },
+  "mariadb": {
+    "version": "11.4.13",
+    "passed": true,
+    "startupExpiry": true,
+    "recurringExpiry": true,
+    "recentPreserved": true
+  },
+  "clickhouse": {
+    "version": "25.8.33.6",
+    "passed": true,
+    "expiredRemovedDuringMerge": true,
+    "recentPreserved": true,
+    "legacyMigration": true,
+    "freshInstallation": true,
+    "expiryChange": true
+  },
+  "productionActivated": false
+}

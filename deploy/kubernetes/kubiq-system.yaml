@@ -189,7 +189,8 @@ data:
   AI_KUBI_TIMEOUT_MS: '60000'
   AI_KUBI_MAX_REQUESTS_PER_HOUR: '30'
   KUBI_KUBERNETES_NAMESPACE: kubiq-system
-  LOG_RETENTION_DAYS: '7'
+  APM_RETENTION_PERIOD: '3d'
+  LOG_RETENTION_PERIOD: '7d'
   # AI_API_KEY goes in kubiq-runtime Secret
   # KUBIQ_INGESTION_TOKEN goes in kubiq-runtime Secret. It is required by
   # Fluent Bit and OTLP/Zipkin collectors using the public API path.
