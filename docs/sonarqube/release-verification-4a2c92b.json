@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "verifiedOn": "2026-10-26",
+  "sourceCommit": "4a2c92bb0f3db9975f9e7dea8129bcf364c1fa6d",
+  "sonar": {
+    "run": "https://github.com/priyanshumodi22/kubiq/actions/runs/40333979145",
+    "taskId": "c07bb248-2cfb-4317-8dc9-b1037e3ac1db",
+    "analysisId": "db05adec-3e5f-4e4f-9503-9d009e2a18ed",
+    "qualityGate": "OK",
+    "openIssues": 0,
+    "unreviewedHotspots": 0,
+    "coverage": 51.1,
+    "newCoverage": 81.2,
+    "archive": "gs://priyanshu-apps-sonarqube-backups/reports/c07bb248-2cfb-4317-8dc9-b1037e3ac1db-1793022964.json",
+    "automaticAuthenticatedExportReceipt": "passed"
+  },
+  "verification": {
+    "backendTests": 386,
+    "applicationRun": 40333904114,
+    "databaseRun": 40333904186,
+    "sonarRun": 40333979145,
+    "productionRun": 40335182803,
+    "qualityGate": "OK",
+    "openIssues": 0,
+    "unreviewedHotspots": 0,
+    "coverage": 51.1,
+    "newCodeCoverage": 81.2
+  },
+  "deployment": {
+    "image": "priyanshumodi22/kubiq:main-157",
+    "digest": "sha256:6c6a51ecd1076bcdf43afad76d8fe8badd7e56d4607af6dbd57aa23d129b3f30",
+    "gitOpsCommit": "0d38eb34666bf6c21e89e0ca920170596695aa67",
+    "ready": true,
+    "publicHealth": 200,
+    "frontend": 200,
+    "portfolio": 200,
+    "rollbackImage": "priyanshumodi22/kubiq:main-155",
+    "rollbackDigest": "sha256:1c77a98b62f266b1dcec8d4e6f876570ed97c9d5f8865f5fa04bbd7b4d85095e"
+  },
+  "credentialEvidence": "../../ops/retention-check/sql-credentials-verification-20261026.json",
+  "scope": "All eight SQL repositories share one password policy and honor DB_PORT. Legacy DB_PASS remains supported. No database records, runtime credentials or VM sizing were changed."
+}
