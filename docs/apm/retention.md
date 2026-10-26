@@ -28,3 +28,9 @@ MySQL/MariaDB cleanup runs while kubiq is running, uses an indexed timestamp pre
 ClickHouse applies MODIFY TTL to existing tables and verifies system.tables metadata. Native deletion happens during background merges and may lag expiry by hours. No synchronous OPTIMIZE is run against production data. The user needs ALTER TTL permission. Both adapters preserve existing tables and query indexes.
 
 No sampling or ingestion cap is introduced by this repair.
+
+## Verified live MongoDB repair (2026-10-26)
+
+The existing plain timestamp indexes were converted to 259200-second APM and 604800-second log TTL indexes on MongoDB 8.0.34. All 252 recent spans remained. All 75777 logs were already older than seven days and expired; a full EJSON gzip backup with original indexes was uploaded to the private backup bucket first, downloaded again, hash-checked, and parsed to confirm all original records. See `ops/retention-check/verification-20261026.json` for the backup location and verification evidence. The bucket retains the backup for 30 days.
+
+The EJSON archive is newline-delimited `{collection, document}` records. For recovery, decode with BSON EJSON, restore into a separate collection without TTL first, verify record counts, then choose an export or a retention policy before returning data to active collections. Restoring expired records directly under the same TTL would expire them again. Never restore over live application collections without a reviewed recovery plan.

@@ -15,8 +15,11 @@ export function retentionSeconds(kind: 'APM' | 'LOG', env: NodeJS.ProcessEnv = p
         const multiplier: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400, w: 604800 };
         seconds = Number(match[1]) * multiplier[unit];
     } else if (days !== undefined) {
-        if (!/^\d+$/.test(days.trim())) throw new Error(`${daysName} must be a positive whole number`);
-        seconds = Number(days) * 86400;
+        if (/^\d+$/.test(days.trim())) {
+            seconds = Number(days) * 86400;
+        } else {
+            throw new Error(`${daysName} must be a positive whole number`);
+        }
     } else {
         seconds = (kind === 'APM' ? 3 : 7) * 86400;
     }

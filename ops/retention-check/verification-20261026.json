@@ -32,5 +32,27 @@
     "freshInstallation": true,
     "expiryChange": true
   },
-  "productionActivated": false
+  "liveMongoDB": {
+    "version": "8.0.34",
+    "indexesActivated": true,
+    "apmExpirySeconds": 259200,
+    "logExpirySeconds": 604800,
+    "before": {
+      "apmspans": 252,
+      "logs": 75777
+    },
+    "after": {
+      "apmspans": 252,
+      "logs": 0
+    },
+    "expiredRemaining": {
+      "apmspans": 0,
+      "logs": 0
+    },
+    "backup": "gs://priyanshu-apps-sonarqube-backups/kubiq-retention/2026-10-26/telemetry-before-retention.ejson.gz",
+    "backupSha256": "859c6e2685069ec6eac899875c743a96d334dcd0a3c90096b0a7b3de01382b84",
+    "downloadHashVerified": true,
+    "backupRecordCountsVerified": true
+  },
+  "releaseStatus": "Application release pending exact-commit gates"
 }
