@@ -94,7 +94,7 @@ spec:
             - --auth
             - --bind_ip_all
             - --wiredTigerCacheSizeGB=0.3
-            - --setParameter=maxIndexBuildMemoryUsageMegabytes=32
+            - --setParameter=maxIndexBuildMemoryUsageMegabytes=50
             - --setParameter=diagnosticDataCollectionEnabled=false
           ports:
             - name: mongodb
@@ -213,3 +213,4 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+
