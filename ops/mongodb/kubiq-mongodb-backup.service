@@ -1,0 +1,12 @@
+[Unit]
+Description=Private kubiq MongoDB backup with off-VM verification
+After=k3s.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/usr/bin/python3 /opt/kubiq-mongodb/backup.py
+TimeoutStartSec=15min
+Nice=10

@@ -1,0 +1,19 @@
+# REVIEW ONLY: not included in the active application GitOps path.
+# Commit this env entry into deploy/kubernetes/kubiq-system.yaml only after
+# the approved write pause, fresh final dump, restore and verification.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubiq
+  namespace: kubiq-system
+spec:
+  template:
+    spec:
+      containers:
+        - name: kubiq
+          env:
+            - name: DB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: kubiq-mongodb
+                  key: DB_URI

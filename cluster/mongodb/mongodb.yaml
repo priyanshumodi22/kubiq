@@ -48,10 +48,14 @@ metadata:
   namespace: mongodb-system
 data:
   10-users.js: |
+    db.getSiblingDB('kubiq').createRole({role: 'kubiq_retention', privileges: [
+      {resource: {db: 'kubiq', collection: 'apmspans'}, actions: ['collMod']},
+      {resource: {db: 'kubiq', collection: 'logs'}, actions: ['collMod']}], roles: []});
     db.getSiblingDB('kubiq').createUser({user: process.env.MONGODB_APP_USERNAME,
-      pwd: process.env.MONGODB_APP_PASSWORD, roles: [{role: 'readWrite', db: 'kubiq'}]});
+      pwd: process.env.MONGODB_APP_PASSWORD, roles: [{role: 'readWrite', db: 'kubiq'},
+      {role: 'kubiq_retention', db: 'kubiq'}]});
     db.getSiblingDB('admin').createUser({user: process.env.MONGODB_BACKUP_USERNAME,
-      pwd: process.env.MONGODB_BACKUP_PASSWORD, roles: [{role: 'backup', db: 'admin'}]});
+      pwd: process.env.MONGODB_BACKUP_PASSWORD, roles: [{role: 'read', db: 'kubiq'}]});
   health.js: |
     const c = new Mongo('mongodb://127.0.0.1:27017');
     const a = c.getDB('admin');

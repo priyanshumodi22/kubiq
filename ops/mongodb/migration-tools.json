@@ -1,0 +1,150 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "mongodb-operations",
+        "namespace": "mongodb-system"
+      },
+      "data": {
+        "make-configs.js": "const fs = require('fs'), {URL}=require('url');\nfor (const [name, env] of [['source','SOURCE_URI'], ['target','TARGET_URI'], ['backup','BACKUP_URI']]) {\n  if (!process.env[env]) continue;\n  const uri=new URL(process.env[env]);\n  if(name==='target') uri.pathname='/';\n  if (process.env[env]) fs.writeFileSync('/work/'+name+'.yml', 'uri: '+JSON.stringify(uri.toString())+'\\n', {mode:0o600});\n}\nprint('Private tool configuration prepared');\n",
+        "verify-rehearsal.js": "const fs = require('fs'), crypto = require('crypto');\nconst source='/work/source/kubiq', target=process.env.VERIFY_TARGET_DIR||'/work/restored/kubiq';\nconst files=fs.readdirSync(source).filter(x=>x.endsWith('.bson')).sort();\nconst report={version:'8.0.34',database:'kubiq',rehearsal:process.env.VERIFY_KIND!=='backup-restore',backupRestore:process.env.VERIFY_KIND==='backup-restore',collections:[]};\nconst stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;\nfor(const file of files){\n const a=fs.readFileSync(source+'/'+file),b=fs.readFileSync(target+'/'+file);\n const hash=x=>crypto.createHash('sha256').update(x).digest('hex');\n if(hash(a)!==hash(b))throw Error('BSON comparison failed for '+file);\n let count=0,offset=0;while(offset<a.length){const len=a.readInt32LE(offset);if(len<5||offset+len>a.length)throw Error('Invalid BSON');offset+=len;count++;}\n const metadata=file.replace(/\\.bson$/,'.metadata.json');\n const m=JSON.parse(fs.readFileSync(source+'/'+metadata)),n=JSON.parse(fs.readFileSync(target+'/'+metadata));\n const normalize=m=>({options:m.options||{},indexes:m.indexes.map(i=>({...i,key:Object.entries(i.key)})).sort((a,b)=>a.name.localeCompare(b.name))});\n if(JSON.stringify(stable(normalize(m)))!==JSON.stringify(stable(normalize(n))))throw Error('Index/options mismatch '+file);\n report.collections.push({name:file.slice(0,-5),documents:count,bsonSha256:hash(a),indexes:m.indexes.length});\n}\nif(files.length===0)throw Error('No BSON collections to verify');\nreport.totalDocuments=report.collections.reduce((n,c)=>n+c.documents,0);if(report.totalDocuments===0)throw Error('Unexpected empty database');report.passed=true;\nfs.writeFileSync(process.env.VERIFY_REPORT||'/work/rehearsal-verification.json',JSON.stringify(report,null,2),{mode:0o600});print(JSON.stringify(report));\n",
+        "admin-control.js": "const c=new Mongo(process.env.TARGET_URI), a=c.getDB('admin');\nconst action=process.env.MONGODB_ACTION;\nif(action==='pause-ttl'||action==='resume-ttl'){\n const result=a.runCommand({setParameter:1,ttlMonitorEnabled:action==='resume-ttl'});\n if(result.ok!==1)throw Error('TTL operation failed');print(JSON.stringify({action,ok:true}));\n}else{\n const s=a.serverStatus(),p=a.runCommand({getParameter:1,ttlMonitorEnabled:1,maxIndexBuildMemoryUsageMegabytes:1});\n print(JSON.stringify({version:a.runCommand({buildInfo:1}).version,ttlMonitorEnabled:p.ttlMonitorEnabled,indexBuildMemoryMiB:p.maxIndexBuildMemoryUsageMegabytes,connections:s.connections.current,usingPerCpuCaches:s.tcmalloc?.usingPerCpuCaches??s.tcmalloc?.usingPerCPUCaches}));\n}\n",
+        "auth-check.js": "const fs=require('fs'), {URL}=require('url');\nconst app=new Mongo(process.env.APP_URI),d=app.getDB('kubiq');\nconst name='_migration_auth_check_'+Date.now();\ntry{d.getCollection(name).insertOne({check:true});if(d.getCollection(name).countDocuments({check:true})!==1)throw Error('CRUD failed');}\nfinally{d.getCollection(name).drop();}\nlet unauth=false,badPassword=false,adminDenied=false;\ntry{new Mongo('mongodb://mongodb.mongodb-system.svc.cluster.local:27017/kubiq').getDB('kubiq').getCollection('users').findOne();}catch(e){unauth=e.code===13||e.code===18;}\ntry{const u=new URL(process.env.APP_URI);u.password='deliberately-invalid';new Mongo(u.toString()).getDB('kubiq').getCollection('users').findOne();}catch(e){badPassword=e.code===18;}\ntry{app.getDB('admin').createUser({user:'forbidden-migration-check',pwd:'not-used',roles:[]});}catch(e){adminDenied=e.code===13;}\nif(!unauth||!badPassword||!adminDenied)throw Error('Authentication/privilege boundary check failed');\nfor(const col of ['apmspans','logs']){const i=d.getCollection(col).getIndexes().find(i=>i.expireAfterSeconds!==undefined);if(!i)throw Error('TTL index missing');if(d.runCommand({collMod:col,index:{name:i.name,expireAfterSeconds:i.expireAfterSeconds}}).ok!==1)throw Error('Retention privilege missing');}\nconst report={retentionIndexUpdates:true,appCrud:true,unauthenticatedDenied:unauth,wrongPasswordDenied:badPassword,appAdministrationDenied:adminDenied,fixtureCollectionRemoved:!d.getCollectionNames().includes(name)};\nfs.writeFileSync('/work/auth-verification.json',JSON.stringify(report),{mode:0o600});print(JSON.stringify(report));\n",
+        "rehearse.sh": "#!/usr/bin/env bash\nset -euo pipefail\numask 077\nif [[ \"${KUBIQ_STAGING_RESTORE_CONFIRMED:-}\" != yes ]]; then\n  echo 'Refusing restore: confirm the self-hosted database is still staging and kubiq still uses Atlas.' >&2\n  exit 1\nfi\nexport HOME=/work\nOPS_DIR=${OPS_DIR:-/ops}\nmongosh --nodb --norc --quiet $OPS_DIR/make-configs.js\nmongodump --config=/work/source.yml --db=kubiq --out=/work/source --numParallelCollections=1 > /work/source-dump.log 2>&1\n# This is a rehearsal. Atlas remains online; a final consistent copy requires a write pause.\nMONGODB_ACTION=pause-ttl mongosh --nodb --norc --quiet $OPS_DIR/admin-control.js\ntrap 'MONGODB_ACTION=resume-ttl mongosh --nodb --norc --quiet $OPS_DIR/admin-control.js >/work/ttl-resume.log 2>&1' EXIT\nmongorestore --config=/work/target.yml --dir=/work/source --nsInclude='kubiq.*' --drop --stopOnError --numParallelCollections=1 --numInsertionWorkersPerCollection=1 > /work/restore.log 2>&1\nmongodump --config=/work/target.yml --db=kubiq --out=/work/restored --numParallelCollections=1 > /work/restored-dump.log 2>&1\nmongosh --nodb --norc --quiet $OPS_DIR/verify-rehearsal.js\nmongosh --nodb --norc --quiet $OPS_DIR/auth-check.js\nmongosh --nodb --norc --quiet $OPS_DIR/admin-control.js\n",
+        "ensure-users.js": "const c=new Mongo(process.env.TARGET_URI),d=c.getDB('kubiq'),a=c.getDB('admin');\nif(!d.getRole('kubiq_retention'))d.createRole({role:'kubiq_retention',privileges:[{resource:{db:'kubiq',collection:'apmspans'},actions:['collMod']},{resource:{db:'kubiq',collection:'logs'},actions:['collMod']}],roles:[]});\nd.grantRolesToUser('kubiq_app',[{role:'kubiq_retention',db:'kubiq'}]);\na.updateUser('kubiq_backup',{roles:[{role:'read',db:'kubiq'}]});\nprint(JSON.stringify({appRole:'readWrite plus collMod on apmspans/logs only',backupRole:'read on kubiq only'}));\n"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "mongodb-migration",
+        "namespace": "mongodb-system",
+        "labels": {
+          "app.kubernetes.io/component": "mongodb-ops"
+        }
+      },
+      "spec": {
+        "automountServiceAccountToken": false,
+        "restartPolicy": "Never",
+        "activeDeadlineSeconds": 7200,
+        "securityContext": {
+          "runAsUser": 999,
+          "runAsGroup": 999,
+          "fsGroup": 999,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        },
+        "containers": [
+          {
+            "name": "tools",
+            "image": "mongo:8.0.34@sha256:4a4ab5d4834207389e0d7270fac988e21ffedccecba77991a552f755df229907",
+            "command": [
+              "bash",
+              "-ec",
+              "sleep 7200"
+            ],
+            "workingDir": "/work",
+            "env": [
+              {
+                "name": "SOURCE_URI",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "mongodb-migration-source",
+                    "key": "DB_URI"
+                  }
+                }
+              },
+              {
+                "name": "TARGET_URI",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "mongodb-admin",
+                    "key": "DB_URI"
+                  }
+                }
+              },
+              {
+                "name": "APP_URI",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "mongodb-app",
+                    "key": "DB_URI"
+                  }
+                }
+              },
+              {
+                "name": "BACKUP_URI",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "mongodb-backup",
+                    "key": "DB_URI"
+                  }
+                }
+              }
+            ],
+            "resources": {
+              "requests": {
+                "cpu": "10m",
+                "memory": "32Mi"
+              },
+              "limits": {
+                "cpu": "250m",
+                "memory": "256Mi"
+              }
+            },
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              }
+            },
+            "volumeMounts": [
+              {
+                "name": "work",
+                "mountPath": "/work"
+              },
+              {
+                "name": "ops",
+                "mountPath": "/ops",
+                "readOnly": true
+              },
+              {
+                "name": "tmp",
+                "mountPath": "/tmp"
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "work",
+            "emptyDir": {
+              "sizeLimit": "512Mi"
+            }
+          },
+          {
+            "name": "ops",
+            "configMap": {
+              "name": "mongodb-operations"
+            }
+          },
+          {
+            "name": "tmp",
+            "emptyDir": {
+              "sizeLimit": "64Mi"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

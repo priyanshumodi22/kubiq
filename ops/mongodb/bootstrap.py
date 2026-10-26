@@ -9,6 +9,8 @@ def kub(*args,payload=None):
 path=ROOT/'credentials.json'
 if path.exists():c=json.loads(path.read_text())
 else:
+ existing=subprocess.run(['k3s','kubectl','get','pvc','data-mongodb-0','-n','mongodb-system','-o','name'],capture_output=True)
+ if existing.returncode==0:raise RuntimeError('Persistent MongoDB exists: recover credentials instead of regenerating them')
  c={k:secrets.token_urlsafe(36) for k in ['adminPassword','appPassword','backupPassword']}
  c.update({'adminUsername':'kubiq_admin','appUsername':'kubiq_app','backupUsername':'kubiq_backup','database':'kubiq','host':'mongodb.mongodb-system.svc.cluster.local'})
  def uri(user,pwd,auth):return f'mongodb://{quote(user)}:{quote(pwd)}@{c["host"]}:27017/kubiq?authSource={auth}&retryWrites=false&maxPoolSize=10&directConnection=true'

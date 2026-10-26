@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily kubiq MongoDB backup at 02:00 IST
+
+[Timer]
+OnCalendar=*-*-* 20:30:00 UTC
+RandomizedDelaySec=5min
+Persistent=true
+Unit=kubiq-mongodb-backup.service
+
+[Install]
+WantedBy=timers.target
