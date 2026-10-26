@@ -1,3 +1,4 @@
+import { mysqlPassword } from '../../../utils/MysqlPassword';
 import mysql, { Pool, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import { INotificationRepository } from '../../interfaces/INotificationRepository';
 import { NotificationChannel } from '../../../types';
@@ -11,7 +12,7 @@ export class MysqlNotificationRepository implements INotificationRepository {
       host: process.env.DB_HOST || 'localhost',
       port: Number.parseInt(process.env.DB_PORT || '3306'),
       user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASS || '',
+      password: mysqlPassword(),
       database: process.env.DB_NAME || 'kubiq_db',
       waitForConnections: true,
       connectionLimit: 10,

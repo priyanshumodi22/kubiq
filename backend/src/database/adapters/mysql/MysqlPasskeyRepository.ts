@@ -1,3 +1,4 @@
+import { mysqlPassword } from '../../../utils/MysqlPassword';
 import mysql, { Pool, RowDataPacket } from 'mysql2/promise';
 import { IPasskeyRepository } from '../../interfaces/IPasskeyRepository';
 import { Passkey } from '../../../types';
@@ -10,7 +11,7 @@ export class MysqlPasskeyRepository implements IPasskeyRepository {
       host: process.env.DB_HOST || 'localhost',
       port: Number.parseInt(process.env.DB_PORT || '3306'),
       user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASS || '',
+      password: mysqlPassword(),
       database: process.env.DB_NAME || 'kubiq_db',
       waitForConnections: true,
       connectionLimit: 10,

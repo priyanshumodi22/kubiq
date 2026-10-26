@@ -1,3 +1,4 @@
+import { mysqlPassword } from '../../../utils/MysqlPassword';
 import crypto from 'node:crypto';
 import mysql, { Pool, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { IKubiConversationRepository, KubiConversation, KubiConversationMessage } from '../../interfaces/IKubiConversationRepository';
@@ -10,7 +11,7 @@ export class MysqlKubiConversationRepository implements IKubiConversationReposit
   async initialize(): Promise<void> {
     this.pool = mysql.createPool({
       host: process.env.DB_HOST || 'localhost', port: Number(process.env.DB_PORT || 3306), user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASS || '', database: process.env.DB_NAME || 'kubiq_db', waitForConnections: true, connectionLimit: 10, queueLimit: 0,
+      password: mysqlPassword(), database: process.env.DB_NAME || 'kubiq_db', waitForConnections: true, connectionLimit: 10, queueLimit: 0,
     });
     await this.ensureSchema();
     await this.cleanupExpired();

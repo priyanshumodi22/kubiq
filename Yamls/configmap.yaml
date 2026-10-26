@@ -18,7 +18,7 @@ data:
   DB_HOST: dbhost
   DB_PORT: '3306'
   DB_USER: dbuser
-  DB_PASS: dbpass
+  DB_PASSWORD: dbpass
   DB_NAME: kubiq_db
   
   # MongoDB Config (DB_TYPE=mongo)

@@ -26,6 +26,11 @@ const docker = args => execFileSync('docker',args,{encoding:'utf8'}).trim();
   }
   if(!ready) throw new Error(`${kind} did not become ready`);
   const env={...process.env,COMPILED_BACKEND:path.resolve('backend/dist'),NODE_PATH:path.resolve('backend/node_modules'),APM_RETENTION_PERIOD:'5s',LOG_RETENTION_PERIOD:'7s',DB_HOST:'127.0.0.1',DB_PORT:port,DB_USER:'root',DB_PASSWORD:'retention-fixture-only',DB_NAME:'kubiq_db',FIXTURE_MONGO_URI:`mongodb://127.0.0.1:${port}/retention_fixture`,CLICKHOUSE_URL:`http://127.0.0.1:${port}`,CLICKHOUSE_USER:'fixture',CLICKHOUSE_PASSWORD:'retention-fixture-only',CLICKHOUSE_DATABASE:'default'};
+  delete env.DB_PASS;
+  if(kind==='mysql'||kind==='mariadb'){
+   const credentials=spawnSync(process.execPath,[path.join(__dirname,'sql-credentials.cjs')],{env,stdio:'inherit',timeout:180000});
+   if(credentials.status!==0)throw new Error(`${kind} credential compatibility failed (${credentials.status})`);
+  }
   const result=spawnSync(process.execPath,[path.join(__dirname,fixture.script)],{env,stdio:'inherit',timeout:180000});
   if(result.status!==0) throw new Error(`${kind} fixture failed (${result.status})`);
  } finally {spawnSync('docker',['rm','-f','-v',name],{stdio:'ignore'});}

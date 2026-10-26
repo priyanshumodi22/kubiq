@@ -1,3 +1,4 @@
+import { mysqlPassword } from '../../../utils/MysqlPassword';
 import { retentionSeconds } from '../../../utils/RetentionPolicy';
 import { scheduleRetentionSweep } from '../../../utils/RetentionScheduler';
 import mysql, { Pool, RowDataPacket } from 'mysql2/promise';
@@ -11,7 +12,7 @@ export class MysqlTraceRepository implements ITraceRepository {
         this.pool = mysql.createPool({
             host: process.env.DB_HOST || ((process.env.NODE_ENV === 'production' && !process.env.DB_HOST) ? 'host.docker.internal' : 'localhost'),
             user: process.env.DB_USER || 'root',
-            password: process.env.DB_PASSWORD || 'root',
+            password: mysqlPassword(),
             database: process.env.DB_NAME || 'kubiq_db',
             port: Number.parseInt(process.env.DB_PORT || '3306', 10),
             waitForConnections: true,

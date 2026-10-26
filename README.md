@@ -230,3 +230,5 @@ This project is licensed under the [Elastic License 2.0 (ELv2)](LICENSE). See
 ### Telemetry retention
 
 See [retention configuration and adapter support](docs/apm/retention.md) for APM/log expiry, legacy environment aliases, and rollout precautions.
+
+SQL deployments: see [shared MySQL/MariaDB password settings](docs/apm/mysql-credentials.md) for DB_PASSWORD, the DB_PASS compatibility alias, and explicit connection settings.
