@@ -236,6 +236,12 @@ spec:
                 name: kubiq-config
             - secretRef:
                 name: kubiq-runtime
+          env:
+            - name: DB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: kubiq-mongodb
+                  key: DB_URI
           resources:
             requests:
               cpu: 50m
@@ -275,6 +281,7 @@ metadata:
 spec:
   selector:
     app.kubernetes.io/name: kubiq
+    maintenance.priyanshumodi.in/active: blocked
   ports:
     - name: http
       port: 80
