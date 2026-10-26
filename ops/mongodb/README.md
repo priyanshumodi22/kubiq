@@ -63,3 +63,7 @@ Rollback before new target writes can restore the original URI through GitOps. A
 ## Access from your PC
 
 Use the SSH tunnel and Compass URI in the protected credentials file. Keep the SSH session open. The tunnel binds localhost:27018 and forwards to the cluster's private MongoDB service; no public MongoDB firewall port is opened. Localhost connection credentials remain separate from kubiq application login credentials.
+
+## Installation acceptance — 27 October 2026 IST
+
+All 11 collections and 1,258 documents matched the rehearsal BSON dump and index definitions. All nine real MongoDB adapters passed, including the 3 users, 6 services, 4 passkeys and 6 conversations. Authentication denials, limited retention privileges, namespace isolation, post-restart persistence and an actual off-VM restore passed. The headless systemd service completed successfully and the daily timer is active. Temporary migration resources and its extra Atlas source Secret were removed. Production still uses Atlas; final cutover has not been performed. See installation-verification-20261027.json.

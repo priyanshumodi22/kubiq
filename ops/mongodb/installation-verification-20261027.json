@@ -1,0 +1,162 @@
+{
+  "collectedAt": "2026-10-26T18:53:54.625415+00:00",
+  "mongodb": {
+    "namespace": "mongodb-system",
+    "version": "8.0.34",
+    "ready": true,
+    "persistentAfterRestart": true,
+    "cpuRequest": "100m",
+    "cpuLimit": "500m",
+    "memoryRequest": "512Mi",
+    "memoryLimit": "768Mi",
+    "pvc": "10Gi",
+    "pvReclaimPolicy": "Retain",
+    "privateClusterIpOnly": true,
+    "usingPerCpuCaches": false,
+    "ttlEnabled": true,
+    "observedPeakMiBAfterRestart": 350.8,
+    "oomKills": 0
+  },
+  "rehearsal": {
+    "version": "8.0.34",
+    "database": "kubiq",
+    "rehearsal": true,
+    "collections": [
+      {
+        "name": "apmspans",
+        "documents": 252,
+        "bsonSha256": "f3c632cba864b358b03239f69cb2a9926026ee1a209dd02b4da99ca50d3bc70a",
+        "indexes": 8
+      },
+      {
+        "name": "auditlogs",
+        "documents": 214,
+        "bsonSha256": "7504aa47ff0806315a2bf9a54172d579d35b9253a24f8619d447462817533e75",
+        "indexes": 5
+      },
+      {
+        "name": "kubiconversations",
+        "documents": 6,
+        "bsonSha256": "4755fc772ccc04a8d8e65f523aec89591d26e77875e0b2500d1fe507f107d354",
+        "indexes": 6
+      },
+      {
+        "name": "logs",
+        "documents": 0,
+        "bsonSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "indexes": 7
+      },
+      {
+        "name": "notifications",
+        "documents": 1,
+        "bsonSha256": "33678f05fbeecb91e85942b80e8066ec6f59ade9981b045e782fa8a7628d9b9b",
+        "indexes": 1
+      },
+      {
+        "name": "passkeys",
+        "documents": 4,
+        "bsonSha256": "7ed7010078ac807116fdaad10aa8a77b58edf343465de5a9711ac953c29c1698",
+        "indexes": 4
+      },
+      {
+        "name": "services",
+        "documents": 6,
+        "bsonSha256": "1b9a8b052962e37680aff646fbe00d6d2d10ccf4ee723039f499dcac80698e30",
+        "indexes": 2
+      },
+      {
+        "name": "systemconfigs",
+        "documents": 1,
+        "bsonSha256": "e6c739c1afd43434bfd55822a1e7719e90b063dfaa979e5d4b8df06452764798",
+        "indexes": 2
+      },
+      {
+        "name": "systemmetrics",
+        "documents": 766,
+        "bsonSha256": "acea263d195d3ea17df972e91e406e573263e240b33bc970c1f643222fe7efa8",
+        "indexes": 2
+      },
+      {
+        "name": "systempreferences",
+        "documents": 5,
+        "bsonSha256": "582e6ec3d8a562f2f9f26529dca0a9ab9dc0506ebb3af9dae07cbb479c0c29d7",
+        "indexes": 2
+      },
+      {
+        "name": "users",
+        "documents": 3,
+        "bsonSha256": "c8625c8c3ceca4885d54963dd96341dec1053fc71d1e42b7c8d920f54a8a1f7a",
+        "indexes": 2
+      }
+    ],
+    "totalDocuments": 1258,
+    "passed": true
+  },
+  "auth": {
+    "retentionIndexUpdates": true,
+    "appCrud": true,
+    "unauthenticatedDenied": true,
+    "wrongPasswordDenied": true,
+    "appAdministrationDenied": true,
+    "fixtureCollectionRemoved": true
+  },
+  "adapters": {
+    "passed": true,
+    "initializedRepositories": [
+      "services",
+      "users",
+      "system",
+      "passkeys",
+      "notifications",
+      "conversations",
+      "audit",
+      "traces",
+      "logs"
+    ],
+    "services": 6,
+    "users": 3,
+    "passkeys": 4,
+    "conversations": 6,
+    "licenseRbacAndAiConfigReadable": true,
+    "configPresence": {
+      "license": true,
+      "ai": true,
+      "rbac": true
+    },
+    "traceWriteReadCleanup": true
+  },
+  "backup": {
+    "completedAt": "2026-10-26T18:44:09.537271+00:00",
+    "database": "kubiq",
+    "archive": "gs://priyanshu-apps-sonarqube-backups/kubiq-mongodb/backups/20261026T184409Z.archive.gz",
+    "sha256": "52e217e03e54c8f277f2c3f7f07c885292f7e127fecea52299c1209a7f59334a",
+    "bytes": 113760,
+    "readbackVerified": true,
+    "offVmRetentionDays": 30,
+    "restoreTested": true,
+    "restoredFromGcs": true,
+    "restoredDocuments": 1258,
+    "restoreFixtureRemoved": true
+  },
+  "atlasRehearsalArchive": {
+    "archive": "gs://priyanshu-apps-sonarqube-backups/kubiq-mongodb/migration/atlas-rehearsal-20261026T184406Z.tar.gz",
+    "sha256": "eea62b3229dc38749e66cef5e2fa0854b78fb05863dd72c09febd46fccf1057d",
+    "bytes": 113758,
+    "generation": "1793040247957129",
+    "readbackVerified": true
+  },
+  "networkPolicyUnrelatedNamespaceBlocked": true,
+  "backupIdentityOutsidePrefixDenied": true,
+  "productionStillUsesAtlas": true,
+  "finalCutoverPerformed": false,
+  "runtimeSecretAndApplicationImageUnchanged": true,
+  "runningContainerRestarts": 0,
+  "fluxKustomizationsReady": true,
+  "publicHttp": {
+    "portfolio": 200,
+    "kubiq": 200,
+    "docs": 200,
+    "protectedServicesApi": 401
+  },
+  "temporaryMigrationPodAndSourceSecretRemoved": true
+}
