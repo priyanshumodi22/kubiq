@@ -1,0 +1,158 @@
+{
+  "completedAt": "2026-10-26T19:18:48.172396+00:00",
+  "productionDatabase": "self-hosted MongoDB on priyanshu-k3s",
+  "finalCopy": {
+    "version": "8.0.34",
+    "database": "kubiq",
+    "rehearsal": false,
+    "backupRestore": false,
+    "collections": [
+      {
+        "name": "apmspans",
+        "documents": 252,
+        "bsonSha256": "f3c632cba864b358b03239f69cb2a9926026ee1a209dd02b4da99ca50d3bc70a",
+        "indexes": 8
+      },
+      {
+        "name": "auditlogs",
+        "documents": 214,
+        "bsonSha256": "7504aa47ff0806315a2bf9a54172d579d35b9253a24f8619d447462817533e75",
+        "indexes": 5
+      },
+      {
+        "name": "kubiconversations",
+        "documents": 6,
+        "bsonSha256": "4755fc772ccc04a8d8e65f523aec89591d26e77875e0b2500d1fe507f107d354",
+        "indexes": 6
+      },
+      {
+        "name": "logs",
+        "documents": 0,
+        "bsonSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "indexes": 7
+      },
+      {
+        "name": "notifications",
+        "documents": 1,
+        "bsonSha256": "33678f05fbeecb91e85942b80e8066ec6f59ade9981b045e782fa8a7628d9b9b",
+        "indexes": 1
+      },
+      {
+        "name": "passkeys",
+        "documents": 4,
+        "bsonSha256": "7ed7010078ac807116fdaad10aa8a77b58edf343465de5a9711ac953c29c1698",
+        "indexes": 4
+      },
+      {
+        "name": "services",
+        "documents": 6,
+        "bsonSha256": "e481f7643685102775c694475229ae5a6b837a2452ec72477384329d7a747a05",
+        "indexes": 2
+      },
+      {
+        "name": "systemconfigs",
+        "documents": 1,
+        "bsonSha256": "e6c739c1afd43434bfd55822a1e7719e90b063dfaa979e5d4b8df06452764798",
+        "indexes": 2
+      },
+      {
+        "name": "systemmetrics",
+        "documents": 766,
+        "bsonSha256": "acea263d195d3ea17df972e91e406e573263e240b33bc970c1f643222fe7efa8",
+        "indexes": 2
+      },
+      {
+        "name": "systempreferences",
+        "documents": 5,
+        "bsonSha256": "582e6ec3d8a562f2f9f26529dca0a9ab9dc0506ebb3af9dae07cbb479c0c29d7",
+        "indexes": 2
+      },
+      {
+        "name": "users",
+        "documents": 3,
+        "bsonSha256": "c8625c8c3ceca4885d54963dd96341dec1053fc71d1e42b7c8d920f54a8a1f7a",
+        "indexes": 2
+      }
+    ],
+    "totalDocuments": 1258,
+    "passed": true,
+    "finalCopy": true
+  },
+  "finalAtlasBackup": {
+    "archive": "gs://priyanshu-apps-sonarqube-backups/kubiq-mongodb/migration/atlas-final-20261026T191138Z.tar.gz",
+    "sha256": "7850cff33994d2d2c9be5e7e64bf2d2d6af4779fe6983331e4b5b332b84d4164",
+    "bytes": 113752,
+    "generation": "1793041900252464",
+    "readbackVerified": true
+  },
+  "atlasUnchangedAfterFinalHandoff": true,
+  "httpChecks": {
+    "passed": true,
+    "selfHosted": true,
+    "enabledAccountsAuthenticated": 3,
+    "disabledAccountsDenied": 0,
+    "adminReadEndpoints": {
+      "/services": 200,
+      "/users": 200,
+      "/audit-logs": 200
+    },
+    "unauthenticatedDenied": 401
+  },
+  "telemetryHttp": {
+    "unauthenticated": 401,
+    "apm": 202,
+    "logs": 202,
+    "expiredRemoved": true,
+    "freshRetained": true,
+    "fixtureCleanupVerified": true,
+    "apmRetentionSeconds": 259200,
+    "logRetentionSeconds": 604800
+  },
+  "adapterChecks": {
+    "passed": true,
+    "initializedRepositories": [
+      "services",
+      "users",
+      "system",
+      "passkeys",
+      "notifications",
+      "conversations",
+      "audit",
+      "traces",
+      "logs"
+    ],
+    "services": 6,
+    "users": 3,
+    "passkeys": 4,
+    "conversations": 6,
+    "licenseRbacAndAiConfigReadable": true,
+    "configPresence": {
+      "license": true,
+      "ai": true,
+      "rbac": true
+    },
+    "traceWriteReadCleanup": true
+  },
+  "applicationImage": "priyanshumodi22/kubiq:main-157",
+  "runtimeSecretUnchanged": true,
+  "maintenanceSelectorRemoved": true,
+  "atlasRetained": true,
+  "postCutoverBackup": {
+    "completedAt": "2026-10-26T19:15:39.014758+00:00",
+    "database": "kubiq",
+    "archive": "gs://priyanshu-apps-sonarqube-backups/kubiq-mongodb/backups/20261026T191539Z.archive.gz",
+    "sha256": "cf12d0404b382e63baec6af0ea506be42b2ab49ff503a9ce8e30ba6a8e05e61f",
+    "bytes": 113913,
+    "readbackVerified": true,
+    "offVmRetentionDays": 30,
+    "restoreTested": false
+  },
+  "dailyBackupTimerActive": true,
+  "publicHttp": {
+    "kubiq": 200,
+    "portfolio": 200,
+    "docs": 200,
+    "protectedServicesApi": 401
+  },
+  "temporaryMigrationResourcesRemoved": true
+}

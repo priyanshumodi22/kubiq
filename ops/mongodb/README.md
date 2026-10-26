@@ -2,7 +2,7 @@
 
 ## Current boundary
 
-MongoDB is installed on priyanshu-k3s and populated with a verified Atlas rehearsal copy. Production kubiq still uses its original Atlas URI. The rehearsal is not a live replica and must never be treated as the final cutover copy. No Atlas resources or application credentials were deleted or rotated.
+Production kubiq now uses the authenticated MongoDB on priyanshu-k3s. The final Atlas copy was taken during an approved write pause, verified off the VM, restored and checked before reopening public traffic. Atlas remains intact as the frozen pre-cutover source; it is not a live replica after the switch. Application signing/encryption credentials were preserved.
 
 Only the `kubiq` database is in scope. Other databases in the shared Atlas cluster are not migrated. Version: Community Server 8.0.34, matching the source version, pinned by image digest. MongoDB Database Tools: 100.19.1. The source scan found no application MongoDB transactions, change streams or Atlas Search dependency; ordinary MongoDB text indexes remain supported.
 
@@ -13,7 +13,7 @@ Only the `kubiq` database is in scope. Other databases in the shared Atlas clust
 - 10 GiB local-path PVC using a dedicated Retain storage class, plus StatefulSet claim retention. This is existing boot-disk capacity, not a new billable disk. Local-path PVC size is NOT an enforced disk quota.
 - Authentication enabled. `kubiq_admin` is the administrator; `kubiq_app` has readWrite on kubiq plus collMod only on apmspans/logs for retention changes; `kubiq_backup` has read access only to kubiq.
 - Credentials are Kubernetes Secrets and root-only `/etc/kubiq-mongodb/credentials.json`; an owner/SYSTEM-only Windows copy is at `D:/PriyanshuGCP/Private/MongoDB/credentials.json`. Never paste them into tickets, Git, screenshots or CLI arguments.
-- Private app URI includes authSource=kubiq, retryWrites=false for this standalone server, directConnection=true and maxPoolSize=10. A separate target Secret, kubiq-system/kubiq-mongodb, is prepared but not yet referenced by the live deployment.
+- Private app URI includes authSource=kubiq, retryWrites=false for this standalone server, directConnection=true and maxPoolSize=10. A separate target Secret, kubiq-system/kubiq-mongodb, is referenced explicitly by the live deployment.
 - NetworkPolicy permits MongoDB ingress only from kubiq-labelled Pods in kubiq-system or operations-labelled Pods in mongodb-system. An unrelated default-namespace connection was rejected; the existing kubiq Pod reached the authenticated target successfully.
 - The VM kernel is Ubuntu 7.0.0-1011-gcp, with upstream signature 7.0.14. The MongoDB image's kernel guard initially rejected it. `GLIBC_TUNABLES=glibc.pthread.rseq=1` selects the compatible non-per-CPU allocator path used by MongoDB's upstream regression test. Server status confirms usingPerCpuCaches=false; no binary/kernel check was patched. Reassess with a future maintenance image before removing this setting.
 
@@ -47,7 +47,7 @@ A real off-VM backup restore is tested into the disposable kubiq_restorecheck_20
 
 Single VM / boot disk remains a single point of failure. This configuration is not HA. Keep disk/RAM monitoring and retention enabled; limits and a PVC request do not guarantee every concurrent peak will fit on a 4 GiB host.
 
-## Final cutover — requires a separate approved write pause
+## Final cutover procedure (approved and completed on 27 October 2026 IST)
 
 1. Recheck node capacity, MongoDB authentication, off-VM backup and restore evidence, current Atlas connection and exact live kubiq image. Keep the current image and runtime Secret. Do not change JWT keys, native-auth encryption keys, ingestion token, URLs, RP IDs or stored IDs.
 2. Agree on the brief maintenance/write pause. Suspend ONLY the application Kustomization, drain/stop kubiq gracefully and scale its deployment to zero. Keep MongoDB's Kustomization, tunnel and other apps running. Confirm there are no remaining writers to the source kubiq database. Account for telemetry clients during the unavailable window.
@@ -67,3 +67,9 @@ Use the SSH tunnel and Compass URI in the protected credentials file. Keep the S
 ## Installation acceptance — 27 October 2026 IST
 
 All 11 collections and 1,258 documents matched the rehearsal BSON dump and index definitions. All nine real MongoDB adapters passed, including the 3 users, 6 services, 4 passkeys and 6 conversations. Authentication denials, limited retention privileges, namespace isolation, post-restart persistence and an actual off-VM restore passed. The headless systemd service completed successfully and the daily timer is active. Temporary migration resources and its extra Atlas source Secret were removed. Production still uses Atlas; final cutover has not been performed. See installation-verification-20261027.json.
+
+## Production cutover acceptance - 27 October 2026 IST
+
+The source was rechecked after the handoff. A service-monitor update detected during the first handoff was included in a refreshed final copy with kubiq stopped, followed by a second source stability check. The final 11-collection / 1,258-document dump matched the target BSON and indexes. Public traffic reopened only after authenticated APIs passed. All three existing enabled accounts passed server-side Native token/account lookup; users, services and audit reads returned 200. Actual user-entered password/passkey ceremonies were not performed by this automated check. Password hashes, passkey BSON and their original signing/origin configuration were preserved.
+
+Real HTTP APM and log ingestion returned 202; unauthenticated requests returned 401. Fresh records were retained, expired records were removed under the 3-day/7-day TTL policies, and fixture cleanup passed. kubiq remains on main-157; the only application deployment setting changed was its DB_URI Secret reference. The original kubiq-runtime Secret remains unchanged. See cutover-verification-20261027.json.

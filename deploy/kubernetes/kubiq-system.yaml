@@ -170,7 +170,8 @@ data:
 
   # ── Database (MongoDB) ──
   DB_TYPE: mongo
-  # DB_URI goes in kubiq-runtime Secret
+  # DB_URI is overridden by the kubiq-mongodb Secret below.
+  # The original Atlas URI remains in kubiq-runtime for controlled recovery.
 
   # ── Feature Flags ──
   APM_ENABLED: 'true'

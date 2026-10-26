@@ -9,6 +9,7 @@ def patch(kind,name,ns,payload,typ='merge'):return kub('patch',kind,name,'-n',ns
 def tools(*args):return kub('exec','-n','mongodb-system','mongodb-migration','--',*args)
 def ttl(action):tools('env','HOME=/work','MONGODB_ACTION='+action,'mongosh','--nodb','--norc','--quiet','/work/operations/admin-control.js')
 mode=sys.argv[1]
+if (S/'cutover-complete.json').exists():raise RuntimeError('Initial migration already completed; do not replay destructive restore phases')
 if mode=='freeze':
  live=json.loads(kub('exec','-n','kubiq-system','deployment/kubiq','--','node','-e',"console.log(JSON.stringify({atlas:process.env.DB_URI.startsWith('mongodb+srv://')}))"));assert live['atlas']
  dep=json.loads(kub('get','deployment','kubiq','-n','kubiq-system','-o','json'));svc=json.loads(kub('get','service','kubiq','-n','kubiq-system','-o','json'));secret=json.loads(kub('get','secret','kubiq-runtime','-n','kubiq-system','-o','json'))

@@ -25,8 +25,11 @@ secret('mongodb-admin','mongodb-system',{'DB_URI':c['adminUri']})
 secret('mongodb-backup','mongodb-system',{'DB_URI':c['backupUri']})
 secret('mongodb-app','mongodb-system',{'DB_URI':c['appUri']})
 secret('kubiq-mongodb','kubiq-system',{'DB_URI':c['appUri']})
-# Temporary migration source; production kubiq-runtime is never modified here.
-source=json.loads(kub('get','secret','kubiq-runtime','-n','kubiq-system','-o','json'))
-source_uri=base64.b64decode(source['data']['DB_URI']).decode()
-secret('mongodb-migration-source','mongodb-system',{'DB_URI':source_uri})
-print('Private MongoDB accounts and migration secrets prepared; live kubiq URI unchanged')
+# Do not recreate the retired Atlas migration credential after production switches.
+deployment=json.loads(kub('get','deployment','kubiq','-n','kubiq-system','-o','json'))
+active_target=any(e.get('name')=='DB_URI' and e.get('valueFrom',{}).get('secretKeyRef',{}).get('name')=='kubiq-mongodb' for ctn in deployment['spec']['template']['spec']['containers'] for e in ctn.get('env',[]))
+if not active_target:
+ source=json.loads(kub('get','secret','kubiq-runtime','-n','kubiq-system','-o','json'))
+ source_uri=base64.b64decode(source['data']['DB_URI']).decode()
+ secret('mongodb-migration-source','mongodb-system',{'DB_URI':source_uri})
+print('Private MongoDB secrets prepared; live connection settings were not changed')
