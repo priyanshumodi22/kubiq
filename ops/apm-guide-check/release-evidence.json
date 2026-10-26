@@ -1,0 +1,326 @@
+{
+  "status": "passed",
+  "sourceCommit": "9eb952bed162dd43455f9be8855a838701e73243",
+  "guideSha256": "766ee70469200b4d40c1fa07b5f5961975e91868630e0885b26a584e10d1c323",
+  "packages": {
+    "node": {
+      "version": "1.0.1",
+      "shasum": "b86fcf6080c5b814c6b4f6e3bac23ac2c7aa04da",
+      "sourceFilesMatch": true,
+      "provenance": true
+    },
+    "python": {
+      "version": "1.0.1",
+      "wheelSha256": "b9ff0169f89c3a3c48781fef80cac65b12ace7686ed56dba591030de1890564a",
+      "sourceFilesMatch": true
+    }
+  },
+  "publishRun": "https://github.com/priyanshumodi22/kubiq/actions/runs/40230243282",
+  "sonar": {
+    "run": "https://github.com/priyanshumodi22/kubiq/actions/runs/40276468072",
+    "analysisId": "4da0029d-a1a4-458a-9b19-d8f5fb6bd400",
+    "taskId": "62373f34-462d-4507-b782-c315aae14b07",
+    "qualityGate": "OK",
+    "openIssues": 0,
+    "unreviewedHotspots": 0,
+    "coverage": 49.9,
+    "newCoverage": 81,
+    "sheetTab": "Scan 2026-10-26 055602",
+    "archive": "gs://priyanshu-apps-sonarqube-backups/reports/62373f34-462d-4507-b782-c315aae14b07-1792994167.json"
+  },
+  "registryRequests": {
+    "node": [
+      {
+        "event": "verified-http-request",
+        "runId": "768bb25e-ed51-4d0d-ae31-ecf6a42922a4",
+        "status": 200,
+        "elapsedMs": 6,
+        "workerTraceId": "9be27524c644e6125d2ca401b8fb9e47",
+        "frontTraceId": "9be27524c644e6125d2ca401b8fb9e47"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "768bb25e-ed51-4d0d-ae31-ecf6a42922a4",
+        "status": 200,
+        "elapsedMs": 125,
+        "workerTraceId": "d427674ac1d8dd77edbed5f0391b2e2a",
+        "frontTraceId": "d427674ac1d8dd77edbed5f0391b2e2a"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "768bb25e-ed51-4d0d-ae31-ecf6a42922a4",
+        "status": 503,
+        "elapsedMs": 5,
+        "workerTraceId": "14d25dbf5638aa9e58ecae34aa7b8b49",
+        "frontTraceId": "14d25dbf5638aa9e58ecae34aa7b8b49"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "768bb25e-ed51-4d0d-ae31-ecf6a42922a4",
+        "status": 200,
+        "elapsedMs": 5,
+        "workerTraceId": "4fa0b07eb26166bf645e15334683f721",
+        "frontTraceId": "4fa0b07eb26166bf645e15334683f721"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "768bb25e-ed51-4d0d-ae31-ecf6a42922a4",
+        "status": 200,
+        "elapsedMs": 124,
+        "workerTraceId": "352bd4c6f57e81fa427f3904ec482cb6",
+        "frontTraceId": "352bd4c6f57e81fa427f3904ec482cb6"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "768bb25e-ed51-4d0d-ae31-ecf6a42922a4",
+        "status": 503,
+        "elapsedMs": 5,
+        "workerTraceId": "0863d1572e953d0ebad8353885acd423",
+        "frontTraceId": "0863d1572e953d0ebad8353885acd423"
+      }
+    ],
+    "python": [
+      {
+        "event": "verified-http-request",
+        "runId": "1c0d1aa3-0d38-46cb-84f4-052fcf2fdeeb",
+        "status": 200,
+        "elapsedMs": 32,
+        "frontTraceId": "cd90368e6517e41178d1d4bff71861b0",
+        "workerTraceId": "cd90368e6517e41178d1d4bff71861b0"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "1c0d1aa3-0d38-46cb-84f4-052fcf2fdeeb",
+        "status": 200,
+        "elapsedMs": 136,
+        "frontTraceId": "374048b091aa71bc09ffe148372c2afe",
+        "workerTraceId": "374048b091aa71bc09ffe148372c2afe"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "1c0d1aa3-0d38-46cb-84f4-052fcf2fdeeb",
+        "status": 503,
+        "elapsedMs": 7,
+        "frontTraceId": "28eee15e5d2ae6173b4ff6382e64ecf5",
+        "workerTraceId": "28eee15e5d2ae6173b4ff6382e64ecf5"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "1c0d1aa3-0d38-46cb-84f4-052fcf2fdeeb",
+        "status": 200,
+        "elapsedMs": 5,
+        "frontTraceId": "c2662dc3ae81f2060b8071b504a48138",
+        "workerTraceId": "c2662dc3ae81f2060b8071b504a48138"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "1c0d1aa3-0d38-46cb-84f4-052fcf2fdeeb",
+        "status": 200,
+        "elapsedMs": 127,
+        "frontTraceId": "9d0c79e916cfc2527a60d50640f814b8",
+        "workerTraceId": "9d0c79e916cfc2527a60d50640f814b8"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "1c0d1aa3-0d38-46cb-84f4-052fcf2fdeeb",
+        "status": 503,
+        "elapsedMs": 8,
+        "frontTraceId": "789f31fec6e98f9aa2ab2e9c960a109e",
+        "workerTraceId": "789f31fec6e98f9aa2ab2e9c960a109e"
+      }
+    ],
+    "nextjs": [
+      {
+        "event": "verified-http-request",
+        "runId": "2be39baa-6d40-4302-8a5d-e211c0e3a21f",
+        "status": 200,
+        "elapsedMs": 100,
+        "workerTraceId": "fb484c15b01ca5f11690d8bb6032ef8d",
+        "frontTraceId": "fb484c15b01ca5f11690d8bb6032ef8d"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "2be39baa-6d40-4302-8a5d-e211c0e3a21f",
+        "status": 200,
+        "elapsedMs": 136,
+        "workerTraceId": "35eaa2c1c2a50e907d81d915aa54942a",
+        "frontTraceId": "35eaa2c1c2a50e907d81d915aa54942a"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "2be39baa-6d40-4302-8a5d-e211c0e3a21f",
+        "status": 503,
+        "elapsedMs": 11,
+        "workerTraceId": "8b5c1e57856b4ebab914c36e48f30ae9",
+        "frontTraceId": "8b5c1e57856b4ebab914c36e48f30ae9"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "2be39baa-6d40-4302-8a5d-e211c0e3a21f",
+        "status": 200,
+        "elapsedMs": 18,
+        "workerTraceId": "d178a6128306933c83dffda38dc60f1a",
+        "frontTraceId": "d178a6128306933c83dffda38dc60f1a"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "2be39baa-6d40-4302-8a5d-e211c0e3a21f",
+        "status": 200,
+        "elapsedMs": 218,
+        "workerTraceId": "4dbfe14c02ebbf8472c9927b5a0ade54",
+        "frontTraceId": "4dbfe14c02ebbf8472c9927b5a0ade54"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "2be39baa-6d40-4302-8a5d-e211c0e3a21f",
+        "status": 503,
+        "elapsedMs": 64,
+        "workerTraceId": "2caf2f3014fd64993d1a360ad5f373f8",
+        "frontTraceId": "2caf2f3014fd64993d1a360ad5f373f8"
+      }
+    ]
+  },
+  "pending": [],
+  "applicationCommit": "9eb952bed162dd43455f9be8855a838701e73243",
+  "registryAcceptance": {
+    "status": "passed",
+    "runtimes": [
+      "node",
+      "python",
+      "nextjs"
+    ],
+    "uiPersistedAfterCleanup": true,
+    "allTemporaryJobsAndConfigMapsRemoved": true,
+    "javaAndGo": "Official pinned agent/modules already exercised by candidate acceptance",
+    "nextRegistryFixtureCorrection": "Dependency value must be 1.0.1, not the CLI specifier kubiq-apm@1.0.1; regression test added"
+  },
+  "verifiedOn": "2026-10-26",
+  "packageSourceCommit": "456615f6ccf657f9930bf9ad205d554cb1dc7a0f",
+  "packageApprovalSonar": {
+    "run": "https://github.com/priyanshumodi22/kubiq/actions/runs/40229858899",
+    "analysisId": "30d83db0-6a36-4c43-82d2-9170ee5d30a2",
+    "taskId": "a6715f4f-87ee-4d44-b30f-27525a52f29f",
+    "qualityGate": "OK",
+    "openIssues": 0,
+    "unreviewedHotspots": 0,
+    "coverage": 49.4,
+    "newCoverage": 80.3,
+    "sheetTab": "Scan 2026-10-25 201821"
+  },
+  "postDeploymentRequests": {
+    "node": [
+      {
+        "event": "verified-http-request",
+        "runId": "8a635371-992e-4d32-9cd2-606b737a6645",
+        "status": 200,
+        "elapsedMs": 12,
+        "workerTraceId": "13081987a9da4b63d3dbfad2276b94ba",
+        "frontTraceId": "13081987a9da4b63d3dbfad2276b94ba"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "8a635371-992e-4d32-9cd2-606b737a6645",
+        "status": 200,
+        "elapsedMs": 144,
+        "workerTraceId": "dd71d62b1f86b8a0ea1fc451a270c8af",
+        "frontTraceId": "dd71d62b1f86b8a0ea1fc451a270c8af"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "8a635371-992e-4d32-9cd2-606b737a6645",
+        "status": 503,
+        "elapsedMs": 8,
+        "workerTraceId": "b7fb30d93db3f76b9f89322b35bf9b2f",
+        "frontTraceId": "b7fb30d93db3f76b9f89322b35bf9b2f"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "8a635371-992e-4d32-9cd2-606b737a6645",
+        "status": 200,
+        "elapsedMs": 9,
+        "workerTraceId": "9c878ce692077aef4a6a7c892a938fe5",
+        "frontTraceId": "9c878ce692077aef4a6a7c892a938fe5"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "8a635371-992e-4d32-9cd2-606b737a6645",
+        "status": 200,
+        "elapsedMs": 132,
+        "workerTraceId": "59ef741f9b1fe2ae890fe297744e72cc",
+        "frontTraceId": "59ef741f9b1fe2ae890fe297744e72cc"
+      },
+      {
+        "event": "verified-http-request",
+        "runId": "8a635371-992e-4d32-9cd2-606b737a6645",
+        "status": 503,
+        "elapsedMs": 23,
+        "workerTraceId": "7512309de4ccee60d55e0e89c580a1e8",
+        "frontTraceId": "7512309de4ccee60d55e0e89c580a1e8"
+      }
+    ]
+  },
+  "verification": {
+    "backendTests": 284,
+    "frontendTests": 346,
+    "frontendProductionCoverageFiles": 98,
+    "lintAndBuildsPassed": true,
+    "normalRun": 40276394427,
+    "productionRun": 40277023137
+  },
+  "deployment": {
+    "image": "priyanshumodi22/kubiq:main-151",
+    "digest": "sha256:bf205952151a52d11de2cd549700fdc2b4621f91750b4fe88ff8beed94adf208",
+    "gitOpsCommit": "de98774c0eedb800125a491cece49f4848cd6172",
+    "pod": "kubiq-69c7fc6fb-qnmh9",
+    "ready": true,
+    "rollbackImage": "priyanshumodi22/kubiq:main-149",
+    "rollbackDigest": "sha256:171daaf239863d0e54ba6f7aed3e1092913755e09865c695bb84a7496e464f4b",
+    "rollbackMethod": "Revert the image reference in Git and reconcile Flux."
+  },
+  "website": {
+    "sourceCommit": "4c0f60ed896016c9ebda1fe110eb4301a38b7e03",
+    "guideSourceCommit": "e2547204c6a6e74432f30d2a6f5cee752a64cf2f",
+    "image": "ghcr.io/priyanshumodi22/kubiq-web:main-30",
+    "digest": "sha256:bb160fee38586d42b4359c5f08e472987e4edb1f8516b1af49cd2c709e0692a6",
+    "gitOpsCommit": "cfa6ff001e10bfc97364a744c9c767065c31c1cd",
+    "run": "https://github.com/priyanshumodi22/kubiq-web/actions/runs/40231818312",
+    "livePagesVerified": [
+      "/docs/apm",
+      "/docs/node-agent",
+      "/docs/python-agent"
+    ],
+    "singleH1": true
+  },
+  "guideParity": {
+    "modalAllFiveRuntimesMatchCanonical": true,
+    "publicDocumentationBlocks": 25,
+    "publicCodeBlocksSha256": "b848a789a87753d56707f0e33f4bc1649ae34635b414c6397daad40f22f517fd",
+    "node": "f1b9d260bb891deb1dfed0723b9e128a3f549a542d5a442a1f31c1217877f46a",
+    "python": "a965b706c4a9ed209c6d82119dba13aa425e01db24b0a340bbb54f1b6ef4dab4",
+    "java": "908ec366e1fe1554c504e37088fca3b7f9f6378c5494fb9640c887e3c9a2b3d8",
+    "nextjs": "f3760649ecdf67f762b70414cbfbf7d2a521496e02efa97c0562099fc7812793",
+    "go": "ceb822a722aa2115d1c9defc451580daa81a94cf4fe2d92d85f717cc2e6da5e8"
+  },
+  "runtimeChecks": {
+    "publicHealth": 200,
+    "frontend": 200,
+    "unauthenticatedServices": 401,
+    "unauthenticatedOtlp": 401,
+    "wrongIngestionToken": 401,
+    "authenticatedDirectProtobuf": 415,
+    "retainedTraceAfterFinalRollout": "7512309de4ccee60d55e0e89c580a1e8",
+    "spanCount": 3,
+    "allFluxApplicationsReady": true,
+    "noTemporaryJobsOrConfigMapsRemain": true
+  },
+  "uiChecks": {
+    "percentileAndTraceDurationMenusIndependent": true,
+    "percentileMenuAnchoredToHeader": true,
+    "selectionDoesNotChangeOtherFilter": true,
+    "escapeRestoresFocus": true,
+    "modalAllLanguagesVerified": true,
+    "selected24HourRangeSurvivesPolling": true,
+    "olderJavaTelemetryRemainsVisibleAfterPolling": true
+  },
+  "scope": "Private temporary HTTP apps only. Existing business applications were not instrumented. Matching log records require separate log ingestion and are not claimed."
+}

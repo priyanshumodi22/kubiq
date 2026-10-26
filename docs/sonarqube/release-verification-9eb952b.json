@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "verifiedOn": "2026-10-26",
+  "sourceCommit": "9eb952bed162dd43455f9be8855a838701e73243",
+  "sonar": {
+    "run": "https://github.com/priyanshumodi22/kubiq/actions/runs/40276468072",
+    "analysisId": "4da0029d-a1a4-458a-9b19-d8f5fb6bd400",
+    "taskId": "62373f34-462d-4507-b782-c315aae14b07",
+    "qualityGate": "OK",
+    "openIssues": 0,
+    "unreviewedHotspots": 0,
+    "coverage": 49.9,
+    "newCoverage": 81,
+    "sheetTab": "Scan 2026-10-26 055602",
+    "archive": "gs://priyanshu-apps-sonarqube-backups/reports/62373f34-462d-4507-b782-c315aae14b07-1792994167.json"
+  },
+  "verification": {
+    "backendTests": 284,
+    "frontendTests": 346,
+    "frontendProductionCoverageFiles": 98,
+    "lintAndBuildsPassed": true,
+    "normalRun": 40276394427,
+    "productionRun": 40277023137
+  },
+  "report": {
+    "sheetUrl": "https://docs.google.com/spreadsheets/d/1C7G0-c7mjQkQ3ur57u20mdv-XPIXWVBxWwgwyNHQqGY/edit",
+    "tab": "Scan 2026-10-26 055602",
+    "historicalRecords": 918,
+    "archive": "gs://priyanshu-apps-sonarqube-backups/reports/62373f34-462d-4507-b782-c315aae14b07-1792994167.json",
+    "automaticAuthenticatedExportReceipt": "passed"
+  },
+  "deployment": {
+    "image": "priyanshumodi22/kubiq:main-151",
+    "digest": "sha256:bf205952151a52d11de2cd549700fdc2b4621f91750b4fe88ff8beed94adf208",
+    "gitOpsCommit": "de98774c0eedb800125a491cece49f4848cd6172",
+    "pod": "kubiq-69c7fc6fb-qnmh9",
+    "ready": true,
+    "rollbackImage": "priyanshumodi22/kubiq:main-149",
+    "rollbackDigest": "sha256:171daaf239863d0e54ba6f7aed3e1092913755e09865c695bb84a7496e464f4b",
+    "rollbackMethod": "Revert the image reference in Git and reconcile Flux."
+  },
+  "website": {
+    "sourceCommit": "4c0f60ed896016c9ebda1fe110eb4301a38b7e03",
+    "guideSourceCommit": "e2547204c6a6e74432f30d2a6f5cee752a64cf2f",
+    "image": "ghcr.io/priyanshumodi22/kubiq-web:main-30",
+    "digest": "sha256:bb160fee38586d42b4359c5f08e472987e4edb1f8516b1af49cd2c709e0692a6",
+    "gitOpsCommit": "cfa6ff001e10bfc97364a744c9c767065c31c1cd",
+    "run": "https://github.com/priyanshumodi22/kubiq-web/actions/runs/40231818312",
+    "livePagesVerified": [
+      "/docs/apm",
+      "/docs/node-agent",
+      "/docs/python-agent"
+    ],
+    "singleH1": true
+  },
+  "runtimeChecks": {
+    "publicHealth": 200,
+    "frontend": 200,
+    "unauthenticatedServices": 401,
+    "unauthenticatedOtlp": 401,
+    "wrongIngestionToken": 401,
+    "authenticatedDirectProtobuf": 415,
+    "retainedTraceAfterFinalRollout": "7512309de4ccee60d55e0e89c580a1e8",
+    "spanCount": 3,
+    "allFluxApplicationsReady": true,
+    "noTemporaryJobsOrConfigMapsRemain": true
+  },
+  "uiChecks": {
+    "percentileAndTraceDurationMenusIndependent": true,
+    "percentileMenuAnchoredToHeader": true,
+    "selectionDoesNotChangeOtherFilter": true,
+    "escapeRestoresFocus": true,
+    "modalAllLanguagesVerified": true,
+    "selected24HourRangeSurvivesPolling": true,
+    "olderJavaTelemetryRemainsVisibleAfterPolling": true
+  },
+  "liveApmEvidence": "../../ops/apm-guide-check/release-evidence.json",
+  "scope": "Private temporary HTTP apps only. Existing business applications were not instrumented. Matching log records require separate log ingestion and are not claimed."
+}
