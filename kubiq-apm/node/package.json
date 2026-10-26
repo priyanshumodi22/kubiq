@@ -1,6 +1,6 @@
 {
     "name": "kubiq-apm",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "description": "Unified OpenTelemetry APM wrapper for Kubiq",
     "main": "index.js",
     "repository": {
@@ -13,17 +13,30 @@
         "auto.js",
         "exporter.js",
         "index.d.ts",
-        "exporter.d.ts"
+        "exporter.d.ts",
+        "runtime*.js",
+        "runtime.d.ts"
     ],
     "scripts": {
-        "test": "node --test exporter.test.cjs"
+        "test": "node --test",
+        "test:coverage": "c8 --include=\"runtime*.js\" --reporter=lcov --reporter=text node --test"
     },
     "dependencies": {
         "@opentelemetry/api": "^1.7.0",
         "@opentelemetry/auto-instrumentations-node": "^0.41.0",
         "@opentelemetry/exporter-trace-otlp-http": "^0.48.0",
-        "@opentelemetry/sdk-node": "^0.48.0"
+        "@opentelemetry/sdk-node": "^0.48.0",
+        "@opentelemetry/context-async-hooks": "1.21.0",
+        "@opentelemetry/core": "1.21.0",
+        "@opentelemetry/resources": "1.21.0",
+        "@opentelemetry/sdk-trace-base": "1.21.0",
+        "@opentelemetry/sdk-trace-node": "1.21.0",
+        "@opentelemetry/instrumentation": "0.48.0",
+        "@opentelemetry/instrumentation-http": "0.48.0"
     },
     "author": "Priyanshu Modi",
-    "license": "MIT"
+    "license": "MIT",
+    "devDependencies": {
+        "c8": "12.0.0"
+    }
 }

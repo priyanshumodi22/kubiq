@@ -25,6 +25,8 @@ env:
   FLUX_TAG: main-${{ github.run_number }}
 
 jobs:
+  sdk-compatibility:
+    uses: ./.github/workflows/apm-sdk-verify.yml
   verify:
     name: Verify application builds
     runs-on: ubuntu-latest
@@ -45,7 +47,7 @@ jobs:
       - run: python3 -m unittest discover -s ops/sonarqube -p 'test_*.py'
       - run: node scripts/verify-sonar-ledger.cjs
       - run: python3 -m unittest discover -s kubiq-apm/python -p test_wrapper.py
-      - run: node --test kubiq-apm/node/exporter.test.cjs
+      - run: npm test --prefix kubiq-apm/node
       - run: npm run lint --prefix backend
       - run: npm test --prefix backend -- --runInBand
       - run: npm run build --prefix backend
@@ -60,7 +62,7 @@ jobs:
   build-and-push:
     name: Build and publish image
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
-    needs: verify
+    needs: [verify, sdk-compatibility]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

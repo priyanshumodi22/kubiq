@@ -1,4 +1,4 @@
-<!-- Generated from docs/apm/instrumentation.json; edit the source, then regenerate. SHA256: 766ee70469200b4d40c1fa07b5f5961975e91868630e0885b26a584e10d1c323 -->
+<!-- Generated from docs/apm/instrumentation.json; edit the source, then regenerate. SHA256: e6b9ac55ca3eec8ca4d8e3730b84ae0ec0299aef0777f69f7f2b37fab1222cc6 -->
 
 # kubiq APM Integration Guide
 
@@ -10,7 +10,7 @@ kubiq accepts OTLP HTTP JSON at /api/apm/v1/traces, not direct protobuf. Use the
 
 Commands use POSIX shell syntax. In PowerShell, set environment variables with $env:NAME = "value", then start the application in that same environment. The ingestion token must come from your secret manager, never client-side code.
 
-Collector examples are pinned to 0.123.0. Node/Python package versions are 1.0.1/1.0.1.
+Collector examples are pinned to 0.123.0. Node/Python package versions are 1.1.0/1.0.1.
 
 ## 1. Node.js (Express, NestJS, Fastify)
 
@@ -20,7 +20,7 @@ Preload the kubiq wrapper before importing HTTP, Express, NestJS or Fastify. It 
 ### Install the wrapper
 
 ```bash
-npm install kubiq-apm@1.0.1
+npm install kubiq-apm@1.1.0
 ```
 
 ### Configure private environment
@@ -66,6 +66,28 @@ sdk.start();
 process.on('SIGTERM', () => { sdk.shutdown().catch(console.error); });
 ```
 
+### Opt-in controlled server tracing (instead of auto preload)
+
+File: `controlled-server.cjs`
+
+```javascript
+// Do not combine this runtime with kubiq-apm/auto or another provider.
+// Supply KUBIQ_TRACING_ENABLED=true, KUBIQ_INGESTION_TOKEN,
+// OTEL_SERVICE_NAME and the full OTEL_EXPORTER_OTLP_TRACES_ENDPOINT privately.
+const http = require('node:http');
+const { startTracing, traceRequest } = require('kubiq-apm/runtime');
+const tracing = startTracing({ profile: 'portfolio' });
+const server = http.createServer((req, res) => traceRequest(req, res, () => {
+  res.end('Hello');
+}, { route: () => '/' }));
+server.listen(3000);
+// Your application must own signal handling: drain requests, then await
+// tracing.shutdown() within its bounded graceful-shutdown deadline.
+// This profile excludes telemetry, probes, static assets and streams;
+// browser navigation/CDN cache hits are not server requests.
+
+```
+
 ## 4. Next.js 13+ (App Router)
 
 For Next.js 15/16 App Router on the Node runtime, use instrumentation.ts at the project root (or src/). Do not preload kubiq-apm/auto as well: that would initialize tracing twice. Edge/browser instrumentation is not included. Next.js 13/14 requires its legacy experimental.instrumentationHook setting; current versions do not. Set KUBIQ_TRACE_PROPAGATION_ORIGINS to the trusted downstream service origins that should receive trace context; external destinations are not enabled by default.
@@ -74,7 +96,7 @@ For Next.js 15/16 App Router on the Node runtime, use instrumentation.ts at the 
 ### Install compatible tracing packages
 
 ```bash
-npm install kubiq-apm@1.0.1 @vercel/otel@1.13.0
+npm install kubiq-apm@1.1.0 @vercel/otel@1.13.0
 ```
 
 ### Configure server-only environment

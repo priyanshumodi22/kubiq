@@ -42,7 +42,7 @@ describe('shared APM instrumentation guide', () => {
         const view = render(<ApmInstrumentationModal isOpen onClose={vi.fn()} />);
         fireEvent.click(view.getByRole('button', { name: 'Copy Install the wrapper' }));
         await act(() => vi.advanceTimersByTimeAsync(0));
-        expect(mocks.copy).toHaveBeenCalledWith('npm install kubiq-apm@1.0.1');
+        expect(mocks.copy).toHaveBeenCalledWith('npm install kubiq-apm@' + APM_GUIDE.nodeVersion);
         expect(view.getByText('Copied')).toBeTruthy();
         await act(() => vi.advanceTimersByTimeAsync(2000));
         expect(view.queryByText('Copied')).toBeNull();

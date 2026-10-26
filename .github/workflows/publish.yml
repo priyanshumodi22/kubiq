@@ -5,9 +5,17 @@ on:
     tags:
       - 'v*-apm'
   workflow_dispatch:
+    inputs:
+      publish_python:
+        description: Also publish the Python package
+        type: boolean
+        default: true
 
 jobs:
+  sdk-compatibility:
+    uses: ./.github/workflows/apm-sdk-verify.yml
   build-and-publish:
+    needs: sdk-compatibility
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: npm
@@ -37,7 +45,7 @@ jobs:
       - name: Verify generated guide and SDK compatibility
         run: |
           node scripts/generate-apm-guide.cjs --check
-          node --test kubiq-apm/node/exporter.test.cjs
+          npm test --prefix kubiq-apm/node
           node --test ops/apm-guide-check/exporter-failure.test.cjs ops/apm-guide-check/manifest.test.cjs
           python3 -m unittest discover -s kubiq-apm/python -p test_wrapper.py
 
@@ -58,7 +66,7 @@ jobs:
   publish-python:
     name: Publish verified Python package
     needs: build-and-publish
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish_python
     runs-on: ubuntu-latest
     environment: pypi
     permissions:

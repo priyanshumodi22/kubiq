@@ -1,4 +1,4 @@
-<!-- Generated from docs/apm/instrumentation.json; edit the source, then regenerate. SHA256: 766ee70469200b4d40c1fa07b5f5961975e91868630e0885b26a584e10d1c323 -->
+<!-- Generated from docs/apm/instrumentation.json; edit the source, then regenerate. SHA256: e6b9ac55ca3eec8ca4d8e3730b84ae0ec0299aef0777f69f7f2b37fab1222cc6 -->
 
 # kubiq APM Integration Guide
 
@@ -10,7 +10,7 @@ kubiq accepts OTLP HTTP JSON at /api/apm/v1/traces, not direct protobuf. Use the
 
 Commands use POSIX shell syntax. In PowerShell, set environment variables with $env:NAME = "value", then start the application in that same environment. The ingestion token must come from your secret manager, never client-side code.
 
-Collector examples are pinned to 0.123.0. Node/Python package versions are 1.0.1/1.0.1.
+Collector examples are pinned to 0.123.0. Node/Python package versions are 1.1.0/1.0.1.
 
 ## 2. Python (Django, Flask, FastAPI)
 

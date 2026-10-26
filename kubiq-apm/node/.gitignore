@@ -13,3 +13,6 @@ pnpm-debug.log*
 
 .DS_Store
 *.pem
+
+coverage/
+.nyc_output/

@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "revision": "apm-guide-1.0.1",
+  "revision": "2026-10-27-node-runtime-1.1.0",
   "title": "kubiq APM Integration Guide",
   "description": "Connect Node.js, Python, Java, Go and Next.js applications with tested, authenticated tracing.",
-  "nodeVersion": "1.0.1",
+  "nodeVersion": "1.1.0",
   "pythonVersion": "1.0.1",
   "collectorVersion": "0.123.0",
   "endpointNotes": "kubiq accepts OTLP HTTP JSON at /api/apm/v1/traces, not direct protobuf. Use the complete backend URL, including its optional prefix. Example production URL: https://priyanshumodi.in/kubiq-api/api/apm/v1/traces. Local development may use http://localhost:3001/api/apm/v1/traces. Use HTTPS for remote ingestion. Set a distinct OTEL_SERVICE_NAME per application. Never expose the ingestion token in browser/client code.",
@@ -38,7 +38,7 @@
           "id": "install",
           "title": "Install the wrapper",
           "language": "bash",
-          "code": "npm install kubiq-apm@1.0.1"
+          "code": "npm install kubiq-apm@1.1.0"
         },
         {
           "id": "environment",
@@ -64,6 +64,13 @@
           "filename": "tracing.cjs",
           "language": "javascript",
           "code": "const { NodeSDK } = require('@opentelemetry/sdk-node');\nconst { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');\nconst { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');\nconst sdk = new NodeSDK({\n  serviceName: process.env.OTEL_SERVICE_NAME,\n  traceExporter: new OTLPTraceExporter(),\n  instrumentations: [getNodeAutoInstrumentations()],\n});\nsdk.start();\nprocess.on('SIGTERM', () => { sdk.shutdown().catch(console.error); });"
+        },
+        {
+          "title": "Opt-in controlled server tracing (instead of auto preload)",
+          "language": "javascript",
+          "filename": "controlled-server.cjs",
+          "code": "// Do not combine this runtime with kubiq-apm/auto or another provider.\n// Supply KUBIQ_TRACING_ENABLED=true, KUBIQ_INGESTION_TOKEN,\n// OTEL_SERVICE_NAME and the full OTEL_EXPORTER_OTLP_TRACES_ENDPOINT privately.\nconst http = require('node:http');\nconst { startTracing, traceRequest } = require('kubiq-apm/runtime');\nconst tracing = startTracing({ profile: 'portfolio' });\nconst server = http.createServer((req, res) => traceRequest(req, res, () => {\n  res.end('Hello');\n}, { route: () => '/' }));\nserver.listen(3000);\n// Your application must own signal handling: drain requests, then await\n// tracing.shutdown() within its bounded graceful-shutdown deadline.\n// This profile excludes telemetry, probes, static assets and streams;\n// browser navigation/CDN cache hits are not server requests.\n",
+          "id": "controlled-runtime"
         }
       ]
     },
@@ -132,7 +139,7 @@
           "id": "install",
           "title": "Install compatible tracing packages",
           "language": "bash",
-          "code": "npm install kubiq-apm@1.0.1 @vercel/otel@1.13.0"
+          "code": "npm install kubiq-apm@1.1.0 @vercel/otel@1.13.0"
         },
         {
           "id": "environment",

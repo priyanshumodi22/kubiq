@@ -11,7 +11,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  sdk-compatibility:
+    uses: ./.github/workflows/apm-sdk-verify.yml
   scan:
+    needs: sdk-compatibility
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -28,11 +31,13 @@ jobs:
       - run: node --test ops/apm-guide-check/exporter-failure.test.cjs ops/apm-guide-check/manifest.test.cjs
       - run: npm ci --prefix frontend
       - run: python3 -m unittest discover -s kubiq-apm/python -p test_wrapper.py
-      - run: node --test kubiq-apm/node/exporter.test.cjs
+      - run: npm test --prefix kubiq-apm/node
       - name: Generate coverage reports
         run: |
           node --test .github/scripts/verify-sonar-export.test.cjs
           python3 -m unittest discover -s ops/sonarqube -p 'test_*.py'
+          npm run test:coverage --prefix kubiq-apm/node
+          test -s kubiq-apm/node/coverage/lcov.info
           npm run test:coverage --prefix backend
           npm run test:coverage --prefix frontend
           test -s backend/coverage/lcov.info
@@ -43,6 +48,7 @@ jobs:
         with:
           name: coverage-${{ github.sha }}
           path: |
+            kubiq-apm/node/coverage/lcov.info
             backend/coverage/lcov.info
             frontend/coverage/lcov.info
           if-no-files-found: error
