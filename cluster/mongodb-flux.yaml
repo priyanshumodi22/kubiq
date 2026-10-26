@@ -1,0 +1,15 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: kubiq-mongodb
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  timeout: 8m
+  path: ./cluster/mongodb
+  prune: false
+  sourceRef:
+    kind: GitRepository
+    name: kubiq
+  wait: true

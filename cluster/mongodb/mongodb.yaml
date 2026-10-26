@@ -1,0 +1,210 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mongodb-system
+  labels:
+    app.kubernetes.io/part-of: kubiq
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: kubiq-mongodb-retain
+provisioner: rancher.io/local-path
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  namespace: mongodb-system
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: mongodb
+  ports:
+    - name: mongodb
+      port: 27017
+      targetPort: mongodb
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-headless
+  namespace: mongodb-system
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: mongodb
+  ports:
+    - name: mongodb
+      port: 27017
+      targetPort: mongodb
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-init
+  namespace: mongodb-system
+data:
+  10-users.js: |
+    db.getSiblingDB('kubiq').createUser({user: process.env.MONGODB_APP_USERNAME,
+      pwd: process.env.MONGODB_APP_PASSWORD, roles: [{role: 'readWrite', db: 'kubiq'}]});
+    db.getSiblingDB('admin').createUser({user: process.env.MONGODB_BACKUP_USERNAME,
+      pwd: process.env.MONGODB_BACKUP_PASSWORD, roles: [{role: 'backup', db: 'admin'}]});
+  health.js: |
+    const c = new Mongo('mongodb://127.0.0.1:27017');
+    const a = c.getDB('admin');
+    if (!a.auth(process.env.MONGO_INITDB_ROOT_USERNAME, process.env.MONGO_INITDB_ROOT_PASSWORD)) quit(1);
+    if (a.runCommand({ping: 1}).ok !== 1) quit(1);
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+  namespace: mongodb-system
+spec:
+  serviceName: mongodb-headless
+  replicas: 1
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mongodb
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mongodb
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 90
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mongodb
+          image: mongo:8.0.34@sha256:4a4ab5d4834207389e0d7270fac988e21ffedccecba77991a552f755df229907
+          imagePullPolicy: IfNotPresent
+          args:
+            - --auth
+            - --bind_ip_all
+            - --wiredTigerCacheSizeGB=0.3
+            - --setParameter=maxIndexBuildMemoryUsageMegabytes=32
+            - --setParameter=diagnosticDataCollectionEnabled=false
+          ports:
+            - name: mongodb
+              containerPort: 27017
+          envFrom:
+            - secretRef:
+                name: mongodb-bootstrap
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          startupProbe:
+            exec:
+              command: [mongosh, --quiet, --norc, /etc/mongodb-health/health.js]
+            failureThreshold: 60
+            periodSeconds: 10
+            timeoutSeconds: 8
+          readinessProbe:
+            tcpSocket:
+              port: mongodb
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            tcpSocket:
+              port: mongodb
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 6
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
+            - name: configdb
+              mountPath: /data/configdb
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+            - name: health
+              mountPath: /etc/mongodb-health
+              readOnly: true
+      volumes:
+        - name: init
+          configMap:
+            name: mongodb-init
+            items:
+              - key: 10-users.js
+                path: 10-users.js
+        - name: health
+          configMap:
+            name: mongodb-init
+            items:
+              - key: health.js
+                path: health.js
+        - name: configdb
+          emptyDir:
+            sizeLimit: 32Mi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: kubiq-mongodb-retain
+        resources:
+          requests:
+            storage: 10Gi
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mongodb-private
+  namespace: mongodb-system
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: mongodb
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kubiq-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: kubiq
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: mongodb-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/component: mongodb-ops
+      ports:
+        - protocol: TCP
+          port: 27017
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
