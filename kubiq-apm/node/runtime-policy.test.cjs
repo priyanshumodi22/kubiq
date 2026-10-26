@@ -6,6 +6,9 @@ test('request selection excludes noise and background sync, not business APIs or
     for (const url of ['/', '/index.html', '/api/services', '/api/github?repo=private']) assert.equal(p.excluded({ method: 'GET', url }, 'portfolio'), false, url);
     assert(p.excluded({ method: 'POST', url: '/api/codex-activity' }, 'portfolio'));
     assert(!p.excluded({ method: 'GET', url: '/api/codex-activity' }, 'portfolio'));
+    assert(p.excluded({ method: 'POST', url: '/kubiq-api/api/kubi/conversations/private-id/messages' }, 'kubiq'));
+    assert(!p.excluded({ method: 'GET', url: '/kubiq-api/api/kubi/conversations' }, 'kubiq'));
+    for (const url of ['/ready', '/readyz', '/readiness', '/socket.io/', '/manifest.webmanifest']) assert(p.excluded({ method: 'GET', url }, 'kubiq'));
     assert.equal(p.pathOf({}), '/');
     assert.equal(p.pathOf({ url: 'http://[' }), '/');
 });

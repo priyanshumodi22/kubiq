@@ -7,9 +7,10 @@ function pathOf(request) {
 }
 function excluded(request, profile) {
     const path = pathOf(request);
-    if (/(?:^|\/)healthz?(?:\/|$)/.test(path) || /\.(?:css|js|map|json|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf|txt|xml)$/i.test(path)) return true;
-    if (/(?:^|\/)(?:assets|static)(?:\/|$)/.test(path) || /(?:^|\/)(?:stream|live|events-stream)(?:\/|$)/.test(path)) return true;
+    if (/(?:^|\/)(?:healthz?|readyz?|readiness)(?:\/|$)/.test(path) || /\.(?:css|js|map|json|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf|txt|xml|webmanifest|avif|wasm|mp4|pdf)$/i.test(path)) return true;
+    if (/(?:^|\/)(?:assets|static|socket\.io)(?:\/|$)/.test(path) || /(?:^|\/)(?:stream|live|events-stream)(?:\/|$)/.test(path)) return true;
     if (profile === 'kubiq' && /\/api\/(?:apm|telemetry)(?:\/|$)/.test(path)) return true;
+    if (profile === 'kubiq' && request.method === 'POST' && /\/api\/kubi\/conversations\/[^/]+\/messages$/.test(path)) return true;
     return profile === 'portfolio' && request.method === 'POST' && path === '/api/codex-activity';
 }
 function attributes(values = {}) {
