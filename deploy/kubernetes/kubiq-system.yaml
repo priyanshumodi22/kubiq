@@ -281,7 +281,6 @@ metadata:
 spec:
   selector:
     app.kubernetes.io/name: kubiq
-    maintenance.priyanshumodi.in/active: blocked
   ports:
     - name: http
       port: 80
