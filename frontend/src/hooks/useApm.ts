@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '../services/api';
 import { requestErrorMessage } from '../utils/requestError';
 
@@ -19,13 +19,16 @@ export function useApm() {
     const [metrics, setMetrics] = useState<ServiceMetrics[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const selectedRange = useRef<{ timeRangeMs?: number; fromMs?: number; toMs?: number }>({});
 
-    const fetchMetrics = useCallback(async (options: { timeRangeMs?: number; fromMs?: number; toMs?: number } = {}) => {
+    const fetchMetrics = useCallback(async (options?: { timeRangeMs?: number; fromMs?: number; toMs?: number }) => {
+        if (options) selectedRange.current = { ...options };
+        const range = selectedRange.current;
         try {
-            const timeRangeMs = options.timeRangeMs || 60 * 60 * 1000;
+            const timeRangeMs = range.timeRangeMs || 60 * 60 * 1000;
             const params: Record<string, string> = { timeRangeMs: timeRangeMs.toString() };
-            if (options.fromMs) params.fromMs = options.fromMs.toString();
-            if (options.toMs) params.toMs = options.toMs.toString();
+            if (range.fromMs) params.fromMs = range.fromMs.toString();
+            if (range.toMs) params.toMs = range.toMs.toString();
 
             setLoading(true);
             setError(null);
