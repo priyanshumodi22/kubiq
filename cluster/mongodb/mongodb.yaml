@@ -99,6 +99,11 @@ spec:
           ports:
             - name: mongodb
               containerPort: 27017
+          # MongoDB's upstream compatibility test uses this to disable the
+          # affected TCMalloc per-CPU cache on modern kernels (SERVER-121912).
+          env:
+            - name: GLIBC_TUNABLES
+              value: glibc.pthread.rseq=1
           envFrom:
             - secretRef:
                 name: mongodb-bootstrap
