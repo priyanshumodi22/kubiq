@@ -1,5 +1,6 @@
 const methods = new Set(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']);
 const safeAttributes = new Set(['db.system', 'db.operation.name', 'server.address', 'http.request.method', 'http.response.status_code', 'http.route', 'error.type']);
+const staticExtensions = new Set(['css', 'js', 'map', 'json', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'woff', 'woff2', 'ttf', 'txt', 'xml', 'webmanifest', 'avif', 'wasm', 'mp4', 'pdf']);
 function method(value) { return methods.has(value) ? value : 'OTHER'; }
 function pathOf(request) {
     try { return new URL(request.url || '/', 'https://local').pathname; }
@@ -7,7 +8,8 @@ function pathOf(request) {
 }
 function excluded(request, profile) {
     const path = pathOf(request);
-    if (/(?:^|\/)(?:healthz?|readyz?|readiness)(?:\/|$)/.test(path) || /\.(?:css|js|map|json|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf|txt|xml|webmanifest|avif|wasm|mp4|pdf)$/i.test(path)) return true;
+    const extension = /\.([a-z0-9]+)$/i.exec(path)?.[1]?.toLowerCase();
+    if (/(?:^|\/)(?:healthz?|readyz?|readiness)(?:\/|$)/.test(path) || staticExtensions.has(extension)) return true;
     if (/(?:^|\/)(?:assets|static|socket\.io)(?:\/|$)/.test(path) || /(?:^|\/)(?:stream|live|events-stream)(?:\/|$)/.test(path)) return true;
     if (profile === 'kubiq' && /\/api\/(?:apm|telemetry)(?:\/|$)/.test(path)) return true;
     if (profile === 'kubiq' && request.method === 'POST' && /\/api\/kubi\/conversations\/[^/]+\/messages$/.test(path)) return true;
