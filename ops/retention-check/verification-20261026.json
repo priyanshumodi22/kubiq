@@ -54,5 +54,37 @@
     "downloadHashVerified": true,
     "backupRecordCountsVerified": true
   },
-  "releaseStatus": "Application release pending exact-commit gates"
+  "releaseStatus": "Verified application release main-155",
+  "sourceCommit": "5745b702a1d9ce38d38923a1d810235d6275ad56",
+  "ci": {
+    "databaseRetentionRun": 40297313852,
+    "applicationVerificationRun": 40297313869,
+    "sonarRun": 40297339539,
+    "productionRun": 40298004435,
+    "backendTests": 319,
+    "frontendTests": 346,
+    "allDatabaseMatrixJobsPassed": true
+  },
+  "production": {
+    "image": "priyanshumodi22/kubiq:main-155",
+    "digest": "sha256:1c77a98b62f266b1dcec8d4e6f876570ed97c9d5f8865f5fa04bbd7b4d85095e",
+    "gitOpsCommit": "9c41ac66c88770f47f571fd47bae338ada145d56",
+    "healthy": true,
+    "allFluxApplicationsReady": true
+  },
+  "liveIngestion": {
+    "unauthenticated": 401,
+    "apm": 202,
+    "logs": 202,
+    "apmCountsBeforeFixtureCleanup": {
+      "recent": 1,
+      "expired": 0
+    },
+    "logCountsBeforeFixtureCleanup": {
+      "recent": 1,
+      "expired": 0
+    },
+    "fixtureCleanupVerified": true,
+    "temporaryJobsAndConfigMapsRemoved": true
+  }
 }

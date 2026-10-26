@@ -34,3 +34,7 @@ No sampling or ingestion cap is introduced by this repair.
 The existing plain timestamp indexes were converted to 259200-second APM and 604800-second log TTL indexes on MongoDB 8.0.34. All 252 recent spans remained. All 75777 logs were already older than seven days and expired; a full EJSON gzip backup with original indexes was uploaded to the private backup bucket first, downloaded again, hash-checked, and parsed to confirm all original records. See `ops/retention-check/verification-20261026.json` for the backup location and verification evidence. The bucket retains the backup for 30 days.
 
 The EJSON archive is newline-delimited `{collection, document}` records. For recovery, decode with BSON EJSON, restore into a separate collection without TTL first, verify record counts, then choose an export or a retention policy before returning data to active collections. Restoring expired records directly under the same TTL would expire them again. Never restore over live application collections without a reviewed recovery plan.
+
+## Release verification
+
+Release `main-155` (source `5745b70`) passed all four real database CI jobs and the strict Sonar gate: zero open issues, zero unreviewed hotspots, and 81.1% new-code coverage. A live authenticated post-rollout test confirmed HTTP 202 for spans and logs, HTTP 401 without authentication, recent records retained, expired records deleted, and complete cleanup of its synthetic records. See `docs/sonarqube/release-verification-5745b70.json`.

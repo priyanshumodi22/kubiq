@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "verifiedOn": "2026-10-26",
+  "sourceCommit": "5745b702a1d9ce38d38923a1d810235d6275ad56",
+  "sonar": {
+    "run": "https://github.com/priyanshumodi22/kubiq/actions/runs/40297339539",
+    "analysisId": "b2bae062-3013-4f13-8315-37f16e8bb718",
+    "taskId": "4ec27d30-7c5c-42b3-9ba3-4451859d2eeb",
+    "qualityGate": "OK",
+    "openIssues": 0,
+    "unreviewedHotspots": 0,
+    "coverage": 50.6,
+    "newCoverage": 81.1,
+    "archive": "gs://priyanshu-apps-sonarqube-backups/reports/4ec27d30-7c5c-42b3-9ba3-4451859d2eeb-1793005986.json",
+    "automaticAuthenticatedExportReceipt": "passed"
+  },
+  "verification": {
+    "databaseRetentionRun": 40297313852,
+    "applicationVerificationRun": 40297313869,
+    "sonarRun": 40297339539,
+    "productionRun": 40298004435,
+    "backendTests": 319,
+    "frontendTests": 346,
+    "allDatabaseMatrixJobsPassed": true
+  },
+  "deployment": {
+    "image": "priyanshumodi22/kubiq:main-155",
+    "digest": "sha256:1c77a98b62f266b1dcec8d4e6f876570ed97c9d5f8865f5fa04bbd7b4d85095e",
+    "gitOpsCommit": "9c41ac66c88770f47f571fd47bae338ada145d56",
+    "healthy": true,
+    "allFluxApplicationsReady": true,
+    "pod": "kubiq-5c4b996768-kwsfr",
+    "rollbackImage": "priyanshumodi22/kubiq:main-151",
+    "rollbackDigest": "sha256:bf205952151a52d11de2cd549700fdc2b4621f91750b4fe88ff8beed94adf208"
+  },
+  "retentionEvidence": "../../ops/retention-check/verification-20261026.json",
+  "scope": "MongoDB APM/log TTL, MySQL/MariaDB bounded recurring APM cleanup, ClickHouse APM/log TTL. JSON APM and SQL retained-log features remain explicitly unsupported. Existing VM sizing and Atlas database location are unchanged."
+}
