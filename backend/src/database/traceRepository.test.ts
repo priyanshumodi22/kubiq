@@ -30,4 +30,3 @@ test('repository errors and rejected promises preserve their original identity a
     expect(repository['private-operation']()).toBe(2);
     expect(JSON.stringify(jest.mocked(trace).mock.calls.map(call => [call[0], call[2]]))).not.toContain('SYNTHETIC_SECRET');
 });
-

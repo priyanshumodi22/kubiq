@@ -28,4 +28,3 @@ Before enabling each service, verify the exact image with tracing off/on, real r
 Enable and verify kubiq first, then portfolio, through their GitOps manifests. Retain `priyanshumodi22/kubiq:main-157` and `ghcr.io/priyanshumodi22/portfolio:main-4` as the pre-instrumentation application images. Rollback either sets `KUBIQ_TRACING_ENABLED=false` through Git or restores the prior image. It must not switch databases, disable the receiver or delete existing traces.
 
 CDN cache hits and client-side navigation do not reach these servers and are outside this server-tracing coverage. Browser performance monitoring is not enabled.
-
