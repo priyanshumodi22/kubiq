@@ -241,6 +241,9 @@ spec:
             # Pod-template settings ensure GitOps enable/rollback restarts the producer.
             - name: KUBIQ_TRACING_ENABLED
               value: 'true'
+            # Explicitly approved detailed commands; credentials are redacted before export.
+            - name: KUBIQ_TRACING_QUERY_DETAILS
+              value: 'true'
             - name: OTEL_SERVICE_NAME
               value: kubiq-backend
             - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
