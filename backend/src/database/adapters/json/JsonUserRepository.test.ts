@@ -1,7 +1,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { JsonUserRepository } from './JsonUserRepository';
 
 describe('JsonUserRepository RBAC migration', () => {
@@ -14,9 +14,22 @@ describe('JsonUserRepository RBAC migration', () => {
   });
 
   afterEach(() => {
+    jest.restoreAllMocks();
     if (originalDataDir === undefined) delete process.env.DATA_DIR;
     else process.env.DATA_DIR = originalDataDir;
     fs.rmSync(dataDir, { recursive: true, force: true });
+  });
+
+  it('keeps users created at the same clock tick distinct and preserves older IDs', async () => {
+    fs.writeFileSync(path.join(dataDir, 'users.json'), JSON.stringify([{ id: '1700000000000', username: 'older', role: 'kubiq-viewer', enabled: true }]));
+    jest.spyOn(Date, 'now').mockReturnValue(1700000000000);
+    const repository = new JsonUserRepository(); await repository.initialize();
+    const first = await repository.createUser({ username: 'first', role: 'kubiq-admin' });
+    const second = await repository.createUser({ username: 'second', role: 'kubiq-viewer' });
+    expect(first.id).not.toBe(second.id);
+    expect((await repository.findById(first.id))?.username).toBe('first');
+    expect((await repository.findById(second.id))?.username).toBe('second');
+    expect((await repository.findById('1700000000000'))?.username).toBe('older');
   });
 
   it('backfills legacy single-role users and preserves existing multi-role assignments', async () => {

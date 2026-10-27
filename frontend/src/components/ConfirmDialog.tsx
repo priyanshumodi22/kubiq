@@ -54,7 +54,7 @@ export function ConfirmDialog({
 
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-bg-surface border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden relative">
+      <div className="bg-bg-surface border border-white/10 rounded-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto shadow-2xl scale-100 animate-in zoom-in-95 duration-200 relative">
         
         {/* Subtle Gradient Glow at top */}
         <div className={`absolute top-0 left-0 right-0 h-1 bg-linear-to-r ${style.gradient}`} />

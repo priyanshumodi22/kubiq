@@ -27,6 +27,7 @@ async function repository() {
   const { stopRetentionSweeps } = require(path.join(base, 'utils/RetentionScheduler'));
   try {
     await trace.initialize();
+    await require('./log-config.cjs')(kind);
     stopRetentionSweeps();
     if (kind === 'mysql' || kind === 'mariadb') {
       const { mysqlTraceContext } = require(path.join(base, 'database/mysqlTraceContext'));

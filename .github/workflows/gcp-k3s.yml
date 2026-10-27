@@ -55,6 +55,8 @@ jobs:
       - run: npm test --prefix backend -- --runInBand
       - run: npm run build --prefix backend
       - run: npm ci --prefix frontend
+      - name: Verify saved Kubernetes logs through real HTTP and Socket.IO transports
+        run: node ops/kubernetes-logs/transport.cjs
       - run: npm run lint --prefix frontend
       - run: npm test --prefix frontend -- --run
       - run: npm run build --prefix frontend

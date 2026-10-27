@@ -42,6 +42,10 @@ export class DatabaseFactory {
   private static _apmSupported: boolean | null = null;
 
   /** Returns true only when DB_TYPE is mysql or mongodb. */
+  public static isLogStorageSupported(): boolean {
+    return ['mongo', 'mongodb'].includes((process.env.DB_TYPE || 'json').toLowerCase()) || clickhouseService.isConfigured();
+  }
+
   public static isApmSupported(): boolean {
     if (this._apmSupported === null) {
       const db = (process.env.DB_TYPE || 'json').toLowerCase();

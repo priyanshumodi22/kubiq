@@ -1,7 +1,7 @@
 import { mysqlPassword } from '../../../utils/MysqlPassword';
 
 import mysql from 'mysql2/promise';
-import { ISystemRepository, LicenseActivation, KubiAiConfigRecord, RbacConfigRecord } from '../../interfaces/ISystemRepository';
+import { KubernetesLogConfig, ISystemRepository, LicenseActivation, KubiAiConfigRecord, RbacConfigRecord } from '../../interfaces/ISystemRepository';
 import { SystemMetrics } from '../../../types';
 
 export class MysqlSystemRepository implements ISystemRepository {
@@ -193,5 +193,18 @@ export class MysqlSystemRepository implements ISystemRepository {
     if (!this.pool) await this.initialize();
     const value = JSON.stringify(config);
     await this.pool!.execute('INSERT INTO system_config (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?', [this.rbacConfigKey, value, value]);
+  }
+  async getKubernetesLogConfig(): Promise<KubernetesLogConfig | null> {
+    if (!this.pool) await this.initialize();
+    const [rows]: any = await this.pool!.query('SELECT value FROM system_config WHERE `key` = ?', ['kubernetes-log-sources']);
+    if (rows.length === 0) return null;
+    const value = typeof rows[0].value === 'string' ? JSON.parse(rows[0].value) : rows[0].value;
+    return value?.version === 1 && Array.isArray(value.sources) && typeof value.updatedAt === 'number' ? value as KubernetesLogConfig : null;
+  }
+
+  async saveKubernetesLogConfig(config: KubernetesLogConfig): Promise<void> {
+    if (!this.pool) await this.initialize();
+    const value = JSON.stringify(config);
+    await this.pool!.execute('INSERT INTO system_config (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?', ['kubernetes-log-sources', value, value]);
   }
 }

@@ -1,3 +1,4 @@
+import { notify } from '../utils/notify';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import io from 'socket.io-client';
@@ -13,6 +14,8 @@ import { AiSummaryContent } from './AiSummaryContent';
 import { classifyLogLevel, type LogLevel } from '../utils/logLevel';
 
 interface K8sLogViewerProps {
+    sourceId?: string;
+    sourceName?: string;
     namespace: string;
     podName?: string;
     deploymentName?: string;
@@ -145,7 +148,7 @@ function K8sLogModals({ showSummaryModal, summary, summarizing, showUpgradeModal
     );
 }
 
-export function K8sLogViewer({ namespace, podName, deploymentName, containers, initialSearchQuery = '' }: Readonly<K8sLogViewerProps>) {
+export function K8sLogViewer({ sourceId, sourceName, namespace, podName, deploymentName, containers, initialSearchQuery = '' }: Readonly<K8sLogViewerProps>) {
     const [selectedContainer, setSelectedContainer] = useState(containers[0]?.name ?? '');
     const [tailLines, setTailLines] = useState(100);
     const [containerDropdownOpen, setContainerDropdownOpen] = useState(false);
@@ -204,7 +207,8 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers, i
         socketRef.current = socket;
 
         socket.on('connect', () => {
-            setIsConnected(true);
+            setIsConnected(!sourceId);
+            if (sourceId) { socket.emit('k8s:watch:source', { sourceId, tailLines }); return; }
             socket.emit('k8s:watch:logs', {
                 namespace,
                 podName,
@@ -214,6 +218,8 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers, i
             });
         });
 
+        socket.on('k8s:log:status', (status: { waiting: boolean; message: string }) => { setIsConnected(!status.waiting); setStreamEnded(false); setError(status.waiting ? status.message : null); });
+        socket.on('connect_error', () => { setIsConnected(false); setError('Log connection unavailable. Reconnecting…'); });
         socket.on('disconnect', () => setIsConnected(false));
 
         socket.on('k8s:log:init', (data: { lines: string[] }) => {
@@ -222,7 +228,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers, i
                 content,
                 level: classifyLogLevel(content),
             }));
-            setLogs(mapped);
+            setLogs(mapped.slice(-10000));
         });
 
         socket.on('k8s:log:line', (data: { content: string }) => {
@@ -231,7 +237,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers, i
                 .filter(Boolean)
                 .map((content) => ({ id: ++nextLogIdRef.current, content, level: classifyLogLevel(content) }));
 
-            setLogs(prev => [...prev, ...newLines]);
+            setLogs(prev => [...prev, ...newLines].slice(-10000));
 
             if (isPausedRef.current) {
                 setNewLogsCount(prev => prev + newLines.length);
@@ -245,6 +251,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers, i
 
         socket.on('k8s:log:error', (data: { message: string }) => {
             setError(data.message);
+            notify(data.message, 'error');
             setIsConnected(false);
         });
 
@@ -254,7 +261,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers, i
             socket.disconnect();
             if (socketRef.current === socket) socketRef.current = null;
         };
-    }, [namespace, podName, deploymentName, selectedContainer, tailLines]);
+    }, [sourceId, namespace, podName, deploymentName, selectedContainer, tailLines]);
 
     const resume = () => {
         setIsPaused(false);
@@ -262,7 +269,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers, i
         virtuosoRef.current?.scrollToIndex({ index: logs.length - 1, align: 'end', behavior: 'smooth' });
     };
 
-    const k8sServiceName = `k8s:${namespace}:${podName?.split('-')[0] || deploymentName || 'unknown'}`;
+    const k8sServiceName = sourceId ? `k8s:${namespace}:${sourceId}` : `k8s:${namespace}:${podName?.split('-')[0] || deploymentName || 'unknown'}`;
 
     // Fetch recent AI summary
     useEffect(() => {
@@ -318,6 +325,7 @@ export function K8sLogViewer({ namespace, podName, deploymentName, containers, i
     return (
         <div className="flex flex-col h-full bg-[#0d0d0d] font-mono text-xs overflow-hidden">
             <K8sLogModals showSummaryModal={showSummaryModal} summary={summary} summarizing={summarizing} showUpgradeModal={showUpgradeModal} onCloseSummary={() => setShowSummaryModal(false)} onCloseUpgrade={() => setShowUpgradeModal(false)} />
+            {sourceName && <p className="border-b border-white/10 px-3 py-2 text-xs text-text-dim">{sourceName} · {namespace} · following saved target</p>}
             {/* ── Toolbar ────────────────────────────────────────── */}
             <div className="flex flex-row items-center gap-2 px-3 py-2 border-b border-gray-800 bg-[#111111] shrink-0 flex-wrap">
                 

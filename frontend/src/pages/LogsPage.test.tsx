@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({ manage: true }));
 vi.mock('../hooks/useServices', () => ({ useServices: () => ({ services: [{ id: 'api-id', name: 'api', currentStatus: 'healthy', history: [], endpoint: '/', logPath: '/api.log', logSources: [{ id: 'log-id', name: 'Server', path: '/api.log' }] }], refresh: vi.fn() }) }));
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ hasPermission: () => mocks.manage }) }));
 vi.mock('../contexts/ToastContext', () => ({ useToast: () => ({ addToast: vi.fn() }) }));
-vi.mock('../services/api', () => ({ apiClient: { getDiscoveredLogServices: async () => ['k8s:apps:web'] } }));
+vi.mock('../services/api', () => ({ apiClient: { getDiscoveredLogServices: async () => ['k8s:apps:web'], getKubernetesLogSources: async () => [] } }));
 vi.mock('../components/LogViewer', () => ({ LogViewer: ({ serviceName, initialSearchQuery }: { serviceName: string; initialSearchQuery?: string }) => <p data-trace={initialSearchQuery}>VM viewer: {serviceName}</p> }));
 vi.mock('../components/K8sLogViewer', () => ({ K8sLogViewer: ({ namespace, deploymentName, initialSearchQuery }: { namespace: string; deploymentName: string; initialSearchQuery?: string }) => <p data-trace={initialSearchQuery}>K8s viewer: {namespace}/{deploymentName}</p> }));
 vi.mock('../components/ConfigureLogModal', () => ({ ConfigureLogModal: ({ isOpen }: { isOpen: boolean }) => isOpen ? <p>Configure logs</p> : null }));

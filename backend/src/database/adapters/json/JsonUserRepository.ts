@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { IUserRepository } from '../../interfaces/IUserRepository';
 import { User } from '../../../types';
@@ -67,7 +68,7 @@ export class JsonUserRepository implements IUserRepository {
   }
 
   async createUser(user: Omit<User, 'id' | 'createdAt' | 'lastLogin'>): Promise<User> {
-    const id = Date.now().toString(); // Simple ID
+    const id = randomUUID(); // Preserve existing IDs; new users cannot collide within one millisecond.
     const newUser: User = {
         id,
         username: user.username,

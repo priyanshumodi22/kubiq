@@ -1,3 +1,4 @@
+import type { KubernetesLogSource } from '../types/kubernetesLogs';
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
 export type PasskeyAuthenticatorAttachment = 'platform' | 'cross-platform';
@@ -708,6 +709,25 @@ class ApiClient {
     return response.data;
   }
 
+  async getKubernetesLogSources(): Promise<KubernetesLogSource[]> {
+    return (await this.client.get('/api/logs/kubernetes/sources')).data;
+  }
+  async getKubernetesLogNamespaces(): Promise<string[]> {
+    return (await this.client.get('/api/logs/kubernetes/namespaces')).data;
+  }
+  async saveKubernetesLogSource(source: Omit<KubernetesLogSource, 'id' | 'updatedAt'>, id?: string): Promise<KubernetesLogSource> {
+    const url = '/api/logs/kubernetes/sources';
+    return (id ? await this.client.put(`${url}/${encodeURIComponent(id)}`, source) : await this.client.post(url, source)).data;
+  }
+  async removeKubernetesLogSource(id: string) {
+    await this.client.delete(`/api/logs/kubernetes/sources/${encodeURIComponent(id)}`);
+  }
+  async getKubernetesLogTargets(namespace: string, kind: string): Promise<Array<{ name: string }>> {
+    return (await this.client.get('/api/logs/kubernetes/targets', { params: { namespace, kind } })).data;
+  }
+  async getKubernetesLogContainers(namespace: string, kind: string, resource: string): Promise<string[]> {
+    return (await this.client.get('/api/logs/kubernetes/containers', { params: { namespace, kind, resource } })).data;
+  }
   // --- Logs ---
   async getDiscoveredLogServices() {
     const response = await this.client.get('/api/logs/all-services');

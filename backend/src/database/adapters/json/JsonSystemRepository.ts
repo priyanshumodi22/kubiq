@@ -1,7 +1,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { ISystemRepository, LicenseActivation, KubiAiConfigRecord, RbacConfigRecord } from '../../interfaces/ISystemRepository';
+import { KubernetesLogConfig, ISystemRepository, LicenseActivation, KubiAiConfigRecord, RbacConfigRecord } from '../../interfaces/ISystemRepository';
 import { SystemMetrics } from '../../../types';
 
 export class JsonSystemRepository implements ISystemRepository {
@@ -122,5 +122,17 @@ export class JsonSystemRepository implements ISystemRepository {
   async saveRbacConfig(config: RbacConfigRecord): Promise<void> {
     if (!fs.existsSync(this.dataDir)) await this.initialize();
     fs.writeFileSync(this.rbacConfigPath, JSON.stringify(config, null, 2));
+  }
+  async getKubernetesLogConfig(): Promise<KubernetesLogConfig | null> {
+    if (!fs.existsSync(path.join(this.dataDir, 'kubernetes-log-sources.json'))) return null;
+    try {
+      const value = JSON.parse(fs.readFileSync(path.join(this.dataDir, 'kubernetes-log-sources.json'), 'utf-8')) as Partial<KubernetesLogConfig>;
+      return value.version === 1 && Array.isArray(value.sources) && typeof value.updatedAt === 'number' ? value as KubernetesLogConfig : null;
+    } catch { return null; }
+  }
+
+  async saveKubernetesLogConfig(config: KubernetesLogConfig): Promise<void> {
+    if (!fs.existsSync(this.dataDir)) await this.initialize();
+    fs.writeFileSync(path.join(this.dataDir, 'kubernetes-log-sources.json'), JSON.stringify(config, null, 2));
   }
 }

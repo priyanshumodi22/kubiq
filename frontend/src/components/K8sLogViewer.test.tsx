@@ -69,4 +69,17 @@ describe('Kubernetes log viewer compatibility', () => {
         expect(mocks.sockets[1].disconnect).toHaveBeenCalledTimes(1);
         expect(mocks.sockets[1].handlers.size).toBe(0);
     });
+    it('subscribes by saved source identity, reports waiting/errors, and stops on disconnect', async () => {
+        const view = render(<K8sLogViewer namespace="apps" sourceId="saved" sourceName="Web logs" containers={[]} />);
+        await act(async () => {}); send('connect');
+        expect(mocks.sockets[0].emit).toHaveBeenCalledWith('k8s:watch:source', { sourceId: 'saved', tailLines: 100 });
+        expect(mocks.sockets[0].emit).not.toHaveBeenCalledWith('k8s:watch:logs', expect.anything());
+        send('k8s:log:status', { waiting: true, message: 'Waiting for matching pods' });
+        expect(view.getByText(/Waiting for matching pods/)).toBeTruthy();
+        send('k8s:log:status', { waiting: false, message: 'Following' }); expect(view.getByText('LIVE')).toBeTruthy();
+        send('connect_error'); expect(view.getByText(/Log connection unavailable/)).toBeTruthy();
+        send('k8s:log:error', { message: 'Access denied' }); expect(view.getByText(/Access denied/)).toBeTruthy();
+        send('disconnect'); view.unmount(); expect(mocks.sockets[0].disconnect).toHaveBeenCalled();
+    });
+
 });

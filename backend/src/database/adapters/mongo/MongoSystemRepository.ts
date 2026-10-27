@@ -1,6 +1,6 @@
 import { databaseDetailsEnabled } from '../../../telemetry/databaseSpan';
 import mongoose from 'mongoose';
-import { ISystemRepository, LicenseActivation, KubiAiConfigRecord, RbacConfigRecord } from '../../interfaces/ISystemRepository';
+import { KubernetesLogConfig, ISystemRepository, LicenseActivation, KubiAiConfigRecord, RbacConfigRecord } from '../../interfaces/ISystemRepository';
 import { SystemMetrics } from '../../../types';
 import { SystemMetricsModel } from '../../schemas/SystemMetricsSchema';
 import { SystemPreferencesModel } from '../../schemas/SystemPreferencesSchema';
@@ -132,6 +132,21 @@ export class MongoSystemRepository implements ISystemRepository {
         await SystemPreferencesModel.findOneAndUpdate(
             { key: this.rbacConfigKey },
             { key: this.rbacConfigKey, value: config },
+            { upsert: true, new: true }
+        );
+    }
+  async getKubernetesLogConfig(): Promise<KubernetesLogConfig | null> {
+        await this.initialize();
+        const doc = await SystemPreferencesModel.findOne({ key: 'kubernetes-log-sources' }).lean();
+        const value = doc?.value as Partial<KubernetesLogConfig> | undefined;
+        return value?.version === 1 && Array.isArray(value.sources) && typeof value.updatedAt === 'number' ? value as KubernetesLogConfig : null;
+    }
+
+    async saveKubernetesLogConfig(config: KubernetesLogConfig): Promise<void> {
+        await this.initialize();
+        await SystemPreferencesModel.findOneAndUpdate(
+            { key: 'kubernetes-log-sources' },
+            { key: 'kubernetes-log-sources', value: config },
             { upsert: true, new: true }
         );
     }

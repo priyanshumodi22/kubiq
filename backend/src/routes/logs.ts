@@ -5,10 +5,22 @@ import { isPathSafe } from '../utils/pathSecurity';
 import { AICacheService } from '../services/AICacheService';
 import { KubiAiConfigService } from '../services/KubiAiConfigService';
 import { KubiProviderService } from '../services/KubiProviderService';
+import { kubernetesLogSourceRouter } from './kubernetesLogSources';
+import { canAccessKubernetesNamespace } from '../middleware/auth';
+import { RbacRoleService } from '../services/RbacRoleService';
 import { requirePermission } from '../middleware/auth';
 
 export const logRouter = Router();
 logRouter.use(requirePermission('logs.read'));
+logRouter.use('/kubernetes', kubernetesLogSourceRouter);
+logRouter.use(async (req, res, next) => {
+    const name = req.query.serviceName || req.body?.serviceName;
+    if (typeof name === 'string' && name.startsWith('k8s:') && (!(await RbacRoleService.hasPermission(req.user || {}, 'kubernetes.read')) || !(await canAccessKubernetesNamespace(req.user, name.split(':')[1])))) {
+        res.status(403).json({ message: 'Access denied to Kubernetes logs in this namespace.' });
+        return;
+    }
+    next();
+});
 
 logRouter.get('/check', requirePermission('logs.raw.read'), (req: Request, res: Response) => {
     const filePath = req.query.path as string;
@@ -30,14 +42,15 @@ logRouter.get('/check', requirePermission('logs.raw.read'), (req: Request, res: 
 // GET /api/logs/all-services - fetch all discovered services from ClickHouse
 logRouter.get('/all-services', async (req: Request, res: Response) => {
     try {
-        if (!DatabaseFactory.isApmSupported()) {
+        if (!DatabaseFactory.isLogStorageSupported()) {
             return res.json([]);
         }
 
         const repo = await DatabaseFactory.getLogRepository();
         if (repo.getServices) {
             const services = await repo.getServices();
-            res.json(services);
+            const allowed = await Promise.all(services.map(async name => !name.startsWith('k8s:') || (await RbacRoleService.hasPermission(req.user || {}, 'kubernetes.read') && await canAccessKubernetesNamespace(req.user, name.split(':')[1])) ? name : null));
+            res.json(allowed.filter(Boolean));
         } else {
             res.json([]);
         }

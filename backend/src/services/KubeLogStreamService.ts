@@ -1,3 +1,4 @@
+import { SavedKubernetesLogStreamService } from './SavedKubernetesLogStreamService';
 import { Server, Socket } from 'socket.io';
 import * as k8s from '@kubernetes/client-node';
 import { PassThrough } from 'node:stream';
@@ -38,6 +39,7 @@ export class KubeLogStreamService {
 
     public initialize(io: Server, kc?: k8s.KubeConfig) {
         this.io = io;
+        new SavedKubernetesLogStreamService(io);
         if (kc) {
             this.kc = kc;
         } else {
@@ -82,6 +84,7 @@ export class KubeLogStreamService {
                 }
             });
 
+            socket.on('k8s:watch:source', () => this.unsubscribeSocket(socket));
             socket.on('k8s:stop:logs', () => this.unsubscribeSocket(socket));
             socket.on('disconnect', () => this.unsubscribeSocket(socket));
         });

@@ -1,3 +1,7 @@
+import { SavedKubernetesLogSources } from '../components/SavedKubernetesLogSources';
+import { KubernetesLogSourceModal } from '../components/KubernetesLogSourceModal';
+import { LogSourceTypeDialog } from '../components/LogSourceTypeDialog';
+import type { KubernetesLogSource } from '../types/kubernetesLogs';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useServices } from '../hooks/useServices';
@@ -53,6 +57,10 @@ export default function LogsPage() {
     const { hasPermission } = useAuth();
     const isAdmin = hasPermission('services.manage') && hasPermission('logs.raw.read');
     const { addToast } = useToast();
+    const [chooserOpen, setChooserOpen] = useState(false);
+    const [kubeDraft, setKubeDraft] = useState<KubernetesLogSource | null | undefined>(undefined);
+    const [selectedKubeSource, setSelectedKubeSource] = useState<KubernetesLogSource | null>(null);
+    const [kubeVersion, setKubeVersion] = useState(0);
     const [selectedServiceName, setSelectedServiceName] = useState<string | null>(null);
     
     // Config Modal State
@@ -78,7 +86,7 @@ export default function LogsPage() {
     );
 
     const filteredK8sServices = discoveredServices.filter(s => 
-        s.startsWith('k8s:') && s.toLowerCase().includes(searchQuery.toLowerCase())
+        s.startsWith('k8s:') && !/^[a-f0-9]{8}-[a-f0-9-]{27}$/i.test(s.split(':')[2] || '') && s.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const selectedService = services.find(s => s.name === selectedServiceName);
@@ -96,7 +104,7 @@ export default function LogsPage() {
 
     const openNewConfig = () => {
         setConfigService(undefined);
-        setIsConfigModalOpen(true);
+        setChooserOpen(true);
     };
 
     const handleDeleteSuccess = () => {
@@ -129,7 +137,7 @@ export default function LogsPage() {
             <div className="w-full lg:w-1/4 flex flex-col bg-bg-surface/50 backdrop-blur-sm border border-gray-800 rounded-xl overflow-hidden z-10">
                 <div className="p-4 border-b border-gray-800 flex flex-col gap-3">
                     <div className="flex items-center justify-between">
-                        <h2 className="font-bold text-gray-200 text-sm">VM Services</h2>
+                        <h2 className="font-bold text-gray-200 text-sm">Log Sources</h2>
          
                         {isAdmin && (
                             <button 
@@ -155,12 +163,13 @@ export default function LogsPage() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                    <h3 className="px-2 pt-2 text-xs font-semibold text-text-dim">VM services</h3>
                     {filteredServices.length === 0 ? (
                          <div className="text-center py-8 text-gray-500 text-xs">
                             {searchQuery ? 'No matches found' : 'No logs configured'}
                             {!searchQuery && isAdmin && (
                                 <button 
-                                    onClick={() => setIsConfigModalOpen(true)}
+                                    onClick={openNewConfig}
                                     className="block mx-auto mt-2 text-primary hover:underline hover:text-primary/80"
                                 >
                                     Configure one now
@@ -177,7 +186,7 @@ export default function LogsPage() {
                                     : 'hover:bg-white/5 border border-transparent'
                                 }`}
                             >
-                                <button type="button" onClick={() => setSelectedServiceName(service.name)} aria-label={`View logs for ${service.name}`} aria-pressed={selectedServiceName === service.name} className="absolute inset-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
+                                <button type="button" onClick={() => { setSelectedKubeSource(null); setSelectedServiceName(service.name); }} aria-label={`View logs for ${service.name}`} aria-pressed={selectedServiceName === service.name} className="absolute inset-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
                                 <div className={`pointer-events-none p-1 rounded ${selectedServiceName === service.name ? 'text-primary' : 'text-gray-400'}`}>
                                     <Server className="w-4 h-4" />
                                 </div>
@@ -215,11 +224,12 @@ export default function LogsPage() {
                         ))
                     )}
                     
+                    <SavedKubernetesLogSources version={kubeVersion} search={searchQuery} selectedId={selectedKubeSource?.id} onSelect={source => { setSelectedServiceName(null); setSelectedKubeSource(source); setKubeVersion(value => value + 1); }} onEdit={setKubeDraft} onRemoved={() => { setSelectedKubeSource(null); setKubeVersion(value => value + 1); }} />
                     {/* Kubernetes Section */}
-                    {discoveredServices.length > 0 && (
+                    {filteredK8sServices.length > 0 && (
                         <>
                             <div className="pt-4 pb-2 border-t border-gray-800/50 mt-2">
-                                <h2 className="font-bold text-gray-200 text-sm px-2">Kubernetes Workloads</h2>
+                                <h2 className="font-bold text-gray-200 text-sm px-2">Previously discovered workloads</h2>
                             </div>
                             
                             {filteredK8sServices.length === 0 ? (
@@ -240,7 +250,7 @@ export default function LogsPage() {
                                                 : 'hover:bg-white/5 border border-transparent'
                                             }`}
                                         >
-                                            <button type="button" onClick={() => setSelectedServiceName(serviceName)} aria-label={`View logs for ${serviceName}`} aria-pressed={selectedServiceName === serviceName} className="absolute inset-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
+                                            <button type="button" onClick={() => { setSelectedKubeSource(null); setSelectedServiceName(serviceName); }} aria-label={`View logs for ${serviceName}`} aria-pressed={selectedServiceName === serviceName} className="absolute inset-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
                                             <div className={`pointer-events-none p-1 rounded ${selectedServiceName === serviceName ? 'text-primary' : 'text-gray-400'}`}>
                                                 <Server className="w-4 h-4" />
                                             </div>
@@ -263,9 +273,11 @@ export default function LogsPage() {
 
             {/* Main Log Viewer Area */}
             <div className="flex-1 flex flex-col min-h-0 bg-bg-surface/30 border border-gray-800 rounded-xl overflow-hidden backdrop-blur-sm relative z-10">
-                <SelectedLogViewer serviceName={selectedServiceName} service={selectedService} initialSearchQuery={traceSearch} />
+                {selectedKubeSource ? <K8sLogViewer key={`${selectedKubeSource.id}-${selectedKubeSource.updatedAt}-${kubeVersion}`} namespace={selectedKubeSource.namespace} sourceId={selectedKubeSource.id} sourceName={selectedKubeSource.name} containers={[]} initialSearchQuery={traceSearch} /> : <SelectedLogViewer serviceName={selectedServiceName} service={selectedService} initialSearchQuery={traceSearch} />}
             </div>
 
+            {chooserOpen && <LogSourceTypeDialog kubernetes={hasPermission('kubernetes.read')} onVM={() => { setChooserOpen(false); setIsConfigModalOpen(true); }} onKubernetes={() => { setChooserOpen(false); setKubeDraft(null); }} onClose={() => setChooserOpen(false)} />}
+            {kubeDraft !== undefined && <KubernetesLogSourceModal key={kubeDraft?.id || 'new'} source={kubeDraft} onClose={() => setKubeDraft(undefined)} onSaved={() => { setSelectedKubeSource(null); setKubeVersion(value => value + 1); }} />}
             <ConfigureLogModal 
                 isOpen={isConfigModalOpen}
                 onClose={() => setIsConfigModalOpen(false)}

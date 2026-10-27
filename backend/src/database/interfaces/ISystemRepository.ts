@@ -20,7 +20,20 @@ export type RbacConfigRecord = {
   updatedAt: number;
 };
 
+export interface KubernetesLogSource {
+  id: string;
+  name: string;
+  namespace: string;
+  kind: 'service' | 'deployment' | 'statefulset' | 'daemonset' | 'pod' | 'namespace';
+  resource: string;
+  container?: string;
+  updatedAt: number;
+}
+export interface KubernetesLogConfig { version: 1; sources: KubernetesLogSource[]; updatedAt: number }
+
 export interface ISystemRepository {
+  getKubernetesLogConfig(): Promise<KubernetesLogConfig | null>;
+  saveKubernetesLogConfig(config: KubernetesLogConfig): Promise<void>;
   initialize(): Promise<void>;
   saveMetrics(metrics: SystemMetrics): Promise<void>;
   getMetricsHistory(limit?: number): Promise<SystemMetrics[]>;
