@@ -40,6 +40,7 @@ async function check(enabled, mongoPort) {
       BACKEND_CONTEXT_PATH: '/kubiq-api', FRONTEND_CONTEXT_PATH: '/kubiq', KUBIQ_LOAD_DOTENV: 'false',
       NATIVE_AUTH_ENABLED: 'true', KEYCLOAK_ENABLED: 'false', JWT_SECRET: jwtSecret,
       APM_ENABLED: 'true', KUBIQ_TRACING_ENABLED: String(enabled), KUBIQ_INGESTION_TOKEN: ingestionToken,
+      OTEL_PROPAGATORS: 'jaeger', OTEL_TRACES_SAMPLER: 'always_off',
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: 'http://127.0.0.1:' + port + '/kubiq-api/api/apm/v1/traces',
       APM_RETENTION_PERIOD: '3d', LOG_RETENTION_PERIOD: '7d', SYSTEM_METRICS_ENABLED: 'false', K8S_METRICS_HISTORY_ENABLED: 'false', K8S_TERMINAL_ENABLED: 'false',
     };
@@ -60,7 +61,7 @@ async function check(enabled, mongoPort) {
     assert(token);
     const headers = { Authorization: 'Bearer ' + token };
     const services = '/kubiq-api/api/services';
-    assert.equal((await fetch(base + services + '?secret=SYNTHETIC_QUERY_SECRET', { headers })).status, 200);
+    assert.equal((await fetch(base + services + '?secret=SYNTHETIC_QUERY_SECRET', { headers: { ...headers, 'uber-trace-id': '%', baggage: 'secret=SYNTHETIC_BAGGAGE_SECRET' } })).status, 200);
     assert.equal((await fetch(base + services, { headers: { Authorization: 'Bearer invalid' } })).status, 401);
     const viewerToken = jwt.sign({ sub: viewer.toHexString(), type: 'native' }, jwtSecret);
     assert.equal((await fetch(base + services, { method: 'POST', headers: { Authorization: 'Bearer ' + viewerToken, 'Content-Type': 'application/json' }, body: '{}' })).status, 403);
