@@ -273,7 +273,7 @@ export class ServiceMonitor {
     console.log(`🚀 Service & K8s Cluster Alert Monitoring Started (max concurrency: ${this.maxConcurrentChecks})`);
   }
 
-  public stop(): void {
+  public stop(closeRepository = true): void {
     if (!this.isRunning) return;
     this.isRunning = false;
 
@@ -300,10 +300,14 @@ export class ServiceMonitor {
     // In-flight checks still release their own slots in finally. Resetting the
     // counter here would make it negative and break the next start's bound.
 
-    if (this.repository) {
+    if (closeRepository && this.repository) {
       this.repository.close().catch(error_ => console.warn('Failed to close the service repository.', error_));
     }
     console.log('🛑 Service Monitoring Stopped');
+  }
+
+  public async closeRepository(): Promise<void> {
+    await this.repository?.close();
   }
 
   private startPolling(serviceName: string): void {

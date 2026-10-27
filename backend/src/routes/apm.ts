@@ -126,7 +126,7 @@ apmIngestRouter.post('/v1/traces', async (req: Request, res: Response) => {
             res.status(error.status).json({ error: error.status === 413 ? 'APM_BATCH_TOO_LARGE' : 'APM_INVALID_PAYLOAD', message: error.message });
             return;
         }
-        console.error('Failed to ingest OTLP traces:', error);
+        console.error('[apm] otlp_ingestion_failed');
         // Even if we fail, we often return 202 or 200 to clients so they don't block/retry infinitely
         // depending on strictness, but 500 is good for debugging right now
         res.status(500).json({ error: 'Internal Server Error processing traces' });
@@ -140,7 +140,6 @@ apmIngestRouter.post('/v1/traces', async (req: Request, res: Response) => {
 apmIngestRouter.post('/v1/zipkin', async (req: Request, res: Response) => {
     try {
         const rawPayload = req.body;
-        console.log('--- Incoming Zipkin v2 Payload ---');
 
         if (!Array.isArray(rawPayload)) {
             res.status(400).json({ error: 'Zipkin payload must be a JSON array' });
@@ -171,7 +170,7 @@ apmIngestRouter.post('/v1/zipkin', async (req: Request, res: Response) => {
             };
         });
 
-        console.log(`Parsed ${spans.length} Zipkin spans from payload`);
+        console.log('[apm] zipkin_batch_received', { count: spans.length });
 
         if (spans.length === 0) {
             res.status(202).json({ message: 'No spans found' });
@@ -205,8 +204,8 @@ apmIngestRouter.post('/v1/zipkin', async (req: Request, res: Response) => {
         }
 
         res.status(202).end();
-    } catch (error) {
-        console.error('Failed to ingest Zipkin traces:', error);
+    } catch {
+        console.error('[apm] zipkin_ingestion_failed');
         res.status(500).json({ error: 'Internal Server Error processing zipkin traces' });
     }
 });

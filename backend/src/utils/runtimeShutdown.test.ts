@@ -8,6 +8,7 @@ function fixture(responses = new Set<ServerResponse>()) {
         responses,
         stopBackground: () => { order.push('background'); },
         stopStreams: () => { order.push('streams'); },
+        closeStorage: async () => { order.push('close-storage'); },
         ingestion: { stop: () => { order.push('stop-ingestion'); }, drain: async () => { order.push('drain'); } },
         tracing: { shutdown: async () => { order.push('tracing'); } },
         server: { close: (callback: () => void) => { order.push('close'); callback(); } },
@@ -17,7 +18,7 @@ function fixture(responses = new Set<ServerResponse>()) {
 test('final loopback spans drain before closing the HTTP listener', async () => {
     const { order, options } = fixture();
     expect(await shutdownRuntime(options)).toBe(true);
-    expect(order).toEqual(['background', 'streams', 'stop-ingestion', 'drain', 'tracing', 'drain', 'close']);
+    expect(order).toEqual(['background', 'streams', 'stop-ingestion', 'drain', 'tracing', 'drain', 'close', 'close-storage']);
 });
 test('SSE streams close before waiting for remaining responses', async () => {
     const responses = new Set<ServerResponse>();

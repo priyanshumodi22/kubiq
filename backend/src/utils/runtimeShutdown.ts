@@ -6,6 +6,7 @@ interface ShutdownOptions {
     responses: ReadonlySet<ServerResponse>;
     stopBackground: () => void;
     stopStreams: () => void;
+    closeStorage: () => Promise<void>;
     ingestion: { stop: () => void; drain: () => Promise<void> };
     tracing: { shutdown: () => Promise<void> };
     server: { close: (callback: () => void) => unknown };
@@ -35,5 +36,6 @@ export function shutdownRuntime(options: ShutdownOptions): Promise<boolean> {
         await options.tracing.shutdown();
         await withoutTracing(() => options.ingestion.drain());
         await new Promise<void>(resolve => options.server.close(resolve));
+        await options.closeStorage();
     });
 }

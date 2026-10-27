@@ -325,8 +325,9 @@ async function shutdown(): Promise<void> {
   shuttingDown = true;
   const completed = await shutdownRuntime({
     responses: activeResponses,
-    stopBackground: () => { stopRetentionSweeps(); serviceMonitor.stop(); kubernetesMetricsScraper.stop(); },
+    stopBackground: () => { stopRetentionSweeps(); serviceMonitor.stop(false); kubernetesMetricsScraper.stop(); },
     stopStreams: () => { io.disconnectSockets(true); },
+    closeStorage: () => serviceMonitor.closeRepository(),
     ingestion: IngestionBufferService.getInstance(),
     tracing,
     server: httpServer,

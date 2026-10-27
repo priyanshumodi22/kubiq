@@ -172,3 +172,12 @@ describe('monitor result, retry and cancellation contracts', () => {
     await queued;
   });
 });
+
+test('shutdown may defer the shared repository close until final ingestion has drained', async () => {
+  const close = jest.spyOn(repository, 'close');
+  monitor.start();
+  monitor.stop(false);
+  expect(close).not.toHaveBeenCalled();
+  await monitor.closeRepository();
+  expect(close).toHaveBeenCalledTimes(1);
+});

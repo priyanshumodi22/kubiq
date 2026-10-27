@@ -97,7 +97,22 @@ async function check(enabled, mongoPort) {
       const count = await spans.countDocuments({});
       await pause(4500);
       assert.equal(await spans.countDocuments({}), count, 'Background work/export/persistence must not feed back into tracing');
-    } else assert.equal(await spans.countDocuments({}), 0);
+    } else {
+      assert.equal(await spans.countDocuments({}), 0);
+      // Disabling the producer must leave authenticated ingestion and analytics operational.
+      const nanos = BigInt(Date.now()) * 1000000n;
+      const fixtureName = 'image-ingestion-fixture';
+      const payload = { resourceSpans: [{ resource: { attributes: [{ key: 'service.name', value: { stringValue: fixtureName } }] }, scopeSpans: [{ spans: [{ traceId: '0123456789abcdef0123456789abcdef', spanId: '0123456789abcdef', name: 'fixture', kind: 1, startTimeUnixNano: String(nanos), endTimeUnixNano: String(nanos + 1000000n), status: { code: 0 } }] }] }] };
+      assert.equal((await fetch(base + '/kubiq-api/api/apm/v1/traces', { method: 'POST', headers: { Authorization: 'Bearer ' + ingestionToken, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })).status, 202);
+      for (let attempt = 0; attempt < 60 && await spans.countDocuments({ serviceName: fixtureName }) === 0; attempt++) await pause(100);
+      assert.equal(await spans.countDocuments({ serviceName: fixtureName }), 1);
+      const metrics = await (await fetch(base + '/kubiq-api/api/apm/services', { headers })).json();
+      const metric = metrics.find(row => row.serviceName === fixtureName);
+      assert.equal(metric.requestCount, 1);
+      assert.equal(metric.measurementBasis, 'legacy-spans');
+      await spans.deleteMany({ serviceName: fixtureName }); // Only this disposable CI database.
+      assert.equal(await spans.countDocuments({}), 0);
+    }
     const indexes = await spans.listIndexes().toArray();
     assert.equal(indexes.find(index => index.key.timestamp === 1 && Object.keys(index.key).length === 1).expireAfterSeconds, 259200);
     const peak = Number(docker(['exec', name, 'cat', '/sys/fs/cgroup/memory.peak']));
