@@ -4,15 +4,15 @@ import { DatabaseFactory } from '../database/DatabaseFactory';
 import type { KubernetesLogSource } from '../database/interfaces/ISystemRepository';
 import { KubernetesService } from './KubernetesService';
 
-const kinds = ['service', 'deployment', 'statefulset', 'daemonset', 'pod', 'namespace'];
+const kinds = new Set(['service', 'deployment', 'statefulset', 'daemonset', 'pod', 'namespace']);
 const dns = /^[a-z0-9](?:[-a-z0-9.]{0,251}[a-z0-9])?$/;
 export function parseLogSource(value: unknown, id: string = randomUUID()): KubernetesLogSource {
     if (!value || typeof value !== 'object') throw new Error('Choose a Kubernetes log target.');
     const input = value as Record<string, unknown>;
     const text = (key: string) => typeof input[key] === 'string' ? String(input[key]).trim() : '';
     const name = text('name'), namespace = text('namespace'), kind = text('kind'), resource = text('resource'), container = text('container');
-    if (!name || name.length > 80 || [...name].some(character => character.charCodeAt(0) < 32)) throw new Error('Enter a label of up to 80 characters.');
-    if (!dns.test(namespace) || namespace.length > 63 || !kinds.includes(kind)) throw new Error('Choose a valid namespace and resource type.');
+    if (!name || name.length > 80 || [...name].some(character => character.codePointAt(0)! < 32)) throw new Error('Enter a label of up to 80 characters.');
+    if (!dns.test(namespace) || namespace.length > 63 || !kinds.has(kind)) throw new Error('Choose a valid namespace and resource type.');
     if (kind !== 'namespace' && !dns.test(resource)) throw new Error('Choose a valid Kubernetes resource.');
     if (container && (!dns.test(container) || container.length > 63)) throw new Error('Choose a valid container.');
     return { id, name, namespace, kind: kind as KubernetesLogSource['kind'], resource: kind === 'namespace' ? namespace : resource, container: container || undefined, updatedAt: Date.now() };

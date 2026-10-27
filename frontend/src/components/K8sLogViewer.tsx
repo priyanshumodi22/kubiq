@@ -148,6 +148,11 @@ function K8sLogModals({ showSummaryModal, summary, summarizing, showUpgradeModal
     );
 }
 
+function watchKubernetesLogs(socket: ReturnType<typeof io>, sourceId: string | undefined, target: { namespace: string; podName?: string; deploymentName?: string; container: string; tailLines: number }) {
+    if (sourceId) socket.emit('k8s:watch:source', { sourceId, tailLines: target.tailLines });
+    else socket.emit('k8s:watch:logs', target);
+}
+
 export function K8sLogViewer({ sourceId, sourceName, namespace, podName, deploymentName, containers, initialSearchQuery = '' }: Readonly<K8sLogViewerProps>) {
     const [selectedContainer, setSelectedContainer] = useState(containers[0]?.name ?? '');
     const [tailLines, setTailLines] = useState(100);
@@ -208,8 +213,7 @@ export function K8sLogViewer({ sourceId, sourceName, namespace, podName, deploym
 
         socket.on('connect', () => {
             setIsConnected(!sourceId);
-            if (sourceId) { socket.emit('k8s:watch:source', { sourceId, tailLines }); return; }
-            socket.emit('k8s:watch:logs', {
+            watchKubernetesLogs(socket, sourceId, {
                 namespace,
                 podName,
                 deploymentName,

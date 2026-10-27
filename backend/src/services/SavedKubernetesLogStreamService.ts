@@ -13,6 +13,13 @@ import { DatabaseFactory } from '../database/DatabaseFactory';
 
 interface Follow { stream: PassThrough; handle?: AbortController; stamp: string; hashes: Set<string>; ended: boolean; pending: string }
 interface Subscription { socket: Socket; sourceId: string; source?: KubernetesLogSource; tail: number; startedAt: number; active: boolean; busy: boolean; timer?: NodeJS.Timeout; streams: Map<string, Follow> }
+function logTimestamp(line: string): string {
+    const space = line.indexOf(' ');
+    const recorded = line.slice(0, space);
+    if (space < 0 || recorded.length > 40 || !recorded.includes('T') || !recorded.endsWith('Z') || !Number.isFinite(Date.parse(recorded))) return '';
+    const [clock, fraction = ''] = recorded.slice(0, -1).split('.');
+    return `${clock}.${fraction.padEnd(9, '0')}Z`;
+}
 export class SavedKubernetesLogStreamService {
     private readonly subscriptions = new Map<string, Subscription>();
     private readonly persisted = new Map<string, number>();
@@ -114,24 +121,30 @@ export class SavedKubernetesLogStreamService {
             })
             .catch(() => { ended(); stream.destroy(); if (sub.active) sub.socket.emit('k8s:log:status', { waiting: true, message: 'A container stream is unavailable; retrying discovery.' }); });
     }
+    private acceptLine(follow: Follow, line: string): { stamp: string; hash: string } | null {
+        if (!line) return null;
+        const stamp = logTimestamp(line);
+        const hash = createHash('sha256').update(line).digest('hex');
+        if (stamp && (stamp < follow.stamp || (stamp === follow.stamp && follow.hashes.has(hash)))) return null;
+        if (stamp > follow.stamp) { follow.stamp = stamp; follow.hashes.clear(); }
+        if (follow.hashes.size < 100) follow.hashes.add(hash);
+        return { stamp, hash };
+    }
+    private freshRecord(sub: Subscription, identity: string, stamp: string): boolean {
+        if (Date.parse(stamp) < sub.startedAt || !stamp || this.persisted.has(identity)) return false;
+        this.persisted.set(identity, Date.now());
+        return true;
+    }
     private deliver(sub: Subscription, target: { pod: string; container: string }, follow: Follow, lines: string[]) {
         const accepted: string[] = [];
         const fresh: string[] = [];
         for (const line of lines) {
-            if (!line) continue;
-            const recordedStamp = /^(\d{4}-\d\d-\d\dT\S+Z) /.exec(line)?.[1] || '';
-            const stamp = recordedStamp && Number.isFinite(Date.parse(recordedStamp)) ? recordedStamp.replace(/(?:\.(\d+))?Z$/, (_match, fraction = '') => '.' + fraction.padEnd(9, '0') + 'Z') : '';
-            const hash = createHash('sha256').update(line).digest('hex');
-            if (stamp && (stamp < follow.stamp || (stamp === follow.stamp && follow.hashes.has(hash)))) continue;
-            if (stamp > follow.stamp) { follow.stamp = stamp; follow.hashes.clear(); }
-            if (follow.hashes.size < 100) follow.hashes.add(hash);
+            const record = this.acceptLine(follow, line);
+            if (!record) continue;
             const labeled = `[${sub.source!.namespace}/${target.pod}/${target.container}] ${line.slice(0, 8192)}`;
             accepted.push(labeled);
-            const identity = `${sub.sourceId}:${target.pod}:${target.container}:${hash}`;
-            if (Date.parse(stamp) >= sub.startedAt && !this.persisted.has(identity)) {
-                fresh.push(labeled);
-                this.persisted.set(identity, Date.now());
-            }
+            const identity = `${sub.sourceId}:${target.pod}:${target.container}:${record.hash}`;
+            if (this.freshRecord(sub, identity, record.stamp)) fresh.push(labeled);
         }
         if (!accepted.length || !sub.active) return;
         // Bounded packets and the ingestion service's existing bounded queue prevent a slow viewer growing memory.

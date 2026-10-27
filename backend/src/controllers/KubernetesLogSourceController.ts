@@ -53,13 +53,13 @@ export class KubernetesLogSourceController {
     }
     static async targets(req: Request, res: Response, next: NextFunction) {
         try {
-            const namespace = String(req.query.namespace || '');
+            const namespace = typeof req.query.namespace === 'string' ? req.query.namespace : '';
             if (!(await canAccessKubernetesNamespace(req.user, namespace))) return res.status(403).json({ message: 'Access denied to namespace.' });
             const service = KubernetesService.getInstance();
             if (!service.available) return res.status(503).json({ message: 'Kubernetes is unavailable.' });
             const config = service.getKubeConfig(), args = { namespace };
             const core = config.makeApiClient(k8s.CoreV1Api), apps = config.makeApiClient(k8s.AppsV1Api);
-            const kind = String(req.query.kind || 'deployment');
+            const kind = typeof req.query.kind === 'string' ? req.query.kind : 'deployment';
             const loaders = {
                 service: () => core.listNamespacedService(args),
                 deployment: () => apps.listNamespacedDeployment(args),
@@ -79,7 +79,7 @@ export class KubernetesLogSourceController {
             catch { return res.status(400).json({ message: 'Choose a valid Kubernetes target.' }); }
             if (!(await canAccessKubernetesNamespace(req.user, source.namespace))) return res.status(403).json({ message: 'Access denied to namespace.' });
             const pods = await resolveLogPods(source);
-            res.json([...new Set(pods.flatMap(pod => pod.spec?.containers.map(container => container.name) || []))].sort());
+            res.json([...new Set(pods.flatMap(pod => pod.spec?.containers.map(container => container.name) || []))].sort((left, right) => left.localeCompare(right)));
         } catch (error) { next(error); }
     }
 }

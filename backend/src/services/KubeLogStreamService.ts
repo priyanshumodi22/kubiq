@@ -24,6 +24,7 @@ interface SharedPodStream {
 export class KubeLogStreamService {
     private static instance: KubeLogStreamService;
     private io: Server | null = null;
+    private savedStreams?: SavedKubernetesLogStreamService;
     private kc: k8s.KubeConfig | null = null;
     private readonly socketSubs = new Map<string, K8sSocketSub>();
     private readonly podStreams = new Map<string, SharedPodStream>();
@@ -39,7 +40,7 @@ export class KubeLogStreamService {
 
     public initialize(io: Server, kc?: k8s.KubeConfig) {
         this.io = io;
-        new SavedKubernetesLogStreamService(io);
+        this.savedStreams ??= new SavedKubernetesLogStreamService(io);
         if (kc) {
             this.kc = kc;
         } else {

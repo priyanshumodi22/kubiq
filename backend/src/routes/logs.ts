@@ -6,15 +6,15 @@ import { AICacheService } from '../services/AICacheService';
 import { KubiAiConfigService } from '../services/KubiAiConfigService';
 import { KubiProviderService } from '../services/KubiProviderService';
 import { kubernetesLogSourceRouter } from './kubernetesLogSources';
-import { canAccessKubernetesNamespace } from '../middleware/auth';
+import { canAccessKubernetesNamespace, requirePermission } from '../middleware/auth';
 import { RbacRoleService } from '../services/RbacRoleService';
-import { requirePermission } from '../middleware/auth';
 
 export const logRouter = Router();
 logRouter.use(requirePermission('logs.read'));
 logRouter.use('/kubernetes', kubernetesLogSourceRouter);
 logRouter.use(async (req, res, next) => {
     const name = req.query.serviceName || req.body?.serviceName;
+    if (name !== undefined && typeof name !== 'string') { res.status(400).json({ message: 'serviceName must be a string.' }); return; }
     if (typeof name === 'string' && name.startsWith('k8s:') && (!(await RbacRoleService.hasPermission(req.user || {}, 'kubernetes.read')) || !(await canAccessKubernetesNamespace(req.user, name.split(':')[1])))) {
         res.status(403).json({ message: 'Access denied to Kubernetes logs in this namespace.' });
         return;
