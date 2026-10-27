@@ -4,7 +4,7 @@ The permanent identities are `kubiq-backend` and `portfolio`. These profiles use
 
 The backend preloads a separate compiled bootstrap before its ncc bundle. The SDK stays external to that bundle. Explicit repository wrappers preserve each MongoDB repository's owning `this`, return values and errors. Native outgoing HTTP calls use request-scoped instrumentation. The portfolio initializes the same runtime before its ESM server and explicitly wraps GitHub fetch operations.
 
-`KUBIQ_TRACING_ENABLED` defaults to `false` and independently controls these producers. `APM_ENABLED` controls kubiq's receiver/analytics; disabling tracing must leave those features available. The deployment manifests initially disable tracing so the new runtimes can roll out before either service starts exporting.
+`KUBIQ_TRACING_ENABLED` defaults to `false` and independently controls these producers. `APM_ENABLED` controls kubiq's receiver/analytics; disabling tracing must leave those features available. The runtimes were initially deployed with tracing disabled, then enabled in order after image verification. Production tracing settings now live in each Deployment's explicit container `env`, so a GitOps flag change restarts that producer.
 
 | Service | Private receiver | Credential |
 |---|---|---|
@@ -30,3 +30,5 @@ Before enabling each service, verify the exact image with tracing off/on, real r
 Enable and verify kubiq first, then portfolio, through their GitOps manifests. Retain `priyanshumodi22/kubiq:main-157` and `ghcr.io/priyanshumodi22/portfolio:main-4` as the pre-instrumentation application images. Rollback either sets `KUBIQ_TRACING_ENABLED=false` through Git or restores the prior image. It must not switch databases, disable the receiver or delete existing traces.
 
 CDN cache hits and client-side navigation do not reach these servers and are outside this server-tracing coverage. Browser performance monitoring is not enabled.
+
+See [27 October production verification](production-verification-20261027.md) for exact release evidence, real traces, the initial capacity projection and the pending full-day review.

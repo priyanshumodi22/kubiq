@@ -1,0 +1,93 @@
+{
+  "at": "2026-10-27T01:20:41.550106+00:00",
+  "vm": "priyanshu-k3s",
+  "host": {
+    "MemTotalBytes": 4098527232,
+    "MemAvailableBytes": 1676722176,
+    "diskUsedBytes": 14708736000,
+    "diskFreeBytes": 15358263296
+  },
+  "apm": {
+    "documentCount": 303,
+    "dataBytes": 194151,
+    "storageBytes": 110592,
+    "indexBytes": 327680,
+    "ttlSeconds": 259200,
+    "services": [
+      {
+        "serviceName": "portfolio",
+        "spanCount": 8,
+        "serverCount": 6,
+        "documentBytes": 3042,
+        "oldest": "2026-10-27T01:16:56.857Z",
+        "newest": "2026-10-27T01:18:27.062Z"
+      },
+      {
+        "serviceName": "kubiq-backend",
+        "spanCount": 43,
+        "serverCount": 18,
+        "documentBytes": 17336,
+        "oldest": "2026-10-27T01:15:18.691Z",
+        "newest": "2026-10-27T01:18:56.139Z"
+      }
+    ]
+  },
+  "pods": [
+    {
+      "application": "portfolio",
+      "namespace": "apps",
+      "pod": "portfolio-dff47cf68-t7dts",
+      "image": "ghcr.io/priyanshumodi22/portfolio:main-6",
+      "ready": true,
+      "restarts": 0,
+      "lastTerminationReason": null,
+      "limits": {
+        "cpu": "200m",
+        "memory": "128Mi"
+      },
+      "usage": {
+        "cpu": "199446n",
+        "memory": "25220Ki"
+      },
+      "memoryPeakBytes": 40345600
+    },
+    {
+      "application": "kubiq",
+      "namespace": "kubiq-system",
+      "pod": "kubiq-dbdcf8fd5-b4748",
+      "image": "priyanshumodi22/kubiq:main-169",
+      "ready": true,
+      "restarts": 0,
+      "lastTerminationReason": null,
+      "limits": {
+        "cpu": "400m",
+        "memory": "512Mi"
+      },
+      "usage": {
+        "cpu": "5325266n",
+        "memory": "110756Ki"
+      },
+      "memoryPeakBytes": 120885248
+    },
+    {
+      "application": "mongodb",
+      "namespace": "mongodb-system",
+      "pod": "mongodb-0",
+      "image": "mongo:8.0.34@sha256:4a4ab5d4834207389e0d7270fac988e21ffedccecba77991a552f755df229907",
+      "ready": true,
+      "restarts": 0,
+      "lastTerminationReason": null,
+      "limits": {
+        "cpu": "500m",
+        "memory": "768Mi"
+      },
+      "usage": {
+        "cpu": "2914983n",
+        "memory": "106764Ki"
+      },
+      "memoryPeakBytes": 500523008
+    }
+  ],
+  "capacityBudgetBytes": 536870912,
+  "note": "Point-in-time snapshot. A full 24-hour observation must be recorded separately."
+}

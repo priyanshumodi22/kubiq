@@ -1,0 +1,76 @@
+{
+  "at": "2026-10-27T01:13:35.451195+00:00",
+  "vm": "priyanshu-k3s",
+  "host": {
+    "MemTotalBytes": 4098527232,
+    "MemAvailableBytes": 1654493184,
+    "diskUsedBytes": 14707392512,
+    "diskFreeBytes": 15359606784
+  },
+  "apm": {
+    "documentCount": 252,
+    "dataBytes": 173773,
+    "storageBytes": 110592,
+    "indexBytes": 303104,
+    "ttlSeconds": 259200,
+    "services": []
+  },
+  "pods": [
+    {
+      "application": "portfolio",
+      "namespace": "apps",
+      "pod": "portfolio-76954f658f-f55qb",
+      "image": "ghcr.io/priyanshumodi22/portfolio:main-6",
+      "ready": true,
+      "restarts": 0,
+      "lastTerminationReason": null,
+      "limits": {
+        "cpu": "200m",
+        "memory": "128Mi"
+      },
+      "usage": {
+        "cpu": "657207n",
+        "memory": "18372Ki"
+      },
+      "memoryPeakBytes": 39268352
+    },
+    {
+      "application": "kubiq",
+      "namespace": "kubiq-system",
+      "pod": "kubiq-6b4f7c86c5-zsl2t",
+      "image": "priyanshumodi22/kubiq:main-169",
+      "ready": true,
+      "restarts": 0,
+      "lastTerminationReason": null,
+      "limits": {
+        "cpu": "400m",
+        "memory": "512Mi"
+      },
+      "usage": {
+        "cpu": "6775727n",
+        "memory": "115816Ki"
+      },
+      "memoryPeakBytes": 143007744
+    },
+    {
+      "application": "mongodb",
+      "namespace": "mongodb-system",
+      "pod": "mongodb-0",
+      "image": "mongo:8.0.34@sha256:4a4ab5d4834207389e0d7270fac988e21ffedccecba77991a552f755df229907",
+      "ready": true,
+      "restarts": 0,
+      "lastTerminationReason": null,
+      "limits": {
+        "cpu": "500m",
+        "memory": "768Mi"
+      },
+      "usage": {
+        "cpu": "2365589n",
+        "memory": "106208Ki"
+      },
+      "memoryPeakBytes": 500523008
+    }
+  ],
+  "capacityBudgetBytes": 536870912,
+  "note": "Point-in-time snapshot. A full 24-hour observation must be recorded separately."
+}
