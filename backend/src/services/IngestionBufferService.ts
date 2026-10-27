@@ -1,5 +1,6 @@
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { ISpan } from '../database/interfaces/ITraceRepository';
+import { withoutTracing } from 'kubiq-apm/runtime';
 
 export class IngestionBufferService {
     private static instance: IngestionBufferService;
@@ -8,6 +9,7 @@ export class IngestionBufferService {
     private pendingLogCount = 0;
     private pendingSpanCount = 0;
     private isFlushing = false;
+    private flushing: Promise<void> | undefined;
     private readonly flushInterval: NodeJS.Timeout;
     private readonly maxBufferedLogs = this.readPositiveLimit('KUBIQ_INGESTION_MAX_BUFFERED_LOGS', 10_000);
     private readonly maxBufferedSpans = this.readPositiveLimit('KUBIQ_INGESTION_MAX_BUFFERED_SPANS', 10_000);
@@ -93,7 +95,20 @@ export class IngestionBufferService {
         return Math.max(0, this.maxBufferedSpans - this.spanBuffer.length - this.pendingSpanCount);
     }
 
-    private async flushData() {
+    public stop(): void { clearInterval(this.flushInterval); }
+
+    public async drain(): Promise<void> {
+        await this.flushData();
+        if (this.logBuffer.length || this.spanBuffer.length) await this.flushData();
+    }
+
+    private flushData(): Promise<void> {
+        if (this.flushing) return this.flushing;
+        this.flushing = withoutTracing(() => this.persistData()).finally(() => { this.flushing = undefined; });
+        return this.flushing;
+    }
+
+    private async persistData() {
         if (this.isFlushing || (this.logBuffer.length === 0 && this.spanBuffer.length === 0)) return;
         this.isFlushing = true;
 
@@ -109,8 +124,8 @@ export class IngestionBufferService {
                 const logRepo = await DatabaseFactory.getLogRepository();
                 await logRepo.insertLogs(logsToWrite);
             }
-        } catch (err) {
-            console.error('Failed to flush logs to database:', err);
+        } catch {
+            console.error('[ingestion] log_batch_write_failed', { count: logsToWrite.length });
         } finally {
             this.pendingLogCount -= logsToWrite.length;
         }
@@ -123,8 +138,8 @@ export class IngestionBufferService {
                     await traceRepo.insertSpans(spansToWrite);
                 }
             }
-        } catch (err) {
-            console.error('Failed to flush spans to database:', err);
+        } catch {
+            console.error('[ingestion] span_batch_write_failed', { count: spansToWrite.length });
         } finally {
             this.pendingSpanCount -= spansToWrite.length;
             this.isFlushing = false;

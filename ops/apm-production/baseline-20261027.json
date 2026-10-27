@@ -1,0 +1,18 @@
+{
+  "stage": "production tracing disabled before SDK integration",
+  "observedDateLocal": "2026-10-27",
+  "project": "priyanshu-apps",
+  "vm": "priyanshu-k3s",
+  "vcpu": 1,
+  "hostMemoryMiB": 3908,
+  "availableMemoryMiB": 1676,
+  "bootDiskUsedGiB": 14,
+  "bootDiskAvailableGiB": 15,
+  "pods": {
+    "kubiq-backend": { "image": "priyanshumodi22/kubiq:main-157", "cpuMillicores": 2, "workingSetMiB": 142, "limitMiB": 512 },
+    "portfolio": { "image": "ghcr.io/priyanshumodi22/portfolio:main-4", "cpuMillicores": 1, "workingSetMiB": 22, "limitMiB": 128 },
+    "mongodb": { "cpuMillicores": 3, "workingSetMiB": 103, "limitMiB": 768 }
+  },
+  "source": "live kubectl top pods, free -m and df -h over IAP SSH",
+  "limitations": "Point-in-time idle measurements; these are not startup peaks or a traffic/capacity projection."
+}

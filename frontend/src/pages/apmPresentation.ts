@@ -1,5 +1,13 @@
 import type { ServiceMetrics } from '../hooks/useApm';
 
+export function measurementLabel(service: ServiceMetrics): string {
+    return service.measurementBasis === 'server-requests' ? 'Server requests' : 'Legacy spans';
+}
+
+export function throughputUnit(service: ServiceMetrics): string {
+    return service.measurementBasis === 'server-requests' ? 'requests/min' : 'spans/min';
+}
+
 export function latencyLabel(percentile: string): string {
     switch (percentile) {
         case 'p50': return 'P50 Latency (Median)';

@@ -30,7 +30,13 @@ RUN npm run build
 # Bundle with ncc (creates single JS file, preserves native crypto API)
 RUN npm run build:ncc
 
-# Stage 3: Production Runner
+# Install only the external tracing runtime, independently of the bundled application.
+FROM node:20-slim AS tracing-deps
+WORKDIR /app
+COPY telemetry/package*.json ./
+RUN npm ci --omit=dev --ignore-scripts
+
+# Production Runner
 FROM node:20-slim
 WORKDIR /app
 
@@ -42,6 +48,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 
 # Copy the ncc bundle (single file)
 COPY --from=server-build /app/backend/build/index.js ./index.js
+COPY --from=server-build /app/backend/dist/telemetry/bootstrap.js ./telemetry/bootstrap.js
+COPY --from=tracing-deps /app/node_modules ./node_modules
 # We still need the frontend build
 COPY --from=ui-build /app/frontend/dist ./public
 
@@ -55,4 +63,4 @@ ENV PORT=3001
 
 EXPOSE 3001
 
-CMD ["node", "index.js"]
+CMD ["node", "--require", "./telemetry/bootstrap.js", "index.js"]

@@ -13,6 +13,7 @@ export interface ISpan {
 }
 
 export interface IServiceMetrics {
+  measurementBasis?: 'server-requests' | 'legacy-spans';
   serviceName: string;
   requestCount: number;
   errorCount: number;

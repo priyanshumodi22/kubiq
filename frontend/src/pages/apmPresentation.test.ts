@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { exportDurationLabel, latencyLabel, latencyValue, serviceErrorClass } from './apmPresentation';
+import { exportDurationLabel, latencyLabel, latencyValue, serviceErrorClass, measurementLabel, throughputUnit } from './apmPresentation';
 
 const service = { serviceName: 'payments', requestCount: 1, errorCount: 0, avgDurationMs: 10, p95DurationMs: 100, rpm: 1, errorRate: 0 };
 
@@ -26,4 +26,11 @@ describe('APM presentation compatibility', () => {
         expect(serviceErrorClass(false, true)).toBe('text-amber-400 font-bold');
         expect(serviceErrorClass(false, false)).toBe('text-green-400');
     });
+});
+
+it('distinguishes request-based metrics from legacy span rates', () => {
+ expect(measurementLabel(service)).toBe('Legacy spans');
+ expect(throughputUnit({...service, measurementBasis:'legacy-spans'})).toBe('spans/min');
+ expect(measurementLabel({...service, measurementBasis:'server-requests'})).toBe('Server requests');
+ expect(throughputUnit({...service, measurementBasis:'server-requests'})).toBe('requests/min');
 });

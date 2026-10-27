@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon --watch src --exec ts-node src/server.ts",
     "build": "tsc",
-    "build:ncc": "ncc build dist/server.js -o build --minify --no-cache --no-source-map-register",
+    "build:ncc": "ncc build dist/server.js -o build --minify --no-cache --no-source-map-register --external kubiq-apm/runtime",
     "start": "node dist/server.js",
     "test": "jest",
     "test:coverage": "jest --runInBand --coverage --coverageReporters=lcov --coverageReporters=text-summary",
@@ -50,6 +50,7 @@
     "helmet": "^8.1.0",
     "js-yaml": "^5.4.3",
     "jsonwebtoken": "^9.0.3",
+    "kubiq-apm": "1.1.0",
     "mongoose": "^9.11.1",
     "morgan": "^1.10.1",
     "mysql2": "^3.24.5",
@@ -69,7 +70,6 @@
   },
   "devDependencies": {
     "@eslint/js": "9.39.2",
-    "globals": "14.0.0",
     "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
@@ -81,6 +81,7 @@
     "@typescript-eslint/parser": "^8.50.0",
     "@vercel/ncc": "^0.38.3",
     "eslint": "^9.39.2",
+    "globals": "14.0.0",
     "jest": "^30.2.0",
     "nodemon": "^3.1.11",
     "pkg": "^5.8.1",

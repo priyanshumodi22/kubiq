@@ -1,3 +1,4 @@
+import { selectRequestMetrics, durationP95 } from '../../requestMetrics';
 import { mysqlPassword } from '../../../utils/MysqlPassword';
 import { retentionSeconds } from '../../../utils/RetentionPolicy';
 import { scheduleRetentionSweep } from '../../../utils/RetentionScheduler';
@@ -107,44 +108,49 @@ export class MysqlTraceRepository implements ITraceRepository {
 
         // Raise GROUP_CONCAT limit so high-traffic services don't get truncated durations.
         // Default MySQL limit is 1024 chars which would cut off after ~100 spans.
-        await this.pool.query(`SET SESSION group_concat_max_len = 1000000`);
+
 
         // Collect all individual durations per service (ORDER BY ASC so the array
         // arrives pre-sorted — same as what MongoDB's JS sort does).
         const query = `
             SELECT
                 service_name                                                    AS serviceName,
+                UPPER(COALESCE(span_kind, '')) IN ('2', 'SERVER', 'SPAN_KIND_SERVER') AS isServer,
                 COUNT(*)                                                        AS requestCount,
                 SUM(CASE WHEN status_code = 2 THEN 1 ELSE 0 END)               AS errorCount,
                 AVG(duration_ms)                                                AS avgDurationMs,
                 GROUP_CONCAT(duration_ms ORDER BY duration_ms ASC SEPARATOR ',') AS durations
             FROM apm_spans
             WHERE timestamp >= ? AND timestamp <= ?
-            GROUP BY service_name
+            GROUP BY service_name, isServer
         `;
 
-        const [rows] = await this.pool.query<RowDataPacket[]>(query, [fromDate, toDate]);
+        const connection = await this.pool.getConnection();
+        let rows: RowDataPacket[];
+        try {
+            await connection.query('SET SESSION group_concat_max_len = 1000000');
+            [rows] = await connection.query<RowDataPacket[]>(query, [fromDate, toDate]);
+        } finally { connection.release(); }
 
-        return rows.map(row => {
+        return selectRequestMetrics(rows.map(row => {
             // Parse the comma-separated duration list into a numeric array.
             // Already sorted ASC by MySQL so no extra JS sort needed.
             const sorted: number[] = row.durations
                 ? row.durations.split(',').map(Number)
                 : [];
 
-            // Same index formula MongoDB uses:
-            // Math.max(0, Math.floor(sorted.length * 0.95) - 1)
-            const index = Math.max(0, Math.floor(sorted.length * 0.95) - 1);
-            const p95 = sorted.length > 0 ? sorted[index] : 0;
+            if (sorted.length !== Number(row.requestCount)) throw new Error('APM duration aggregation was truncated');
+            const p95 = durationP95(sorted, row.isServer);
 
             return {
                 serviceName: row.serviceName,
+                isServer: row.isServer,
                 requestCount: Number(row.requestCount),
                 errorCount: Number(row.errorCount),
                 avgDurationMs: Number(row.avgDurationMs) || 0,
                 p95DurationMs: p95
             };
-        });
+        }));
     }
 
     async getTraceDetails(traceId: string): Promise<ISpan[]> {

@@ -7,7 +7,7 @@ export interface IApmSpanDocument extends Document {
     parentSpanId: string | null;
     serviceName: string;
     name: string;
-    kind: string;
+    kind: string | number;
     startTimeUnixNano: number;
     endTimeUnixNano: number;
     durationMs: number;

@@ -33,5 +33,7 @@ const docker = args => execFileSync('docker',args,{encoding:'utf8'}).trim();
   }
   const result=spawnSync(process.execPath,[path.join(__dirname,fixture.script)],{env,stdio:'inherit',timeout:180000});
   if(result.status!==0) throw new Error(`${kind} fixture failed (${result.status})`);
+  const metrics=spawnSync(process.execPath,[path.join(__dirname,'metrics.cjs'),kind],{env,stdio:'inherit',timeout:60000});
+  if(metrics.status!==0) throw new Error(`${kind} request metrics fixture failed (${metrics.status})`);
  } finally {spawnSync('docker',['rm','-f','-v',name],{stdio:'ignore'});}
 })().catch(error=>{console.error(error);process.exitCode=1;});

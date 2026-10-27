@@ -1,6 +1,7 @@
 name: Database retention regression
 on:
   workflow_dispatch:
+  workflow_call:
   push:
     branches: [main]
     paths:

@@ -25,6 +25,9 @@ env:
   FLUX_TAG: main-${{ github.run_number }}
 
 jobs:
+  database-compatibility:
+    if: github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/retention.yml
   sdk-compatibility:
     uses: ./.github/workflows/apm-sdk-verify.yml
   verify:
@@ -62,7 +65,7 @@ jobs:
   build-and-push:
     name: Build and publish image
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
-    needs: [verify, sdk-compatibility]
+    needs: [verify, sdk-compatibility, database-compatibility]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -93,6 +96,19 @@ jobs:
             VITE_BACKEND_CONTEXT_PATH=/kubiq-api
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - run: npm ci --prefix backend --ignore-scripts
+      - name: Verify bundled production image with authenticated MongoDB
+        run: |
+          set -o pipefail
+          node ops/apm-production/image-check.cjs | tee apm-image-verification.log
+        env:
+          KUBIQ_IMAGE: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: apm-image-verification-${{ github.sha }}
+          path: apm-image-verification.log
+          if-no-files-found: warn
       - name: Recheck approval immediately before publishing
         run: |
           node .github/scripts/verify-sonar-release.cjs

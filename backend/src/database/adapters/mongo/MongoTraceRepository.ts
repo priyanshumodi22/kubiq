@@ -1,3 +1,4 @@
+import { selectRequestMetrics, durationP95 } from '../../requestMetrics';
 import { ITraceRepository, ISpan, IServiceMetrics } from '../../interfaces/ITraceRepository';
 import { ApmSpanModel } from '../../schemas/ApmSpanSchema';
 import { ensureRetentionIndex } from './ensureRetentionIndex';
@@ -25,17 +26,9 @@ export class MongoTraceRepository implements ITraceRepository {
         // Use insertMany for high-throughput batch insertion.
         // ordered: false ensures that if one span fails (e.g. duplicate spanId), the rest still insert.
         try {
-            console.log(`[MongoTraceRepository] Attempting insert. Mongoose ReadyState: ${ApmSpanModel.db.readyState}`);
-            console.log(`[MongoTraceRepository] Sample doc to insert:`, JSON.stringify(docs[0]).substring(0, 500));
-            // Bypass Mongoose validation/casting with native driver
-            const result = await ApmSpanModel.collection.insertMany(docs, { ordered: false });
-            console.log(`[MongoTraceRepository] Native Insert SUCCESS. Inserted ${result.insertedCount} docs.`);
+            await ApmSpanModel.collection.insertMany(docs, { ordered: false });
         } catch (err: any) {
-            // Log ALL errors for debugging to see why spans are not saving
-            console.error('Failed to batch insert spans into MongoDB:', err.message);
-            if (err.writeErrors) {
-                console.error(`First write error:`, err.writeErrors[0]);
-            }
+            console.error('[apm] span_batch_write_failed', { count: spans.length });
             if (err.code !== 11000) {
                 throw err;
             }
@@ -50,7 +43,7 @@ export class MongoTraceRepository implements ITraceRepository {
             { $match: { timestamp: { $gte: fromDate, $lte: toDate } } },
             {
                 $group: {
-                    _id: '$serviceName',
+                    _id: { serviceName: '$serviceName', isServer: { $in: [{ $toUpper: { $convert: { input: '$kind', to: 'string', onError: '', onNull: '' } } }, ['2', 'SERVER', 'SPAN_KIND_SERVER']] } },
                     requestCount: { $sum: 1 },
                     errorCount: { $sum: { $cond: [{ $eq: ['$statusCode', 2] }, 1, 0] } }, // Assuming 2 = Error in OTel
                     avgDurationMs: { $avg: '$durationMs' },
@@ -60,7 +53,8 @@ export class MongoTraceRepository implements ITraceRepository {
             {
                 $project: {
                     _id: 0,
-                    serviceName: '$_id',
+                    serviceName: '$_id.serviceName',
+                    isServer: '$_id.isServer',
                     requestCount: 1,
                     errorCount: 1,
                     avgDurationMs: 1,
@@ -74,20 +68,18 @@ export class MongoTraceRepository implements ITraceRepository {
 
         const results = await ApmSpanModel.aggregate(pipeline);
 
-        return results.map(res => {
-            // Manual p95 Calculation for compatibility with older MongoDBs
-            const sorted = res.durations.sort((a: number, b: number) => a - b);
-            const index = Math.max(0, Math.floor(sorted.length * 0.95) - 1);
-            const p95 = sorted.length > 0 ? sorted[index] : 0;
+        return selectRequestMetrics(results.map(res => {
+            const p95 = durationP95(res.durations, res.isServer);
 
             return {
                 serviceName: res.serviceName,
+                isServer: res.isServer,
                 requestCount: res.requestCount,
                 errorCount: res.errorCount,
                 avgDurationMs: res.avgDurationMs || 0,
                 p95DurationMs: p95
             };
-        });
+        }));
     }
 
     async getTraceDetails(traceId: string): Promise<ISpan[]> {

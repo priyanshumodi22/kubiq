@@ -23,6 +23,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
+import { startTracing, traceRequest } from 'kubiq-apm/runtime';
+import { requestTracing } from './middleware/requestTracing';
+import { shutdownRuntime } from './utils/runtimeShutdown';
+import { IngestionBufferService } from './services/IngestionBufferService';
 import { servicesRouter } from './routes/services';
 import { healthRouter } from './routes/health';
 import { authRouter } from './routes/auth';
@@ -47,6 +51,23 @@ const apmEnabled = process.env.APM_ENABLED === 'true';
 const k8sMetricsHistoryEnabled = process.env.K8S_METRICS_HISTORY_ENABLED === 'true';
 const systemMetricsEnabled = process.env.SYSTEM_METRICS_ENABLED !== 'false';
 const k8sTerminalEnabled = process.env.K8S_TERMINAL_ENABLED === 'true';
+const tracing = startTracing({ profile: 'kubiq', serviceName: 'kubiq-backend' });
+const activeResponses = new Set<Response>();
+let shuttingDown = false;
+
+app.use((req, res, next) => {
+  // Keep authenticated ingestion reachable for the final loopback export while draining.
+  const telemetry = req.path.startsWith(BACKEND_CONTEXT_PATH + '/api/apm/') || req.path.startsWith(BACKEND_CONTEXT_PATH + '/api/telemetry/');
+  if (shuttingDown && !telemetry) return res.status(503).json({ error: 'Server is shutting down' });
+  if (!telemetry) {
+    activeResponses.add(res);
+    const finished = () => { activeResponses.delete(res); };
+    res.once('finish', finished);
+    res.once('close', finished);
+  }
+  next();
+});
+if (tracing.enabled) app.use(requestTracing(traceRequest, BACKEND_CONTEXT_PATH));
 
 // Socket.IO Setup
 const io = new Server(httpServer, {
@@ -120,7 +141,8 @@ app.use(
   })
 );
 app.use(compression()); // Enable gzip compression
-app.use(morgan('combined', {
+// Request diagnostics must not copy URLs, query credentials, client addresses or headers.
+app.use(morgan(':method :status :res[content-length] :response-time ms', {
   skip: (req) => req.url === '/auth/health/ready' || req.originalUrl === '/auth/health/ready'
 }));
 // A bounded default prevents any unauthenticated or authenticated route from
@@ -298,19 +320,22 @@ const startServer = async () => {
 
 startServer();
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
-  stopRetentionSweeps();
-  serviceMonitor.stop();
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  console.log('SIGINT signal received: closing HTTP server');
-  stopRetentionSweeps();
-  serviceMonitor.stop();
-  process.exit(0);
+async function shutdown(): Promise<void> {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  const completed = await shutdownRuntime({
+    responses: activeResponses,
+    stopBackground: () => { stopRetentionSweeps(); serviceMonitor.stop(); kubernetesMetricsScraper.stop(); },
+    stopStreams: () => { io.disconnectSockets(true); },
+    ingestion: IngestionBufferService.getInstance(),
+    tracing,
+    server: httpServer,
+  });
+  console.log('[shutdown]', { completed, ...tracing.diagnostics() });
+  process.exit(completed ? 0 : 1);
+}
+for (const signal of ['SIGTERM', 'SIGINT'] as const) process.once(signal, () => {
+  shutdown().catch(() => { console.error('[shutdown] failed'); process.exit(1); });
 });
 
 export default app;

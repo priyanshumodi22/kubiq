@@ -1,3 +1,5 @@
+import { traceDependency } from 'kubiq-apm/runtime';
+import { traceRepository } from './traceRepository';
 import { IServiceRepository } from './interfaces/IServiceRepository';
 import { INotificationRepository } from './interfaces/INotificationRepository';
 import { IUserRepository } from './interfaces/IUserRepository';
@@ -10,6 +12,10 @@ import { IKubiConversationRepository } from './interfaces/IKubiConversationRepos
 import { clickhouseService } from '../services/ClickhouseService';
 
 export class DatabaseFactory {
+  private static traced<T extends object>(repository: T, collection: string): T {
+    return process.env.KUBIQ_TRACING_ENABLED === 'true' ? traceRepository(repository, collection, traceDependency) : repository;
+  }
+
   private static serviceRepository: IServiceRepository;
   private static notificationRepository: INotificationRepository;
   private static userRepository: IUserRepository;
@@ -52,7 +58,7 @@ export class DatabaseFactory {
       case 'mongo':
       case 'mongodb': {
         const { MongoServiceRepository } = await import('./adapters/mongo/MongoServiceRepository');
-        this.serviceRepository = new MongoServiceRepository();
+        this.serviceRepository = this.traced(new MongoServiceRepository(), 'services');
         break;
       }
       case 'json':
@@ -85,7 +91,7 @@ export class DatabaseFactory {
       case 'mongo':
       case 'mongodb': {
         const { MongoNotificationRepository } = await import('./adapters/mongo/MongoNotificationRepository');
-        this.notificationRepository = new MongoNotificationRepository();
+        this.notificationRepository = this.traced(new MongoNotificationRepository(), 'notifications');
         break;
       }
       case 'json':
@@ -118,7 +124,7 @@ export class DatabaseFactory {
       case 'mongo':
       case 'mongodb': {
         const { MongoUserRepository } = await import('./adapters/mongo/MongoUserRepository');
-        this.userRepository = new MongoUserRepository();
+        this.userRepository = this.traced(new MongoUserRepository(), 'users');
         break;
       }
       case 'json':
@@ -151,7 +157,7 @@ export class DatabaseFactory {
       case 'mongo':
       case 'mongodb': {
         const { MongoPasskeyRepository } = await import('./adapters/mongo/MongoPasskeyRepository');
-        this.passkeyRepository = new MongoPasskeyRepository();
+        this.passkeyRepository = this.traced(new MongoPasskeyRepository(), 'passkeys');
         break;
       }
       case 'json':
@@ -185,7 +191,7 @@ export class DatabaseFactory {
       case 'mongo':
       case 'mongodb': {
         const { MongoSystemRepository } = await import('./adapters/mongo/MongoSystemRepository');
-        this.systemRepository = new MongoSystemRepository();
+        this.systemRepository = this.traced(new MongoSystemRepository(), 'system');
         break;
       }
       case 'json':
@@ -225,7 +231,7 @@ export class DatabaseFactory {
       case 'mongo':
       case 'mongodb': {
         const { MongoTraceRepository } = await import('./adapters/mongo/MongoTraceRepository');
-        this.traceRepository = new MongoTraceRepository();
+        this.traceRepository = this.traced(new MongoTraceRepository(), 'traces');
         break;
       }
       case 'json':
@@ -261,7 +267,7 @@ export class DatabaseFactory {
       case 'mongo':
       case 'mongodb': {
         const { MongoLogRepository } = await import('./adapters/mongo/MongoLogRepository');
-        this.logRepository = new MongoLogRepository();
+        this.logRepository = this.traced(new MongoLogRepository(), 'logs');
         break;
       }
       case 'mysql':
@@ -301,7 +307,7 @@ export class DatabaseFactory {
         case 'mongo':
         case 'mongodb': {
           const { MongoAuditLogRepository } = await import('./adapters/mongo/MongoAuditLogRepository');
-          repo = new MongoAuditLogRepository();
+          repo = this.traced(new MongoAuditLogRepository(), 'audit');
           break;
         }
         case 'json':
@@ -337,7 +343,7 @@ export class DatabaseFactory {
         case 'mongo':
         case 'mongodb': {
           const { MongoKubiConversationRepository } = await import('./adapters/mongo/MongoKubiConversationRepository');
-          repository = new MongoKubiConversationRepository();
+          repository = this.traced(new MongoKubiConversationRepository(), 'conversations');
           break;
         }
         default: {

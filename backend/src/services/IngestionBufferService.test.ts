@@ -10,6 +10,7 @@ describe('IngestionBufferService bounds', () => {
     (IngestionBufferService as any).instance = undefined;
     delete process.env.KUBIQ_INGESTION_MAX_BUFFERED_LOGS;
     delete process.env.KUBIQ_INGESTION_MAX_BUFFERED_SPANS;
+    jest.useRealTimers();
   });
 
   it('rejects logs once the configured queue capacity is reached', () => {
@@ -54,5 +55,39 @@ describe('IngestionBufferService bounds', () => {
     expect(buffer.addLogs([{ message: 'three' }])).toBe(false);
     releaseWrite();
     await flushing;
+  });
+
+  it('drain awaits an in-flight write and the batch accepted during that write; stop cancels periodic writes', async () => {
+    jest.useFakeTimers();
+    let release!: () => void;
+    const pending = new Promise<void>(resolve => { release = resolve; });
+    const insertLogs = jest.fn<() => Promise<void>>().mockReturnValueOnce(pending).mockResolvedValue(undefined);
+    jest.spyOn(DatabaseFactory, 'getLogRepository').mockResolvedValue({ insertLogs } as any);
+    const buffer = IngestionBufferService.getInstance();
+    buffer.addLogs([{ message: 'one' }]);
+    const draining = buffer.drain();
+    await Promise.resolve();
+    buffer.addLogs([{ message: 'two' }]);
+    release();
+    await draining;
+    expect(insertLogs).toHaveBeenCalledTimes(2);
+    buffer.stop();
+    buffer.addLogs([{ message: 'three' }]);
+    await jest.advanceTimersByTimeAsync(4000);
+    expect(insertLogs).toHaveBeenCalledTimes(2);
+    await buffer.drain();
+    expect(insertLogs).toHaveBeenCalledTimes(3);
+  });
+
+  it('failed ingestion diagnostics contain counts, not errors or payloads', async () => {
+    const error = new Error('SYNTHETIC_SECRET');
+    const insertLogs = jest.fn<() => Promise<void>>().mockRejectedValue(error);
+    jest.spyOn(DatabaseFactory, 'getLogRepository').mockResolvedValue({ insertLogs } as any);
+    const log = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const buffer = IngestionBufferService.getInstance();
+    buffer.addLogs([{ message: 'SYNTHETIC_SECRET' }]);
+    await buffer.drain();
+    expect(log).toHaveBeenCalledWith('[ingestion] log_batch_write_failed', { count: 1 });
+    expect(JSON.stringify(log.mock.calls)).not.toContain('SYNTHETIC_SECRET');
   });
 });

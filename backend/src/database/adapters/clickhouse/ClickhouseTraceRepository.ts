@@ -1,3 +1,4 @@
+import { selectRequestMetrics } from '../../requestMetrics';
 import { retentionSeconds } from '../../../utils/RetentionPolicy';
 import { ensureClickhouseRetention } from './ensureClickhouseRetention';
 import { ITraceRepository, ISpan, IServiceMetrics, ITraceSummary, IServiceDependency } from '../../interfaces/ITraceRepository';
@@ -60,7 +61,7 @@ export class ClickhouseTraceRepository implements ITraceRepository {
                 parentSpanId: span.parentSpanId || '',
                 serviceName: span.serviceName,
                 name: span.name,
-                kind: span.kind || '',
+                kind: String(span.kind ?? ''),
                 startTimeUnixNano: span.startTimeUnixNano,
                 endTimeUnixNano: span.endTimeUnixNano,
                 durationMs: span.durationMs,
@@ -100,25 +101,27 @@ export class ClickhouseTraceRepository implements ITraceRepository {
                 query: `
                     SELECT 
                         serviceName,
+                        upperUTF8(kind) IN ('2', 'SERVER', 'SPAN_KIND_SERVER') AS isServer,
                         count() as requestCount,
                         sum(if(statusCode = 2, 1, 0)) as errorCount,
                         avg(durationMs) as avgDurationMs,
-                        quantile(0.95)(durationMs) as p95DurationMs
+                        if(isServer, quantileExactIf(0.95)(durationMs, isServer), quantile(0.95)(durationMs)) as p95DurationMs
                     FROM ${dbName}.apmspans
                     WHERE timestamp >= {from: DateTime} AND timestamp <= {to: DateTime}
-                    GROUP BY serviceName
+                    GROUP BY serviceName, isServer
                 `,
                 query_params: { from, to },
                 format: 'JSONEachRow'
             });
             const data: any[] = await resultSet.json();
-            return data.map(d => ({
+            return selectRequestMetrics(data.map(d => ({
                 serviceName: d.serviceName,
+                isServer: d.isServer,
                 requestCount: Number(d.requestCount),
                 errorCount: Number(d.errorCount),
                 avgDurationMs: Number(d.avgDurationMs),
                 p95DurationMs: Number(d.p95DurationMs)
-            }));
+            })));
         } catch (err) {
             console.error('ClickhouseTraceRepository getServiceMetrics error:', err);
             return [];

@@ -14,7 +14,7 @@ import { ApmConfigModal } from '../components/ApmConfigModal';
 import { ApmInstrumentationModal } from '../components/ApmInstrumentationModal';
 import { useAuth } from '../contexts/AuthContext';
 import { TimeRangeSlider } from '../components/TimeRangeSlider';
-import { exportDurationLabel, latencyLabel, latencyValue, serviceErrorClass } from './apmPresentation';
+import { exportDurationLabel, latencyLabel, latencyValue, serviceErrorClass, measurementLabel, throughputUnit } from './apmPresentation';
 
 
 export type TimeFilter =
@@ -511,8 +511,9 @@ function ApmInspector({ model }: Readonly<{ model: ApmDashboardModel }>) {
                                         {service.serviceName}
                                         <span className={`text-xs ${serviceErrorClass(isRed, isYellow)}`}>{service.errorRate.toFixed(1)}% err</span>
                                     </h3>
+                                    <p className="mt-1 text-xs text-gray-400">{measurementLabel(service)}</p>
                                     <div className="flex justify-between text-xs text-gray-400 mt-2">
-                                        <span>{service.rpm.toFixed(1)} RPM</span>
+                                        <span>{service.rpm.toFixed(1)} {throughputUnit(service)}</span>
                                         <span>{durationMetric.toFixed(0)} ms ({percentileFilter})</span>
                                     </div>
                                 </div>
@@ -1428,10 +1429,11 @@ function ApmMetrics({ model }: Readonly<{ model: ApmDashboardModel }>) {
                                         </h3>
                                     </div>
 
+                                    <p className="mb-3 text-xs text-gray-400">{measurementLabel(service)}</p>
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-gray-400 flex items-center gap-1.5">
-                                                <Activity className="w-4 h-4 text-blue-400" /> Throughput (RPM)
+                                                <Activity className="w-4 h-4 text-blue-400" /> Throughput ({throughputUnit(service)})
                                             </span>
                                             <span className="font-mono text-white">{service.rpm.toFixed(1)}</span>
                                         </div>

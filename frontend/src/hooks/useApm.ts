@@ -3,6 +3,7 @@ import { apiClient } from '../services/api';
 import { requestErrorMessage } from '../utils/requestError';
 
 export interface ServiceMetrics {
+    measurementBasis?: 'server-requests' | 'legacy-spans';
     serviceName: string;
     requestCount: number;
     errorCount: number;
