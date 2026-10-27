@@ -6,7 +6,7 @@ function redactString(value, seen, depth) {
     }
     return cleanString(value);
 }
-const sensitivePatterns = [/password|passwd|pwd|secret|token|credential|authorization|cookie|config/i, /api[_-]?key|private[_-]?key|signing[_-]?key|encryption[_-]?key/i];
+const sensitivePatterns = [/password|passwd|pwd|secret|token|credential|authorization|cookie|config/i, /api[_-]?key|private[_-]?key|signing[_-]?key|encryption[_-]?key|webhook/i, /(?:^|[.$_-])(?:messages?|body|content|payload|html|text)(?:$|[._-])/i];
 function isSensitive(value) { return sensitivePatterns.some(pattern => pattern.test(value)); }
 function cleanString(value) {
     let text = value;
@@ -35,15 +35,20 @@ function redactEntries(value, seen, depth) {
     const result = Object.create(null);
     const sql = typeof value.statement === 'string' ? value.statement : null;
     const mask = sqlNeedsMask(sql);
+    const sensitiveRecord = typeof value.key === 'string' && isSensitive(value.key);
     const configurationWrite = ['systempreferences', 'systemconfigs', 'notifications'].includes(value.update || value.insert || value.findAndModify);
     for (const [name, item] of Object.entries(value).slice(0, 64)) {
         if (['lsid', '$clusterTime', 'txnNumber'].includes(name)) continue;
-        if (configurationWrite && (['updates', 'documents'].includes(name) || (name === 'update' && value.findAndModify))) { result[name] = '[REDACTED: CONFIGURATION WRITE]'; continue; }
-        if (name === 'statement' && sql !== null) result[name] = cleanString(sqlStatement(sql, mask));
-        else if (name === 'parameters' && mask) result[name] = '[REDACTED: CREDENTIAL-RELATED STATEMENT]';
-        else result[cleanString(name)] = redact(item, name, seen, depth + 1);
+        result[cleanString(name)] = redactField(value, name, item, { sql, mask, configurationWrite, sensitiveRecord }, seen, depth);
     }
     return result;
+}
+function redactField(record, name, item, context, seen, depth) {
+    if (name === 'value' && context.sensitiveRecord) return '[REDACTED]';
+    if (context.configurationWrite && (['updates', 'documents'].includes(name) || (name === 'update' && record.findAndModify))) return '[REDACTED: CONFIGURATION WRITE]';
+    if (name === 'statement' && context.sql !== null) return cleanString(sqlStatement(context.sql, context.mask));
+    if (name === 'parameters' && context.mask) return '[REDACTED: CREDENTIAL-RELATED STATEMENT]';
+    return redact(item, name, seen, depth + 1);
 }
 function databaseQueryDetails(value) {
     try {

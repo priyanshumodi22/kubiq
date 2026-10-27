@@ -43,3 +43,8 @@ test('bounds depth, arrays, text and cyclic or failing input without exposing or
     assert(capture({ get broken() { throw new Error('PRIVATE'); } }).includes('UNAVAILABLE'));
     assert(!capture({ get broken() { throw new Error('PRIVATE'); } }).includes('PRIVATE'));
 });
+
+test('opaque bodies and credential key/value records cannot bypass password redaction', () => {
+    for (const value of [{ messages_json: 'my password is PRIVATE_PASSWORD' }, { body: 'PRIVATE_PASSWORD' }, { key: 'auth_token', value: 'PRIVATE_TOKEN' }, { webhook: 'https://example.test/PRIVATE_TOKEN' }]) assert(!capture(value).includes('PRIVATE_'));
+    assert(capture({ key: 'order_id', value: 'order-123' }).includes('order-123'));
+});
