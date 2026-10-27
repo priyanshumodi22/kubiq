@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "revision": "2026-10-27-node-runtime-1.1.0",
+  "revision": "2026-10-27-node-runtime-1.1.1",
   "title": "kubiq APM Integration Guide",
   "description": "Connect Node.js, Python, Java, Go and Next.js applications with tested, authenticated tracing.",
-  "nodeVersion": "1.1.0",
+  "nodeVersion": "1.1.1",
   "pythonVersion": "1.0.1",
   "collectorVersion": "0.123.0",
   "endpointNotes": "kubiq accepts OTLP HTTP JSON at /api/apm/v1/traces, not direct protobuf. Use the complete backend URL, including its optional prefix. Example production URL: https://priyanshumodi.in/kubiq-api/api/apm/v1/traces. Local development may use http://localhost:3001/api/apm/v1/traces. Use HTTPS for remote ingestion. Set a distinct OTEL_SERVICE_NAME per application. Never expose the ingestion token in browser/client code.",
@@ -38,7 +38,7 @@
           "id": "install",
           "title": "Install the wrapper",
           "language": "bash",
-          "code": "npm install kubiq-apm@1.1.0"
+          "code": "npm install kubiq-apm@1.1.1"
         },
         {
           "id": "environment",
@@ -139,7 +139,7 @@
           "id": "install",
           "title": "Install compatible tracing packages",
           "language": "bash",
-          "code": "npm install kubiq-apm@1.1.0 @vercel/otel@1.13.0"
+          "code": "npm install kubiq-apm@1.1.1 @vercel/otel@1.13.0"
         },
         {
           "id": "environment",

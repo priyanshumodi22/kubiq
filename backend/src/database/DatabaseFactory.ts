@@ -1,3 +1,4 @@
+import { mongoTraceContext } from './mongoTraceContext';
 import { traceDependency } from 'kubiq-apm/runtime';
 import { traceRepository } from './traceRepository';
 import { IServiceRepository } from './interfaces/IServiceRepository';
@@ -13,7 +14,7 @@ import { clickhouseService } from '../services/ClickhouseService';
 
 export class DatabaseFactory {
   private static traced<T extends object>(repository: T, collection: string): T {
-    return process.env.KUBIQ_TRACING_ENABLED === 'true' ? traceRepository(repository, collection, traceDependency) : repository;
+    return process.env.KUBIQ_TRACING_ENABLED === 'true' ? traceRepository(repository, collection, traceDependency, operation => mongoTraceContext(collection, operation)) : repository;
   }
 
   private static serviceRepository: IServiceRepository;

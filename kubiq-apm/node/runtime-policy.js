@@ -1,5 +1,5 @@
 const methods = new Set(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']);
-const safeAttributes = new Set(['db.system', 'db.operation.name', 'server.address', 'http.request.method', 'http.response.status_code', 'http.route', 'error.type']);
+const safeAttributes = new Set(['db.system', 'db.system.name', 'db.operation.name', 'db.collection.name', 'db.namespace', 'code.function.name', 'code.namespace', 'server.address', 'server.port', 'http.request.method', 'http.response.status_code', 'http.route', 'error.type']);
 const staticExtensions = new Set(['css', 'js', 'map', 'json', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'woff', 'woff2', 'ttf', 'txt', 'xml', 'webmanifest', 'avif', 'wasm', 'mp4', 'pdf']);
 function method(value) { return methods.has(value) ? value : 'OTHER'; }
 function pathOf(request) {

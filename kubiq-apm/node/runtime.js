@@ -29,7 +29,7 @@ function initialize(options, config) {
     const provider = new NodeTracerProvider({ resource: new Resource({ 'service.name': config.serviceName, 'service.version': options.serviceVersion || 'unknown' }), sampler: new AlwaysOnSampler(), spanLimits: { attributeCountLimit: 32, attributeValueLengthLimit: 256, eventCountLimit: 0 } });
     provider.addSpanProcessor(processor);
     provider.register({ contextManager: new AsyncLocalStorageContextManager().enable(), propagator: new W3CTraceContextPropagator() });
-    const runtime = { api, processor, provider, profile: options.profile || 'kubiq', tracer: api.trace.getTracer('kubiq-apm/runtime', '1.1.0'), scopeKey: api.createContextKey('kubiq-live-request'), stopping: false };
+    const runtime = { api, processor, provider, profile: options.profile || 'kubiq', tracer: api.trace.getTracer('kubiq-apm/runtime', '1.1.1'), scopeKey: api.createContextKey('kubiq-live-request'), stopping: false };
     runtime.handle = { enabled: true, forceFlush: () => processor.forceFlush(), diagnostics: () => processor.counts(), shutdown: () => shutdown(runtime) };
     setRuntime(runtime);
     const { HttpInstrumentation } = require('@opentelemetry/instrumentation-http');

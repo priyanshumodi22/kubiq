@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 
 import { AlertTriangle, Trash2, Info } from 'lucide-react';
 
@@ -11,6 +12,7 @@ interface ConfirmDialogProps {
   cancelText?: string;
   type?: 'danger' | 'warning' | 'info';
   isLoading?: boolean;
+  children?: ReactNode;
 }
 
 export function ConfirmDialog({
@@ -22,7 +24,8 @@ export function ConfirmDialog({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   type = 'danger',
-  isLoading = false
+  isLoading = false,
+  children
 }: Readonly<ConfirmDialogProps>) {
   if (!isOpen) return null;
 
@@ -68,6 +71,7 @@ export function ConfirmDialog({
               {message}
             </p>
 
+            {children}
             {/* Actions */}
             <div className="flex gap-3">
                 <button

@@ -28,3 +28,13 @@ describe('span inspector rendering', () => {
         expect(view.queryByText('Span Attributes')).toBeNull();
     });
 });
+
+it('renders every safe MongoDB attribute without treating storage as a reduced-detail mode', () => {
+    const attributes = { 'db.system.name': 'mongodb', 'db.namespace': 'kubiq', 'db.collection.name': 'systempreferences', 'code.namespace': 'kubiq.repositories.system', 'code.function.name': 'getStorageConfig', 'server.address': 'mongodb.internal', 'server.port': 27017 };
+    const view = render(<SpanDetailsSidebar span={{ ...span, attributes }} onClose={vi.fn()} />);
+    for (const [key, value] of Object.entries(attributes)) {
+        expect(view.getByText(key)).toBeTruthy();
+        expect(view.getByText(String(value))).toBeTruthy();
+    }
+    expect(view.getByText(/Query values and credentials are intentionally omitted/)).toBeTruthy();
+});

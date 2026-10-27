@@ -42,7 +42,7 @@ export const SpanDetailsSidebar: React.FC<SpanDetailsSidebarProps> = ({ span, on
         if (span.attributes['cloud.provider']) return <Cloud className="w-5 h-5 text-sky-400" />;
 
         // 6. HTTP (REST API, Web traffic)
-        if (span.attributes['http.url'] || span.attributes['http.method']) return <Globe className="w-5 h-5 text-green-400" />;
+        if (span.attributes['http.url'] || span.attributes['http.method'] || span.attributes['http.request.method']) return <Globe className="w-5 h-5 text-green-400" />;
 
         // Default fallback for internal code blocks
         return <Terminal className="w-5 h-5 text-gray-400" />;
@@ -72,7 +72,7 @@ export const SpanDetailsSidebar: React.FC<SpanDetailsSidebarProps> = ({ span, on
                             {getSystemIcon()}
                         </div>
                         <div>
-                            <h2 className="text-lg font-bold text-white leading-tight">{span.name}</h2>
+                            <h2 className="text-lg font-bold text-white leading-tight break-words [overflow-wrap:anywhere]">{span.name}</h2>
                             <p className="text-sm text-gray-400 font-mono mt-1">{span.serviceName}</p>
                         </div>
                     </div>
@@ -110,13 +110,14 @@ export const SpanDetailsSidebar: React.FC<SpanDetailsSidebarProps> = ({ span, on
                             <Info className="w-4 h-4" /> Span Attributes
                         </h3>
 
+                        {typeof span.attributes?.['code.namespace'] === 'string' && <p className="mb-3 text-xs text-text-dim">Repository operation context. Query values and credentials are intentionally omitted.</p>}
                         {span.attributes && Object.keys(span.attributes).length > 0 ? (
                             <div className="bg-bg-card border border-gray-800 rounded-xl overflow-hidden shadow-inner">
-                                <table className="w-full text-left text-sm">
+                                <table className="w-full table-fixed text-left text-xs">
                                     <tbody className="divide-y divide-gray-800">
                                         {Object.entries(span.attributes).map(([key, value]) => (
                                             <tr key={key} className="hover:bg-white/5 transition-colors group">
-                                                <td className="px-4 py-3 align-top font-medium text-gray-400 border-r border-gray-800/50 w-1/3 break-all">
+                                                <td className="px-4 py-3 align-top font-medium text-gray-400 border-r border-gray-800/50 w-[45%] break-words [overflow-wrap:anywhere]">
                                                     {key}
                                                 </td>
                                                 <td className="px-4 py-3 align-top font-mono text-gray-300 break-all select-all">

@@ -1,3 +1,4 @@
+import { useAppDialog } from '../hooks/useAppDialog';
 import { NamespaceScopeDialog } from '../components/NamespaceScopeDialog';
 import { addSelection, removeSelection } from '../utils/selection';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
@@ -145,6 +146,7 @@ export default function SystemAdministration() {
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const appDialog = useAppDialog();
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [newUser, setNewUser] = useState({
     username: '',
@@ -230,9 +232,7 @@ export default function SystemAdministration() {
     }
   };
   const resetPassword = async (user: ManagedUser) => {
-    const password = globalThis.prompt(
-      `Set a temporary password for ${user.username} (12 characters minimum).`
-    );
+    const password = await appDialog.password({ title: 'Reset password', message: `Set a temporary password for ${user.username} (12 characters minimum).`, confirmText: 'Set password' });
     if (password === null) return;
     if (password.length < 12) return setMessage('Password must be at least 12 characters.');
     try {
@@ -279,7 +279,7 @@ export default function SystemAdministration() {
     }
   };
   const deleteUser = async (user: ManagedUser) => {
-    if (!globalThis.confirm(`Delete ${user.username}? This cannot be undone.`)) return;
+    if (!await appDialog.confirm({ title: 'Delete user', message: `Delete ${user.username}? This cannot be undone.`, confirmText: 'Delete user' })) return;
     try {
       await apiClient.deleteUser(user.id);
       setUsers((items) => items.filter((item) => item.id !== user.id));
@@ -308,7 +308,7 @@ export default function SystemAdministration() {
     }
   };
   const deleteRole = async (role: Role) => {
-    if (role.builtIn || !globalThis.confirm(`Delete custom role ${role.name}?`)) return;
+    if (role.builtIn || !await appDialog.confirm({ title: 'Delete role', message: `Delete custom role ${role.name}?`, confirmText: 'Delete role' })) return;
     try {
       await apiClient.deleteRbacRole(role.id);
       setRoles((items) => items.filter((item) => item.id !== role.id));
@@ -329,6 +329,7 @@ export default function SystemAdministration() {
 
   return (
     <main className="relative z-10 mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {appDialog.dialog}
       {/* Background Effects (matched exactly to AuditLogViewer) */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface" />

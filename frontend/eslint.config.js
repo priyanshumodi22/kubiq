@@ -11,6 +11,6 @@ export default [
     files: ['**/*.{ts,tsx}'],
     languageOptions: { parser, ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.browser, ...globals.node } },
     plugins: { '@typescript-eslint': ts, 'react-hooks': hooks, 'react-refresh': refresh },
-    rules: { ...js.configs.recommended.rules, ...ts.configs['eslint-recommended'].overrides[0].rules, ...ts.configs.recommended.rules, 'react-hooks/rules-of-hooks': 'error', 'react-hooks/exhaustive-deps': 'warn', 'react-refresh/only-export-components': ['warn', { allowConstantExport: true }], '@typescript-eslint/no-explicit-any': 'warn' },
+    rules: { ...js.configs.recommended.rules, ...ts.configs['eslint-recommended'].overrides[0].rules, ...ts.configs.recommended.rules, 'no-alert': 'error', 'no-restricted-properties': ['error', ...['window', 'globalThis', 'self'].flatMap(object => ['alert', 'confirm', 'prompt'].map(property => ({ object, property, message: 'Use kubiq dialogs or ToastProvider.' })))], 'react-hooks/rules-of-hooks': 'error', 'react-hooks/exhaustive-deps': 'warn', 'react-refresh/only-export-components': ['warn', { allowConstantExport: true }], '@typescript-eslint/no-explicit-any': 'warn' },
   },
 ];

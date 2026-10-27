@@ -1,3 +1,4 @@
+import { notify } from '../utils/notify';
 
 import { useState, useEffect, useId } from 'react';
 import { createPortal } from 'react-dom';
@@ -51,7 +52,7 @@ export function StatusPageConfigModal({ isOpen, onClose }: StatusPageConfigModal
       onClose();
     } catch (error) {
       console.error('Failed to save status config:', error);
-      alert('Failed to save configuration');
+      notify('Failed to save configuration');
     } finally {
       setSaving(false);
     }

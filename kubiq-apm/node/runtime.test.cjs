@@ -25,9 +25,9 @@ test('opt-in runtime emits private, correctly parented JSON traces and suppresse
     t.after(async()=>{await handle.shutdown();await new Promise(resolve=>collector.close(resolve));});
     await t.test('one request has one server span with a database child; secrets never exported',async()=>{
         const res=response();
-        const value=runtime.traceRequest({method:'GET',url:'/users/PRIVATE_PERSON?token=PRIVATE_TOKEN',headers:{authorization:'PRIVATE_TOKEN',cookie:'PRIVATE_TOKEN'},route:{path:'/users/:id'}},res,()=>runtime.traceDependency('db.find',()=>Promise.resolve(7),{'db.system':'mongodb','db.statement':'PRIVATE_TOKEN','Authorization':'PRIVATE_TOKEN'}));
+        const value=runtime.traceRequest({method:'GET',url:'/users/PRIVATE_PERSON?token=PRIVATE_TOKEN',headers:{authorization:'PRIVATE_TOKEN',cookie:'PRIVATE_TOKEN'},route:{path:'/users/:id'}},res,()=>runtime.traceDependency('db.find',()=>Promise.resolve(7),{'db.system':'mongodb','db.collection.name':'users','db.namespace':'kubiq','server.port':27017,'db.statement':'PRIVATE_TOKEN','Authorization':'PRIVATE_TOKEN'}));
         assert.equal(await value,7);finish(res);await handle.forceFlush();
-        const spans=flatten(payloads);assert.equal(spans.length,2);const server=spans.find(s=>s.kind===2),child=spans.find(s=>s.kind===3);assert.equal(child.parentSpanId,server.spanId);assert.equal(child.traceId,server.traceId);assert.equal(server.name,'GET /users/:id');assert(!JSON.stringify(payloads).includes('PRIVATE_'));
+        const spans=flatten(payloads);assert.equal(spans.length,2);const server=spans.find(s=>s.kind===2),child=spans.find(s=>s.kind===3);assert.equal(child.parentSpanId,server.spanId);assert.equal(child.traceId,server.traceId);assert.equal(server.name,'GET /users/:id');const attributes=Object.fromEntries(child.attributes.map(item=>[item.key,item.value.stringValue??Number(item.value.intValue)]));assert.equal(attributes['db.collection.name'],'users');assert.equal(attributes['db.namespace'],'kubiq');assert.equal(attributes['server.port'],27017);assert(!JSON.stringify(payloads).includes('PRIVATE_'));
     });
     await t.test('native HTTP dependencies are parented and URL queries never exported',async()=>{
         const business=http.createServer((_req,res)=>res.end('ok'));

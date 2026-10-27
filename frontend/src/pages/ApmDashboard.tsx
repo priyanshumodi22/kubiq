@@ -1,3 +1,4 @@
+import { notify } from '../utils/notify';
 import { useState, useEffect, useRef, useEffectEvent } from 'react';
 import { apiClient } from '../services/api';
 import { createPortal } from 'react-dom';
@@ -291,12 +292,12 @@ function useApmDashboardModel() {
 
         const now = Date.now();
         if (from > now || to > now) {
-            alert('Cannot select a time in the future.');
+            notify('Cannot select a time in the future.', 'warning');
             return;
         }
 
         if (from >= to) {
-            alert('Start time must be before end time.');
+            notify('Start time must be before end time.', 'warning');
             return;
         }
 

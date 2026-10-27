@@ -1,4 +1,4 @@
-<!-- Generated from docs/apm/instrumentation.json; edit the source, then regenerate. SHA256: e6b9ac55ca3eec8ca4d8e3730b84ae0ec0299aef0777f69f7f2b37fab1222cc6 -->
+<!-- Generated from docs/apm/instrumentation.json; edit the source, then regenerate. SHA256: 510bc9fadc56a19a54724067514b0d88ca14af9b3027adbe6a96b648293f5d16 -->
 
 # kubiq APM Integration Guide
 
@@ -10,7 +10,7 @@ kubiq accepts OTLP HTTP JSON at /api/apm/v1/traces, not direct protobuf. Use the
 
 Commands use POSIX shell syntax. In PowerShell, set environment variables with $env:NAME = "value", then start the application in that same environment. The ingestion token must come from your secret manager, never client-side code.
 
-Collector examples are pinned to 0.123.0. Node/Python package versions are 1.1.0/1.0.1.
+Collector examples are pinned to 0.123.0. Node/Python package versions are 1.1.1/1.0.1.
 
 ## 1. Node.js (Express, NestJS, Fastify)
 
@@ -20,7 +20,7 @@ Preload the kubiq wrapper before importing HTTP, Express, NestJS or Fastify. It 
 ### Install the wrapper
 
 ```bash
-npm install kubiq-apm@1.1.0
+npm install kubiq-apm@1.1.1
 ```
 
 ### Configure private environment
@@ -96,7 +96,7 @@ For Next.js 15/16 App Router on the Node runtime, use instrumentation.ts at the 
 ### Install compatible tracing packages
 
 ```bash
-npm install kubiq-apm@1.1.0 @vercel/otel@1.13.0
+npm install kubiq-apm@1.1.1 @vercel/otel@1.13.0
 ```
 
 ### Configure server-only environment

@@ -30,3 +30,12 @@ test('repository errors and rejected promises preserve their original identity a
     expect(repository['private-operation']()).toBe(2);
     expect(JSON.stringify(jest.mocked(trace).mock.calls.map(call => [call[0], call[2]]))).not.toContain('SYNTHETIC_SECRET');
 });
+
+test('adds operation metadata lazily without forwarding query arguments to its context provider', () => {
+    const context = jest.fn<(operation: string) => Record<string, string | number>>().mockReturnValue({ 'db.collection.name': 'users', 'server.port': 27017 });
+    const trace = jest.fn<DependencyTracer>().mockImplementation((_, action) => action());
+    const repository = traceRepository({ read(value: string) { return value; } }, 'users', trace, context);
+    expect(repository.read('SYNTHETIC_SECRET')).toBe('SYNTHETIC_SECRET');
+    expect(context).toHaveBeenCalledWith('read');
+    expect(trace).toHaveBeenCalledWith('mongodb.users.read', expect.any(Function), { 'db.system': 'mongodb', 'db.operation.name': 'read', 'db.collection.name': 'users', 'server.port': 27017 });
+});

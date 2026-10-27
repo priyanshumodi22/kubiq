@@ -30,12 +30,16 @@ async function repository() {
     stopRetentionSweeps();
     const now = Date.now();
     let id = 0;
-    const span = (serviceName, kind, durationMs, statusCode) => ({ serviceName, kind, durationMs, statusCode, traceId: '1'.repeat(32), spanId: (++id).toString(16).padStart(16, '0'), name: 'fixture', startTimeUnixNano: now * 1e6, endTimeUnixNano: (now + durationMs) * 1e6 });
+    const attributes = { 'db.system': 'mongodb', 'db.namespace': 'kubiq', 'db.collection.name': 'systempreferences', 'db.operation.name': 'getStorageConfig', 'server.address': 'mongodb.internal', 'server.port': 27017 };
+    const span = (serviceName, kind, durationMs, statusCode) => ({ serviceName, kind, durationMs, statusCode, traceId: '1'.repeat(32), spanId: (++id).toString(16).padStart(16, '0'), name: 'fixture', attributes, startTimeUnixNano: now * 1e6, endTimeUnixNano: (now + durationMs) * 1e6 });
     await trace.insertSpans([
       span(services[0], 2, 10, 0), span(services[0], 'SPAN_KIND_SERVER', 30, 2),
       ...Array.from({ length: 9 }, () => span(services[0], 3, 1000, 2)),
       span(services[1], 'INTERNAL', 4, 0), span(services[1], 'INTERNAL', 8, 2),
     ]);
+    const persisted = await trace.getTraceDetails('1'.repeat(32));
+    assert.equal(persisted.length, 13);
+    for (const row of persisted) assert.deepEqual(row.attributes, attributes, 'Storage must preserve all safe span attributes');
     const rows = await trace.getServiceMetrics(now - 1000, now + 2000);
     const api = rows.find(row => row.serviceName === services[0]);
     assert.deepEqual(api, { serviceName: services[0], requestCount: 2, errorCount: 1, avgDurationMs: 20, p95DurationMs: 30, measurementBasis: 'server-requests' });
@@ -46,6 +50,6 @@ async function repository() {
     assert.equal(legacy.measurementBasis, 'legacy-spans');
     assert(legacy.p95DurationMs >= 4 && legacy.p95DurationMs <= 8);
     assert.deepEqual(await trace.getServiceMetrics(0, 1), []);
-    console.log(JSON.stringify({ passed: true, adapter: kind, tests: ['SERVER-only counts/errors/latency', 'numeric and named kinds', 'legacy fallback', 'empty window'] }));
+    console.log(JSON.stringify({ passed: true, adapter: kind, tests: ['SERVER-only counts/errors/latency', 'numeric and named kinds', 'legacy fallback', 'empty window', 'attribute round trip'] }));
   } finally { stopRetentionSweeps(); await close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

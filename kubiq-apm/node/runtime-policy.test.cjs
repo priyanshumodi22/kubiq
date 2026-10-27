@@ -23,3 +23,8 @@ test('only safe bounded attributes, normalized routes and error types are record
     assert.equal(p.errorType(new TypeError('secret')), 'TypeError');
     assert.equal(p.errorType({ name: 'secret' }), 'Error'); assert.equal(p.errorType(), 'Error');
 });
+
+test('repository diagnostic context survives while database values and credentials stay excluded', () => {
+    const values = { 'db.system.name': 'mongodb', 'db.namespace': 'kubiq', 'db.collection.name': 'systempreferences', 'code.namespace': 'kubiq.repositories.system', 'code.function.name': 'getStorageConfig', 'server.address': 'mongodb.mongodb-system.svc', 'server.port': 27017 };
+    assert.deepEqual(p.attributes({ ...values, 'db.query.text': 'SYNTHETIC_SECRET', 'db.statement': 'SYNTHETIC_SECRET', 'db.connection_string': 'mongodb://user:SYNTHETIC_SECRET@host', 'db.user': 'SYNTHETIC_SECRET' }), values);
+});
