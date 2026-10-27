@@ -1,3 +1,5 @@
+import { instrumentMysqlRepository } from '../telemetry/mysqlQueryTracing';
+import { databaseDetailsEnabled } from '../telemetry/databaseSpan';
 import { mysqlTraceContext } from './mysqlTraceContext';
 import { mongoTraceContext } from './mongoTraceContext';
 import { traceDependency } from 'kubiq-apm/runtime';
@@ -20,6 +22,7 @@ export class DatabaseFactory {
 
   private static tracedMysql<T extends object>(repository: T, collection: string): T {
     const system = process.env.DB_TYPE?.toLowerCase() === 'mariadb' ? 'mariadb' : 'mysql';
+    if (databaseDetailsEnabled()) instrumentMysqlRepository(repository, () => ({ ...mysqlTraceContext(repository, collection, 'query', system), 'db.system': system }));
     return process.env.KUBIQ_TRACING_ENABLED === 'true' ? traceRepository(repository, collection, traceDependency, operation => mysqlTraceContext(repository, collection, operation, system), system) : repository;
   }
 

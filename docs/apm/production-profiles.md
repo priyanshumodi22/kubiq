@@ -1,6 +1,6 @@
 # Controlled production APM
 
-The permanent identities are `kubiq-backend` and `portfolio`. These profiles use `kubiq-apm@1.1.0/runtime`, not the generic `kubiq-apm/auto` preload. Do not combine providers. Generic auto-instrumentation remains available for other applications through the shared instrumentation guide.
+The permanent identities are `kubiq-backend` and `portfolio`. These profiles use the pinned `kubiq-apm/runtime` entry point, not the generic `kubiq-apm/auto` preload. Do not combine providers. Generic auto-instrumentation remains available for other applications through the shared instrumentation guide.
 
 The backend preloads a separate compiled bootstrap before its ncc bundle. The SDK stays external to that bundle. Explicit repository wrappers preserve each MongoDB repository's owning `this`, return values and errors. Native outgoing HTTP calls use request-scoped instrumentation. The portfolio initializes the same runtime before its ESM server and explicitly wraps GitHub fetch operations.
 
@@ -17,7 +17,7 @@ The controlled runtime explicitly uses W3C TraceContext and AlwaysOn sampling, a
 
 Every eligible request is traced; no rate sampling is applied. Probes/readiness, assets, SSE (including kubi's message endpoint), Socket.IO, telemetry ingestion, APM analytics polling, and portfolio activity-sync POSTs are excluded. Dependency spans require a live eligible request scope; timers inherited from a completed request cannot start further spans. Export, ingestion persistence and retention sweeps run outside request tracing.
 
-Queue capacity is 1,024 spans including the in-flight batch, batch size 50, scheduled flush two seconds and export timeout five seconds. Export failures and overflow produce bounded count-only diagnostics and cannot fail a business request. Spans retain normalized routes, methods, statuses, durations and operation names. Bodies, queries, cookies, authentication headers, database statements and exception messages are omitted.
+Queue capacity is 1,024 spans including the in-flight batch, batch size 50, scheduled flush two seconds and export timeout five seconds. Export failures and overflow produce bounded count-only diagnostics and cannot fail a business request. Spans retain normalized routes, methods, statuses, durations and operation names. HTTP bodies, URL query strings, cookies, authentication headers and exception messages are omitted. Database query detail is a separate explicit opt-in: `KUBIQ_TRACING_QUERY_DETAILS=true` with SDK 1.1.1 records MongoDB commands and MySQL/MariaDB statements with bound parameters. Passwords, tokens, API keys and other credentials are redacted before export; credential-related or opaque configuration writes may be fully masked. Other query values can appear and are visible to users with APM read access. Capture is bounded to 4 KiB per query with an explicit truncated preview. No result documents are captured.
 
 Shutdown stops business traffic and streams, drains existing ingestion, shuts down tracing, drains the final loopback batch and then closes the listener. A total five-second deadline bounds the operation. The portfolio closes its listener/streams before shutting down its producer. The application owns signals; the opt-in SDK never exits the process.
 
@@ -32,3 +32,5 @@ Enable and verify kubiq first, then portfolio, through their GitOps manifests. R
 CDN cache hits and client-side navigation do not reach these servers and are outside this server-tracing coverage. Browser performance monitoring is not enabled.
 
 See [27 October production verification](production-verification-20261027.md) for exact release evidence, real traces, the initial capacity projection and the pending full-day review.
+
+See [database call detail](span-attributes.md) for actual driver instrumentation and redaction behavior.

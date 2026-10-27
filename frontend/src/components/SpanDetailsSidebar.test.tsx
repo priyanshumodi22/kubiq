@@ -12,7 +12,7 @@ describe('span inspector rendering', () => {
         const view = render(<SpanDetailsSidebar span={span} onClose={close} />);
         expect(view.getByText('Error')).toBeTruthy();
         expect(view.getByText('2.00 ms')).toBeTruthy();
-        expect(view.getByText('select 1').className).toContain('text-blue-300');
+        expect(view.getAllByText('select 1').some(item => item.className.includes('text-blue-300'))).toBe(true);
         expect(view.getByRole('link', { name: 'https://example.com/' }).getAttribute('rel')).toBe('noopener noreferrer');
         expect(view.getByText('0')).toBeTruthy();
         expect(view.getByText('false')).toBeTruthy();

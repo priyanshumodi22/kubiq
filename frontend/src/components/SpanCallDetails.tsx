@@ -1,4 +1,5 @@
 import type { ISpan } from '../hooks/useTrace';
+import { DatabaseStatement } from './DatabaseStatement';
 import { spanDetailGroups, spanRelationships, spanKindLabel, spanTimestamp, type SpanDetailField } from './spanDetailGroups';
 function DetailGroup({ title, fields }: Readonly<{ title: string; fields: SpanDetailField[] }>) {
     if (!fields.length) return null;
@@ -9,6 +10,7 @@ export function SpanCallDetails({ span, traceSpans = [] }: Readonly<{ span: ISpa
     return <>
         <DetailGroup title="Call details" fields={[{ label: 'Service', value: span.serviceName }, { label: 'Operation', value: span.name }, { label: 'Span type', value: spanKindLabel(span.kind) }, { label: 'Started (UTC)', value: spanTimestamp(span.startTimeUnixNano) }, { label: 'Finished (UTC)', value: spanTimestamp(span.endTimeUnixNano) }]} />
         <DetailGroup title="Database target" fields={groups.database} />
+        <DatabaseStatement span={span} />
         <DetailGroup title="HTTP request" fields={groups.http} />
         <DetailGroup title="Trace relationships" fields={spanRelationships(span, traceSpans)} />
         <DetailGroup title="Code and errors" fields={groups.source} />

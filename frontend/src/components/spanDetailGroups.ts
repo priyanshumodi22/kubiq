@@ -23,6 +23,7 @@ export function spanDetailGroups(span: ISpan) {
         ...field(a, 'Port', 'server.port', 'net.peer.port'),
         ...field(a, 'Returned rows', 'db.response.returned_rows', 'db.rows_returned'),
         ...field(a, 'Affected rows', 'db.response.affected_rows', 'db.rows_affected'),
+        ...field(a, 'Response code', 'db.response.status_code'),
     ];
     const http = [
         ...field(a, 'Method', 'http.request.method', 'http.method'),

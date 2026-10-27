@@ -1,3 +1,4 @@
+import { databaseDetailsEnabled } from '../../../telemetry/databaseSpan';
 import mongoose from 'mongoose';
 import { IServiceRepository } from '../../interfaces/IServiceRepository';
 import { ServiceStatus, ServiceConfig, HealthCheck, SystemConfig } from '../../../types';
@@ -16,7 +17,7 @@ export class MongoServiceRepository implements IServiceRepository {
     const uri = process.env.DB_URI || `mongodb://${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 27017}/${process.env.DB_NAME || 'kubiq_db'}`;
 
     try {
-      await mongoose.connect(uri);
+      await mongoose.connect(uri, { monitorCommands: databaseDetailsEnabled() });
       console.log('✅ Connected to MongoDB');
       this.isInitialized = true;
     } catch (error) {

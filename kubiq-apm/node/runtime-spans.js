@@ -61,4 +61,21 @@ function traceDependency(name, action, values = {}) {
         } catch (error) { return fail(error); }
     });
 }
-module.exports = { traceRequest, traceDependency, withoutTracing };
+function beginDependency(name, values = {}) {
+    const runtime = getRuntime();
+    const scope = runtime?.api.context.active().getValue(runtime.scopeKey);
+    if (!runtime || runtime.stopping || !scope?.active) return null;
+    const { api, tracer } = runtime;
+    const span = tracer.startSpan(/^[a-zA-Z][a-zA-Z0-9_. -]{0,79}$/.test(name) ? name : 'database.call', { kind: api.SpanKind.CLIENT, attributes: policy.attributes(values) });
+    let ended = false;
+    return {
+        setAttributes(attributes) { if (!ended) span.setAttributes(policy.attributes(attributes)); },
+        end(error) {
+            if (ended) return;
+            ended = true;
+            if (error) { span.setStatus({ code: api.SpanStatusCode.ERROR }); span.setAttribute('error.type', policy.errorType(error)); }
+            span.end();
+        },
+    };
+}
+module.exports = { traceRequest, traceDependency, beginDependency, withoutTracing };

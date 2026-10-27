@@ -1,3 +1,4 @@
+import { installMongoCommandTracing } from './telemetry/mongoCommandTracing';
 
 
 // Load environment variables SECOND
@@ -52,6 +53,7 @@ const k8sMetricsHistoryEnabled = process.env.K8S_METRICS_HISTORY_ENABLED === 'tr
 const systemMetricsEnabled = process.env.SYSTEM_METRICS_ENABLED !== 'false';
 const k8sTerminalEnabled = process.env.K8S_TERMINAL_ENABLED === 'true';
 const tracing = startTracing({ profile: 'kubiq', serviceName: 'kubiq-backend' });
+installMongoCommandTracing();
 const activeResponses = new Set<Response>();
 let shuttingDown = false;
 

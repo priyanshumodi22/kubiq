@@ -1,5 +1,5 @@
 const methods = new Set(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']);
-const safeAttributes = new Set(['db.system', 'db.system.name', 'db.operation.name', 'db.collection.name', 'db.namespace', 'code.function.name', 'code.namespace', 'server.address', 'server.port', 'http.request.method', 'http.response.status_code', 'http.route', 'error.type']);
+const safeAttributes = new Set(['db.system', 'db.system.name', 'db.operation.name', 'db.collection.name', 'db.namespace', 'db.query.text', 'db.response.returned_rows', 'db.response.affected_rows', 'db.response.status_code', 'code.function.name', 'code.namespace', 'server.address', 'server.port', 'http.request.method', 'http.response.status_code', 'http.route', 'error.type']);
 const staticExtensions = new Set(['css', 'js', 'map', 'json', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'woff', 'woff2', 'ttf', 'txt', 'xml', 'webmanifest', 'avif', 'wasm', 'mp4', 'pdf']);
 function method(value) { return methods.has(value) ? value : 'OTHER'; }
 function pathOf(request) {
@@ -16,7 +16,14 @@ function excluded(request, profile) {
     return profile === 'portfolio' && request.method === 'POST' && path === '/api/codex-activity';
 }
 function attributes(values = {}) {
-    return Object.fromEntries(Object.entries(values).filter(([key, value]) => safeAttributes.has(key) && (typeof value === 'string' || typeof value === 'number')).map(([key, value]) => [key, typeof value === 'string' ? value.slice(0, 256) : value]));
+    const result = {};
+    for (const [key, value] of Object.entries(values)) {
+        if (!safeAttributes.has(key) || !['string', 'number'].includes(typeof value)) continue;
+        if (key === 'db.query.text') {
+            if (process.env.KUBIQ_TRACING_QUERY_DETAILS === 'true') result[key] = require('./runtime-query').databaseQueryDetails(value);
+        } else result[key] = typeof value === 'string' ? value.slice(0, 256) : value;
+    }
+    return result;
 }
 function routeName(request, resolver) {
     const route = resolver ? resolver() : request.route?.path;

@@ -28,3 +28,14 @@ test('repository diagnostic context survives while database values and credentia
     const values = { 'db.system.name': 'mongodb', 'db.namespace': 'kubiq', 'db.collection.name': 'systempreferences', 'code.namespace': 'kubiq.repositories.system', 'code.function.name': 'getStorageConfig', 'server.address': 'mongodb.mongodb-system.svc', 'server.port': 27017 };
     assert.deepEqual(p.attributes({ ...values, 'db.query.text': 'SYNTHETIC_SECRET', 'db.statement': 'SYNTHETIC_SECRET', 'db.connection_string': 'mongodb://user:SYNTHETIC_SECRET@host', 'db.user': 'SYNTHETIC_SECRET' }), values);
 });
+
+test('query capture is opt-in and preserves bounded redacted detail beyond normal attribute lengths', () => {
+    const old = process.env.KUBIQ_TRACING_QUERY_DETAILS;
+    try {
+        delete process.env.KUBIQ_TRACING_QUERY_DETAILS;
+        assert.deepEqual(p.attributes({ 'db.query.text': 'SELECT 1' }), {});
+        process.env.KUBIQ_TRACING_QUERY_DETAILS = 'true';
+        const details = p.attributes({ 'db.query.text': JSON.stringify({ find: 'users', filter: { username: 'a'.repeat(600), password: 'PRIVATE_PASSWORD' } }), 'db.response.returned_rows': 0 });
+        assert(details['db.query.text'].length > 256); assert(details['db.query.text'].includes('[REDACTED]')); assert(!details['db.query.text'].includes('PRIVATE_PASSWORD'));assert.equal(details['db.response.returned_rows'],0);
+    } finally { if(old===undefined) delete process.env.KUBIQ_TRACING_QUERY_DETAILS; else process.env.KUBIQ_TRACING_QUERY_DETAILS=old; }
+});

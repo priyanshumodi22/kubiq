@@ -20,7 +20,7 @@ try {
         .replace("require('./runtime-state')", "require('kubiq-apm/runtime-state')");
     fs.writeFileSync(path.join(temp, 'runtime.test.cjs'), fixture);
     process.stdout.write(run(process.execPath, ['--test', 'runtime.test.cjs']));
-    fs.writeFileSync(path.join(temp, 'esm.mjs'), "import { startTracing, traceRequest, traceDependency, withoutTracing } from 'kubiq-apm/runtime.js';\nimport assert from 'node:assert/strict';\nassert.equal(startTracing().enabled, false);\nfor (const helper of [traceRequest, traceDependency, withoutTracing]) assert.equal(typeof helper, 'function');\n");
+    fs.writeFileSync(path.join(temp, 'esm.mjs'), "import { startTracing, traceRequest, traceDependency, beginDependency, databaseQueryDetails, withoutTracing } from 'kubiq-apm/runtime.js';\nimport assert from 'node:assert/strict';\nassert.equal(startTracing().enabled, false);\nfor (const helper of [traceRequest, traceDependency, beginDependency, databaseQueryDetails, withoutTracing]) assert.equal(typeof helper, 'function');\n");
     run(process.execPath, ['esm.mjs']);
     console.log('Packaged CJS and ESM runtime verified on ' + process.version);
 } finally {

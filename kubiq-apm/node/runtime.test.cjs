@@ -61,6 +61,21 @@ test('opt-in runtime emits private, correctly parented JSON traces and suppresse
     await t.test('denied and unavailable collector failures do not fail requests',async()=>{
         const warn=console.warn;console.warn=()=>{};try{status=401;const r=response();runtime.traceRequest({method:'GET'},r,()=>finish(r));await handle.forceFlush();assert(handle.diagnostics().failed>0);}finally{console.warn=warn;}
     });
+    await t.test('manual command spans preserve query detail with explicit credential redaction and bounded lifetime',async()=>{
+        assert.equal(runtime.beginDependency('background'),null);
+        const old=process.env.KUBIQ_TRACING_QUERY_DETAILS;process.env.KUBIQ_TRACING_QUERY_DETAILS='true';
+        try{
+            const before=flatten(payloads).length;const r=response();
+            runtime.traceRequest({method:'GET',route:{path:'/database'}},r,()=>{
+                const child=runtime.beginDependency('mongodb.find',{'db.system':'mongodb'});
+                child.setAttributes({'db.query.text':runtime.databaseQueryDetails({find:'users',filter:{username:'alice',password:'PRIVATE_PASSWORD'}}),'db.response.returned_rows':1});
+                child.end(new TypeError('PRIVATE_ERROR'));child.end();child.setAttributes({'db.namespace':'must-not-appear'});finish(r);
+            });
+            await handle.forceFlush();const added=flatten(payloads).slice(before);assert.equal(added.length,2);
+            const child=added.find(span=>span.kind===3);assert(child.attributes.some(item=>item.key==='db.query.text'&&item.value.stringValue.includes('alice')&&item.value.stringValue.includes('[REDACTED]')));
+            assert(!JSON.stringify(added).includes('PRIVATE_'));assert(!JSON.stringify(added).includes('must-not-appear'));
+        }finally{if(old===undefined)delete process.env.KUBIQ_TRACING_QUERY_DETAILS;else process.env.KUBIQ_TRACING_QUERY_DETAILS=old;}
+    });
     const stopping=handle.shutdown();assert.equal(stopping,handle.shutdown());await stopping;
     assert.equal(runtime.traceRequest({},response(),()=>10),10);assert.equal(runtime.traceDependency('stopped',()=>11),11);
 });

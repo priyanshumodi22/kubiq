@@ -26,7 +26,7 @@ function initialize(options, config) {
     const { KubiqExporter } = require('./exporter');
     const exporter = new KubiqExporter({ url: config.endpoint, headers: { Authorization: 'Bearer ' + config.token }, timeoutMillis: 5000 });
     const processor = new BoundedProcessor(exporter, { transform: require('./runtime-policy').safeSpan });
-    const provider = new NodeTracerProvider({ resource: new Resource({ 'service.name': config.serviceName, 'service.version': options.serviceVersion || 'unknown' }), sampler: new AlwaysOnSampler(), spanLimits: { attributeCountLimit: 32, attributeValueLengthLimit: 256, eventCountLimit: 0 } });
+    const provider = new NodeTracerProvider({ resource: new Resource({ 'service.name': config.serviceName, 'service.version': options.serviceVersion || 'unknown' }), sampler: new AlwaysOnSampler(), spanLimits: { attributeCountLimit: 32, attributeValueLengthLimit: 4096, eventCountLimit: 0 } });
     provider.addSpanProcessor(processor);
     provider.register({ contextManager: new AsyncLocalStorageContextManager().enable(), propagator: new W3CTraceContextPropagator() });
     const runtime = { api, processor, provider, profile: options.profile || 'kubiq', tracer: api.trace.getTracer('kubiq-apm/runtime', '1.1.1'), scopeKey: api.createContextKey('kubiq-live-request'), stopping: false };
@@ -57,3 +57,5 @@ exports.startTracing = startTracing;
 exports.traceRequest = spans.traceRequest;
 exports.traceDependency = spans.traceDependency;
 exports.withoutTracing = spans.withoutTracing;
+exports.beginDependency = spans.beginDependency;
+exports.databaseQueryDetails = require('./runtime-query').databaseQueryDetails;

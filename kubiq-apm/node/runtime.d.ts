@@ -9,3 +9,6 @@ export function startTracing(options?: { enabled?: boolean; endpoint?: string; t
 export function traceRequest<T>(request: IncomingMessage & { route?: { path?: string } }, response: ServerResponse, action: () => T, options?: { route?: () => string }): T;
 export function traceDependency<T>(name: string, action: () => T, attributes?: Record<string, string | number>): T;
 export function withoutTracing<T>(action: () => T): T;
+export interface DependencyHandle { setAttributes(attributes: Record<string, string | number>): void; end(error?: unknown): void }
+export function beginDependency(name: string, attributes?: Record<string, string | number>): DependencyHandle | null;
+export function databaseQueryDetails(value: unknown): string;
