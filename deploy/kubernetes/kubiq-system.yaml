@@ -175,10 +175,6 @@ data:
 
   # ── Feature Flags ──
   APM_ENABLED: 'true'
-  # Independent opt-in producer flag. Keep false for the first runtime rollout.
-  KUBIQ_TRACING_ENABLED: 'false'
-  OTEL_SERVICE_NAME: kubiq-backend
-  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://127.0.0.1:3001/kubiq-api/api/apm/v1/traces
   K8S_METRICS_HISTORY_ENABLED: 'false'
   SYSTEM_METRICS_ENABLED: 'false'
   K8S_TERMINAL_ENABLED: 'true'
@@ -242,6 +238,13 @@ spec:
             - secretRef:
                 name: kubiq-runtime
           env:
+            # Pod-template settings ensure GitOps enable/rollback restarts the producer.
+            - name: KUBIQ_TRACING_ENABLED
+              value: 'true'
+            - name: OTEL_SERVICE_NAME
+              value: kubiq-backend
+            - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+              value: http://127.0.0.1:3001/kubiq-api/api/apm/v1/traces
             - name: DB_URI
               valueFrom:
                 secretKeyRef:
