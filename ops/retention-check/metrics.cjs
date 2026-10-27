@@ -8,7 +8,7 @@ const services = ['request-metric-api', 'request-metric-legacy'];
 async function repository() {
   if (kind === 'mongo') {
     const mongoose = require('mongoose');
-    await mongoose.connect(process.env.FIXTURE_MONGO_URI);
+    await mongoose.connect(process.env.FIXTURE_MONGO_URI, { monitorCommands: true });
     const { MongoTraceRepository } = require(path.join(base, 'database/adapters/mongo/MongoTraceRepository'));
     return { trace: new MongoTraceRepository(), close: () => mongoose.disconnect() };
   }
@@ -57,6 +57,7 @@ async function repository() {
     assert.equal(legacy.measurementBasis, 'legacy-spans');
     assert(legacy.p95DurationMs >= 4 && legacy.p95DurationMs <= 8);
     assert.deepEqual(await trace.getServiceMetrics(0, 1), []);
+    await require('./span-context.cjs')(trace, kind, now);
     console.log(JSON.stringify({ passed: true, adapter: kind, tests: ['SERVER-only counts/errors/latency', 'numeric and named kinds', 'legacy fallback', 'empty window', 'attribute round trip'] }));
   } finally { stopRetentionSweeps(); await close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

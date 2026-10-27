@@ -61,3 +61,12 @@ test('attaches after connection and expires stuck command tracking with bounded 
     client.emit('commandStarted', { ...started, requestId: 2 });
     expect(end).toHaveBeenCalledWith({ name: 'TimeoutError' });
 });
+
+test('uses the actual responding server address rather than a replica-set seed when available', () => {
+    const client = new EventEmitter(); observeMongoCommands(client);
+    client.emit('commandStarted', { ...started, address: '[::1]:27018' });
+    expect(tracing.beginDatabaseSpan).toHaveBeenCalledWith('mongodb.find', expect.objectContaining({ 'server.address': '::1', 'server.port': 27018 }));
+    client.emit('commandSucceeded', { requestId: 1 });
+    client.emit('commandStarted', { ...started, requestId: 2, address: 'invalid' });
+    expect(tracing.beginDatabaseSpan).toHaveBeenLastCalledWith('mongodb.find', expect.objectContaining({ 'server.address': 'mongo.internal', 'server.port': 27017 }));
+});

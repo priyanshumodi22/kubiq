@@ -1,4 +1,4 @@
-<!-- Generated from docs/apm/instrumentation.json; edit the source, then regenerate. SHA256: 510bc9fadc56a19a54724067514b0d88ca14af9b3027adbe6a96b648293f5d16 -->
+<!-- Generated from docs/apm/instrumentation.json; edit the source, then regenerate. SHA256: 9672f18bac1d43064930af1205bd8a723c50f3de1786b878e5a429a6cdfc78ac -->
 
 # kubiq APM Integration Guide
 
@@ -91,4 +91,4 @@ kubiq-apm flask --app app run --host 0.0.0.0 --port 8000
 
 ## Verify real delivery
 
-Send real requests to an instrumented HTTP route, then find OTEL_SERVICE_NAME in APM & Traces. Check a trace waterfall and downstream parent/child spans. Allow the batch interval or graceful shutdown to flush. HTTP 401 means ingestion authentication failed; HTTP 415 indicates the wrong wire format; a private Collector must be running before protobuf clients start. An HTTP acceptance response alone is not proof of persisted spans. MongoDB or MySQL APM storage must be enabled; JSON-only storage does not persist APM traces. Log correlation additionally requires log ingestion containing the trace ID.
+Send real requests to an instrumented HTTP route, then find OTEL_SERVICE_NAME in APM & Traces. Check a trace waterfall and downstream parent/child spans. Allow the batch interval or graceful shutdown to flush. HTTP 401 means ingestion authentication failed; HTTP 415 indicates the wrong wire format; a private Collector must be running before protobuf clients start. An HTTP acceptance response alone is not proof of persisted spans. MongoDB or MySQL APM storage must be enabled; JSON-only storage does not persist APM traces. Log correlation additionally requires log ingestion containing the trace ID. The kubiq backend controlled profile can additionally capture actual MySQL/MariaDB and MongoDB calls with KUBIQ_TRACING_QUERY_DETAILS=true on the server. Its statement/command panel shows bounded query details with passwords, credentials and opaque body/configuration values redacted. Other query values remain visible to APM readers. Generic runtime integrations must explicitly instrument database dependencies; this flag alone does not install database hooks in an arbitrary application.

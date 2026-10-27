@@ -1,3 +1,4 @@
+import { privateSpanAttributes } from '../utils/spanPrivacy';
 import { Router, Request, Response } from 'express';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { ISpan } from '../database/interfaces/ITraceRepository';
@@ -152,7 +153,7 @@ apmIngestRouter.post('/v1/zipkin', async (req: Request, res: Response) => {
             const endNano = startNano + (Number(zSpan.duration || 0) * 1000);
 
             // Create flat attribute map from Zipkin tags
-            const attributes: Record<string, any> = { ...zSpan.tags };
+            const attributes = privateSpanAttributes({ ...zSpan.tags });
 
             return {
                 traceId: zSpan.traceId,
@@ -335,7 +336,7 @@ apmAnalyticsRouter.get('/traces/:traceId', async (req: Request, res: Response) =
         // Additional logic could be added here to format the spans into a tree
         // if the frontend demands it, or the frontend can build the tree based on parentSpanId.
         // For now we return flat span objects.
-        res.json(spans);
+        res.json(spans.map(span => ({ ...span, attributes: privateSpanAttributes(span.attributes || {}) })));
     } catch (error) {
         console.error(`Failed to get trace ${req.params.traceId}:`, error);
         res.status(500).json({ error: 'Failed to retrieve trace data.' });
@@ -420,7 +421,7 @@ apmAnalyticsRouter.get('/export', requirePermission('apm.export'), async (req: R
         ].join(',');
 
         const rows = spans.map((s: any) => {
-            const attrs = s.attributes || {};
+            const attrs = privateSpanAttributes(s.attributes || {});
             const startTime = new Date(s.startTimeUnixNano / 1_000_000).toISOString();
             const status = s.statusCode === 2 ? 'ERROR' : 'OK';
             return [
@@ -430,11 +431,11 @@ apmAnalyticsRouter.get('/export', requirePermission('apm.export'), async (req: R
                 csvField(startTime),
                 csvField(s.durationMs?.toFixed(2)),
                 csvField(status),
-                csvField(attrs['db.system']),
-                csvField(attrs['db.statement']),
-                csvField(attrs['http.method']),
+                csvField(attrs['db.system.name'] ?? attrs['db.system']),
+                csvField(attrs['db.query.text'] ?? attrs['db.statement']),
+                csvField(attrs['http.request.method'] ?? attrs['http.method']),
                 csvField(attrs['http.url']),
-                csvField(attrs['net.peer.name']),
+                csvField(attrs['server.address'] ?? attrs['net.peer.name']),
                 csvField(attrs['rpc.service']),
                 csvField(attrs['rpc.method']),
                 csvField(attrs['messaging.system']),

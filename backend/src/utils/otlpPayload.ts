@@ -1,3 +1,4 @@
+import { privateSpanAttributes } from './spanPrivacy';
 import type { ISpan } from '../database/interfaces/ITraceRepository';
 
 export class OtlpPayloadError extends Error {
@@ -48,7 +49,7 @@ function spanRecord(value: unknown, serviceName: string): ISpan {
     kind: typeof span.kind === 'string' || typeof span.kind === 'number' ? span.kind : undefined,
     startTimeUnixNano: start, endTimeUnixNano: end, durationMs: (end - start) / 1_000_000,
     statusCode: typeof status === 'number' ? status : 0,
-    attributes: attributes(span.attributes),
+    attributes: privateSpanAttributes(attributes(span.attributes)),
   };
 }
 

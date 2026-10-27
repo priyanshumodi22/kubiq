@@ -5,12 +5,24 @@ interface Started { requestId: number; commandName: string; databaseName: string
 interface Completed { requestId: number; reply?: { cursor?: { firstBatch?: unknown[]; nextBatch?: unknown[] }; n?: number; nModified?: number }; failure?: { code?: number; name?: string } }
 const observed = new WeakSet<object>();
 const commands = new Set(['find', 'aggregate', 'insert', 'update', 'delete', 'findandmodify', 'count', 'distinct', 'getmore']);
+function targetAttributes(address?: string): Record<string, string | number> {
+    if (address) {
+        const colon = address.lastIndexOf(':');
+        const rawHost = address.slice(0, colon);
+        const host = rawHost.startsWith('[') && rawHost.endsWith(']') ? rawHost.slice(1, -1) : rawHost;
+        const port = Number(address.slice(colon + 1));
+        if (host && !host.includes('@') && Number.isInteger(port) && port > 0 && port <= 65535) return { 'server.address': host, 'server.port': port };
+    }
+    const result: Record<string, string | number> = {};
+    if (mongoose.connection.host) result['server.address'] = mongoose.connection.host;
+    if (mongoose.connection.port) result['server.port'] = mongoose.connection.port;
+    return result;
+}
 function commandAttributes(event: Started): Record<string, string | number> {
     const attributes: Record<string, string | number> = { 'db.system': 'mongodb', 'db.system.name': 'mongodb', 'db.namespace': event.databaseName, 'db.operation.name': event.commandName, 'code.namespace': 'mongodb.command', 'code.function.name': event.commandName };
     const collection = event.command[event.commandName];
     if (typeof collection === 'string') attributes['db.collection.name'] = collection;
-    if (mongoose.connection.host) attributes['server.address'] = mongoose.connection.host;
-    if (mongoose.connection.port) attributes['server.port'] = mongoose.connection.port;
+    Object.assign(attributes, targetAttributes(event.address));
     return attributes;
 }
 function expirePending(pending: Map<number, { span: DatabaseSpan; at: number; operation: string }>): void {

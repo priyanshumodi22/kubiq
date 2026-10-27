@@ -39,7 +39,7 @@ async function check(enabled, mongoPort) {
     const environment = { PORT: String(port), NODE_ENV: 'production', DB_TYPE: 'mongo', DB_URI: uri,
       BACKEND_CONTEXT_PATH: '/kubiq-api', FRONTEND_CONTEXT_PATH: '/kubiq', KUBIQ_LOAD_DOTENV: 'false',
       NATIVE_AUTH_ENABLED: 'true', KEYCLOAK_ENABLED: 'false', JWT_SECRET: jwtSecret,
-      APM_ENABLED: 'true', KUBIQ_TRACING_ENABLED: String(enabled), KUBIQ_INGESTION_TOKEN: ingestionToken,
+      APM_ENABLED: 'true', KUBIQ_TRACING_QUERY_DETAILS: 'true', KUBIQ_TRACING_ENABLED: String(enabled), KUBIQ_INGESTION_TOKEN: ingestionToken,
       OTEL_PROPAGATORS: 'jaeger', OTEL_TRACES_SAMPLER: 'always_off',
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: 'http://127.0.0.1:' + port + '/kubiq-api/api/apm/v1/traces',
       APM_RETENTION_PERIOD: '3d', LOG_RETENTION_PERIOD: '7d', SYSTEM_METRICS_ENABLED: 'false', K8S_METRICS_HISTORY_ENABLED: 'false', K8S_TERMINAL_ENABLED: 'false',
@@ -78,21 +78,32 @@ async function check(enabled, mongoPort) {
     abort.abort();
     await reader.cancel().catch(() => {});
     console.log(JSON.stringify({ stage: 'stream-delivered', tracing: enabled }));
+    assert.equal((await fetch(base + '/kubiq-api/api/users/' + viewer.toHexString() + '/password', { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ password: 'SYNTHETIC_RESET_PASSWORD' }) })).status, 200);
     const spans = db.collection('apmspans');
     const serverQuery = { serviceName: 'kubiq-backend', kind: { $in: [2, '2', 'SERVER', 'SPAN_KIND_SERVER'] } };
     if (enabled) {
-      for (let attempt = 0; attempt < 100 && await spans.countDocuments(serverQuery) < 4; attempt++) await pause(100);
-      assert.equal(await spans.countDocuments(serverQuery), 4);
+      for (let attempt = 0; attempt < 100 && await spans.countDocuments(serverQuery) < 5; attempt++) await pause(100);
+      assert.equal(await spans.countDocuments(serverQuery), 5);
       const rows = await spans.find({ serviceName: 'kubiq-backend' }).toArray();
-      const serverSpans = rows.filter(row => String(row.kind) === '2');
       const dependencies = rows.filter(row => String(row.kind) === '3');
       assert(dependencies.some(row => row.attributes['db.system'] === 'mongodb'));
-      for (const dependency of dependencies) assert(serverSpans.some(parent => parent.spanId === dependency.parentSpanId && parent.traceId === dependency.traceId));
+      for (const row of dependencies.filter(item => item.attributes['db.system'] === 'mongodb')) {
+        assert.equal(row.attributes['db.namespace'], database);
+        assert.equal(row.attributes['server.port'], Number(mongoPort));
+        assert.equal(typeof row.attributes['db.collection.name'], 'string');
+        assert.equal(row.attributes['code.function.name'], row.attributes['db.operation.name']);
+      }
+      for (const dependency of dependencies) assert(rows.some(parent => parent.spanId === dependency.parentSpanId && parent.traceId === dependency.traceId));
       assert(!JSON.stringify(rows).includes('SYNTHETIC_'));
+      const commands = dependencies.filter(row => row.attributes['code.namespace'] === 'mongodb.command');
+      assert(commands.some(row => typeof row.attributes['db.query.text'] === 'string'));
+      assert(commands.some(row => String(row.attributes['db.query.text']).includes('[REDACTED]')));
+      const changed = await db.collection('users').findOne({ _id: viewer });
+      assert(changed.password && !JSON.stringify(rows).includes(changed.password), 'Stored password hash must not leak through command monitoring');
       const metrics = await (await fetch(base + '/kubiq-api/api/apm/services', { headers })).json();
       const metric = metrics.find(row => row.serviceName === 'kubiq-backend');
       assert.equal(metric.measurementBasis, 'server-requests');
-      assert.equal(metric.requestCount, 4);
+      assert.equal(metric.requestCount, 5);
       assert.equal(metric.errorCount, 0);
       const count = await spans.countDocuments({});
       await pause(4500);
@@ -124,7 +135,7 @@ async function check(enabled, mongoPort) {
     await new Promise((resolve, reject) => execFile('docker', ['stop', '--time', '6', name], error => error ? reject(error) : resolve()));
     const [code] = await exited;
     assert.equal(code, 0, 'Final loopback export must persist before bounded shutdown completes');
-    if (enabled) assert.equal(await spans.countDocuments(serverQuery), 5);
+    if (enabled) assert.equal(await spans.countDocuments(serverQuery), 6);
     assert(!logs.includes('SYNTHETIC_'), 'Application diagnostics leaked a fixture credential or query');
     console.log(JSON.stringify({ passed: true, tracing: enabled, image, memoryPeakBytes: peak, limitMiB: 512, tests: ['bundled runtime', 'native login', 'RBAC denial', 'MongoDB children', 'request metrics', 'noise suppression', 'TTL', 'shutdown drain', 'private diagnostics'] }));
   } catch (error) {

@@ -1,5 +1,7 @@
 {
   "name": "kubiq-production-tracing",
   "private": true,
-  "dependencies": { "kubiq-apm": "1.1.0" }
+  "dependencies": {
+    "kubiq-apm": "1.1.1"
+  }
 }
