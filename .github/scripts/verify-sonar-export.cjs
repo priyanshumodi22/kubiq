@@ -1,9 +1,11 @@
 const fs = require('node:fs');
 
-async function waitForExport({ host, token, sha, task, previous = false, request = fetch, attempts = 120, pause = () => new Promise(resolve => setTimeout(resolve, 5000)) }) {
+async function waitForExport({ host, token, sha, task, previous = false, request = fetch, attempts = 120, onPending = () => {}, pause = () => new Promise(resolve => setTimeout(resolve, 5000)) }) {
   if (!/^https?:\/\//.test(host || '') || !token || !/^[a-f0-9]{40}$/.test(sha || '')) throw new Error('Exact revision and read-only Sonar authentication are required.');
+  const statuses = {};
   const get = async path => {
     const response = await request(`${host}${path}`, { redirect: 'error', headers: { Authorization: `Bearer ${token}` } });
+    statuses[path] = response.status;
     if ([401, 403].includes(response.status)) throw new Error('Export verification authentication denied.');
     return response.ok ? response.json() : null;
   };
@@ -26,6 +28,7 @@ async function waitForExport({ host, token, sha, task, previous = false, request
     if (expected) {
       const receipt = await get('/_kubiq/sonar-export-status');
       if (receipt?.format === 3 && receipt.analysisId === expected.analysisId && receipt.revision === expected.revision && (!task || previous || receipt.task === task)) return receipt;
+      if (attempt % 12 === 0) onPending({ previous, expected, receipt: receipt ? { format: receipt.format, analysisId: receipt.analysisId, revision: receipt.revision, task: receipt.task } : null, statuses });
     }
     if (attempt + 1 < attempts) await pause();
   }
@@ -37,7 +40,7 @@ if (require.main === module) {
   const previous = process.argv.includes('--previous');
   Promise.resolve().then(async () => {
     const task = previous ? undefined : fs.readFileSync('.scannerwork/report-task.txt', 'utf8').split(/\r?\n/).find(line => line.startsWith('ceTaskId='))?.slice(9);
-    const receipt = await waitForExport({ host: process.env.SONAR_HOST_URL, token: process.env.SONAR_READ_TOKEN, sha: process.env.GITHUB_SHA, task, previous });
+    const receipt = await waitForExport({ host: process.env.SONAR_HOST_URL, token: process.env.SONAR_READ_TOKEN, sha: process.env.GITHUB_SHA, task, previous, onPending: value => console.log('Export verification pending:', JSON.stringify(value)) });
     if (!previous) fs.writeFileSync('.sonar-export-proof.json', JSON.stringify(receipt, null, 2));
     console.log(previous ? 'Previous analysis export verified.' : 'Exact analysis export verified in Sheets and archive.');
   }).catch(error => { console.error(error.message); process.exitCode = 1; });
