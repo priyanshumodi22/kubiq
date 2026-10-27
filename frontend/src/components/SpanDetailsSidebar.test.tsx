@@ -34,7 +34,12 @@ it('renders every safe MongoDB attribute without treating storage as a reduced-d
     const view = render(<SpanDetailsSidebar span={{ ...span, attributes }} onClose={vi.fn()} />);
     for (const [key, value] of Object.entries(attributes)) {
         expect(view.getByText(key)).toBeTruthy();
-        expect(view.getByText(String(value))).toBeTruthy();
+        expect(view.getAllByText(String(value)).length).toBeGreaterThan(0);
     }
     expect(view.getByText(/Query values and credentials are intentionally omitted/)).toBeTruthy();
+});
+
+it('keeps structured attributes readable rather than reducing them to object labels', () => {
+    const view = render(<SpanDetailsSidebar span={{ ...span, attributes: { details: { operation: 'find', limit: 0 } } }} onClose={vi.fn()} />);
+    expect(view.getByText(/"operation": "find"/).textContent).toContain('"limit": 0');
 });

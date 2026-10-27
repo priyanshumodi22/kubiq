@@ -33,7 +33,7 @@ test('repository errors and rejected promises preserve their original identity a
 
 test('adds operation metadata lazily without forwarding query arguments to its context provider', () => {
     const context = jest.fn<(operation: string) => Record<string, string | number>>().mockReturnValue({ 'db.collection.name': 'users', 'server.port': 27017 });
-    const trace = jest.fn<DependencyTracer>().mockImplementation((_, action) => action());
+    const trace = jest.fn<DependencyTracer>().mockImplementation((_, action) => action()) as DependencyTracer;
     const repository = traceRepository({ read(value: string) { return value; } }, 'users', trace, context);
     expect(repository.read('SYNTHETIC_SECRET')).toBe('SYNTHETIC_SECRET');
     expect(context).toHaveBeenCalledWith('read');

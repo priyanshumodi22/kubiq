@@ -2,7 +2,7 @@ export type DependencyTracer = <T>(name: string, action: () => T, attributes: Re
 const lifecycleMethods = new Set(['initialize', 'close', 'connect', 'disconnect', 'insertSpans', 'insertLogs']);
 
 /** Wrap public repository operations without replacing their owning `this`. */
-export function traceRepository<T extends object>(repository: T, collection: string, trace: DependencyTracer, context: (operation: string) => Record<string, string | number> = () => ({})): T {
+export function traceRepository<T extends object>(repository: T, collection: string, trace: DependencyTracer, context: (operation: string) => Record<string, string | number> = () => ({}), system = 'mongodb'): T {
     const methods = new Map<string, unknown>();
     return new Proxy(repository, {
         get(target, property) {
@@ -12,9 +12,9 @@ export function traceRepository<T extends object>(repository: T, collection: str
                 const bound = (...args: unknown[]) => Reflect.apply(value, target, args);
                 const operation = /^[a-zA-Z][a-zA-Z0-9]{0,60}$/.test(property) ? property : 'operation';
                 methods.set(property, lifecycleMethods.has(property) ? bound : (...args: unknown[]) => trace(
-                    'mongodb.' + collection + '.' + operation,
+                    system + '.' + collection + '.' + operation,
                     () => bound(...args),
-                    { ...context(operation), 'db.system': 'mongodb', 'db.operation.name': operation },
+                    { ...context(operation), 'db.system': system, 'db.operation.name': operation },
                 ));
             }
             return methods.get(property);

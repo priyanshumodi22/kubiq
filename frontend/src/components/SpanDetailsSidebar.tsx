@@ -1,3 +1,4 @@
+import { SpanCallDetails } from './SpanCallDetails';
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { X, Database, Globe, Info, Clock, Terminal, Settings, MessageSquare, Cpu, Cloud, Zap, AlertTriangle } from 'lucide-react';
@@ -9,12 +10,13 @@ interface SpanDetailsSidebarProps {
 }
 
 function SpanAttributeValue({ name, value }: Readonly<{ name: string; value: unknown }>) {
-    if (name === 'db.statement') {
+    if (name === 'db.statement' || name === 'db.query.text') {
         return <div className="bg-black/30 p-2 rounded border border-gray-800 text-blue-300 text-xs shadow-inner max-h-40 overflow-y-auto">{String(value)}</div>;
     }
     if (name === 'http.url') {
         return <a href={String(value)} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{String(value)}</a>;
     }
+    if (value !== null && typeof value === 'object') return <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words text-xs">{JSON.stringify(value, null, 2)}</pre>;
     return String(value);
 }
 
@@ -63,7 +65,7 @@ export const SpanDetailsSidebar: React.FC<SpanDetailsSidebarProps> = ({ span, on
             />
 
             {/* Sidebar drawer */}
-            <div className="fixed top-0 right-0 h-full w-full max-w-md bg-bg-surface/95 backdrop-blur-xl border-l border-gray-800 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col pt-16 lg:pt-0">
+            <div className="fixed top-0 right-0 h-full w-full max-w-xl bg-bg-surface/95 backdrop-blur-xl border-l border-gray-800 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col pt-16 lg:pt-0">
 
                 {/* Header */}
                 <div className="p-4 border-b border-gray-800 flex justify-between items-start bg-bg-card/50">
@@ -104,13 +106,13 @@ export const SpanDetailsSidebar: React.FC<SpanDetailsSidebarProps> = ({ span, on
                         </div>
                     </div>
 
+                    <SpanCallDetails span={span} />
                     {/* Attributes Table */}
                     <div className="mb-6">
                         <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
                             <Info className="w-4 h-4" /> Span Attributes
                         </h3>
 
-                        {typeof span.attributes?.['code.namespace'] === 'string' && <p className="mb-3 text-xs text-text-dim">Repository operation context. Query values and credentials are intentionally omitted.</p>}
                         {span.attributes && Object.keys(span.attributes).length > 0 ? (
                             <div className="bg-bg-card border border-gray-800 rounded-xl overflow-hidden shadow-inner">
                                 <table className="w-full table-fixed text-left text-xs">

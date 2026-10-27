@@ -28,6 +28,13 @@ async function repository() {
   try {
     await trace.initialize();
     stopRetentionSweeps();
+    if (kind === 'mysql' || kind === 'mariadb') {
+      const { mysqlTraceContext } = require(path.join(base, 'database/mysqlTraceContext'));
+      const metadata = mysqlTraceContext(trace, 'traces', 'getServiceMetrics', kind);
+      assert.equal(metadata['db.namespace'], process.env.DB_NAME);
+      assert.equal(typeof metadata['server.port'], 'number');
+      assert(!JSON.stringify(metadata).includes('password'));
+    }
     const now = Date.now();
     let id = 0;
     const attributes = { 'db.system': 'mongodb', 'db.namespace': 'kubiq', 'db.collection.name': 'systempreferences', 'db.operation.name': 'getStorageConfig', 'server.address': 'mongodb.internal', 'server.port': 27017 };

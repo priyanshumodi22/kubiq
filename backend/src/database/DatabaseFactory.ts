@@ -1,3 +1,4 @@
+import { mysqlTraceContext } from './mysqlTraceContext';
 import { mongoTraceContext } from './mongoTraceContext';
 import { traceDependency } from 'kubiq-apm/runtime';
 import { traceRepository } from './traceRepository';
@@ -15,6 +16,11 @@ import { clickhouseService } from '../services/ClickhouseService';
 export class DatabaseFactory {
   private static traced<T extends object>(repository: T, collection: string): T {
     return process.env.KUBIQ_TRACING_ENABLED === 'true' ? traceRepository(repository, collection, traceDependency, operation => mongoTraceContext(collection, operation)) : repository;
+  }
+
+  private static tracedMysql<T extends object>(repository: T, collection: string): T {
+    const system = process.env.DB_TYPE?.toLowerCase() === 'mariadb' ? 'mariadb' : 'mysql';
+    return process.env.KUBIQ_TRACING_ENABLED === 'true' ? traceRepository(repository, collection, traceDependency, operation => mysqlTraceContext(repository, collection, operation, system), system) : repository;
   }
 
   private static serviceRepository: IServiceRepository;
@@ -53,7 +59,7 @@ export class DatabaseFactory {
       case 'mysql':
       case 'mariadb': {
         const { MysqlServiceRepository } = await import('./adapters/mysql/MysqlServiceRepository');
-        this.serviceRepository = new MysqlServiceRepository();
+        this.serviceRepository = this.tracedMysql(new MysqlServiceRepository(), 'services');
         break;
       }
       case 'mongo':
@@ -86,7 +92,7 @@ export class DatabaseFactory {
       case 'mysql':
       case 'mariadb': {
         const { MysqlNotificationRepository } = await import('./adapters/mysql/MysqlNotificationRepository');
-        this.notificationRepository = new MysqlNotificationRepository();
+        this.notificationRepository = this.tracedMysql(new MysqlNotificationRepository(), 'notifications');
         break;
       }
       case 'mongo':
@@ -119,7 +125,7 @@ export class DatabaseFactory {
       case 'mysql':
       case 'mariadb': {
         const { MysqlUserRepository } = await import('./adapters/mysql/MysqlUserRepository');
-        this.userRepository = new MysqlUserRepository();
+        this.userRepository = this.tracedMysql(new MysqlUserRepository(), 'users');
         break;
       }
       case 'mongo':
@@ -152,7 +158,7 @@ export class DatabaseFactory {
       case 'mysql':
       case 'mariadb': {
         const { MysqlPasskeyRepository } = await import('./adapters/mysql/MysqlPasskeyRepository');
-        this.passkeyRepository = new MysqlPasskeyRepository();
+        this.passkeyRepository = this.tracedMysql(new MysqlPasskeyRepository(), 'passkeys');
         break;
       }
       case 'mongo':
@@ -186,7 +192,7 @@ export class DatabaseFactory {
       case 'mysql':
       case 'mariadb': {
         const { MysqlSystemRepository } = await import('./adapters/mysql/MysqlSystemRepository');
-        this.systemRepository = new MysqlSystemRepository();
+        this.systemRepository = this.tracedMysql(new MysqlSystemRepository(), 'system');
         break;
       }
       case 'mongo':
@@ -226,7 +232,7 @@ export class DatabaseFactory {
       case 'mysql':
       case 'mariadb': {
         const { MysqlTraceRepository } = await import('./adapters/mysql/MysqlTraceRepository');
-        this.traceRepository = new MysqlTraceRepository();
+        this.traceRepository = this.tracedMysql(new MysqlTraceRepository(), 'traces');
         break;
       }
       case 'mongo':
@@ -302,7 +308,7 @@ export class DatabaseFactory {
         case 'mysql':
         case 'mariadb': {
           const { MysqlAuditLogRepository } = await import('./adapters/mysql/MysqlAuditLogRepository');
-          repo = new MysqlAuditLogRepository();
+          repo = this.tracedMysql(new MysqlAuditLogRepository(), 'audit');
           break;
         }
         case 'mongo':
@@ -338,7 +344,7 @@ export class DatabaseFactory {
         case 'mysql':
         case 'mariadb': {
           const { MysqlKubiConversationRepository } = await import('./adapters/mysql/MysqlKubiConversationRepository');
-          repository = new MysqlKubiConversationRepository();
+          repository = this.tracedMysql(new MysqlKubiConversationRepository(), 'conversations');
           break;
         }
         case 'mongo':
