@@ -27,8 +27,20 @@ New command spans contain bounded non-credential query values. Passwords, tokens
 
 The grouping resembles call-detail exploration, not full Instana feature parity. Own duration is overlap-aware wall-clock time from the loaded trace, not CPU time or a database execution plan. MongoDB is the live production database; MySQL/MariaDB command capture is verified against actual disposable database servers.
 
+## Authenticated production verification — 28 October IST
+
+The renewed Chrome session verified delete-user and delete-role confirmations use kubiq's styled dialog. Cancel and Escape preserved the existing users/roles and restored focus to the trigger. The password-reset prompt uses a password-type field and was cancelled without entering or changing credentials. A future custom APM time produced the existing kubiq warning toast, without a browser alert; the normal Last hour window was restored.
+
+Real trace `027c9e9b8494844e2a016f5984bb1254` contains the HTTP users-directory request, repository children and actual MongoDB command children. Selecting its final `mongodb.find` in Chrome displayed database `kubiq`, collection `users`, the actual server/port, three returned rows, the command document, start/end time and parent `mongodb.users.getAllUsers`. Independent MongoDB inspection verified the recorded command, counts and parent IDs. No users, roles or passwords were changed for these checks. The inspected panel was left open.
+
+The first detailed-capture resource review found 125 MongoDB command spans in the most recent 500 kubiq spans. The collection held 2,058 documents, 964,652 logical data bytes and 720,896 index bytes. The last observed hour contained 226 spans and 137,195 document bytes. Projecting that hour across 72 hours with the current per-document index allocation and doubling for headroom gives 31,155,905 bytes (approximately 29.7 MiB), below the 512 MiB budget. This is an initial traffic-dependent projection, not a byte quota or a full-day measurement. Application, portfolio and MongoDB pods remained ready with zero restarts; limits and three-day TTL were unchanged.
+
+After UI traffic stopped and queues drained, two idle samples held the same 546 SERVER spans and 938 CLIENT spans for kubiq-backend. The APM polling page remained open, confirming that this polling did not create a tracing feedback loop. Public health and unauthenticated ingestion/analytics checks still returned 200/401/401; portfolio activity and SSE checks returned 200, and all five Flux Kustomizations were ready.
+
+The original read-only verification query incorrectly treated literal dotted attribute names as nested MongoDB paths. The private inspection helper now reads those literal keys correctly; the actual stored command spans were already present. No application change was needed for that verification-helper correction.
+
 ## Pending observations
 
-Final authenticated Chrome dialog and new-command-panel checks require the renewed kubiq login. An initial production projection after representative detailed requests and a full 24-hour capacity observation remain separate from the startup snapshot.
+The full 24-hour observation of detailed capture remains pending; only about four hours of that mode had elapsed at this review. It must be reported separately from the initial projection.
 
 Rollback disables `KUBIQ_TRACING_QUERY_DETAILS` through GitOps or restores image `main-169`. It must not switch databases, disable ingestion or remove existing traces.
