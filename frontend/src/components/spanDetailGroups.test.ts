@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { spanDetailGroups, spanKindLabel, spanTimestamp } from './spanDetailGroups';
+import { spanDetailGroups, spanRelationships, spanKindLabel, spanTimestamp } from './spanDetailGroups';
 import type { ISpan } from '../hooks/useTrace';
 const fixture = { kind: 3, attributes: {} } as ISpan;
 it('normalizes both current MongoDB and legacy MySQL attributes without discarding zero counts', () => {
@@ -23,4 +23,15 @@ it('labels numeric and named span kinds and handles missing timestamps honestly'
     for (const [key, label] of [[1, 'Internal'], ['SPAN_KIND_SERVER', 'Server'], [3, 'Client'], [4, 'Producer'], [5, 'Consumer'], [undefined, 'Unspecified']]) expect(spanKindLabel(key)).toBe(label);
     expect(spanTimestamp(0)).toBe('1970-01-01T00:00:00.000Z');
     expect(spanTimestamp(Number.NaN)).toBe('Unavailable');
+});
+
+it('computes loaded child time using interval union and retains parent identity', () => {
+    const root = { ...fixture, traceId: 'trace', spanId: 'root', parentSpanId: null, name: 'GET /orders', startTimeUnixNano: 0, endTimeUnixNano: 10e6 };
+    const child = { ...root, spanId: 'child', parentSpanId: 'root', startTimeUnixNano: 2e6, endTimeUnixNano: 6e6 };
+    const overlap = { ...child, spanId: 'overlap', startTimeUnixNano: 4e6, endTimeUnixNano: 8e6 };
+    const unrelated = { ...child, spanId: 'other', traceId: 'other', startTimeUnixNano: 0, endTimeUnixNano: 10e6 };
+    expect(spanRelationships(root, [root, child, overlap, unrelated])).toContainEqual({ label: 'Own duration (loaded trace)', value: '4.00 ms' });
+    expect(spanRelationships(child, [root, child])).toContainEqual({ label: 'Parent operation', value: 'GET /orders' });
+    expect(spanRelationships(child, [])).toEqual([{ label: 'Parent operation', value: 'Parent not present in loaded trace' }]);
+    expect(spanRelationships({ ...root, endTimeUnixNano: Number.NaN }, [root])).not.toEqual(expect.arrayContaining([{ label: 'Own duration (loaded trace)', value: 'NaN ms' }]));
 });

@@ -7,6 +7,7 @@ import { ISpan } from '../hooks/useTrace';
 interface SpanDetailsSidebarProps {
     span: ISpan | null;
     onClose: () => void;
+    traceSpans?: ISpan[];
 }
 
 function SpanAttributeValue({ name, value }: Readonly<{ name: string; value: unknown }>) {
@@ -20,7 +21,7 @@ function SpanAttributeValue({ name, value }: Readonly<{ name: string; value: unk
     return String(value);
 }
 
-export const SpanDetailsSidebar: React.FC<SpanDetailsSidebarProps> = ({ span, onClose }) => {
+export const SpanDetailsSidebar: React.FC<SpanDetailsSidebarProps> = ({ span, onClose, traceSpans = [] }) => {
     if (!span) return null;
 
     // Helper to determine the icon based on OTel semantic conventions
@@ -106,7 +107,7 @@ export const SpanDetailsSidebar: React.FC<SpanDetailsSidebarProps> = ({ span, on
                         </div>
                     </div>
 
-                    <SpanCallDetails span={span} />
+                    <SpanCallDetails span={span} traceSpans={traceSpans} />
                     {/* Attributes Table */}
                     <div className="mb-6">
                         <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">

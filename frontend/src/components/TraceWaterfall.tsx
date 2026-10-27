@@ -190,6 +190,7 @@ export default function TraceWaterfall({ spans }: Readonly<TraceWaterfallProps>)
 
             <SpanDetailsSidebar
                 span={selectedSpan}
+                traceSpans={spans}
                 onClose={() => setSelectedSpan(null)}
             />
         </div>

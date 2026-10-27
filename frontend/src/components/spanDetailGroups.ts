@@ -39,3 +39,28 @@ export function spanTimestamp(nanoseconds: number): string {
     const date = new Date(Number(nanoseconds) / 1e6);
     return Number.isFinite(date.getTime()) ? date.toISOString() : 'Unavailable';
 }
+
+/** Loaded direct-child intervals form a union; overlapping work is not subtracted twice. */
+export function spanRelationships(span: ISpan, traceSpans: ISpan[]): SpanDetailField[] {
+    const related = traceSpans.filter(item => item.traceId === span.traceId);
+    const parent = related.find(item => item.spanId === span.parentSpanId);
+    const children = related.filter(item => item.parentSpanId === span.spanId);
+    const parentLabel = span.parentSpanId ? parent?.name || 'Parent not present in loaded trace' : 'Root span';
+    const fields = [{ label: 'Parent operation', value: parentLabel }, { label: 'Loaded child spans', value: String(children.length) }];
+    if (!related.length) return [{ label: 'Parent operation', value: parentLabel }];
+    const ownDuration = loadedOwnDuration(span, children);
+    if (ownDuration !== null) fields.push({ label: 'Own duration (loaded trace)', value: ownDuration.toFixed(2) + ' ms' });
+    return fields;
+}
+
+function loadedOwnDuration(span: ISpan, children: ISpan[]): number | null {
+    const start = Number(span.startTimeUnixNano), end = Number(span.endTimeUnixNano);
+    if (!Number.isFinite(end - start) || end < start) return null;
+    const intervals = children.map(item => [Math.max(start, Number(item.startTimeUnixNano)), Math.min(end, Number(item.endTimeUnixNano))]).filter(([a, b]) => Number.isFinite(a) && Number.isFinite(b) && b > a).sort((a, b) => a[0] - b[0]);
+    let covered = 0, until = start;
+    for (const [a, b] of intervals) {
+        covered += Math.max(0, b - Math.max(a, until));
+        until = Math.max(until, b);
+    }
+    return Math.max(0, end - start - covered) / 1e6;
+}
