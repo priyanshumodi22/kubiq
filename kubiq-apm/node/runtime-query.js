@@ -6,17 +6,18 @@ function redactString(value, seen, depth) {
     }
     return cleanString(value);
 }
-const sensitiveKey = /password|passwd|pwd|secret|token|credential|authorization|cookie|api[_-]?key|private[_-]?key|signing[_-]?key|encryption[_-]?key|config/i;
+const sensitivePatterns = [/password|passwd|pwd|secret|token|credential|authorization|cookie|config/i, /api[_-]?key|private[_-]?key|signing[_-]?key|encryption[_-]?key/i];
+function isSensitive(value) { return sensitivePatterns.some(pattern => pattern.test(value)); }
 function cleanString(value) {
     let text = value;
     for (const [key, secret] of Object.entries(process.env)) {
-        if (sensitiveKey.test(key) && secret && secret.length >= 6) text = text.split(secret).join('[REDACTED]');
+        if (isSensitive(key) && secret && secret.length >= 6) text = text.split(secret).join('[REDACTED]');
     }
-    return redactUriCredentials(text.slice(0, 8192)).replace(/((?:password|passwd|pwd|passphrase|token|secret|api[_-]?key|signature|code)=)[^&\s]+/gi, '$1[REDACTED]');
+    return redactUriCredentials(text.slice(0, 8192)).replaceAll(/((?:password|passwd|pwd|passphrase|token|secret|api[_-]?key|signature|code)=)[^&\s]+/gi, '$1[REDACTED]');
 }
 const { sqlStatement } = require('./runtime-query-sql');
 function redact(value, key, seen, depth) {
-    if (sensitiveKey.test(key)) return '[REDACTED]';
+    if (isSensitive(key)) return '[REDACTED]';
     if (depth > 8) return '[TRUNCATED]';
     if (typeof value === 'string') return redactString(value, seen, depth);
     if (value === null || typeof value === 'number' || typeof value === 'boolean') return value;
@@ -33,7 +34,7 @@ function redact(value, key, seen, depth) {
 function redactEntries(value, seen, depth) {
     const result = Object.create(null);
     const sql = typeof value.statement === 'string' ? value.statement : null;
-    const mask = sql && (sensitiveKey.test(sql) || sql.length > 16384 || /^\s*CALL\b/i.test(sql) || (/^\s*(?:INSERT|REPLACE|UPDATE)/i.test(sql) && /\busers\b/i.test(sql)));
+    const mask = sqlNeedsMask(sql);
     const configurationWrite = ['systempreferences', 'systemconfigs', 'notifications'].includes(value.update || value.insert || value.findAndModify);
     for (const [name, item] of Object.entries(value).slice(0, 64)) {
         if (['lsid', '$clusterTime', 'txnNumber'].includes(name)) continue;
@@ -69,4 +70,9 @@ function redactUriCredentials(text) {
         cursor = start;
     }
     return text;
+}
+
+function sqlNeedsMask(sql) {
+    if (!sql) return false;
+    return isSensitive(sql) || sql.length > 16384 || /^\s*CALL\b/i.test(sql) || (/^\s*(?:INSERT|REPLACE|UPDATE)/i.test(sql) && /\busers\b/i.test(sql));
 }
