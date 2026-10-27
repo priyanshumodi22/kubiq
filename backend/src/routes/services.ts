@@ -80,7 +80,8 @@ router.get('/status', requirePermission('services.read'), async (req: Request, r
 // GET /api/services/stream - Server-Sent Events for real-time updates
 router.get('/stream', requirePermission('services.read'), async (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('X-Accel-Buffering', 'no');
   res.setHeader('Connection', 'keep-alive');
 
   // Capture user from request closure

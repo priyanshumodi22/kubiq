@@ -1,4 +1,5 @@
 import express from 'express';
+import compression from 'compression';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, test, jest } from '@jest/globals';
 import { servicesRouter } from './services';
@@ -13,6 +14,7 @@ describe('service raw-log permission boundary over HTTP', () => {
   let server: ReturnType<typeof app.listen>;
   let origin: string;
   beforeAll(async () => {
+    app.use(compression({ threshold: 0 }));
     app.use((req, _res, next) => { req.user = { raw: req.headers['x-test-raw'] === 'yes' }; next(); });
     app.use('/services', servicesRouter);
     server = app.listen(0);
@@ -32,5 +34,20 @@ describe('service raw-log permission boundary over HTTP', () => {
     const response = await fetch(`${origin}/services/status`, { headers: { 'x-test-raw': 'yes' } });
     const body = await response.json();
     expect(body).toEqual(expect.objectContaining({ services: [expect.objectContaining({ logPath: '/private/app.log', logSources: [{ path: '/private/other.log' }] })] }));
+  });
+  test('SSE delivers its first event without gzip/proxy buffering and keeps raw-log fields private', async () => {
+    const abort = new AbortController();
+    const deadline = setTimeout(() => abort.abort(), 2000);
+    try {
+      const response = await fetch(`${origin}/services/stream`, { signal: abort.signal, headers: { 'Accept-Encoding': 'gzip' } });
+      expect(response.headers.get('cache-control')).toContain('no-transform');
+      expect(response.headers.get('x-accel-buffering')).toBe('no');
+      expect(response.headers.get('content-encoding')).toBeNull();
+      const reader = response.body!.getReader();
+      const first = new TextDecoder().decode((await reader.read()).value);
+      expect(first).toContain('data: ');
+      expect(first).not.toContain('/private/');
+      await reader.cancel();
+    } finally { clearTimeout(deadline); abort.abort(); }
   });
 });

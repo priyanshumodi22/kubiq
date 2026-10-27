@@ -100,7 +100,7 @@ jobs:
       - name: Verify bundled production image with authenticated MongoDB
         run: |
           set -o pipefail
-          node ops/apm-production/image-check.cjs | tee apm-image-verification.log
+          node ops/apm-production/image-check.cjs 2>&1 | tee apm-image-verification.log
         env:
           KUBIQ_IMAGE: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
       - uses: actions/upload-artifact@v4

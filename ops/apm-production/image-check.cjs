@@ -55,6 +55,7 @@ async function check(enabled, mongoPort) {
       await pause(100);
     }
     assert(ready, 'Image did not become ready within twenty seconds');
+    console.log(JSON.stringify({ stage: 'ready', tracing: enabled }));
     const login = await fetch(base + '/kubiq-api/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: 'fixture-admin', password: 'SYNTHETIC_LOGIN_SECRET' }) });
     assert.equal(login.status, 200);
     const token = (await login.json()).token;
@@ -68,12 +69,15 @@ async function check(enabled, mongoPort) {
     assert.equal((await fetch(base + '/kubiq-api/api/apm/v1/traces', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status, 401);
     await (await fetch(base + '/kubiq/assets/fixture.js')).text();
     const abort = new AbortController();
+    const streamDeadline = setTimeout(() => abort.abort(), 5000);
     const stream = await fetch(base + services + '/stream', { headers, signal: abort.signal });
     assert.equal(stream.status, 200);
     const reader = stream.body.getReader();
     await reader.read();
+    clearTimeout(streamDeadline);
     abort.abort();
     await reader.cancel().catch(() => {});
+    console.log(JSON.stringify({ stage: 'stream-delivered', tracing: enabled }));
     const spans = db.collection('apmspans');
     const serverQuery = { serviceName: 'kubiq-backend', kind: { $in: [2, '2', 'SERVER', 'SPAN_KIND_SERVER'] } };
     if (enabled) {
