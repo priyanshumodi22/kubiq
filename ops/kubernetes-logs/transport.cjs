@@ -63,7 +63,7 @@ async function client(token, origin, sourceId) {
   try {
     api.listen(0, '127.0.0.1'); await once(api, 'listening');
     const kubernetes = KubernetesService.getInstance();
-    kubernetes.getKubeConfig().loadFromOptions({ clusters: [{ name: 'fixture', skipTLSVerify: true, server: 'http://127.0.0.1:' + api.address().port }], users: [{ name: 'fixture' }], contexts: [{ name: 'fixture', cluster: 'fixture', user: 'fixture' }], currentContext: 'fixture' });
+    kubernetes.getKubeConfig().loadFromOptions({ clusters: [{ name: 'fixture', skipTLSVerify: true, server: 'http://127.0.0.1:' + api.address().port }], users: [{ name: 'fixture' }], contexts: [{ name: 'fixture', cluster: 'fixture', user: 'fixture' }, { name: 'unrelated-dashboard-context', cluster: 'unreachable', user: 'fixture' }], currentContext: 'unrelated-dashboard-context' });
     kubernetes.available = true; kubernetes.defaultContext = 'fixture';
     const users = await DatabaseFactory.getUserRepository();
     const admin = await users.createUser({ username: 'fixture-admin', role: 'kubiq-admin', roles: ['kubiq-admin'] });

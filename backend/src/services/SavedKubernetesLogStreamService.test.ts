@@ -8,7 +8,7 @@ import { RbacRoleService } from './RbacRoleService';
 import { IngestionBufferService } from './IngestionBufferService';
 import * as k8s from '@kubernetes/client-node';
 
-jest.mock('./KubernetesLogSources', () => ({ KubernetesLogSources: { list: jest.fn() }, resolveLogPods: jest.fn() }));
+jest.mock('./KubernetesLogSources', () => ({ KubernetesLogSources: { list: jest.fn() }, resolveLogPods: jest.fn(), defaultLogKubeConfig: () => ({}) }));
 jest.mock('../middleware/auth', () => ({ getSocketUser: jest.fn(), canAccessKubernetesNamespace: jest.fn() }));
 jest.mock('./RbacRoleService', () => ({ RbacRoleService: { hasPermission: jest.fn() } }));
 jest.mock('./KubernetesService', () => ({ KubernetesService: { getInstance: () => ({ getKubeConfig: () => ({}) }) } }));
@@ -110,4 +110,16 @@ it('reports transport failures as waiting and aborts a handle that arrives after
     const abort = jest.fn(); resolve({ abort } as unknown as AbortController); await flush(); expect(abort).toHaveBeenCalled();
     logMock.mockImplementation(() => ({ log: async () => { throw new Error('private transport details'); } }) as unknown as k8s.Log);
     client.start(); await flush(); expect(client.emit).toHaveBeenCalledWith('k8s:log:status', expect.objectContaining({ waiting: true })); client.stop();
+});
+
+it('cancels pending Kubernetes discovery when its viewer disconnects', async () => {
+    let signal: AbortSignal | undefined;
+    jest.mocked(resolveLogPods).mockImplementationOnce((_source, _config, pendingSignal) => new Promise((_resolve, reject) => {
+        signal = pendingSignal;
+        signal?.addEventListener('abort', () => reject(new Error('cancelled')), { once: true });
+    }));
+    const client = socket(); client.start(); await flush();
+    expect(signal?.aborted).toBe(false);
+    client.stop(); await flush();
+    expect(signal?.aborted).toBe(true); expect(streams).toHaveLength(0);
 });

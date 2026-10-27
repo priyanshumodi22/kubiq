@@ -1,6 +1,6 @@
 import { jest, expect, it, afterEach } from '@jest/globals';
 import * as k8s from '@kubernetes/client-node';
-import { KubernetesLogSources, parseLogSource, resolveLogPods, selectorText } from './KubernetesLogSources';
+import { defaultLogKubeConfig, KubernetesLogSources, parseLogSource, resolveLogPods, selectorText } from './KubernetesLogSources';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { KubernetesService } from './KubernetesService';
 jest.mock('../database/DatabaseFactory', () => ({ DatabaseFactory: { getSystemRepository: jest.fn() } }));
@@ -34,11 +34,19 @@ it('resolves exact pods, Services and workload selectors including expression-on
     const apps = { readNamespacedDeployment: read, readNamespacedStatefulSet: read, readNamespacedDaemonSet: read };
     const config = { makeApiClient: (type: unknown) => type === k8s.CoreV1Api ? core : apps } as unknown as k8s.KubeConfig;
     jest.mocked(KubernetesService.getInstance).mockReturnValue({ available: true, getKubeConfig: () => config } as KubernetesService);
-    for (const kind of ['deployment', 'statefulset', 'daemonset', 'service', 'namespace']) expect(await resolveLogPods(parseLogSource({ ...input, kind }))).toHaveLength(1);
-    expect(list).toHaveBeenCalledWith({ namespace: 'apps', labelSelector: 'app' });
-    expect((await resolveLogPods(parseLogSource({ ...input, kind: 'pod' })))[0].metadata?.name).toBe('exact');
+    for (const kind of ['deployment', 'statefulset', 'daemonset', 'service', 'namespace']) expect(await resolveLogPods(parseLogSource({ ...input, kind }), config)).toHaveLength(1);
+    expect(list).toHaveBeenCalledWith({ namespace: 'apps', labelSelector: 'app' }, expect.objectContaining({ middlewareMergeStrategy: 'append' }));
+    expect((await resolveLogPods(parseLogSource({ ...input, kind: 'pod' }), config))[0].metadata?.name).toBe('exact');
     jest.mocked(KubernetesService.getInstance).mockReturnValue({ available: false, getKubeConfig: () => config } as KubernetesService);
-    await expect(resolveLogPods(parseLogSource(input))).rejects.toThrow('unavailable');
+    await expect(resolveLogPods(parseLogSource(input), config)).rejects.toThrow('unavailable');
 });
 
-jest.mock('@kubernetes/client-node', () => ({ CoreV1Api: class {}, AppsV1Api: class {} }));
+jest.mock('@kubernetes/client-node', () => ({ KubeConfig: class { options: unknown; loadFromOptions(options: unknown) { this.options = options; } }, CoreV1Api: class {}, AppsV1Api: class {}, createConfiguration: () => ({ middleware: [] }) }));
+
+it('pins a private configuration copy to the default context without mutating the shared selection', () => {
+    const base = { clusters: [{ name: 'default' }], users: [{ name: 'reader' }], contexts: [{ name: 'default' }], currentContext: 'another-context' };
+    jest.mocked(KubernetesService.getInstance).mockReturnValue({ defaultContext: 'default', getKubeConfig: () => base } as unknown as KubernetesService);
+    const config = defaultLogKubeConfig();
+    expect(Reflect.get(config, 'options')).toEqual({ clusters: base.clusters, users: base.users, contexts: base.contexts, currentContext: 'default' });
+    expect(base.currentContext).toBe('another-context');
+});

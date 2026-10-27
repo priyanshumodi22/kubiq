@@ -153,6 +153,11 @@ function watchKubernetesLogs(socket: ReturnType<typeof io>, sourceId: string | u
     else socket.emit('k8s:watch:logs', target);
 }
 
+function kubernetesLogServiceName(namespace: string, sourceId?: string, podName?: string, deploymentName?: string) {
+    if (sourceId) return `k8s:${namespace}:${sourceId}`;
+    return `k8s:${namespace}:${podName?.split('-')[0] || deploymentName || 'unknown'}`;
+}
+
 export function K8sLogViewer({ sourceId, sourceName, namespace, podName, deploymentName, containers, initialSearchQuery = '' }: Readonly<K8sLogViewerProps>) {
     const [selectedContainer, setSelectedContainer] = useState(containers[0]?.name ?? '');
     const [tailLines, setTailLines] = useState(100);
@@ -273,7 +278,7 @@ export function K8sLogViewer({ sourceId, sourceName, namespace, podName, deploym
         virtuosoRef.current?.scrollToIndex({ index: logs.length - 1, align: 'end', behavior: 'smooth' });
     };
 
-    const k8sServiceName = sourceId ? `k8s:${namespace}:${sourceId}` : `k8s:${namespace}:${podName?.split('-')[0] || deploymentName || 'unknown'}`;
+    const k8sServiceName = kubernetesLogServiceName(namespace, sourceId, podName, deploymentName);
 
     // Fetch recent AI summary
     useEffect(() => {

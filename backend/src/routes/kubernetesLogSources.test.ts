@@ -56,8 +56,8 @@ it('reports persistence failures without treating them as successful saves', asy
     expect((await request()).status).toBe(500);
 });
 
-const api = { listNamespacedService: async () => ({ items: [{ metadata: { name: 'web' } }] }), listNamespacedDeployment: async () => ({ items: [{ metadata: { name: 'web' } }] }), listNamespacedStatefulSet: async () => ({ items: [] }), listNamespacedDaemonSet: async () => ({ items: [] }), listNamespacedPod: async () => ({ items: [] }) };
-const discovery = { available: true, defaultContext: 'default', getNamespaces: async () => ['apps', 'private'], getKubeConfig: () => ({ makeApiClient: () => api }) };
+const api = { listNamespace: async () => ({ items: [{metadata: {name: 'apps'}}, {metadata: {name: 'private'}}] }), listNamespacedService: async () => ({ items: [{ metadata: { name: 'web' } }] }), listNamespacedDeployment: async () => ({ items: [{ metadata: { name: 'web' } }] }), listNamespacedStatefulSet: async () => ({ items: [] }), listNamespacedDaemonSet: async () => ({ items: [] }), listNamespacedPod: async () => ({ items: [] }) };
+const discovery = { available: true, defaultContext: 'default', getNamespaces: async () => ['apps', 'private'], getKubeConfig: () => ({ clusters: [], users: [], contexts: [] }) };
 jest.mock('../services/KubernetesService', () => ({ KubernetesService: { getInstance: jest.fn() } }));
 it('discovers permitted namespaces, all target kinds and real container names', async () => {
     expect(await (await request('/namespaces')).json()).toEqual(['apps']);
@@ -81,4 +81,4 @@ it('reports API discovery failure and never converts it into a healthy empty res
     expect((await request('/containers?namespace=apps&kind=pod&resource=web')).status).toBe(500);
 });
 
-jest.mock('@kubernetes/client-node', () => ({ CoreV1Api: class {}, AppsV1Api: class {} }));
+jest.mock('@kubernetes/client-node', () => ({ CoreV1Api: class {}, AppsV1Api: class {}, KubeConfig: class { loadFromOptions() {} makeApiClient() { return api; } }, createConfiguration: () => ({middleware: []}) }));

@@ -6,6 +6,17 @@ import { KubernetesService } from './KubernetesService';
 
 const kinds = new Set(['service', 'deployment', 'statefulset', 'daemonset', 'pod', 'namespace']);
 const dns = /^[a-z0-9](?:[-a-z0-9.]{0,251}[a-z0-9])?$/;
+export function defaultLogKubeConfig(): k8s.KubeConfig {
+    const service = KubernetesService.getInstance();
+    const base = service.getKubeConfig();
+    const config = new k8s.KubeConfig();
+    config.loadFromOptions({ clusters: [...base.clusters], users: [...base.users], contexts: [...base.contexts], currentContext: service.defaultContext });
+    return config;
+}
+export function logRequestOptions(signal = AbortSignal.timeout(8000)): k8s.ConfigurationOptions {
+    const middleware = k8s.createConfiguration({ promiseMiddleware: [{ pre: async context => { context.setSignal(signal); return context; }, post: async context => context }] }).middleware;
+    return { middleware, middlewareMergeStrategy: 'append' };
+}
 export function parseLogSource(value: unknown, id: string = randomUUID()): KubernetesLogSource {
     if (!value || typeof value !== 'object') throw new Error('Choose a Kubernetes log target.');
     const input = value as Record<string, unknown>;
@@ -48,23 +59,24 @@ export function selectorText(selector?: k8s.V1LabelSelector): string {
     if (!labels.length) throw new Error('This resource has no pod selector. Choose a workload or pod instead.');
     return labels.join(',');
 }
-export async function resolveLogPods(source: KubernetesLogSource, config = KubernetesService.getInstance().getKubeConfig()): Promise<k8s.V1Pod[]> {
+export async function resolveLogPods(source: KubernetesLogSource, config = defaultLogKubeConfig(), signal = AbortSignal.timeout(8000)): Promise<k8s.V1Pod[]> {
     if (!KubernetesService.getInstance().available) throw new Error('Kubernetes is unavailable.');
     const core = config.makeApiClient(k8s.CoreV1Api);
-    if (source.kind === 'pod') return [await core.readNamespacedPod({ namespace: source.namespace, name: source.resource })];
+    const options = logRequestOptions(signal);
+    if (source.kind === 'pod') return [await core.readNamespacedPod({ namespace: source.namespace, name: source.resource }, options)];
     let labelSelector: string | undefined;
     if (source.kind === 'service') {
-        const service = await core.readNamespacedService({ namespace: source.namespace, name: source.resource });
+        const service = await core.readNamespacedService({ namespace: source.namespace, name: source.resource }, options);
         labelSelector = selectorText({ matchLabels: service.spec?.selector });
     } else if (source.kind !== 'namespace') {
         const apps = config.makeApiClient(k8s.AppsV1Api);
         const args = { namespace: source.namespace, name: source.resource };
-        const workload = source.kind === 'deployment' ? await apps.readNamespacedDeployment(args) : await readOtherWorkload(apps, source.kind, args);
+        const workload = source.kind === 'deployment' ? await apps.readNamespacedDeployment(args, options) : await readOtherWorkload(apps, source.kind, args, options);
         labelSelector = selectorText(workload.spec?.selector);
     }
-    const result = await core.listNamespacedPod({ namespace: source.namespace, labelSelector });
+    const result = await core.listNamespacedPod({ namespace: source.namespace, labelSelector }, options);
     return result.items.filter(pod => !pod.metadata?.deletionTimestamp && pod.status?.phase !== 'Succeeded' && pod.status?.phase !== 'Failed');
 }
-async function readOtherWorkload(apps: k8s.AppsV1Api, kind: string, args: { namespace: string; name: string }) {
-    return kind === 'statefulset' ? apps.readNamespacedStatefulSet(args) : apps.readNamespacedDaemonSet(args);
+async function readOtherWorkload(apps: k8s.AppsV1Api, kind: string, args: { namespace: string; name: string }, options: k8s.ConfigurationOptions) {
+    return kind === 'statefulset' ? apps.readNamespacedStatefulSet(args, options) : apps.readNamespacedDaemonSet(args, options);
 }

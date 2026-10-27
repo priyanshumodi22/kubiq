@@ -40,3 +40,5 @@ node ops/kubernetes-logs/transport.cjs
 ```
 
 The fixture uses an explicitly insecure HTTP connection only to its disposable loopback API server. Production kubeconfig TLS settings are not changed. Database adapter regression fixtures additionally round-trip saved-source configuration against actual disposable MongoDB, MySQL and MariaDB servers.
+
+Discovery uses a pinned copy of the default cluster configuration, an eight-second deadline, and cancellation when the viewer closes. Dashboard context changes cannot redirect a saved source.

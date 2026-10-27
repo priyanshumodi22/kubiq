@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as k8s from '@kubernetes/client-node';
 import { KubernetesService } from '../services/KubernetesService';
-import { KubernetesLogSources, parseLogSource, resolveLogPods } from '../services/KubernetesLogSources';
+import { defaultLogKubeConfig, logRequestOptions, KubernetesLogSources, parseLogSource, resolveLogPods } from '../services/KubernetesLogSources';
 import { canAccessKubernetesNamespace } from '../middleware/auth';
 import { AuditLogService } from '../services/AuditLogService';
 
@@ -10,7 +10,8 @@ export class KubernetesLogSourceController {
         try {
             const service = KubernetesService.getInstance();
             if (!service.available) return res.status(503).json({ message: 'Kubernetes is unavailable.' });
-            const namespaces = await service.getNamespaces(service.defaultContext);
+            const result = await defaultLogKubeConfig().makeApiClient(k8s.CoreV1Api).listNamespace({}, logRequestOptions());
+            const namespaces = result.items.map(item => item.metadata?.name).filter((name): name is string => Boolean(name));
             const visible = await Promise.all(namespaces.map(async namespace => await canAccessKubernetesNamespace(req.user, namespace) ? namespace : null));
             res.json(visible.filter(Boolean));
         } catch (error) { next(error); }
@@ -57,15 +58,16 @@ export class KubernetesLogSourceController {
             if (!(await canAccessKubernetesNamespace(req.user, namespace))) return res.status(403).json({ message: 'Access denied to namespace.' });
             const service = KubernetesService.getInstance();
             if (!service.available) return res.status(503).json({ message: 'Kubernetes is unavailable.' });
-            const config = service.getKubeConfig(), args = { namespace };
+            const config = defaultLogKubeConfig(), args = { namespace };
+            const options = logRequestOptions();
             const core = config.makeApiClient(k8s.CoreV1Api), apps = config.makeApiClient(k8s.AppsV1Api);
             const kind = typeof req.query.kind === 'string' ? req.query.kind : 'deployment';
             const loaders = {
-                service: () => core.listNamespacedService(args),
-                deployment: () => apps.listNamespacedDeployment(args),
-                statefulset: () => apps.listNamespacedStatefulSet(args),
-                daemonset: () => apps.listNamespacedDaemonSet(args),
-                pod: () => core.listNamespacedPod(args),
+                service: () => core.listNamespacedService(args, options),
+                deployment: () => apps.listNamespacedDeployment(args, options),
+                statefulset: () => apps.listNamespacedStatefulSet(args, options),
+                daemonset: () => apps.listNamespacedDaemonSet(args, options),
+                pod: () => core.listNamespacedPod(args, options),
             };
             if (!(kind in loaders)) return res.status(400).json({ message: 'Choose a supported resource type.' });
             const result = await loaders[kind as keyof typeof loaders]();

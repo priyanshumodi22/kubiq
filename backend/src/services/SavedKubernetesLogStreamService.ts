@@ -5,14 +5,13 @@ import { createHash } from 'node:crypto';
 import * as k8s from '@kubernetes/client-node';
 import { getSocketUser, canAccessKubernetesNamespace } from '../middleware/auth';
 import { RbacRoleService } from './RbacRoleService';
-import { KubernetesLogSources, resolveLogPods } from './KubernetesLogSources';
-import { KubernetesService } from './KubernetesService';
+import { defaultLogKubeConfig, KubernetesLogSources, resolveLogPods } from './KubernetesLogSources';
 import { IngestionBufferService } from './IngestionBufferService';
 import type { KubernetesLogSource } from '../database/interfaces/ISystemRepository';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 
 interface Follow { stream: PassThrough; handle?: AbortController; stamp: string; hashes: Set<string>; ended: boolean; pending: string }
-interface Subscription { socket: Socket; sourceId: string; source?: KubernetesLogSource; tail: number; startedAt: number; active: boolean; busy: boolean; timer?: NodeJS.Timeout; streams: Map<string, Follow> }
+interface Subscription { socket: Socket; sourceId: string; source?: KubernetesLogSource; tail: number; startedAt: number; active: boolean; busy: boolean; timer?: NodeJS.Timeout; discoveryAbort?: AbortController; streams: Map<string, Follow> }
 function logTimestamp(line: string): string {
     const space = line.indexOf(' ');
     const recorded = line.slice(0, space);
@@ -60,7 +59,9 @@ export class SavedKubernetesLogStreamService {
             if (!sub.active) return;
             if (sub.source && sub.source.updatedAt !== source.updatedAt) throw new Error('Log configuration changed. Reopen this source to reconnect.');
             sub.source = source;
-            const pods = await resolveLogPods(source);
+            sub.discoveryAbort = new AbortController();
+            const pods = await resolveLogPods(source, undefined, AbortSignal.any([sub.discoveryAbort.signal, AbortSignal.timeout(8000)]));
+            sub.discoveryAbort = undefined;
             if (!sub.active) return;
             const targets = pods.flatMap(pod => (pod.spec?.containers || []).filter(container => !source.container || container.name === source.container).map(container => ({
                 pod: pod.metadata?.name || '', container: container.name,
@@ -114,7 +115,7 @@ export class SavedKubernetesLogStreamService {
         stream.once('close', ended);
         const options: k8s.LogOptions = { follow: true, timestamps: true, tailLines: sub.tail };
         if (follow.stamp) { options.sinceTime = follow.stamp; delete options.tailLines; }
-        new k8s.Log(KubernetesService.getInstance().getKubeConfig()).log(sub.source!.namespace, target.pod, target.container, stream, options)
+        new k8s.Log(defaultLogKubeConfig()).log(sub.source!.namespace, target.pod, target.container, stream, options)
             .then(handle => {
                 if (!sub.active || follow.ended) handle.abort();
                 else { follow.handle = handle; sub.socket.emit('k8s:log:status', { waiting: false, message: 'Following container logs' }); }
@@ -157,6 +158,7 @@ export class SavedKubernetesLogStreamService {
         const sub = this.subscriptions.get(id);
         if (!sub) return;
         sub.active = false;
+        sub.discoveryAbort?.abort();
         clearInterval(sub.timer);
         for (const follow of sub.streams.values()) this.close(follow);
         sub.streams.clear();
