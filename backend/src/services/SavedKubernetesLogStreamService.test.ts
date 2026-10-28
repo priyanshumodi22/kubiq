@@ -128,7 +128,7 @@ it('reads completed Job logs once and reports completion without reopening finis
     const completed = pod(); completed.status = { ...completed.status, phase: 'Succeeded' } as typeof completed.status;
     jest.mocked(resolveLogPods).mockResolvedValue([completed]);
     const client = socket(); client.start(); await flush();
-    expect(streams[0].options.follow).toBe(false);
+    expect(streams[0].options.follow).toBe(false); expect(streams[0].options.limitBytes).toBe(262144);
     streams.forEach(item => item.stream.end('2026-10-28T00:00:00.123Z completed job\n')); await jest.advanceTimersByTimeAsync(0);
     expect(client.emit).toHaveBeenCalledWith('k8s:log:status', expect.objectContaining({ ended: true }));
     await jest.advanceTimersByTimeAsync(10000); expect(streams).toHaveLength(2); client.stop();

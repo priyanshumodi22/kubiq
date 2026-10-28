@@ -52,3 +52,5 @@ This is a standard Kubernetes workload explorer, not a generic browser for every
 Log configuration uses kubiq's shared log-dialog shell with a top-right close control and side-by-side source choices. All Kubernetes form selectors use the existing keyboard-operable CustomSelect. Removal still uses kubiq's confirmation dialog, and validation/save errors use application feedback, never browser alert/confirm/prompt.
 
 Completed Job/CronJob pods are read without follow mode and shown as ended; their finished streams are not repeatedly reopened while the saved target continues discovering new Jobs.
+
+Finished-container tails use reliable Socket.IO packets (live streams remain volatile under backpressure), capped by the Kubernetes request at 256 KiB per container. This prevents the single finite log response being lost while bounding its response/queue size.

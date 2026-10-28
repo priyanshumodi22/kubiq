@@ -64,7 +64,7 @@ export function KubernetesLogSourceModal({ source, onClose, onSaved }: Readonly<
       <SourceSelect label="Resource type" value={kind} onChange={value => { setKind(value as KubernetesLogSource['kind']); setResource(''); setContainer(''); }} options={resourceOptions} />
       {kind !== 'namespace' && <SourceSelect label="Resource" value={resource} disabled={loading || !namespace} onChange={value => { setResource(value); setContainer(''); }} options={[{ value: '', label: loading ? 'Loading targets…' : 'Choose resource' }, ...targets.map(item => ({ value: item.name, label: item.name }))]} />}
       <SourceSelect label="Container" value={container} onChange={setContainer} placement="top" options={[{ value: '', label: 'All containers' }, ...containers.map(value => ({ value, label: value }))]} />
-      <p className="text-xs leading-relaxed text-text-dim">Uses kubiq’s default Kubernetes connection. Up to 20 container streams per viewer. Each line identifies its namespace, pod and container. Logs are collected while the viewer is connected.</p>
+      <p className="text-xs leading-relaxed text-text-dim">Uses kubiq’s default Kubernetes connection. Up to 20 container streams per viewer. Each line identifies its namespace, pod and container. Logs are collected while the viewer is connected. Finished-container tails are limited to 256 KiB each.</p>
     </div>
   </LogSourceDialog>;
 }

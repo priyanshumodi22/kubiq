@@ -121,6 +121,7 @@ export class SavedKubernetesLogStreamService {
         stream.once('error', () => ended());
         stream.once('close', () => ended());
         const options: k8s.LogOptions = { follow: !target.terminal, timestamps: true, tailLines: sub.tail };
+        if (target.terminal) options.limitBytes = 262144;
         if (follow.stamp) { options.sinceTime = follow.stamp; delete options.tailLines; }
         new k8s.Log(defaultLogKubeConfig()).log(sub.source!.namespace, target.pod, target.container, stream, options)
             .then(handle => {
@@ -143,7 +144,7 @@ export class SavedKubernetesLogStreamService {
         this.persisted.set(identity, Date.now());
         return true;
     }
-    private deliver(sub: Subscription, target: { pod: string; container: string }, follow: Follow, lines: string[]) {
+    private deliver(sub: Subscription, target: { pod: string; container: string; terminal?: boolean }, follow: Follow, lines: string[]) {
         const accepted: string[] = [];
         const fresh: string[] = [];
         for (const line of lines) {
@@ -156,7 +157,8 @@ export class SavedKubernetesLogStreamService {
         }
         if (!accepted.length || !sub.active) return;
         // Bounded packets and the ingestion service's existing bounded queue prevent a slow viewer growing memory.
-        for (let index = 0; index < accepted.length; index += 25) sub.socket.volatile.emit('k8s:log:line', { content: accepted.slice(index, index + 25).join('\n') + '\n' });
+        const output = target.terminal ? sub.socket : sub.socket.volatile;
+        for (let index = 0; index < accepted.length; index += 25) output.emit('k8s:log:line', { content: accepted.slice(index, index + 25).join('\n') + '\n' });
         while (this.persisted.size > 8192) this.persisted.delete(this.persisted.keys().next().value!);
         if (fresh.length && DatabaseFactory.isLogStorageSupported()) IngestionBufferService.getInstance().ingestLines(`k8s:${sub.source!.namespace}:${sub.sourceId}`, `pod:${target.pod}:${target.container}`, fresh);
     }

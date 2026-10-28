@@ -100,7 +100,7 @@ async function client(token, origin, sourceId) {
     const completedResponse = await fetch(origin + '/api/logs/kubernetes/sources', { method: 'POST', headers, body: JSON.stringify({ name: 'Completed fixture', namespace: 'apps', kind: 'job', resource: 'finished' }) });
     assert.equal(completedResponse.status, 200);
     const completedSource = await completedResponse.json(), completedClient = await client(token(admin), origin, completedSource.id);
-    await waitFor(() => completedClient.data.statuses.some(status => status.ended) && completedClient.data.lines.some(line => line.includes('completed-job-fixture')), 'Completed Job did not report an ended readable log stream');
+    await waitFor(() => completedClient.data.statuses.some(status => status.ended) && completedClient.data.lines.some(line => line.includes('completed-job-fixture')), () => 'Completed Job status: ' + JSON.stringify(completedClient.data));
     completedClient.socket.disconnect();
     await users.updateUserStatus(reader.id, false);
     await waitFor(() => second.data.errors.length && streams.size === 0, 'Disabled user retained its active log stream');
