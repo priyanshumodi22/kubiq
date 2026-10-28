@@ -1,3 +1,4 @@
+import { logApplicationEvent } from '../telemetry/correlatedLogger';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { AuditLogPage, IAuditLogRepository } from '../database/interfaces/IAuditLogRepository';
 
@@ -44,12 +45,11 @@ export class AuditLogService {
   }
 
   public async log(entry: Omit<AuditLogEntry, 'id' | 'timestamp'>): Promise<AuditLogEntry | null> {
+    logApplicationEvent('audit_action_requested', { action: entry.action });
     try {
       const repo = await this.getRepo();
       const fullEntry = await repo.addAuditLog(entry);
-      console.log(
-        `🛡️ [AuditLog] [${fullEntry.action}] User: ${fullEntry.user} → Target: ${fullEntry.target}`
-      );
+      logApplicationEvent('audit_action_completed', { action: fullEntry.action });
       return fullEntry;
     } catch (err) {
       console.error('❌ Failed to save audit log entry:', err);

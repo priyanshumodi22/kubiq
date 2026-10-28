@@ -22,13 +22,13 @@ const BACKEND_CONTEXT = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
 const BASE_PATH = `${BACKEND_DNS}${BACKEND_CONTEXT}`;
 
 export interface TraceLogResult {
-  traceId: string; fromMs: number; toMs: number; traceFound: boolean; sourceCount: number;
-  logs: { timestamp: string; serviceName: string; sourceName: string; level: string; message: string }[];
+  traceId: string; fromMs: number; toMs: number; traceFound: boolean; sourceCount: number; truncated?: boolean;
+  logs: { timestamp: string; serviceName: string; sourceName: string; level: string; message: string; traceId?: string; spanId?: string; metadata?: Record<string, unknown> }[];
 }
 
 class ApiClient {
-  async getTraceLogs(traceId: string, serviceName?: string, signal?: AbortSignal): Promise<TraceLogResult> {
-    return (await this.client.get(`/api/logs/trace/${encodeURIComponent(traceId)}`, { params: { serviceName }, signal })).data;
+  async getTraceLogs(traceId: string, serviceName?: string, signal?: AbortSignal, spanId?: string): Promise<TraceLogResult> {
+    return (await this.client.get(`/api/logs/trace/${encodeURIComponent(traceId)}`, { params: { serviceName, spanId }, signal })).data;
   }
 
   private readonly client: AxiosInstance;

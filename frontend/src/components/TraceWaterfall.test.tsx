@@ -46,3 +46,9 @@ describe('trace waterfall compatibility', () => {
         expect(link.getAttribute('rel')).toBe('noreferrer');
     });
 });
+
+it('opens the exact incoming span instead of selecting an unrelated span', () => {
+    const view = render(<MemoryRouter><TraceWaterfall spans={[span('root', 0, 10), span('child', 1, 3, 'root')]} focusSpanId="child" /></MemoryRouter>);
+    expect(view.getByRole('button', { name: 'Close child' })).toBeTruthy();
+    expect(view.getByRole('button', { name: 'Inspect span child from api' }).getAttribute('aria-pressed')).toBe('true');
+});

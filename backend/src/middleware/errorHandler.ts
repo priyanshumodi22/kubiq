@@ -1,7 +1,8 @@
+import { logApplicationEvent } from '../telemetry/correlatedLogger';
 import { Request, Response, NextFunction } from 'express';
 
 export const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('❌ Error:', err);
+  logApplicationEvent('request_error', { error_type: err.name }, 'ERROR');
 
   if (res.headersSent) return next(err);
 

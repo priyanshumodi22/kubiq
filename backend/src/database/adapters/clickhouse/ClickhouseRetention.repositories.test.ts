@@ -10,7 +10,7 @@ describe('ClickHouse repository startup gates', () => {
   jest.spyOn(clickhouseService,'getClient').mockReturnValue({command,query} as unknown as ReturnType<typeof clickhouseService.getClient>);
   jest.spyOn(clickhouseService,'getDatabase').mockReturnValue('default');
   const repository=kind==='APM'?new ClickhouseTraceRepository():new ClickhouseLogRepository();
-  await repository.initialize(); await repository.initialize(); expect(command).toHaveBeenCalledTimes(kind === 'LOG' ? 2 : 1); expect(query).toHaveBeenCalledTimes(2);
+  await repository.initialize(); await repository.initialize(); expect(command).toHaveBeenCalledTimes(kind === 'LOG' ? 4 : 1); expect(query).toHaveBeenCalledTimes(2);
  });
  test.each([ClickhouseTraceRepository,ClickhouseLogRepository])('rejects missing client and table creation failure',async Repository=>{
   jest.spyOn(console,'error').mockImplementation(()=>undefined);

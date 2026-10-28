@@ -70,3 +70,17 @@ A trace alone does not create historical application logs. An older trace can co
 ### Production dependency boundary
 
 The backend keeps both `kubiq-apm/runtime` and `@opentelemetry/api` external to its ncc bundle. Backend and production telemetry manifests/lockfiles pin the same API version, enforced by the deployment dependency-contract test. The real image check also asserts every request-completion event matches an actual SERVER span. A higher bundled API version cannot read a context registered by an older external API; unit mocks alone do not validate that boundary.
+
+
+## Bidirectional log and span navigation
+
+Eligible kubiq request-completion events are emitted as JSON to **both container stdout and bounded retained-log ingestion**. Request/audit-action/error events emitted by kubiq's correlated logger inherit the real active span; stale background callbacks do not inherit a completed request's IDs. Startup/background output can legitimately have no trace. Unmodified third-party stdout does not automatically become a request-scoped event. No global console monkey-patch is installed.
+
+- Kubernetes and VM live viewers, ordinary historical search and trace-log search offer **View trace** and **View span** for valid `trace_id`/`span_id` (or camel-case equivalents). Request IDs are not assumed to be trace IDs.
+- Incoming `/apm?traceId=...&spanId=...` links load the trace automatically and select that exact span in the inspector. Links respect the application's router basename, including `/kubiq`.
+- The span detail panel offers **View Span Logs**. This filters by both IDs; **Search entire trace** expands the scope. Empty span results are honest: creating a span does not manufacture log events for it.
+- Ingestion extracts structured IDs, event ID and event timestamp from prefixed container JSON. MongoDB and ClickHouse retain trace/span/event IDs with compatible, additive schema migration. Legacy plain messages with named IDs remain searchable.
+- The same kubiq event has one UUID in its console/retained copies. Viewer-connected Kubernetes collection may retain a source-specific mirror; cross-source correlation search collapses copies with that event ID. Source-specific searches still search the selected retained source. Underlying delivery remains at least once; no existing historical rows are rewritten or deleted.
+- The primary correlation contract is the OpenTelemetry logging data model: [TraceId and SpanId fields](https://opentelemetry.io/docs/specs/otel/logs/data-model/). Other services need a logger integration that emits their actual active IDs and a configured collection path. Logs without tracing context remain ordinary logs; expired traces report unavailable instead of linking to unrelated data.
+
+These events exclude bodies, query strings, authorization headers, cookies, passwords and personal user identifiers. Audit records themselves retain their existing separate access controls; the correlated application event records the action name, not audit payloads. Existing retention, queue limits, authentication and namespace permissions remain in force. Mirrored source records and extra application events must be included in storage growth measurements; no sampling or retention change is implied.

@@ -1,3 +1,4 @@
+import { Link, useInRouterContext } from 'react-router-dom';
 import { SpanCallDetails } from './SpanCallDetails';
 import React from 'react';
 import { createPortal } from 'react-dom';
@@ -19,6 +20,12 @@ function SpanAttributeValue({ name, value }: Readonly<{ name: string; value: unk
     }
     if (value !== null && typeof value === 'object') return <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words text-xs">{JSON.stringify(value, null, 2)}</pre>;
     return String(value);
+}
+
+function SpanLogsLink({ span }: Readonly<{ span: ISpan }>) {
+    const inRouter = useInRouterContext();
+    if (!inRouter) return null;
+    return <Link to={`/logs?traceId=${encodeURIComponent(span.traceId)}&spanId=${encodeURIComponent(span.spanId)}`} target="_blank" rel="noreferrer" className="mb-4 inline-flex rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/20 focus-visible:ring-2 focus-visible:ring-primary">View Span Logs</Link>;
 }
 
 export const SpanDetailsSidebar: React.FC<SpanDetailsSidebarProps> = ({ span, onClose, traceSpans = [] }) => {
@@ -107,6 +114,7 @@ export const SpanDetailsSidebar: React.FC<SpanDetailsSidebarProps> = ({ span, on
                         </div>
                     </div>
 
+                    <SpanLogsLink span={span} />
                     <SpanCallDetails span={span} traceSpans={traceSpans} />
                     {/* Attributes Table */}
                     <div className="mb-6">

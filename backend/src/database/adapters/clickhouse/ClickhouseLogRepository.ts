@@ -1,4 +1,4 @@
-import { traceIdFromRecord, traceMessagePattern } from '../../../utils/logCorrelation';
+import { traceIdFromRecord, traceMessagePattern, spanIdFromRecord, eventIdFromRecord } from '../../../utils/logCorrelation';
 import { retentionSeconds } from '../../../utils/RetentionPolicy';
 import { ensureClickhouseRetention } from './ensureClickhouseRetention';
 import { ILogRepository, LogQueryOptions } from '../../interfaces/ILogRepository';
@@ -23,6 +23,8 @@ export class ClickhouseLogRepository implements ILogRepository {
                 query: `
                     CREATE TABLE IF NOT EXISTS ${dbName}.app_logs (
                         traceId String DEFAULT '',
+                        spanId String DEFAULT '',
+                        eventId String DEFAULT '',
                         serviceName String,
                         sourceName String,
                         level String,
@@ -33,6 +35,8 @@ export class ClickhouseLogRepository implements ILogRepository {
                 `
             });
             await client.command({ query: `ALTER TABLE ${dbName}.app_logs ADD COLUMN IF NOT EXISTS traceId String DEFAULT ''` });
+            await client.command({ query: `ALTER TABLE ${dbName}.app_logs ADD COLUMN IF NOT EXISTS spanId String DEFAULT ''` });
+            await client.command({ query: `ALTER TABLE ${dbName}.app_logs ADD COLUMN IF NOT EXISTS eventId String DEFAULT ''` });
             await ensureClickhouseRetention(client, dbName, 'app_logs', seconds);
             this.isInitialized = true;
             console.log('Clickhouse Log Repository Initialized');
@@ -56,6 +60,8 @@ export class ClickhouseLogRepository implements ILogRepository {
             
             return {
                 traceId: traceIdFromRecord(log),
+                spanId: spanIdFromRecord(log),
+                eventId: eventIdFromRecord(log),
                 serviceName: log.serviceName || 'unknown',
                 sourceName: log.sourceName || 'unknown',
                 level: log.level || 'INFO',
@@ -93,6 +99,11 @@ export class ClickhouseLogRepository implements ILogRepository {
         if (opts.serviceNames) { whereClause = whereClause.replace('serviceName = {serviceName: String}', 'serviceName IN {serviceNames: Array(String)}'); queryParams.serviceNames = opts.serviceNames; }
         if (opts.traceId) { whereClause += ' AND (traceId = {traceId: String} OR match(message, {tracePattern: String}))'; queryParams.traceId = opts.traceId; queryParams.tracePattern = '(?i)' + traceMessagePattern(opts.traceId); }
 
+        if (opts.spanId) {
+            whereClause += ' AND (spanId = {spanId: String} OR match(message, {spanPattern: String}))';
+            queryParams.spanId = opts.spanId;
+            queryParams.spanPattern = '(?i)' + traceMessagePattern(opts.spanId);
+        }
         if (opts.sourceName) {
             whereClause += ` AND sourceName = {sourceName: String}`;
             queryParams.sourceName = opts.sourceName;

@@ -1,8 +1,10 @@
+import { MemoryRouter } from 'react-router-dom';
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render as rtlRender } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LogViewer } from './LogViewer';
 
+const render = (ui: React.ReactElement) => rtlRender(<MemoryRouter basename="/kubiq" initialEntries={['/kubiq/logs']}>{ui}</MemoryRouter>);
 const mocks = vi.hoisted(() => ({ sockets: [] as Array<{ handlers: Map<string, (data?: unknown) => void>; emit: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn>; removeAllListeners: ReturnType<typeof vi.fn> }> }));
 vi.mock('socket.io-client', () => ({ default: () => {
     const handlers = new Map<string, (data?: unknown) => void>();
@@ -56,7 +58,7 @@ describe('raw log subscription compatibility', () => {
         send('connect');
         expect(mocks.sockets[0].emit).toHaveBeenCalledWith('watch:log', { path: props.logPath, pattern: undefined, limit: undefined, serviceName: 'api' });
         send('log:init', { content: 'INFO traceId=AbCdEf1234567890 ready\n' });
-        expect(view.getByRole('link').getAttribute('href')).toBe('/apm?traceId=AbCdEf1234567890');
+        expect(view.getByRole('link').getAttribute('href')).toBe('/kubiq/apm?traceId=abcdef1234567890');
         view.unmount();
         expect(mocks.sockets[0].disconnect).toHaveBeenCalledTimes(1);
         expect(mocks.sockets[0].handlers.size).toBe(0);

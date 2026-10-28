@@ -6,6 +6,7 @@ import { SpanDetailsSidebar } from './SpanDetailsSidebar';
 
 interface TraceWaterfallProps {
     spans: ISpan[];
+    focusSpanId?: string;
 }
 
 interface SpanNode extends ISpan {
@@ -38,8 +39,8 @@ function getSpanLayerColor(span: ISpan): { bg: string; border: string; badge: st
     return { bg: 'bg-blue-500/80', border: 'border-blue-400', badge: 'bg-blue-400' };
 }
 
-export default function TraceWaterfall({ spans }: Readonly<TraceWaterfallProps>) {
-    const [selectedSpan, setSelectedSpan] = useState<ISpan | null>(null);
+export default function TraceWaterfall({ spans, focusSpanId }: Readonly<TraceWaterfallProps>) {
+    const [selectedSpan, setSelectedSpan] = useState<ISpan | null>(() => spans.find(span => span.spanId === focusSpanId) || null);
 
     // 1. Build the Tree
     const { rootSpans, minStartTime, totalDurationMs } = useMemo(() => {
@@ -176,6 +177,7 @@ export default function TraceWaterfall({ spans }: Readonly<TraceWaterfallProps>)
                 </div>
             </div>
 
+            {focusSpanId && !spans.some(span => span.spanId === focusSpanId) && <p className="px-4 pt-3 text-sm text-text-dim">The requested span is unavailable in this retained trace.</p>}
             <div className="p-4 overflow-x-auto">
                 <div className="min-w-[600px]">
                     <div className="flex text-xs font-medium text-gray-500 mb-2 px-2 border-b border-gray-800 pb-2">

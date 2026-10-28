@@ -1,9 +1,12 @@
+import { MemoryRouter } from 'react-router-dom';
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render as rtlRender, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LogSearch } from './LogSearch';
 
 const mocks = vi.hoisted(() => ({ query: vi.fn(), sources: vi.fn(), recent: vi.fn() }));
+vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ hasPermission: () => true }) }));
+const render = (ui: React.ReactElement) => rtlRender(<MemoryRouter basename="/kubiq" initialEntries={['/kubiq/logs']}>{ui}</MemoryRouter>);
 vi.mock('../services/api', () => ({ apiClient: { queryLogs: mocks.query, getLogSources: mocks.sources, getRecentSummary: mocks.recent } }));
 vi.mock('./ProUpgradeModal', () => ({ ProUpgradeModal: () => null }));
 vi.mock('./AiStatusOrb', () => ({ AiStatusOrb: () => null }));

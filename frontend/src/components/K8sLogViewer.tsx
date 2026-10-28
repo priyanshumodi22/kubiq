@@ -1,3 +1,4 @@
+import { LogCorrelationLinks } from './LogCorrelationLinks';
 import { notify } from '../utils/notify';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
@@ -67,7 +68,7 @@ function renderLogRow(index: number, log: LogLine) {
     return (
         <div className={`px-4 py-0.5 hover:bg-white/5 border-l-2 border-transparent hover:border-gray-600 flex gap-3 ${LEVEL_COLORS[log.level]}`}>
             <span className="select-none opacity-30 w-8 text-right shrink-0 text-[10px] pt-px">{index + 1}</span>
-            <span className="break-all whitespace-pre-wrap flex-1 select-text leading-relaxed">{log.content}</span>
+            <span className="break-all whitespace-pre-wrap flex-1 select-text leading-relaxed">{log.content}<LogCorrelationLinks message={log.content} /></span>
         </div>
     );
 }

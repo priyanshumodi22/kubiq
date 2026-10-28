@@ -1,8 +1,11 @@
+import { MemoryRouter } from 'react-router-dom';
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render as rtlRender, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { TraceLogSearch } from './TraceLogSearch';
 const mock = vi.hoisted(() => ({ get: vi.fn(), toast: vi.fn() }));
+vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ hasPermission: () => true }) }));
+const render = (ui: React.ReactElement) => rtlRender(<MemoryRouter basename="/kubiq" initialEntries={['/kubiq/logs']}>{ui}</MemoryRouter>);
 vi.mock('../services/api', () => ({ apiClient: { getTraceLogs: mock.get } }));
 vi.mock('../contexts/ToastContext', () => ({ useToast: () => ({ addToast: mock.toast }) }));
 vi.mock('react-virtuoso', () => ({ Virtuoso: ({ data, itemContent }: { data: object[]; itemContent: (index: number, log: object) => React.ReactNode }) => <div>{data.map((log, index) => <div key={index}>{itemContent(index, log)}</div>)}</div> }));
@@ -14,7 +17,7 @@ it('automatically searches all permitted sources and explains an empty historica
     const view = render(<TraceLogSearch traceId="abc" onAllSources={vi.fn()} />);
     expect(view.getByRole('status')).toBeTruthy();
     expect(await view.findByText('No correlated logs retained')).toBeTruthy();
-    expect(mock.get).toHaveBeenCalledWith('abc', undefined, expect.any(AbortSignal));
+    expect(mock.get).toHaveBeenCalledWith('abc', undefined, expect.any(AbortSignal), undefined);
     expect(view.getByText(/retroactively/)).toBeTruthy();
 });
 it('renders real records, source scope and a reset action', async () => {
@@ -42,4 +45,12 @@ it('cancels stale requests and ignores their late result', async () => {
     finish(result);
     await waitFor(() => expect(view.getByText('new result')).toBeTruthy());
     expect(view.queryByText('No correlated logs retained')).toBeNull();
+});
+
+it('searches the exact selected span and lets the user expand to the entire trace', async () => {
+    mock.get.mockResolvedValue(result); const reset = vi.fn();
+    const view = render(<TraceLogSearch traceId="abc" spanId="1234567890abcdef" onAllSources={vi.fn()} onWholeTrace={reset} />);
+    await view.findByText('No correlated logs retained');
+    expect(mock.get).toHaveBeenCalledWith('abc', undefined, expect.any(AbortSignal), '1234567890abcdef');
+    fireEvent.click(view.getByRole('button', { name: 'Search entire trace' })); expect(reset).toHaveBeenCalledTimes(1);
 });

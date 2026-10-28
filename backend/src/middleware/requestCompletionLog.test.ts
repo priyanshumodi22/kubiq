@@ -10,6 +10,7 @@ jest.mock('../services/IngestionBufferService', () => ({ IngestionBufferService:
 const traceId = '1234567890abcdef1234567890abcdef', spanId = '1234567890abcdef';
 const addLogs = jest.fn<(logs: { message: string }[]) => boolean>(() => true);
 beforeEach(() => {
+    jest.spyOn(console, 'info').mockImplementation(() => {});
     jest.spyOn(trace, 'getActiveSpan').mockReturnValue({ spanContext: () => ({ traceId, spanId }) } as ReturnType<typeof trace.getActiveSpan>);
     (IngestionBufferService.getInstance as jest.Mock<(...args: unknown[]) => unknown>).mockReturnValue({ addLogs });
     (DatabaseFactory.isLogStorageSupported as jest.Mock<(...args: unknown[]) => unknown>).mockReturnValue(true); addLogs.mockReset().mockReturnValue(true);
@@ -31,7 +32,7 @@ it('records aborted completion once and bounds failures without leaking payloads
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {}); addLogs.mockReturnValue(false);
     const res = response(200, false); requestCompletionLog({ method: 'bad SECRET' } as Request, res, () => '/safe'); res.emit('close'); res.emit('finish');
     expect(JSON.parse(addLogs.mock.calls[0][0][0].message)).toMatchObject({ outcome: 'aborted', method: 'OTHER' });
-    expect(warn).toHaveBeenCalledWith('[logs] request_completion_dropped', { count: 1 });
+    expect(warn).toHaveBeenCalledWith('[logs] correlated_event_dropped', { count: 1 });
 });
 it('does not log excluded or disabled tracing scopes', () => {
     jest.spyOn(trace, 'getActiveSpan').mockReturnValue(undefined);

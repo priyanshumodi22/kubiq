@@ -50,14 +50,15 @@ export function SelectedLogViewer({ serviceName, service, initialSearchQuery = '
     );
 }
 
-function renderLogsContent(traceId: string, source: KubernetesLogSource | null, serviceName: string | null, service: ServiceStatus | undefined, version: number, onAllSources: () => void) {
-    if (traceId) return <TraceLogSearch traceId={traceId} serviceName={source ? `k8s:${source.namespace}:${source.id}` : serviceName || undefined} onAllSources={onAllSources} />;
+function renderLogsContent({ traceId, spanId, onWholeTrace }: { traceId: string; spanId: string; onWholeTrace: () => void }, source: KubernetesLogSource | null, serviceName: string | null, service: ServiceStatus | undefined, version: number, onAllSources: () => void) {
+    if (traceId) return <TraceLogSearch traceId={traceId} spanId={spanId || undefined} onWholeTrace={onWholeTrace} serviceName={source ? `k8s:${source.namespace}:${source.id}` : serviceName || undefined} onAllSources={onAllSources} />;
     if (source) return <K8sLogViewer key={`${source.id}-${source.updatedAt}-${version}`} namespace={source.namespace} sourceId={source.id} sourceName={source.name} containers={[]} />;
     return <SelectedLogViewer serviceName={serviceName} service={service} />;
 }
 
 export default function LogsPage() {
-    const [params] = useSearchParams();
+    const [params, setParams] = useSearchParams();
+    const spanSearch = params.get('spanId') || '';
     const requestedTrace = params.get('traceId') || params.get('search') || '';
     const traceSearch = /^[a-f\d]{16}(?:[a-f\d]{16})?$/i.test(requestedTrace) ? requestedTrace : '';
     const { services, refresh } = useServices();
@@ -280,7 +281,7 @@ export default function LogsPage() {
 
             {/* Main Log Viewer Area */}
             <div className="flex-1 flex flex-col min-h-0 bg-bg-surface/30 border border-gray-800 rounded-xl overflow-hidden backdrop-blur-sm relative z-10">
-                {renderLogsContent(traceSearch, selectedKubeSource, selectedServiceName, selectedService, kubeVersion, () => { setSelectedKubeSource(null); setSelectedServiceName(null); })}
+                {renderLogsContent({ traceId: traceSearch, spanId: spanSearch, onWholeTrace: () => { const next = new URLSearchParams(params); next.delete('spanId'); setParams(next); } }, selectedKubeSource, selectedServiceName, selectedService, kubeVersion, () => { setSelectedKubeSource(null); setSelectedServiceName(null); })}
             </div>
 
             {chooserOpen && <LogSourceTypeDialog kubernetes={hasPermission('kubernetes.read')} onVM={() => { setChooserOpen(false); setIsConfigModalOpen(true); }} onKubernetes={() => { setChooserOpen(false); setKubeDraft(null); }} onClose={() => setChooserOpen(false)} />}

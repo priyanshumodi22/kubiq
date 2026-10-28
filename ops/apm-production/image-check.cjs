@@ -115,6 +115,8 @@ async function check(enabled, mongoPort) {
         assert(parent && String(parent.kind) === '2', 'Bundled backend must share SDK active SERVER context');
         assert.equal(log.traceId, event.trace_id);
         assert.equal(event.event, 'http_request_completed');
+        assert(logs.includes(log.message), 'The same correlated event must be visible in actual container stdout');
+        assert.equal(log.spanId, event.span_id);
         assert.equal(event.route, parent.attributes['http.route']);
         assert(!JSON.stringify(log).includes('SYNTHETIC_'), 'Correlation logs must exclude secrets');
       }
@@ -123,6 +125,10 @@ async function check(enabled, mongoPort) {
       assert.equal(correlated.status, 200);
       const found = await correlated.json();
       assert(found.logs.some(row => row.traceId === target.traceId));
+      const exact = await (await fetch(base + '/kubiq-api/api/logs/trace/' + target.traceId + '?spanId=' + target.spanId, { headers })).json();
+      assert(exact.logs.some(row => row.spanId === target.spanId));
+      const absent = await (await fetch(base + '/kubiq-api/api/logs/trace/' + target.traceId + '?spanId=ffffffffffffffff', { headers })).json();
+      assert.equal(absent.logs.length, 0, 'No unrelated-span logs may be substituted');
       assert.equal((await fetch(base + '/kubiq-api/api/logs/trace/' + target.traceId, { headers: { Authorization: 'Bearer invalid' } })).status, 401);
       const completionCount = await completion.countDocuments({ sourceName: 'http-requests' });
       const count = await spans.countDocuments({});

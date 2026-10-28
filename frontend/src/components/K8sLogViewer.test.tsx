@@ -1,5 +1,6 @@
+import { MemoryRouter } from 'react-router-dom';
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render as rtlRender } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { K8sLogViewer } from './K8sLogViewer';
 
@@ -11,6 +12,8 @@ vi.mock('socket.io-client', () => ({ default: () => {
     return socket;
 } }));
 vi.mock('react-virtuoso', () => ({ Virtuoso: ({ data, itemContent }: { data: Array<{ id: number }>; itemContent: (index: number, item: { id: number }) => React.ReactNode }) => <div>{data.map((item, index) => <div key={item.id}>{itemContent(index, item)}</div>)}</div> }));
+vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ hasPermission: () => true }) }));
+const render = (ui: React.ReactElement) => rtlRender(<MemoryRouter basename="/kubiq" initialEntries={['/kubiq/logs']}>{ui}</MemoryRouter>);
 vi.mock('../services/api', () => ({ apiClient: { getToken: () => 'test-token', getRecentSummary: vi.fn().mockResolvedValue({ available: false }) } }));
 vi.mock('./LogSearch', () => ({ LogSearch: ({ initialQuery }: { initialQuery?: string }) => <div>Historical search{initialQuery ? `: ${initialQuery}` : ''}</div> }));
 vi.mock('./ProUpgradeModal', () => ({ ProUpgradeModal: () => null }));
@@ -83,4 +86,10 @@ describe('Kubernetes log viewer compatibility', () => {
         send('disconnect'); view.unmount(); expect(mocks.sockets[0].disconnect).toHaveBeenCalled();
     });
 
+});
+
+it('provides exact trace and span navigation for a real JSON live-log line', async () => {
+    const view = render(<K8sLogViewer {...props} />); await act(async () => {}); send('connect');
+    send('k8s:log:line', { content: JSON.stringify({ trace_id: '1234567890abcdef1234567890abcdef', span_id: '1234567890abcdef', event: 'request_completed' }) });
+    expect(view.getByRole('link', { name: 'View span' }).getAttribute('href')).toBe('/kubiq/apm?traceId=1234567890abcdef1234567890abcdef&spanId=1234567890abcdef');
 });

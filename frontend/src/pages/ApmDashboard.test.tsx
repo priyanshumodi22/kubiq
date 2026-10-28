@@ -1,8 +1,10 @@
+import { MemoryRouter } from 'react-router-dom';
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render as rtlRender, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ApmDashboard from './ApmDashboard';
 
+const render = (ui: React.ReactElement) => rtlRender(<MemoryRouter>{ui}</MemoryRouter>);
 const mocks = vi.hoisted(() => ({
   getStatus: vi.fn(), getTraces: vi.fn(), fetchTrace: vi.fn(), clearTrace: vi.fn(), refresh: vi.fn(), fetchMap: vi.fn(),
   metrics: [] as Array<{ serviceName: string; requestCount: number; errorCount: number; avgDurationMs: number; p95DurationMs: number; rpm: number; errorRate: number }>,
@@ -272,4 +274,11 @@ describe('APM dashboard characterization', () => {
     expect((search as HTMLInputElement).value).toBe('');
     expect(mocks.clearTrace).toHaveBeenCalledTimes(1);
   });
+});
+
+it('loads a valid incoming log-to-trace URL automatically', async () => {
+    const id = 'abcdef1234567890abcdef1234567890';
+    const view = rtlRender(<MemoryRouter initialEntries={[`/apm?traceId=${id}&spanId=1234567890abcdef`]}><ApmDashboard /></MemoryRouter>);
+    await waitFor(() => expect(mocks.fetchTrace).toHaveBeenCalledWith(id));
+    expect(view.getByDisplayValue(id)).toBeTruthy();
 });

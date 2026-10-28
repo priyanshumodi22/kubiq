@@ -1,3 +1,4 @@
+import { withRequestLogScope } from '../telemetry/correlatedLogger';
 import { requestCompletionLog } from './requestCompletionLog';
 import type { NextFunction, Request, Response } from 'express';
 
@@ -17,6 +18,6 @@ export function requestTracing(trace: RequestTracer, contextPath: string) {
             if (!prefix) return '/*';
             return prefix + (typeof route === 'string' ? route : '/*');
         };
-        trace(request, response, () => { requestCompletionLog(request, response, routeName); next(); }, { route: routeName });
+        trace(request, response, () => withRequestLogScope(response, () => { requestCompletionLog(request, response, routeName); next(); }), { route: routeName });
     };
 }

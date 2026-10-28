@@ -54,6 +54,8 @@ jobs:
       - run: npm run lint --prefix backend
       - run: npm test --prefix backend -- --runInBand
       - run: npm run build --prefix backend
+      - name: Verify real request and child-span log context
+        run: node ops/apm-production/log-context-check.cjs
       - run: npm ci --prefix frontend
       - name: Verify saved Kubernetes logs through real HTTP and Socket.IO transports
         run: node ops/kubernetes-logs/transport.cjs

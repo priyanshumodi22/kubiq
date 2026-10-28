@@ -1,3 +1,4 @@
+import { contextFromLogLine } from '../utils/logCorrelation';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 import { ISpan } from '../database/interfaces/ITraceRepository';
 import { withoutTracing } from 'kubiq-apm/runtime';
@@ -33,10 +34,12 @@ export class IngestionBufferService {
         const logs: any[] = [];
         for (const line of lines) {
             if (!line.trim()) continue;
+            const context = contextFromLogLine(line);
             logs.push({
                 serviceName,
                 sourceName,
-                timestamp: new Date(),
+                ...context,
+                timestamp: context.timestamp || new Date(),
                 level: this.extractLevel(line),
                 message: line
             });

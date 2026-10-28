@@ -8,6 +8,8 @@ export interface ILog extends Document {
     level: string;
     message: string;
     traceId?: string;
+    spanId?: string;
+    eventId?: string;
     metadata?: Record<string, any>;
 }
 
@@ -18,6 +20,8 @@ const logSchema = new Schema<ILog>({
     level: { type: String, required: true, index: true },
     message: { type: String, required: true },
     traceId: { type: String },
+    spanId: { type: String },
+    eventId: { type: String },
     metadata: { type: Schema.Types.Mixed }
 }, { autoIndex: false });
 

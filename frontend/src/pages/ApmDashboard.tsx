@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router-dom';
 import { notify } from '../utils/notify';
 import { useState, useEffect, useRef, useEffectEvent } from 'react';
 import { apiClient } from '../services/api';
@@ -117,6 +118,14 @@ function useApmDashboardModel() {
     const [customToTime, setCustomToTime] = useState('');
 
     const [traceIdInput, setTraceIdInput] = useState('');
+    const [incomingParams] = useSearchParams();
+    const incomingTrace = incomingParams.get('traceId') || '';
+    const linkedSpanId = incomingParams.get('spanId') || '';
+    useEffect(() => {
+        if (!/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/i.test(incomingTrace) || /^0+$/.test(incomingTrace)) return;
+        setTraceIdInput(incomingTrace.toLowerCase());
+        void fetchTrace(incomingTrace.toLowerCase());
+    }, [incomingTrace, fetchTrace]);
     const [isTraceDropdownOpen, setIsTraceDropdownOpen] = useState(false);
     const [serviceFilter, setServiceFilter] = useState('');
     const [activeView, setActiveView] = useState<'metrics' | 'map'>('metrics');
@@ -360,7 +369,7 @@ function useApmDashboardModel() {
     const pad = (n: number) => String(n).padStart(2, '0');
     const todayString = `${todayObj.getFullYear()}-${pad(todayObj.getMonth() + 1)}-${pad(todayObj.getDate())}`;
 
-        return { isAdmin, canExport, status, checkingStatus, metrics, apmLoading, apmError, refresh, spans, traceLoading, traceError, fetchTrace, clearTrace, dependencies, mapLoading, mapError, fetchServiceMap, timeFilter, setTimeFilter, customFromDate, setCustomFromDate, customFromTime, setCustomFromTime, customToDate, setCustomToDate, customToTime, setCustomToTime, traceIdInput, setTraceIdInput, isTraceDropdownOpen, setIsTraceDropdownOpen, serviceFilter, setServiceFilter, activeView, setActiveView, selectedMapService, setSelectedMapService, selectedInspectorService, setSelectedInspectorService, tracesList, isFetchingTraces, minDurationFilter, setMinDurationFilter, errorOnlyFilter, setErrorOnlyFilter, routeSearch, setRouteSearch, isConfigModalOpen, setIsConfigModalOpen, isInstrumentationModalOpen, setIsInstrumentationModalOpen, percentileFilter, setPercentileFilter, isExportModalOpen, setIsExportModalOpen, isExporting, setIsExporting, exportError, setExportError, exportService, setExportService, exportFromTime, setExportFromTime, exportToTime, setExportToTime, exportMinDuration, setExportMinDuration, exportErrorOnly, setExportErrorOnly, exportSpanSearch, setExportSpanSearch, isExportServiceOpen, setIsExportServiceOpen, isExportDurationOpen, setIsExportDurationOpen, sidebarRef, timeRangeTriggerRef, timeRangePanelRef, isTimeRangeOpen, setIsTimeRangeOpen, timeRangeRect, setTimeRangeRect, filteredMetrics, handleRefresh, handleServiceClick, handleEdgeClick, selectedTraceObj, applyCustomTime, handleSliderChange, sliderMaxMs, sliderMinMs, sliderFromMs, sliderToMs, todayString };
+        return { linkedSpanId: traceIdInput.toLowerCase() === incomingTrace.toLowerCase() ? linkedSpanId : '', isAdmin, canExport, status, checkingStatus, metrics, apmLoading, apmError, refresh, spans, traceLoading, traceError, fetchTrace, clearTrace, dependencies, mapLoading, mapError, fetchServiceMap, timeFilter, setTimeFilter, customFromDate, setCustomFromDate, customFromTime, setCustomFromTime, customToDate, setCustomToDate, customToTime, setCustomToTime, traceIdInput, setTraceIdInput, isTraceDropdownOpen, setIsTraceDropdownOpen, serviceFilter, setServiceFilter, activeView, setActiveView, selectedMapService, setSelectedMapService, selectedInspectorService, setSelectedInspectorService, tracesList, isFetchingTraces, minDurationFilter, setMinDurationFilter, errorOnlyFilter, setErrorOnlyFilter, routeSearch, setRouteSearch, isConfigModalOpen, setIsConfigModalOpen, isInstrumentationModalOpen, setIsInstrumentationModalOpen, percentileFilter, setPercentileFilter, isExportModalOpen, setIsExportModalOpen, isExporting, setIsExporting, exportError, setExportError, exportService, setExportService, exportFromTime, setExportFromTime, exportToTime, setExportToTime, exportMinDuration, setExportMinDuration, exportErrorOnly, setExportErrorOnly, exportSpanSearch, setExportSpanSearch, isExportServiceOpen, setIsExportServiceOpen, isExportDurationOpen, setIsExportDurationOpen, sidebarRef, timeRangeTriggerRef, timeRangePanelRef, isTimeRangeOpen, setIsTimeRangeOpen, timeRangeRect, setTimeRangeRect, filteredMetrics, handleRefresh, handleServiceClick, handleEdgeClick, selectedTraceObj, applyCustomTime, handleSliderChange, sliderMaxMs, sliderMinMs, sliderFromMs, sliderToMs, todayString };
 }
 
 type ApmDashboardModel = ReturnType<typeof useApmDashboardModel>;
@@ -655,7 +664,7 @@ function ApmOverview({ model }: Readonly<{ model: ApmDashboardModel }>) {
                                     Close Trace
                                 </button>
                             </div>
-                            <TraceWaterfall spans={spans} />
+                            <TraceWaterfall key={`${spans[0]?.traceId}-${model.linkedSpanId}`} spans={spans} focusSpanId={model.linkedSpanId} />
                         </div>
                     )}
 
@@ -1265,7 +1274,7 @@ function ApmInspectorTrace({ model }: Readonly<{ model: ApmDashboardModel }>) {
                                 <div><span className="font-bold">Trace Error:</span> {traceError}</div>
                             </div>);
     if (spans.length > 0) return (<div className="bg-bg-surface border border-gray-800 rounded-xl p-2 md:p-4 shadow-lg overflow-x-auto">
-                                <TraceWaterfall spans={spans} />
+                                <TraceWaterfall key={`${spans[0]?.traceId}-${model.linkedSpanId}`} spans={spans} focusSpanId={model.linkedSpanId} />
                             </div>);
     if (!isFetchingTraces && tracesList.length === 0) return (<div className="text-gray-400 text-center py-12 bg-bg-surface/50 rounded-xl border border-gray-800 border-dashed">
                                 <Activity className="w-8 h-8 mx-auto mb-3 opacity-20" />

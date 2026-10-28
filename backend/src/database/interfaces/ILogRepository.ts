@@ -8,6 +8,7 @@ export interface LogQueryOptions {
     /** Internal authorized scope, computed by the server, never copied from request input. */
     serviceNames?: string[];
     traceId?: string;
+    spanId?: string;
 }
 export interface ILogRepository {
     initialize(): Promise<void>;

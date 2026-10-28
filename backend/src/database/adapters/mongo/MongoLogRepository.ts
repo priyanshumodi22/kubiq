@@ -1,4 +1,4 @@
-import { traceIdFromRecord, traceMessagePattern } from '../../../utils/logCorrelation';
+import { traceIdFromRecord, traceMessagePattern, spanIdFromRecord, eventIdFromRecord } from '../../../utils/logCorrelation';
 import { ILogRepository, LogQueryOptions } from '../../interfaces/ILogRepository';
 import { LogModel } from '../../schemas/LogSchema';
 import { ensureRetentionIndex } from './ensureRetentionIndex';
@@ -11,7 +11,7 @@ export class MongoLogRepository implements ILogRepository {
 
     async insertLogs(logs: any[]): Promise<void> {
         if (!logs || logs.length === 0) return;
-        await LogModel.insertMany(logs.map(log => ({ ...log, traceId: traceIdFromRecord(log) || undefined })), { ordered: false });
+        await LogModel.insertMany(logs.map(log => ({ ...log, traceId: traceIdFromRecord(log) || undefined, spanId: spanIdFromRecord(log) || undefined, eventId: eventIdFromRecord(log) || undefined })), { ordered: false });
     }
 
     async queryLogs(serviceName: string, opts: LogQueryOptions): Promise<any[]> {
@@ -31,6 +31,7 @@ export class MongoLogRepository implements ILogRepository {
         if (opts.traceId) {
             query.$or = [{ traceId: opts.traceId }, { 'metadata.traceId': opts.traceId }, { 'metadata.trace_id': opts.traceId }, { message: { $regex: traceMessagePattern(opts.traceId), $options: 'i' } }];
         }
+        if (opts.spanId) query.$and = [{ $or: [{ spanId: opts.spanId }, { 'metadata.spanId': opts.spanId }, { 'metadata.span_id': opts.spanId }, { message: { $regex: traceMessagePattern(opts.spanId), $options: 'i' } }] }];
         if (opts.search) {
             query.$text = { $search: opts.search };
         }

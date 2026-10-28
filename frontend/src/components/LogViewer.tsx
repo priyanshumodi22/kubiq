@@ -1,3 +1,4 @@
+import { LogCorrelationLinks } from './LogCorrelationLinks';
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
@@ -124,47 +125,6 @@ function resolveSelectedSource(sources: LogSource[], selectedId: string): LogSou
     return sources.find(source => source.id === selectedId) || sources[0];
 }
 
-function renderFormattedLogContent(content: string) {
-    const traceRegex = /(traceId|trace_id|requestId|request_id)[=:]\s*["']?([a-f0-9-]{12,64})["']?/gi;
-    const parts: (string | React.ReactNode)[] = [];
-    let lastIndex = 0;
-    let match;
-
-    while ((match = traceRegex.exec(content)) !== null) {
-        const key = match[1];
-        const traceId = match[2];
-        const matchStart = match.index;
-        const matchEnd = traceRegex.lastIndex;
-
-        if (matchStart > lastIndex) {
-            parts.push(content.substring(lastIndex, matchStart));
-        }
-
-        parts.push(
-            <span key={matchStart} className="inline-flex items-center gap-1 font-mono">
-                <span className="text-gray-400">{key}=</span>
-                <a
-                    href={`/apm?traceId=${traceId}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-primary hover:underline bg-primary/10 border border-primary/20 px-1 rounded font-bold cursor-pointer transition-colors text-[11px]"
-                    title={`View APM Trace ${traceId}`}
-                >
-                    {traceId.substring(0, 12)}...
-                </a>
-            </span>
-        );
-
-        lastIndex = matchEnd;
-    }
-
-    if (lastIndex < content.length) {
-        parts.push(content.substring(lastIndex));
-    }
-
-    return parts.length > 0 ? parts : content;
-}
 
 function LogVolumeHistogram({ logs }: Readonly<{ logs: LogLine[] }>) {
     if (!logs || logs.length === 0) return null;
@@ -233,7 +193,7 @@ function renderLogRow(index: number, log: LogLine) {
     return (
         <div className={`px-4 py-0.5 hover:bg-white/5 border-l-2 border-transparent hover:border-gray-600 flex gap-3 ${LEVEL_COLORS[log.level] || LEVEL_COLORS.plain}`}>
             <span className="select-none opacity-30 w-8 text-right shrink-0 text-[10px] pt-px">{index + 1}</span>
-            <span className="break-all whitespace-pre-wrap flex-1 select-text leading-relaxed">{renderFormattedLogContent(log.content)}</span>
+            <span className="break-all whitespace-pre-wrap flex-1 select-text leading-relaxed">{log.content}<LogCorrelationLinks message={log.content} /></span>
         </div>
     );
 }

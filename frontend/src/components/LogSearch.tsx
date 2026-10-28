@@ -1,3 +1,4 @@
+import { LogCorrelationLinks } from './LogCorrelationLinks';
 import React, { useState, useEffect, useRef, useId, useCallback } from 'react';
 import { isAxiosError } from 'axios';
 import { createPortal } from 'react-dom';
@@ -38,7 +39,7 @@ const renderSearchLogRow = (_index: number, log: LogEntry) => (
                 <span className="truncate max-w-[200px]" title={log.sourceName}>{log.sourceName.split(/[/\\]/).pop()}</span>
             </div>
             <div className={`pl-[130px] whitespace-pre-wrap break-all ${LEVEL_COLORS[log.level]?.split(' ')[0] || 'text-gray-300'}`}>
-                {log.message}
+                {log.message}<LogCorrelationLinks message={log.message} record={log} />
             </div>
         </div>
     );

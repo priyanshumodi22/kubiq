@@ -1,3 +1,4 @@
+import { hasCorrelatedRequest } from './telemetry/correlatedLogger';
 import { installMongoCommandTracing } from './telemetry/mongoCommandTracing';
 
 
@@ -145,7 +146,7 @@ app.use(
 app.use(compression()); // Enable gzip compression
 // Request diagnostics must not copy URLs, query credentials, client addresses or headers.
 app.use(morgan(':method :status :res[content-length] :response-time ms', {
-  skip: (req) => req.url === '/auth/health/ready' || req.originalUrl === '/auth/health/ready'
+  skip: (req, res) => hasCorrelatedRequest(res) || req.url === '/auth/health/ready' || req.originalUrl === '/auth/health/ready'
 }));
 // A bounded default prevents any unauthenticated or authenticated route from
 // allocating arbitrarily large JSON documents. Operators may raise this only

@@ -50,3 +50,12 @@ it('rejects non-string source filters without implicit object conversion', async
     const request = req(); request.query.serviceName = { unsafe: 'value' };
     const response = res(); await traceLogs(request, response); expect(response.status).toHaveBeenCalledWith(400);
 });
+
+it('validates and applies exact span scope while collapsing mirrored copies of one event', async () => {
+    const request = req(); request.query.spanId = 'bad'; const invalid = res(); await traceLogs(request, invalid); expect(invalid.status).toHaveBeenCalledWith(400);
+    request.query.spanId = '1234567890abcdef';
+    const event = { eventId: '12345678-1234-1234-1234-123456789012', message: 'actual event' };
+    query.mockResolvedValue([event, event]); const response = res(); await traceLogs(request, response);
+    expect(query).toHaveBeenCalledWith('', expect.objectContaining({ spanId: request.query.spanId, traceId: id }));
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({ logs: [event] }));
+});
