@@ -227,7 +227,7 @@ export function K8sLogViewer({ sourceId, sourceName, namespace, podName, deploym
             });
         });
 
-        socket.on('k8s:log:status', (status: { waiting: boolean; message: string }) => { setIsConnected(!status.waiting); setStreamEnded(false); setError(status.waiting ? status.message : null); });
+        socket.on('k8s:log:status', (status: { waiting: boolean; ended?: boolean; message: string }) => { setIsConnected(!status.waiting && !status.ended); setStreamEnded(Boolean(status.ended)); setError(status.waiting ? status.message : null); });
         socket.on('connect_error', () => { setIsConnected(false); setError('Log connection unavailable. Reconnecting…'); });
         socket.on('disconnect', () => setIsConnected(false));
 

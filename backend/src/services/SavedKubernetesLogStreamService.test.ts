@@ -123,3 +123,22 @@ it('cancels pending Kubernetes discovery when its viewer disconnects', async () 
     client.stop(); await flush();
     expect(signal?.aborted).toBe(true); expect(streams).toHaveLength(0);
 });
+
+it('reads completed Job logs once and reports completion without reopening finished streams', async () => {
+    const completed = pod(); completed.status = { ...completed.status, phase: 'Succeeded' } as typeof completed.status;
+    jest.mocked(resolveLogPods).mockResolvedValue([completed]);
+    const client = socket(); client.start(); await flush();
+    expect(streams[0].options.follow).toBe(false);
+    streams.forEach(item => item.stream.end('2026-10-28T00:00:00.123Z completed job\n')); await jest.advanceTimersByTimeAsync(0);
+    expect(client.emit).toHaveBeenCalledWith('k8s:log:status', expect.objectContaining({ ended: true }));
+    await jest.advanceTimersByTimeAsync(10000); expect(streams).toHaveLength(2); client.stop();
+});
+
+it('does not claim completion for failed reads or while another Job pod remains live', async () => {
+    const completed = { ...pod('completed'), metadata: { name: 'completed', uid: 'completed' }, status: { phase: 'Succeeded' } };
+    jest.mocked(resolveLogPods).mockResolvedValue([completed, pod('live')]);
+    const client = socket(); client.start(); await flush(); client.emit.mockClear();
+    streams[0].stream.end('completed\n'); streams[1].stream.destroy(new Error('read failed')); await flush();
+    expect(client.emit.mock.calls.some(call => call[0] === 'k8s:log:status' && (call[1] as { ended?: boolean }).ended)).toBe(false);
+    client.stop();
+});

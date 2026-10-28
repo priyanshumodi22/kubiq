@@ -28,6 +28,7 @@ const api = createServer((request, response) => {
   if (url.pathname.includes('/private/')) { response.writeHead(403); response.end('{}'); return; }
   if (url.pathname.endsWith('/log')) {
     response.writeHead(200, { 'content-type': 'text/plain' }); response.flushHeaders();
+    if (url.pathname.includes('/finished/')) { assert.equal(url.searchParams.get('follow'), 'false'); response.end(new Date().toISOString() + ' completed-job-fixture\n'); return; }
     streams.add(response);
     const timer = setInterval(() => response.write(`${new Date().toISOString()} fixture-generation-${generation}\n`), 100);
     response.on('close', () => { clearInterval(timer); streams.delete(response); });
@@ -35,8 +36,10 @@ const api = createServer((request, response) => {
   }
   let body;
   if (url.pathname.endsWith('/statefulsets')) { response.writeHead(200, { 'content-type': 'application/json' }); response.end(JSON.stringify({items:[{kind:'StatefulSet',metadata:{name:'database',namespace:'apps'},spec:{replicas:1},status:{readyReplicas:1}}]})); return; }
-  if (url.pathname.endsWith('/services/web')) body = { apiVersion: 'v1', kind: 'Service', metadata: { name: 'web' }, spec: { selector: { app: 'web' } } };
+  if (url.pathname.endsWith('/jobs/finished')) body = { spec: { selector: { matchLabels: { app: 'finished' } } } };
+  else if (url.pathname.endsWith('/services/web')) body = { apiVersion: 'v1', kind: 'Service', metadata: { name: 'web' }, spec: { selector: { app: 'web' } } };
   else if (url.pathname.endsWith('/pods')) {
+    if (url.searchParams.get('labelSelector') === 'app=finished') { response.writeHead(200, { 'content-type': 'application/json' }); response.end(JSON.stringify({items:[{metadata:{name:'finished',uid:'finished'},spec:{containers:[{name:'worker'}]},status:{phase:'Succeeded'}}]})); return; }
     assert.equal(url.searchParams.get('labelSelector'), 'app=web');
     body = { apiVersion: 'v1', kind: 'PodList', items: [{ metadata: { name: 'web-' + generation, uid: 'uid-' + generation }, spec: { containers: [{ name: 'web' }, { name: 'proxy' }] }, status: { phase: 'Running' } }] };
   } else { response.writeHead(404); response.end('{}'); return; }
@@ -94,9 +97,14 @@ async function client(token, origin, sourceId) {
     await waitFor(() => streams.size === 2, 'One viewer stopping disrupted/leaked another viewer');
     const prior = second.data.lines.length;
     await waitFor(() => second.data.lines.length > prior, 'Remaining viewer stopped receiving logs');
+    const completedResponse = await fetch(origin + '/api/logs/kubernetes/sources', { method: 'POST', headers, body: JSON.stringify({ name: 'Completed fixture', namespace: 'apps', kind: 'job', resource: 'finished' }) });
+    assert.equal(completedResponse.status, 200);
+    const completedSource = await completedResponse.json(), completedClient = await client(token(admin), origin, completedSource.id);
+    await waitFor(() => completedClient.data.statuses.some(status => status.ended) && completedClient.data.lines.some(line => line.includes('completed-job-fixture')), 'Completed Job did not report an ended readable log stream');
+    completedClient.socket.disconnect();
     await users.updateUserStatus(reader.id, false);
     await waitFor(() => second.data.errors.length && streams.size === 0, 'Disabled user retained its active log stream');
-    console.log(JSON.stringify({ passed: true, checks: ['saved HTTP configuration', 'native socket auth', 'namespace denial', 'all containers', 'real Kubernetes HTTP log client', 'pod replacement', 'independent subscribers', 'permission revocation', 'abort/cleanup'] }));
+    console.log(JSON.stringify({ passed: true, checks: ['saved HTTP configuration', 'native socket auth', 'namespace denial', 'all containers', 'real Kubernetes HTTP log client', 'pod replacement', 'independent subscribers', 'permission revocation', 'abort/cleanup', 'workload API namespace restrictions', 'completed Job logs'] }));
   } finally {
     for (const socket of clients) socket.disconnect();
     IngestionBufferService.getInstance().stop();

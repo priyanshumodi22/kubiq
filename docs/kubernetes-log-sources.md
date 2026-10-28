@@ -50,3 +50,5 @@ The Workloads sidebar lists Deployments, StatefulSets, DaemonSets, ReplicaSets, 
 This is a standard Kubernetes workload explorer, not a generic browser for every operator-specific custom resource. Custom-owned pod labels identify that owner, while pod/Service/namespace log sources remain available. The kubiq service account gains only get/list/watch on batch Jobs/CronJobs and legacy ReplicationControllers; the separate kubi identity and all mutation permissions are unchanged.
 
 Log configuration uses kubiq's shared log-dialog shell with a top-right close control and side-by-side source choices. All Kubernetes form selectors use the existing keyboard-operable CustomSelect. Removal still uses kubiq's confirmation dialog, and validation/save errors use application feedback, never browser alert/confirm/prompt.
+
+Completed Job/CronJob pods are read without follow mode and shown as ended; their finished streams are not repeatedly reopened while the saved target continues discovering new Jobs.

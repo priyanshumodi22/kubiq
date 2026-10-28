@@ -77,6 +77,7 @@ describe('Kubernetes log viewer compatibility', () => {
         send('k8s:log:status', { waiting: true, message: 'Waiting for matching pods' });
         expect(view.getByText(/Waiting for matching pods/)).toBeTruthy();
         send('k8s:log:status', { waiting: false, message: 'Following' }); expect(view.getByText('LIVE')).toBeTruthy();
+        send('k8s:log:status', { waiting: false, ended: true, message: 'Completed container logs loaded.' }); expect(view.getByText('ENDED')).toBeTruthy();
         send('connect_error'); expect(view.getByText(/Log connection unavailable/)).toBeTruthy();
         send('k8s:log:error', { message: 'Access denied' }); expect(view.getByText(/Access denied/)).toBeTruthy();
         send('disconnect'); view.unmount(); expect(mocks.sockets[0].disconnect).toHaveBeenCalled();

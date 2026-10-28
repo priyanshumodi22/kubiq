@@ -10,7 +10,7 @@ import { IngestionBufferService } from './IngestionBufferService';
 import type { KubernetesLogSource } from '../database/interfaces/ISystemRepository';
 import { DatabaseFactory } from '../database/DatabaseFactory';
 
-interface Follow { stream: PassThrough; handle?: AbortController; stamp: string; hashes: Set<string>; ended: boolean; pending: string }
+interface Follow { stream: PassThrough; handle?: AbortController; stamp: string; hashes: Set<string>; ended: boolean; completed?: boolean; pending: string }
 interface Subscription { socket: Socket; sourceId: string; source?: KubernetesLogSource; tail: number; startedAt: number; active: boolean; busy: boolean; timer?: NodeJS.Timeout; discoveryAbort?: AbortController; streams: Map<string, Follow> }
 function logTimestamp(line: string): string {
     const space = line.indexOf(' ');
@@ -64,7 +64,7 @@ export class SavedKubernetesLogStreamService {
             sub.discoveryAbort = undefined;
             if (!sub.active) return;
             const targets = pods.flatMap(pod => (pod.spec?.containers || []).filter(container => !source.container || container.name === source.container).map(container => ({
-                pod: pod.metadata?.name || '', container: container.name,
+                pod: pod.metadata?.name || '', container: container.name, terminal: pod.status?.phase === 'Succeeded' || pod.status?.phase === 'Failed',
                 key: `${pod.metadata?.uid || pod.metadata?.name}:${container.name}:${pod.status?.containerStatuses?.find(item => item.name === container.name)?.restartCount || 0}`,
             })));
             this.synchronize(sub, targets);
@@ -72,26 +72,32 @@ export class SavedKubernetesLogStreamService {
             if (sub.active) { sub.socket.emit('k8s:log:error', { message: this.safeError(error) }); this.stop(sub.socket.id); }
         } finally { sub.busy = false; }
     }
-    private synchronize(sub: Subscription, targets: Array<{ key: string; pod: string; container: string }>) {
+    private synchronize(sub: Subscription, targets: Array<{ key: string; pod: string; container: string; terminal?: boolean }>) {
         if (targets.length > 20) throw new Error('More than 20 container streams match. Narrow the workload or container selection.');
         const wanted = new Set(targets.map(target => target.key));
         for (const [key, follow] of sub.streams) if (!wanted.has(key)) { this.close(follow); sub.streams.delete(key); }
         for (const target of targets) {
             if (!sub.active) return;
             const existing = sub.streams.get(target.key);
-            if (existing && !existing.ended) continue;
+            if (existing && (!existing.ended || existing.completed)) continue;
             if (this.streamCount() >= 100) throw new Error('Kubernetes log stream capacity reached. Close another viewer and retry.');
             this.follow(sub, target, existing);
         }
         const connected = [...sub.streams.values()].some(follow => follow.handle && !follow.ended);
+        if (targets.length && this.completionStatus(sub)) return;
         sub.socket.emit('k8s:log:status', { waiting: !connected, message: targets.length ? 'Connecting to container logs…' : 'Waiting for matching pods. Discovery retries every 10 seconds.' });
+    }
+    private completionStatus(sub: Subscription): boolean {
+        const completed = sub.streams.size > 0 && [...sub.streams.values()].every(follow => follow.completed);
+        if (completed) sub.socket.emit('k8s:log:status', { waiting: false, ended: true, message: 'Completed container logs loaded.' });
+        return completed;
     }
     private streamCount() { return [...this.subscriptions.values()].reduce((sum, sub) => sum + [...sub.streams.values()].filter(item => !item.ended).length, 0); }
     private safeError(error: unknown) {
         if (error instanceof Error && !('statusCode' in error) && !('response' in error)) return error.message.slice(0, 200);
         return 'Kubernetes logs unavailable. Check the target and Kubernetes API permissions.';
     }
-    private follow(sub: Subscription, target: { key: string; pod: string; container: string }, previous?: Follow) {
+    private follow(sub: Subscription, target: { key: string; pod: string; container: string; terminal?: boolean }, previous?: Follow) {
         const stream = new PassThrough();
         const decoder = new StringDecoder('utf8');
         const follow: Follow = { stream, stamp: previous?.stamp || '', hashes: previous?.hashes || new Set(), ended: false, pending: '' };
@@ -104,16 +110,17 @@ export class SavedKubernetesLogStreamService {
             if (follow.pending.length > 65536) follow.pending = '[Oversized log line truncated]';
             this.deliver(sub, target, follow, lines);
         });
-        const ended = () => {
+        const ended = (completed = false) => {
             if (follow.ended) return;
             follow.ended = true;
             if (sub.active) this.deliver(sub, target, follow, [follow.pending + decoder.end()].filter(Boolean));
             follow.pending = '';
+            if (sub.active && target.terminal && completed) { follow.completed = true; this.completionStatus(sub); }
         };
-        stream.once('end', ended);
-        stream.once('error', ended);
-        stream.once('close', ended);
-        const options: k8s.LogOptions = { follow: true, timestamps: true, tailLines: sub.tail };
+        stream.once('end', () => ended(true));
+        stream.once('error', () => ended());
+        stream.once('close', () => ended());
+        const options: k8s.LogOptions = { follow: !target.terminal, timestamps: true, tailLines: sub.tail };
         if (follow.stamp) { options.sinceTime = follow.stamp; delete options.tailLines; }
         new k8s.Log(defaultLogKubeConfig()).log(sub.source!.namespace, target.pod, target.container, stream, options)
             .then(handle => {
