@@ -622,6 +622,11 @@ class ApiClient {
     return response.data;
   }
 
+  async getKubernetesWorkloads(namespace: string, type: string) {
+    const response = await this.client.get(`/api/kubernetes/namespaces/${encodeURIComponent(namespace)}/workloads/${encodeURIComponent(type)}`);
+    return response.data;
+  }
+
   async getKubernetesDeployments(namespace: string) {
     const response = await this.client.get(`/api/kubernetes/namespaces/${namespace}/deployments`);
     return response.data;

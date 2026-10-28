@@ -49,8 +49,10 @@ describe('Kubernetes presentation compatibility', () => {
   });
 
   it.each([
-    ['pods', ['Ready', 'Status', 'CPU', 'RAM', 'Restarts', 'Age']],
+    ['pods', ['Ready', 'Owner', 'Status', 'CPU', 'RAM', 'Restarts', 'Age']],
     ['deployments', ['Desired', 'Ready', 'Status']],
+    ...['statefulsets', 'daemonsets', 'replicasets', 'replicationcontrollers'].map(type => [type, ['Desired', 'Ready', 'Status', 'Age']]),
+    ['jobs', ['Completions', 'Pods', 'Status', 'Age']], ['cronjobs', ['Schedule', 'Active jobs', 'Status', 'Age']],
     ['services', ['Type', 'Ports', 'Age']], ['endpoints', ['Endpoints', 'Age']],
     ['ingresses', ['Class', 'Hosts', 'Age']], ['persistentvolumes', ['Capacity', 'Status', 'Claim', 'Age']],
     ['persistentvolumeclaims', ['Status', 'Volume', 'Capacity', 'Age']],

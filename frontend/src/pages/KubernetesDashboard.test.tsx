@@ -5,12 +5,12 @@ import KubernetesDashboard from './KubernetesDashboard';
 
 const mocks = vi.hoisted(() => ({
   available: true as boolean | null, switchContext: vi.fn(), setNamespace: vi.fn(),
-  pods: vi.fn(), deployments: vi.fn(), services: vi.fn(), configMaps: vi.fn(), secrets: vi.fn(), events: vi.fn(), metrics: vi.fn(),
+  workloads: vi.fn(), pods: vi.fn(), deployments: vi.fn(), services: vi.fn(), configMaps: vi.fn(), secrets: vi.fn(), events: vi.fn(), metrics: vi.fn(),
   nodes: vi.fn(), endpoints: vi.fn(), ingresses: vi.fn(), volumes: vi.fn(), claims: vi.fn(), classes: vi.fn(),
 }));
 vi.mock('../hooks/useKubernetes', () => ({ useKubernetes: () => ({ available: mocks.available, context: 'fixture-context', contexts: [{ name: 'fixture-context', cluster: 'fixture', user: 'fixture-user' }, { name: 'gke_fixture_region_cluster', cluster: 'cluster' }], switchContext: mocks.switchContext, namespaces: ['fixture', 'apps'], selectedNamespace: 'fixture', setSelectedNamespace: mocks.setNamespace }) }));
 vi.mock('../services/api', () => ({ apiClient: {
-  getKubernetesPods: mocks.pods, getKubernetesDeployments: mocks.deployments, getKubernetesServices: mocks.services,
+  getKubernetesWorkloads: mocks.workloads, getKubernetesPods: mocks.pods, getKubernetesDeployments: mocks.deployments, getKubernetesServices: mocks.services,
   getKubernetesConfigMaps: mocks.configMaps, getKubernetesSecrets: mocks.secrets, getKubernetesEvents: mocks.events,
   getKubernetesMetrics: mocks.metrics, getKubernetesNodes: mocks.nodes, getKubernetesEndpoints: mocks.endpoints,
   getKubernetesIngresses: mocks.ingresses, getKubernetesPersistentVolumes: mocks.volumes,
@@ -24,7 +24,7 @@ vi.mock('../components/K8sRbacPermissionBanner', () => ({ K8sRbacPermissionBanne
 
 beforeEach(() => {
   vi.resetAllMocks(); mocks.available = true; localStorage.clear();
-  for (const key of ['pods', 'deployments', 'services', 'configMaps', 'secrets', 'events', 'metrics', 'nodes', 'endpoints', 'ingresses', 'volumes', 'claims', 'classes'] as const) mocks[key].mockResolvedValue([]);
+  for (const key of ['workloads', 'pods', 'deployments', 'services', 'configMaps', 'secrets', 'events', 'metrics', 'nodes', 'endpoints', 'ingresses', 'volumes', 'claims', 'classes'] as const) mocks[key].mockResolvedValue([]);
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
@@ -129,4 +129,39 @@ describe('Kubernetes explorer request and rendering lifecycle', () => {
     expect(view.getByRole('heading', { name: 'Kubernetes Not Configured' })).toBeTruthy();
     expect(mocks.pods).not.toHaveBeenCalled();
   });
+});
+
+it.each([['StatefulSets','statefulsets'],['DaemonSets','daemonsets'],['ReplicaSets','replicasets'],['Jobs','jobs'],['CronJobs','cronjobs'],['ReplicationControllers','replicationcontrollers']])('loads %s and opens its details', async (label, type) => {
+  mocks.workloads.mockResolvedValue([{ name: 'workload-fixture', desired: 1, readyReplicas: 1 }]);
+  const view = render(<KubernetesDashboard />);
+  fireEvent.click(view.getByRole('button', { name: label }));
+  await view.findByText('workload-fixture');
+  expect(mocks.workloads).toHaveBeenCalledWith('fixture', type);
+  fireEvent.click(view.getByText('workload-fixture')); expect(view.getByRole('button', { name: 'Close fixture detail' })).toBeTruthy();
+});
+it('identifies the controlling workload of a pod', async () => {
+  mocks.pods.mockResolvedValue([{ name: 'mongodb-0', status: 'Running', ownerReferences: [{ kind: 'StatefulSet', name: 'mongodb', controller: true }] }]);
+  const view = render(<KubernetesDashboard />); fireEvent.click(view.getByRole('button', { name: 'Pods' }));
+  expect(await view.findByText('StatefulSet/mongodb')).toBeTruthy();
+});
+
+it('shows unavailable workload data as an error with retry rather than an empty result', async () => {
+  mocks.workloads.mockRejectedValueOnce(new Error('API unavailable'));
+  const view = render(<KubernetesDashboard />); const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  try {
+    fireEvent.click(view.getByRole('button', { name: 'StatefulSets' }));
+    expect(await view.findByRole('alert')).toBeTruthy(); expect(view.queryByText('No statefulsets found')).toBeNull();
+    fireEvent.click(view.getByRole('button', { name: 'Retry resource' }));
+    await waitFor(() => expect(view.queryByRole('alert')).toBeNull());
+  } finally { log.mockRestore(); }
+});
+it('ignores an older workload response after selecting another resource', async () => {
+  let finish!: (value: unknown[]) => void;
+  mocks.workloads.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValueOnce([{ name: 'current-daemonset', desired: 1, readyReplicas: 1 }]);
+  const view = render(<KubernetesDashboard />);
+  fireEvent.click(view.getByRole('button', { name: 'StatefulSets' }));
+  fireEvent.click(view.getByRole('button', { name: 'DaemonSets' }));
+  await view.findByText('current-daemonset');
+  await act(async () => finish([{ name: 'stale-statefulset' }]));
+  expect(view.getByText('current-daemonset')).toBeTruthy(); expect(view.queryByText('stale-statefulset')).toBeNull();
 });

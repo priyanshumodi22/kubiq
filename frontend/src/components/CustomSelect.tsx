@@ -104,7 +104,7 @@ export function CustomSelect<T extends string>({
           id={listId}
           role="listbox"
           aria-label={label}
-          className={`absolute z-40 w-full overflow-hidden rounded-xl border border-white/10 bg-bg-surface p-1 shadow-2xl shadow-black/40 ${placement === 'top' ? 'bottom-full mb-2' : 'mt-2'}`}
+          className={`absolute z-40 w-full max-h-56 overflow-y-auto overscroll-contain rounded-xl border border-white/10 bg-bg-surface p-1 shadow-2xl shadow-black/40 ${placement === 'top' ? 'bottom-full mb-2' : 'mt-2'}`}
         >
           {options.map((option) => (
             <button

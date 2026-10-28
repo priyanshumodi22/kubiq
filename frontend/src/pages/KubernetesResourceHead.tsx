@@ -2,11 +2,13 @@ type Column = { label: string; align: 'left' | 'center' | 'right'; sortKey?: str
 const left = (...labels: string[]): Column[] => labels.map(label => ({ label, align: 'left' }));
 const columns: Record<string, Column[]> = {
   pods: [
-    ...left('Ready', 'Status'),
+    ...left('Ready', 'Owner', 'Status'),
     { label: 'CPU', align: 'center' }, { label: 'RAM', align: 'center' },
     { label: 'Restarts', align: 'center', sortKey: 'restarts' }, { label: 'Age', align: 'center', sortKey: 'age' },
   ],
   deployments: [{ label: 'Desired', align: 'center' }, { label: 'Ready', align: 'center' }, ...left('Status')],
+  statefulsets: left('Desired', 'Ready', 'Status'), daemonsets: left('Desired', 'Ready', 'Status'), replicasets: left('Desired', 'Ready', 'Status'),
+  replicationcontrollers: left('Desired', 'Ready', 'Status'), jobs: left('Completions', 'Pods', 'Status'), cronjobs: left('Schedule', 'Active jobs', 'Status'),
   services: left('Type', 'Ports'), endpoints: left('Endpoints'), ingresses: left('Class', 'Hosts'),
   persistentvolumes: left('Capacity', 'Status', 'Claim'), persistentvolumeclaims: left('Status', 'Volume', 'Capacity'),
   storageclasses: left('Provisioner', 'Binding Mode'), configmaps: left('Keys'), secrets: left('Type', 'Keys'),

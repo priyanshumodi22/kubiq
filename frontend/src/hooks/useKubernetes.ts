@@ -25,6 +25,7 @@ export interface KubeCondition {
 }
 
 export interface KubePod {
+    ownerReferences?: Array<{ kind: string; name: string; controller?: boolean }>;
     name: string;
     namespace: string;
     status: string;

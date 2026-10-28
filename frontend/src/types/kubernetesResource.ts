@@ -11,6 +11,10 @@ export type ResourceContainer = Pick<KubeContainer, 'name' | 'image'> & Partial<
 export type KubernetesResourceDetails = Partial<Omit<KubePod, 'containers' | 'status'> & KubeEvent> & {
   status?: string | { phase?: string; reason?: string; capacity?: { storage?: string }; conditions?: KubeCondition[]; nodeInfo?: { kubeletVersion?: string } };
   isTerminating?: boolean;
+  workloadType?: string; desired?: number; schedule?: string; suspended?: boolean;
+  completions?: number; succeeded?: number; failed?: number; active?: number; completed?: boolean; failedCondition?: boolean;
+  lastScheduleTime?: string;
+
   replicas?: number;
   readyReplicas?: number;
   provisioner?: string;

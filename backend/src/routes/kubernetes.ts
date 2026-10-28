@@ -1,3 +1,4 @@
+import { workloadTypes } from '../services/KubernetesWorkloads';
 import express from 'express';
 import { KubernetesService } from '../services/KubernetesService';
 import { getUserFromReq, checkNamespaceAccess, requirePermission } from '../middleware/auth';
@@ -144,6 +145,14 @@ router.get('/namespaces/:ns/events', checkNamespaceAccess, async (req, res) => {
     } catch (e: any) {
         handleK8sError(res, e);
     }
+});
+
+// Fixed workload allowlist; namespace and application permissions are unchanged.
+router.get('/namespaces/:ns/workloads/:type', checkNamespaceAccess, async (req, res) => {
+    const type = req.params.type as string;
+    if (!workloadTypes.has(type)) return res.status(400).json({ message: 'Unsupported workload type' });
+    try { res.json(await k8sService.getWorkloads(getContext(req), req.params.ns as string, type)); }
+    catch (error) { handleK8sError(res, error); }
 });
 
 // GET /api/kubernetes/namespaces/:ns/deployments

@@ -1,3 +1,4 @@
+import { listWorkloads, readWorkload, workloadConfig, workloadTypes } from './KubernetesWorkloads';
 import * as k8s from '@kubernetes/client-node';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -290,6 +291,7 @@ export class KubernetesService {
 
                 return {
                     name: pod.metadata?.name ?? '—',
+                    ownerReferences: pod.metadata?.ownerReferences || [],
                     refConfigMaps: uniqueConfigMaps,
                     refSecrets: uniqueSecrets,
                     namespace: pod.metadata?.namespace ?? namespace,
@@ -528,9 +530,15 @@ export class KubernetesService {
         }
     }
 
+    public async getWorkloads(ctx: string, namespace: string, type: string) {
+        if (!this.available) throw new Error('Kubernetes is unavailable');
+        return listWorkloads(workloadConfig(this.kc, ctx || this.defaultContext), namespace, type);
+    }
+
     public async getResourceRaw(ctx: string, namespace: string, resourceType: string, name: string): Promise<any> {
         if (!this.available) return null;
         const { coreApi, appsApi, netApi, storageApi } = this.getClients(ctx);
+        if (workloadTypes.has(resourceType)) return readWorkload(workloadConfig(this.kc, ctx || this.defaultContext), namespace, resourceType, name);
         try {
             let res: any;
             switch (resourceType) {

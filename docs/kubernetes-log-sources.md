@@ -8,7 +8,7 @@ The existing monitored-service/file-path workflow remains available. Paths must 
 
 ## Kubernetes logs
 
-Save a label, permitted namespace, resource type/name and optional container. An empty container selection follows all regular containers in matching pods. Supported targets are Service, Deployment, StatefulSet, DaemonSet, individual pod and entire namespace. Sources use kubiq's default Kubernetes connection, independently of a context selected elsewhere in the Kubernetes dashboard.
+Save a label, permitted namespace, resource type/name and optional container. An empty container selection follows all regular containers in matching pods. Supported targets are Service, Deployment, StatefulSet, DaemonSet, ReplicaSet, Job, CronJob, legacy ReplicationController, individual pod and entire namespace. Job sources can read completed pods while Kubernetes retains their logs; CronJob sources resolve Jobs and pods by owner UID, without including unrelated Jobs. Sources use kubiq's default Kubernetes connection, independently of a context selected elsewhere in the Kubernetes dashboard.
 
 Service sources resolve the Service's pod selector. Workloads resolve their actual label selectors, including match expressions. Selectorless Services are rejected rather than accidentally streaming every pod. Workload/Service/namespace sources rediscover matching pods every ten seconds and follow replacement pod UIDs and container restarts. Pod sources are intentionally pinned to one pod name; choose a workload or Service for rolling deployments.
 
@@ -42,3 +42,11 @@ node ops/kubernetes-logs/transport.cjs
 The fixture uses an explicitly insecure HTTP connection only to its disposable loopback API server. Production kubeconfig TLS settings are not changed. Database adapter regression fixtures additionally round-trip saved-source configuration against actual disposable MongoDB, MySQL and MariaDB servers.
 
 Discovery uses a pinned copy of the default cluster configuration, an eight-second deadline, and cancellation when the viewer closes. Dashboard context changes cannot redirect a saved source.
+
+## Workload discovery in Kubernetes Explorer
+
+The Workloads sidebar lists Deployments, StatefulSets, DaemonSets, ReplicaSets, Jobs, CronJobs, ReplicationControllers and Pods on desktop and mobile. Pod rows identify their controller kind/name, including custom controller kinds. Standard workload rows expose readiness or Job/CronJob state and support detail/YAML inspection. Empty, failed and permission-denied queries are distinguished; stale requests cannot overwrite a later selection.
+
+This is a standard Kubernetes workload explorer, not a generic browser for every operator-specific custom resource. Custom-owned pod labels identify that owner, while pod/Service/namespace log sources remain available. The kubiq service account gains only get/list/watch on batch Jobs/CronJobs and legacy ReplicationControllers; the separate kubi identity and all mutation permissions are unchanged.
+
+Log configuration uses kubiq's shared log-dialog shell with a top-right close control and side-by-side source choices. All Kubernetes form selectors use the existing keyboard-operable CustomSelect. Removal still uses kubiq's confirmation dialog, and validation/save errors use application feedback, never browser alert/confirm/prompt.

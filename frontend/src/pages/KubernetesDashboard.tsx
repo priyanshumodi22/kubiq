@@ -1,5 +1,7 @@
+import { K8sWorkloadCells } from '../components/K8sWorkloadCells';
+import { additionalWorkloads, additionalWorkloadTypes, podOwnerLabel } from '../components/kubernetesWorkloads';
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import type { ComponentProps } from 'react';
+import type { ComponentProps, RefObject } from 'react';
 import type { KubernetesResourceDetails, KubernetesSelection } from '../types/kubernetesResource';
 import { requestErrorCode, requestErrorMessage, requestErrorStatus } from '../utils/requestError';
 import { createPortal } from 'react-dom';
@@ -46,6 +48,7 @@ const SIDEBAR_MENU = [
     { 
         id: 'workloads', label: 'Workloads', icon: Box, children: [
             { id: 'deployments', label: 'Deployments', type: 'deployments' },
+            ...additionalWorkloads,
             { id: 'pods', label: 'Pods', type: 'pods' },
         ]
     },
@@ -74,6 +77,10 @@ const SIDEBAR_MENU = [
 ];
 
 
+
+function latestUpdate<T>(generation: RefObject<number>, request: number, setter: (value: T) => void, value: T) {
+    if (generation.current === request) setter(value);
+}
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
@@ -116,6 +123,8 @@ export default function KubernetesDashboard() {
         }
     });
     const [loading, setLoading] = useState(false);
+    const requestGeneration = useRef(0);
+    const [resourceError, setResourceError] = useState('');
     const [rbacError, setRbacError] = useState<{ resource: string; namespace: string; message: string } | null>(null);
 
     useEffect(() => {
@@ -201,9 +210,18 @@ export default function KubernetesDashboard() {
 
     const fetchData = useCallback(async () => {
         if (!available || !selectedNamespace && activeResource !== 'nodes' && activeResource !== 'persistentvolumes' && activeResource !== 'storageclasses') return;
+        const request = ++requestGeneration.current;
+        const writeData = (value: KubernetesResourceDetails[]) => latestUpdate(requestGeneration, request, setResourceData, value);
+        const writeOverview = (value: ComponentProps<typeof KubernetesSpecialContent>['data']) => latestUpdate(requestGeneration, request, setOverviewData, value);
+        setResourceError('');
         setLoading(true);
         setRbacError(null);
         try {
+            if (additionalWorkloadTypes.has(activeResource)) {
+                writeData(await apiClient.getKubernetesWorkloads(selectedNamespace, activeResource));
+                setCountdown(30);
+                return;
+            }
             switch(activeResource) {
                 case 'overview': {
                     const [p, d, s, cm, sec, ev, m] = await Promise.all([
@@ -215,7 +233,7 @@ export default function KubernetesDashboard() {
                         apiClient.getKubernetesEvents(selectedNamespace).catch(() => []),
                         apiClient.getKubernetesMetrics(selectedNamespace).catch(() => [])
                     ]);
-                    setOverviewData({
+                    writeOverview({
                         pods: p,
                         deployments: d,
                         services: s,
@@ -224,7 +242,7 @@ export default function KubernetesDashboard() {
                         events: ev,
                         metrics: m
                     });
-                    setResourceData(ev);
+                    writeData(ev);
                     break;
                 }
                 case 'topology': {
@@ -235,7 +253,7 @@ export default function KubernetesDashboard() {
                         apiClient.getKubernetesConfigMaps(selectedNamespace).catch(() => []),
                         apiClient.getKubernetesSecrets(selectedNamespace).catch(() => []),
                     ]);
-                    setOverviewData({
+                    writeOverview({
                         pods: p,
                         services: s,
                         ingresses: ing,
@@ -243,7 +261,7 @@ export default function KubernetesDashboard() {
                         secrets: sec,
                         deployments: [], events: [], metrics: [],
                     });
-                    setResourceData([]);
+                    writeData([]);
                     break;
                 }
                 case 'pods': {
@@ -251,22 +269,23 @@ export default function KubernetesDashboard() {
                         apiClient.getKubernetesPods(selectedNamespace),
                         apiClient.getKubernetesMetrics(selectedNamespace).catch(() => [])
                     ]);
-                    setResourceData(p); setMetrics(m); break;
+                    writeData(p); latestUpdate(requestGeneration, request, setMetrics, m); break;
                 }
-                case 'deployments': setResourceData(await apiClient.getKubernetesDeployments(selectedNamespace)); break;
-                case 'events': setResourceData(await apiClient.getKubernetesEvents(selectedNamespace)); break;
-                case 'nodes': setResourceData(await apiClient.getKubernetesNodes()); break;
-                case 'services': setResourceData(await apiClient.getKubernetesServices(selectedNamespace)); break;
-                case 'endpoints': setResourceData(await apiClient.getKubernetesEndpoints(selectedNamespace)); break;
-                case 'ingresses': setResourceData(await apiClient.getKubernetesIngresses(selectedNamespace)); break;
-                case 'persistentvolumes': setResourceData(await apiClient.getKubernetesPersistentVolumes()); break;
-                case 'persistentvolumeclaims': setResourceData(await apiClient.getKubernetesPersistentVolumeClaims(selectedNamespace)); break;
-                case 'storageclasses': setResourceData(await apiClient.getKubernetesStorageClasses()); break;
-                case 'configmaps': setResourceData(await apiClient.getKubernetesConfigMaps(selectedNamespace)); break;
-                case 'secrets': setResourceData(await apiClient.getKubernetesSecrets(selectedNamespace)); break;
+                case 'deployments': writeData(await apiClient.getKubernetesDeployments(selectedNamespace)); break;
+                case 'events': writeData(await apiClient.getKubernetesEvents(selectedNamespace)); break;
+                case 'nodes': writeData(await apiClient.getKubernetesNodes()); break;
+                case 'services': writeData(await apiClient.getKubernetesServices(selectedNamespace)); break;
+                case 'endpoints': writeData(await apiClient.getKubernetesEndpoints(selectedNamespace)); break;
+                case 'ingresses': writeData(await apiClient.getKubernetesIngresses(selectedNamespace)); break;
+                case 'persistentvolumes': writeData(await apiClient.getKubernetesPersistentVolumes()); break;
+                case 'persistentvolumeclaims': writeData(await apiClient.getKubernetesPersistentVolumeClaims(selectedNamespace)); break;
+                case 'storageclasses': writeData(await apiClient.getKubernetesStorageClasses()); break;
+                case 'configmaps': writeData(await apiClient.getKubernetesConfigMaps(selectedNamespace)); break;
+                case 'secrets': writeData(await apiClient.getKubernetesSecrets(selectedNamespace)); break;
             }
             setCountdown(30);
         } catch (e: unknown) {
+            if (request !== requestGeneration.current) return;
             console.error('Error fetching data:', e);
             const status = requestErrorStatus(e);
             if (status === 403 || requestErrorCode(e) === 'RBAC_FORBIDDEN') {
@@ -275,11 +294,13 @@ export default function KubernetesDashboard() {
                     namespace: selectedNamespace || 'cluster',
                     message: requestErrorMessage(e, 'Permission denied by Kubernetes RBAC')
                 });
-            }
+            } else { setResourceError(requestErrorMessage(e, 'Kubernetes data is unavailable. Retry the request.')); }
         } finally {
-            setLoading(false);
+            latestUpdate(requestGeneration, request, setLoading, false);
         }
     }, [available, selectedNamespace, activeResource]);
+
+    const invalidateRequests = useCallback(() => { requestGeneration.current++; }, []);
 
     // Refetch and reset state when category or namespace changes
     useEffect(() => {
@@ -287,7 +308,8 @@ export default function KubernetesDashboard() {
         setOverviewData(null);
         setRbacError(null);
         fetchData();
-    }, [fetchData]);
+        return invalidateRequests;
+    }, [fetchData, invalidateRequests]);
 
     // Auto-refresh tick
     useEffect(() => {
@@ -665,7 +687,7 @@ export default function KubernetesDashboard() {
                             </div>
                         )}
 
-                        <KubernetesSpecialContent error={rbacError} resource={activeResource} namespace={selectedNamespace} data={overviewData}
+                        <KubernetesSpecialContent failure={resourceError} error={rbacError} resource={activeResource} namespace={selectedNamespace} data={overviewData}
                             onRetry={fetchData} onSwitchTab={tab => { setActiveResource(tab); setSearchQuery(''); }} onSelectItem={setSelectedItem}>
                             <>
                                 {/* Toolbar */}
@@ -720,6 +742,7 @@ export default function KubernetesDashboard() {
                                                                 <td className="px-4 py-2.5 font-mono text-[11px] text-gray-400">
                                                                     {item.readyCount}/{item.totalContainers}
                                                                 </td>
+                                                                <td className="px-4 py-2.5 text-xs text-text-dim">{podOwnerLabel(item.ownerReferences)}</td>
                                                                 <td className="px-4 py-2.5"><K8sPodStatusBadge status={item.status} isTerminating={item.isTerminating} /></td>
                                                                 <td className="px-4 py-2.5">
                                                                     <div className="flex items-center justify-center gap-2">
@@ -754,6 +777,7 @@ export default function KubernetesDashboard() {
                                                             </>
                                                         )}
 
+                                                        {additionalWorkloadTypes.has(activeResource) && <K8sWorkloadCells type={activeResource} item={item} />}
                                                         {/* Deployments Specific */}
                                                         {activeResource === 'deployments' && (
                                                             <>

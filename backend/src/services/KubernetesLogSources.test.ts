@@ -31,17 +31,17 @@ it('resolves exact pods, Services and workload selectors including expression-on
     const read = jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue({ spec: { selector: { matchExpressions: [{ key: 'app', operator: 'Exists' }] } } });
     const list = jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue({ items: [{ metadata: { name: 'live' }, status: { phase: 'Running' } }, { status: { phase: 'Succeeded' } }, { metadata: { deletionTimestamp: new Date() } }] });
     const core = { readNamespacedPod: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue({ metadata: { name: 'exact' } }), readNamespacedService: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue({ spec: { selector: { app: 'web' } } }), listNamespacedPod: list };
-    const apps = { readNamespacedDeployment: read, readNamespacedStatefulSet: read, readNamespacedDaemonSet: read };
+    const apps = { readNamespacedDeployment: read, readNamespacedStatefulSet: read, readNamespacedDaemonSet: read, readNamespacedReplicaSet: read };
     const config = { makeApiClient: (type: unknown) => type === k8s.CoreV1Api ? core : apps } as unknown as k8s.KubeConfig;
     jest.mocked(KubernetesService.getInstance).mockReturnValue({ available: true, getKubeConfig: () => config } as KubernetesService);
-    for (const kind of ['deployment', 'statefulset', 'daemonset', 'service', 'namespace']) expect(await resolveLogPods(parseLogSource({ ...input, kind }), config)).toHaveLength(1);
+    for (const kind of ['deployment', 'statefulset', 'daemonset', 'replicaset', 'service', 'namespace']) expect(await resolveLogPods(parseLogSource({ ...input, kind }), config)).toHaveLength(1);
     expect(list).toHaveBeenCalledWith({ namespace: 'apps', labelSelector: 'app' }, expect.objectContaining({ middlewareMergeStrategy: 'append' }));
     expect((await resolveLogPods(parseLogSource({ ...input, kind: 'pod' }), config))[0].metadata?.name).toBe('exact');
     jest.mocked(KubernetesService.getInstance).mockReturnValue({ available: false, getKubeConfig: () => config } as KubernetesService);
     await expect(resolveLogPods(parseLogSource(input), config)).rejects.toThrow('unavailable');
 });
 
-jest.mock('@kubernetes/client-node', () => ({ KubeConfig: class { options: unknown; loadFromOptions(options: unknown) { this.options = options; } }, CoreV1Api: class {}, AppsV1Api: class {}, createConfiguration: () => ({ middleware: [] }) }));
+jest.mock('@kubernetes/client-node', () => ({ KubeConfig: class { options: unknown; loadFromOptions(options: unknown) { this.options = options; } }, CoreV1Api: class {}, AppsV1Api: class {}, BatchV1Api: class {}, createConfiguration: () => ({ middleware: [] }) }));
 
 it('pins a private configuration copy to the default context without mutating the shared selection', () => {
     const base = { clusters: [{ name: 'default' }], users: [{ name: 'reader' }], contexts: [{ name: 'default' }], currentContext: 'another-context' };
@@ -49,4 +49,18 @@ it('pins a private configuration copy to the default context without mutating th
     const config = defaultLogKubeConfig();
     expect(Reflect.get(config, 'options')).toEqual({ clusters: base.clusters, users: base.users, contexts: base.contexts, currentContext: 'default' });
     expect(base.currentContext).toBe('another-context');
+});
+
+it('follows Job selectors, RC labels and CronJob owner UIDs including completed job pods', async () => {
+    const completed = { metadata: { name: 'completed', ownerReferences: [{ uid: 'owned-job' }] }, status: { phase: 'Succeeded' } };
+    const foreign = { metadata: { name: 'foreign', ownerReferences: [{ uid: 'foreign-job' }] } };
+    const core = { listNamespacedPod: async () => ({ items: [completed, foreign] }), readNamespacedReplicationController: async () => ({ spec: { selector: { app: 'worker' } } }) };
+    const batch = { readNamespacedJob: async () => ({ spec: { selector: { matchLabels: { app: 'worker' } } } }), readNamespacedCronJob: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue({ metadata: { uid: 'cron' } }), listNamespacedJob: async () => ({ items: [{ metadata: { uid: 'owned-job', ownerReferences: [{ uid: 'cron' }] } }, { metadata: { uid: 'foreign-job' } }] }) };
+    const config = { makeApiClient: (type: unknown) => type === k8s.CoreV1Api ? core : batch } as unknown as k8s.KubeConfig;
+    jest.mocked(KubernetesService.getInstance).mockReturnValue({ available: true } as KubernetesService);
+    expect(await resolveLogPods(parseLogSource({ ...input, kind: 'cronjob' }), config)).toEqual([completed]);
+    expect(await resolveLogPods(parseLogSource({ ...input, kind: 'job' }), config)).toHaveLength(2);
+    expect(await resolveLogPods(parseLogSource({ ...input, kind: 'replicationcontroller' }), config)).toEqual([foreign]);
+    batch.readNamespacedCronJob.mockResolvedValue({ metadata: {} });
+    await expect(resolveLogPods(parseLogSource({ ...input, kind: 'cronjob' }), config)).rejects.toThrow('identify');
 });

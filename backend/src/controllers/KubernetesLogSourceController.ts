@@ -60,7 +60,7 @@ export class KubernetesLogSourceController {
             if (!service.available) return res.status(503).json({ message: 'Kubernetes is unavailable.' });
             const config = defaultLogKubeConfig(), args = { namespace };
             const options = logRequestOptions();
-            const core = config.makeApiClient(k8s.CoreV1Api), apps = config.makeApiClient(k8s.AppsV1Api);
+            const core = config.makeApiClient(k8s.CoreV1Api), apps = config.makeApiClient(k8s.AppsV1Api), batch = config.makeApiClient(k8s.BatchV1Api);
             const kind = typeof req.query.kind === 'string' ? req.query.kind : 'deployment';
             const loaders = {
                 service: () => core.listNamespacedService(args, options),
@@ -68,6 +68,10 @@ export class KubernetesLogSourceController {
                 statefulset: () => apps.listNamespacedStatefulSet(args, options),
                 daemonset: () => apps.listNamespacedDaemonSet(args, options),
                 pod: () => core.listNamespacedPod(args, options),
+                replicaset: () => apps.listNamespacedReplicaSet(args, options),
+                job: () => batch.listNamespacedJob(args, options),
+                cronjob: () => batch.listNamespacedCronJob(args, options),
+                replicationcontroller: () => core.listNamespacedReplicationController(args, options),
             };
             if (!(kind in loaders)) return res.status(400).json({ message: 'Choose a supported resource type.' });
             const result = await loaders[kind as keyof typeof loaders]();

@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { ConfirmDialog } from './ConfirmDialog';
+import { useEffect, useState } from 'react';
+import { LogSourceDialog, logSourcePrimary, logSourceSecondary } from './LogSourceDialog';
+import { CustomSelect } from './CustomSelect';
 import { apiClient } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { apiErrorMessage } from '../utils/apiErrorMessage';
@@ -7,7 +8,6 @@ import type { KubernetesLogSource } from '../types/kubernetesLogs';
 
 const control = 'mt-1 w-full rounded-lg border border-white/10 bg-bg p-2 text-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary';
 export function KubernetesLogSourceModal({ source, onClose, onSaved }: Readonly<{ source: KubernetesLogSource | null; onClose: () => void; onSaved: () => void }>) {
-  const dialog = useRef<HTMLDialogElement>(null);
   const [name, setName] = useState(source?.name || '');
   const [namespace, setNamespace] = useState(source?.namespace || '');
   const [kind, setKind] = useState<KubernetesLogSource['kind']>(source?.kind || 'deployment');
@@ -21,12 +21,9 @@ export function KubernetesLogSourceModal({ source, onClose, onSaved }: Readonly<
   const [error, setError] = useState('');
   const { addToast } = useToast();
   useEffect(() => {
-    const trigger = document.activeElement;
-    const element = dialog.current;
-    element?.showModal();
     let active = true;
     apiClient.getKubernetesLogNamespaces().then(value => { if (active) setNamespaces(value); }).catch(error => { if (active) setError(apiErrorMessage(error, 'Cannot load permitted namespaces.')); });
-    return () => { active = false; element?.close(); if (trigger instanceof HTMLElement && trigger.isConnected) trigger.focus(); };
+    return () => { active = false; };
   }, []);
   useEffect(() => {
     let active = true;
@@ -56,17 +53,25 @@ export function KubernetesLogSourceModal({ source, onClose, onSaved }: Readonly<
     } catch (error) { const message = apiErrorMessage(error, 'Could not save the log source.'); setError(message); addToast(message, 'error'); }
     finally { setSaving(false); }
   };
-  return <dialog ref={dialog} aria-label="Configure Kubernetes log source" onCancel={event => { event.preventDefault(); if (!saving) onClose(); }} className="fixed inset-0 m-0 h-screen max-h-none w-screen max-w-none border-0 bg-transparent p-0 text-inherit">
-    <ConfirmDialog isOpen type="info" title="Kubernetes log source" message="Follow matching pods and containers, including replacements." confirmText="Save source" onConfirm={() => { void save(); }} onClose={onClose} isLoading={saving || loading}>
-      <div className="mb-5 space-y-3 text-left">
-        {error && <p role="alert" className="text-xs text-red-400">{error}</p>}
-        <label className="block text-xs text-text-dim">Source label<input autoFocus maxLength={80} value={name} onChange={event => setName(event.target.value)} className={control} /></label>
-        <label className="block text-xs text-text-dim">Namespace<select value={namespace} onChange={event => { setNamespace(event.target.value); setResource(''); setContainer(''); }} className={control}><option value="">Choose namespace</option>{namespaces.map(item => <option key={item}>{item}</option>)}</select></label>
-        <label className="block text-xs text-text-dim">Resource type<select value={kind} onChange={event => { setKind(event.target.value as KubernetesLogSource['kind']); setResource(''); setContainer(''); }} className={control}>{['deployment', 'service', 'statefulset', 'daemonset', 'pod', 'namespace'].map(item => <option key={item} value={item}>{item === 'namespace' ? 'Entire namespace' : item}</option>)}</select></label>
-        {kind !== 'namespace' && <label className="block text-xs text-text-dim">Resource<select disabled={loading || !namespace} value={resource} onChange={event => { setResource(event.target.value); setContainer(''); }} className={control}><option value="">{loading ? 'Loading targets…' : 'Choose resource'}</option>{targets.map(item => <option key={item.name}>{item.name}</option>)}</select></label>}
-        <label className="block text-xs text-text-dim">Container<select value={container} onChange={event => setContainer(event.target.value)} className={control}><option value="">All containers</option>{containers.map(item => <option key={item}>{item}</option>)}</select></label>
-        <p className="text-[11px] text-text-dim">Uses kubiq’s default Kubernetes connection. Up to 20 container streams per viewer. Each line identifies its namespace, pod and container. Logs are collected while the viewer is connected.</p>
-      </div>
-    </ConfirmDialog>
-  </dialog>;
+  return <LogSourceDialog title="Kubernetes log source" description="Follow matching pods and containers, including replacements." busy={saving} onClose={onClose} actions={<>
+    <button type="button" disabled={saving} onClick={onClose} className={logSourceSecondary}>Cancel</button>
+    <button type="button" disabled={saving || loading} onClick={() => { void save(); }} className={logSourcePrimary}>{saving ? 'Saving…' : 'Save source'}</button>
+  </>}>
+    <div className="space-y-4 text-left">
+      {error && <p role="alert" className="rounded-lg border border-red-500/20 bg-red-500/5 p-3 text-xs text-red-400">{error}</p>}
+      <label className="block text-xs font-medium text-text-dim">Source label<input autoFocus maxLength={80} value={name} onChange={event => setName(event.target.value)} placeholder="e.g. MongoDB logs" className={control} /></label>
+      <SourceSelect label="Namespace" value={namespace} onChange={value => { setNamespace(value); setResource(''); setContainer(''); }} options={[{ value: '', label: 'Choose namespace' }, ...namespaces.map(value => ({ value, label: value }))]} />
+      <SourceSelect label="Resource type" value={kind} onChange={value => { setKind(value as KubernetesLogSource['kind']); setResource(''); setContainer(''); }} options={resourceOptions} />
+      {kind !== 'namespace' && <SourceSelect label="Resource" value={resource} disabled={loading || !namespace} onChange={value => { setResource(value); setContainer(''); }} options={[{ value: '', label: loading ? 'Loading targets…' : 'Choose resource' }, ...targets.map(item => ({ value: item.name, label: item.name }))]} />}
+      <SourceSelect label="Container" value={container} onChange={setContainer} placement="top" options={[{ value: '', label: 'All containers' }, ...containers.map(value => ({ value, label: value }))]} />
+      <p className="text-xs leading-relaxed text-text-dim">Uses kubiq’s default Kubernetes connection. Up to 20 container streams per viewer. Each line identifies its namespace, pod and container. Logs are collected while the viewer is connected.</p>
+    </div>
+  </LogSourceDialog>;
+}
+const resourceOptions = [
+  ['deployment', 'Deployment'], ['statefulset', 'StatefulSet'], ['daemonset', 'DaemonSet'], ['replicaset', 'ReplicaSet'],
+  ['job', 'Job'], ['cronjob', 'CronJob'], ['replicationcontroller', 'ReplicationController'], ['service', 'Service'], ['pod', 'Pod'], ['namespace', 'Entire namespace'],
+].map(([value, label]) => ({ value, label }));
+function SourceSelect(props: Readonly<Parameters<typeof CustomSelect<string>>[0]>) {
+  return <div className="space-y-1.5"><span className="block text-xs font-medium text-text-dim">{props.label}</span><CustomSelect {...props} /></div>;
 }

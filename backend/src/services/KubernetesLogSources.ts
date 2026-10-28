@@ -4,7 +4,7 @@ import { DatabaseFactory } from '../database/DatabaseFactory';
 import type { KubernetesLogSource } from '../database/interfaces/ISystemRepository';
 import { KubernetesService } from './KubernetesService';
 
-const kinds = new Set(['service', 'deployment', 'statefulset', 'daemonset', 'pod', 'namespace']);
+const kinds = new Set(['service', 'deployment', 'statefulset', 'daemonset', 'replicaset', 'job', 'cronjob', 'replicationcontroller', 'pod', 'namespace']);
 const dns = /^[a-z0-9](?:[-a-z0-9.]{0,251}[a-z0-9])?$/;
 export function defaultLogKubeConfig(): k8s.KubeConfig {
     const service = KubernetesService.getInstance();
@@ -63,20 +63,49 @@ export async function resolveLogPods(source: KubernetesLogSource, config = defau
     if (!KubernetesService.getInstance().available) throw new Error('Kubernetes is unavailable.');
     const core = config.makeApiClient(k8s.CoreV1Api);
     const options = logRequestOptions(signal);
+    if (source.kind === 'cronjob') return cronJobPods(config, source, options);
     if (source.kind === 'pod') return [await core.readNamespacedPod({ namespace: source.namespace, name: source.resource }, options)];
+    const labelSelector = await sourcePodSelector(source, config, options);
+    const result = await core.listNamespacedPod({ namespace: source.namespace, labelSelector }, options);
+    return result.items.filter(pod => !pod.metadata?.deletionTimestamp && (source.kind === 'job' || (pod.status?.phase !== 'Succeeded' && pod.status?.phase !== 'Failed')));
+}
+async function sourcePodSelector(source: KubernetesLogSource, config: k8s.KubeConfig, options: k8s.ConfigurationOptions) {
     let labelSelector: string | undefined;
+    const core = config.makeApiClient(k8s.CoreV1Api);
     if (source.kind === 'service') {
         const service = await core.readNamespacedService({ namespace: source.namespace, name: source.resource }, options);
         labelSelector = selectorText({ matchLabels: service.spec?.selector });
+    } else if (source.kind === 'job') {
+        const job = await config.makeApiClient(k8s.BatchV1Api).readNamespacedJob({ namespace: source.namespace, name: source.resource }, options);
+        labelSelector = selectorText(job.spec?.selector);
+    } else if (source.kind === 'replicationcontroller') {
+        const controller = await core.readNamespacedReplicationController({ namespace: source.namespace, name: source.resource }, options);
+        labelSelector = selectorText({ matchLabels: controller.spec?.selector });
     } else if (source.kind !== 'namespace') {
         const apps = config.makeApiClient(k8s.AppsV1Api);
         const args = { namespace: source.namespace, name: source.resource };
         const workload = source.kind === 'deployment' ? await apps.readNamespacedDeployment(args, options) : await readOtherWorkload(apps, source.kind, args, options);
         labelSelector = selectorText(workload.spec?.selector);
     }
-    const result = await core.listNamespacedPod({ namespace: source.namespace, labelSelector }, options);
-    return result.items.filter(pod => !pod.metadata?.deletionTimestamp && pod.status?.phase !== 'Succeeded' && pod.status?.phase !== 'Failed');
+    return labelSelector;
 }
 async function readOtherWorkload(apps: k8s.AppsV1Api, kind: string, args: { namespace: string; name: string }, options: k8s.ConfigurationOptions) {
-    return kind === 'statefulset' ? apps.readNamespacedStatefulSet(args, options) : apps.readNamespacedDaemonSet(args, options);
+    const readers = {
+        statefulset: () => apps.readNamespacedStatefulSet(args, options),
+        daemonset: () => apps.readNamespacedDaemonSet(args, options),
+        replicaset: () => apps.readNamespacedReplicaSet(args, options),
+    };
+    if (!(kind in readers)) throw new Error('Unsupported workload type.');
+    return readers[kind as keyof typeof readers]();
+}
+
+async function cronJobPods(config: k8s.KubeConfig, source: KubernetesLogSource, options: k8s.ConfigurationOptions) {
+    const batch = config.makeApiClient(k8s.BatchV1Api), core = config.makeApiClient(k8s.CoreV1Api);
+    const args = { namespace: source.namespace };
+    const cron = await batch.readNamespacedCronJob({ ...args, name: source.resource }, options);
+    if (!cron.metadata?.uid) throw new Error('Cannot identify this CronJob.');
+    const jobs = await batch.listNamespacedJob(args, options);
+    const owned = new Set(jobs.items.filter(job => job.metadata?.ownerReferences?.some(owner => owner.uid === cron.metadata!.uid)).map(job => job.metadata?.uid).filter(Boolean));
+    const pods = await core.listNamespacedPod(args, options);
+    return pods.items.filter(pod => !pod.metadata?.deletionTimestamp && pod.metadata?.ownerReferences?.some(owner => owned.has(owner.uid)));
 }

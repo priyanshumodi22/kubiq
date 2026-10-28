@@ -18,6 +18,7 @@ const { KubernetesService } = require(path.join(root, 'backend/dist/services/Kub
 const { SavedKubernetesLogStreamService } = require(path.join(root, 'backend/dist/services/SavedKubernetesLogStreamService'));
 const { IngestionBufferService } = require(path.join(root, 'backend/dist/services/IngestionBufferService'));
 const { authMiddleware } = require(path.join(root, 'backend/dist/middleware/auth'));
+const { kubernetesRouter } = require(path.join(root, 'backend/dist/routes/kubernetes'));
 const { logRouter } = require(path.join(root, 'backend/dist/routes/logs'));
 let generation = 1;
 const streams = new Set();
@@ -33,6 +34,7 @@ const api = createServer((request, response) => {
     return;
   }
   let body;
+  if (url.pathname.endsWith('/statefulsets')) { response.writeHead(200, { 'content-type': 'application/json' }); response.end(JSON.stringify({items:[{kind:'StatefulSet',metadata:{name:'database',namespace:'apps'},spec:{replicas:1},status:{readyReplicas:1}}]})); return; }
   if (url.pathname.endsWith('/services/web')) body = { apiVersion: 'v1', kind: 'Service', metadata: { name: 'web' }, spec: { selector: { app: 'web' } } };
   else if (url.pathname.endsWith('/pods')) {
     assert.equal(url.searchParams.get('labelSelector'), 'app=web');
@@ -40,7 +42,7 @@ const api = createServer((request, response) => {
   } else { response.writeHead(404); response.end('{}'); return; }
   response.writeHead(200, { 'content-type': 'application/json' }); response.end(JSON.stringify(body));
 });
-const app = express(); app.use(express.json()); app.use('/api/logs', authMiddleware, logRouter);
+const app = express(); app.use(express.json()); app.use('/api/logs', authMiddleware, logRouter); app.use('/api/kubernetes', authMiddleware, kubernetesRouter);
 const http = createServer(app), io = new Server(http);
 new SavedKubernetesLogStreamService(io);
 const waitFor = async (predicate, message) => {
@@ -72,6 +74,10 @@ async function client(token, origin, sourceId) {
     const token = user => jwt.sign({ sub: user.id, type: 'native' }, process.env.JWT_SECRET, { expiresIn: '5m' });
     http.listen(0, '127.0.0.1'); await once(http, 'listening'); const origin = 'http://127.0.0.1:' + http.address().port;
     const headers = { Authorization: 'Bearer ' + token(admin), 'content-type': 'application/json' };
+    const workloads = await fetch(origin + '/api/kubernetes/namespaces/apps/workloads/statefulsets', { headers });
+    assert.equal(workloads.status, 200); assert.equal((await workloads.json())[0].readyReplicas, 1);
+    assert.equal((await fetch(origin + '/api/kubernetes/namespaces/apps/workloads/statefulsets', { headers: { Authorization: 'Bearer ' + token(blocked) } })).status, 403);
+    assert.equal((await fetch(origin + '/api/kubernetes/namespaces/apps/workloads/secrets', { headers })).status, 400);
     await require(path.join(root, 'backend/dist/services/KubernetesLogSources')).resolveLogPods({ namespace: 'apps', kind: 'service', resource: 'web' });
     const saved = await fetch(origin + '/api/logs/kubernetes/sources', { method: 'POST', headers, body: JSON.stringify({ name: 'Web fixture', namespace: 'apps', kind: 'service', resource: 'web' }) });
     assert.equal(saved.status, 200); const source = await saved.json();
