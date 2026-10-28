@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon --watch src --exec ts-node src/server.ts",
     "build": "tsc",
-    "build:ncc": "ncc build dist/server.js -o build --minify --no-cache --no-source-map-register --external kubiq-apm/runtime",
+    "build:ncc": "ncc build dist/server.js -o build --minify --no-cache --no-source-map-register --external kubiq-apm/runtime --external @opentelemetry/api",
     "start": "node dist/server.js",
     "test": "jest",
     "test:coverage": "jest --runInBand --coverage --coverageReporters=lcov --coverageReporters=text-summary",
@@ -34,7 +34,7 @@
   "dependencies": {
     "@clickhouse/client": "^1.19.0",
     "@kubernetes/client-node": "^1.4.0",
-    "@opentelemetry/api": "1.9.0",
+    "@opentelemetry/api": "1.7.0",
     "@peculiar/webcrypto": "^1.5.0",
     "@simplewebauthn/server": "^13.2.2",
     "@types/bcryptjs": "^2.4.6",

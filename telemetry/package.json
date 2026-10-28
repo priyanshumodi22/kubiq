@@ -2,6 +2,7 @@
   "name": "kubiq-production-tracing",
   "private": true,
   "dependencies": {
-    "kubiq-apm": "1.1.1"
+    "kubiq-apm": "1.1.1",
+    "@opentelemetry/api": "1.7.0"
   }
 }

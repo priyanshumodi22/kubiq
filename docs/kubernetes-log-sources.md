@@ -65,3 +65,8 @@ When controlled kubiq tracing is enabled (`KUBIQ_TRACING_ENABLED=true`), eligibl
 MongoDB and ClickHouse support this retained search. ClickHouse adds its trace-ID column idempotently, keeping existing rows. Structured IDs and complete IDs in legacy message text are supported; SQL/JSON deployments without retained log storage receive an explicit unsupported response rather than an empty success. Database failures are shown as errors through kubiq's toast and inline message.
 
 A trace alone does not create historical application logs. An older trace can correctly have no matches. Other applications must emit trace IDs in logs and arrange collection; Kubernetes sources remain viewer-connected. Missing/deleted traces use a seven-day fallback search window, with the actual window shown in the UI. A source filter with no retained records may be unavailable and can be reset to all permitted sources.
+
+
+### Production dependency boundary
+
+The backend keeps both `kubiq-apm/runtime` and `@opentelemetry/api` external to its ncc bundle. Backend and production telemetry manifests/lockfiles pin the same API version, enforced by the deployment dependency-contract test. The real image check also asserts every request-completion event matches an actual SERVER span. A higher bundled API version cannot read a context registered by an older external API; unit mocks alone do not validate that boundary.
