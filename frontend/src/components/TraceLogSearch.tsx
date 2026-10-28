@@ -23,9 +23,9 @@ export function TraceLogSearch({ traceId, serviceName, onAllSources }: Readonly<
         setLoading(true); setResult(null); setError('');
         apiClient.getTraceLogs(traceId, serviceName, controller.signal).then(value => {
             if (!controller.signal.aborted) setResult(value);
-        }).catch((reason: unknown) => {
+        }).catch((error_: unknown) => {
             if (controller.signal.aborted) return;
-            const message = isAxiosError<{ message?: string }>(reason) ? reason.response?.data?.message || 'Trace log search failed. Please retry.' : 'Trace log search failed. Please retry.';
+            const message = isAxiosError<{ message?: string }>(error_) ? error_.response?.data?.message || 'Trace log search failed. Please retry.' : 'Trace log search failed. Please retry.';
             setError(message); addToast(message, 'error');
         }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
         return () => controller.abort();
@@ -38,7 +38,7 @@ export function TraceLogSearch({ traceId, serviceName, onAllSources }: Readonly<
             <div className="flex flex-wrap items-center gap-3 text-xs text-text-dim"><span>{serviceName ? `Source: ${serviceName}` : 'All permitted retained sources'}</span>{serviceName && <button type="button" className="text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary" onClick={onAllSources}>Search all permitted sources</button>}</div>
             {result && <p className="text-xs text-text-dim">{new Date(result.fromMs).toLocaleString()} – {new Date(result.toMs).toLocaleString()} · {result.logs.length} matching logs{result.logs.length === 500 ? ' (first 500)' : ''}</p>}
         </header>
-        {loading && <p role="status" className="p-6 text-sm text-text-dim">Searching retained logs…</p>}
+        {loading && <output className="p-6 text-sm text-text-dim">Searching retained logs…</output>}
         {error && <p role="alert" className="p-6 text-sm text-red-400">{error}</p>}
         {!loading && !error && result?.logs.length === 0 && <div className="m-auto max-w-lg space-y-3 p-6 text-center"><h3 className="font-medium text-gray-200">No correlated logs retained</h3><p className="text-sm text-text-dim">No recorded log contains this trace ID in the search window. Traces do not create application logs retroactively.</p><p className="text-xs text-text-dim">New eligible kubiq requests record completion logs with trace and span IDs. Other services must include trace IDs in their logs; Kubernetes streams collect only while a viewer is connected.</p></div>}
         {!loading && !error && !!result?.logs.length && <Virtuoso className="flex-1" data={result.logs} itemContent={renderLog} />}

@@ -45,3 +45,8 @@ it('uses a bounded fallback and rejects inverted windows', () => {
     expect(traceLogWindow([], 7 * 86400000)).toEqual({ from: new Date(0), to: new Date(7 * 86400000) });
     expect(() => traceLogWindow([{ startTimeUnixNano: 1e10, endTimeUnixNano: 1e9 }] as ISpan[])).toThrow();
 });
+
+it('rejects non-string source filters without implicit object conversion', async () => {
+    const request = req(); request.query.serviceName = { unsafe: 'value' };
+    const response = res(); await traceLogs(request, response); expect(response.status).toHaveBeenCalledWith(400);
+});

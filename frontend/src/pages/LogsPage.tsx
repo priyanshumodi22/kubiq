@@ -50,6 +50,12 @@ export function SelectedLogViewer({ serviceName, service, initialSearchQuery = '
     );
 }
 
+function renderLogsContent(traceId: string, source: KubernetesLogSource | null, serviceName: string | null, service: ServiceStatus | undefined, version: number, onAllSources: () => void) {
+    if (traceId) return <TraceLogSearch traceId={traceId} serviceName={source ? `k8s:${source.namespace}:${source.id}` : serviceName || undefined} onAllSources={onAllSources} />;
+    if (source) return <K8sLogViewer key={`${source.id}-${source.updatedAt}-${version}`} namespace={source.namespace} sourceId={source.id} sourceName={source.name} containers={[]} />;
+    return <SelectedLogViewer serviceName={serviceName} service={service} />;
+}
+
 export default function LogsPage() {
     const [params] = useSearchParams();
     const requestedTrace = params.get('traceId') || params.get('search') || '';
@@ -274,7 +280,7 @@ export default function LogsPage() {
 
             {/* Main Log Viewer Area */}
             <div className="flex-1 flex flex-col min-h-0 bg-bg-surface/30 border border-gray-800 rounded-xl overflow-hidden backdrop-blur-sm relative z-10">
-                {traceSearch ? <TraceLogSearch traceId={traceSearch} serviceName={selectedKubeSource ? `k8s:${selectedKubeSource.namespace}:${selectedKubeSource.id}` : selectedServiceName || undefined} onAllSources={() => { setSelectedKubeSource(null); setSelectedServiceName(null); }} /> : selectedKubeSource ? <K8sLogViewer key={`${selectedKubeSource.id}-${selectedKubeSource.updatedAt}-${kubeVersion}`} namespace={selectedKubeSource.namespace} sourceId={selectedKubeSource.id} sourceName={selectedKubeSource.name} containers={[]} initialSearchQuery={traceSearch} /> : <SelectedLogViewer serviceName={selectedServiceName} service={selectedService} initialSearchQuery={traceSearch} />}
+                {renderLogsContent(traceSearch, selectedKubeSource, selectedServiceName, selectedService, kubeVersion, () => { setSelectedKubeSource(null); setSelectedServiceName(null); })}
             </div>
 
             {chooserOpen && <LogSourceTypeDialog kubernetes={hasPermission('kubernetes.read')} onVM={() => { setChooserOpen(false); setIsConfigModalOpen(true); }} onKubernetes={() => { setChooserOpen(false); setKubeDraft(null); }} onClose={() => setChooserOpen(false)} />}

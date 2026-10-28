@@ -34,9 +34,11 @@ export async function traceLogs(req: Request, res: Response) {
         const repo = await DatabaseFactory.getLogRepository();
         const names = await repo.getServices();
         let serviceNames = await permittedLogSources(req, names);
-        if (req.query.serviceName) {
-            if (!serviceNames.includes(String(req.query.serviceName))) return res.status(403).json({ message: 'Access denied to this retained log source.' });
-            serviceNames = [String(req.query.serviceName)];
+        const source = req.query.serviceName;
+        if (source !== undefined && typeof source !== 'string') return res.status(400).json({ message: 'serviceName must be a string.' });
+        if (source) {
+            if (!serviceNames.includes(source)) return res.status(403).json({ message: 'Access denied to this retained log source.' });
+            serviceNames = [source];
         }
         const spans = DatabaseFactory.isApmSupported() ? await (await DatabaseFactory.getTraceRepository()).getTraceDetails(traceId) : [];
         let window;

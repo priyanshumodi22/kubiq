@@ -77,7 +77,10 @@ export class ClickhouseLogRepository implements ILogRepository {
 
     async queryLogs(serviceName: string, opts: LogQueryOptions): Promise<any[]> {
         const client = clickhouseService.getClient();
-        if (!client) { if (opts.traceId) throw new Error('ClickHouse log storage unavailable'); return []; }
+        if (!client) {
+            if (opts.traceId) throw new Error('ClickHouse log storage unavailable');
+            return [];
+        }
 
         const dbName = clickhouseService.getDatabase();
         let whereClause = `serviceName = {serviceName: String} AND timestamp >= {from: DateTime} AND timestamp <= {to: DateTime}`;
