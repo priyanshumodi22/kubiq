@@ -137,6 +137,8 @@ it.each([['StatefulSets','statefulsets'],['DaemonSets','daemonsets'],['ReplicaSe
   fireEvent.click(view.getByRole('button', { name: label }));
   await view.findByText('workload-fixture');
   expect(mocks.workloads).toHaveBeenCalledWith('fixture', type);
+  const row = view.getByText('workload-fixture').closest('tr')!;
+  expect(row.querySelectorAll('td')).toHaveLength(view.getAllByRole('columnheader').length);
   fireEvent.click(view.getByText('workload-fixture')); expect(view.getByRole('button', { name: 'Close fixture detail' })).toBeTruthy();
 });
 it('identifies the controlling workload of a pod', async () => {

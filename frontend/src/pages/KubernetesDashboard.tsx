@@ -920,7 +920,7 @@ export default function KubernetesDashboard() {
                                                         )}
 
                                                         {/* Generic Timestamp for Others */}
-                                                        {['services', 'endpoints', 'ingresses', 'persistentvolumes', 'persistentvolumeclaims', 'storageclasses', 'configmaps', 'secrets', 'nodes', 'events'].includes(activeResource) && (
+                                                        {['services', 'endpoints', 'ingresses', 'persistentvolumes', 'persistentvolumeclaims', 'storageclasses', 'configmaps', 'secrets', 'nodes', 'events', ...additionalWorkloadTypes].includes(activeResource) && (
                                                             <td className="px-4 py-2.5 text-right text-xs text-gray-500">
                                                                 {cTime ? timeAgo(cTime) : '—'}
                                                             </td>
