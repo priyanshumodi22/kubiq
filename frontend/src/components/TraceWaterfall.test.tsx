@@ -40,8 +40,8 @@ describe('trace waterfall compatibility', () => {
 
     it.each(['/kubiq', ''])('keeps correlated log navigation inside the %s router base and encodes the trace ID', basename => {
         const view = renderWaterfall([{ ...span('root', 0, 10), traceId: 'trace/id&search' }], basename);
-        const link = view.getByRole('link', { name: 'View Spanned Logs' });
-        expect(link.getAttribute('href')).toBe(`${basename}/logs?search=trace%2Fid%26search`);
+        const link = view.getByRole('link', { name: 'View Trace Logs' });
+        expect(link.getAttribute('href')).toBe(`${basename}/logs?traceId=trace%2Fid%26search`);
         expect(link.getAttribute('target')).toBe('_blank');
         expect(link.getAttribute('rel')).toBe('noreferrer');
     });

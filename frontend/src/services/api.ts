@@ -21,7 +21,16 @@ const BACKEND_DNS = getBackendDNS();
 const BACKEND_CONTEXT = import.meta.env.VITE_BACKEND_CONTEXT_PATH || '';
 const BASE_PATH = `${BACKEND_DNS}${BACKEND_CONTEXT}`;
 
+export interface TraceLogResult {
+  traceId: string; fromMs: number; toMs: number; traceFound: boolean; sourceCount: number;
+  logs: { timestamp: string; serviceName: string; sourceName: string; level: string; message: string }[];
+}
+
 class ApiClient {
+  async getTraceLogs(traceId: string, serviceName?: string, signal?: AbortSignal): Promise<TraceLogResult> {
+    return (await this.client.get(`/api/logs/trace/${encodeURIComponent(traceId)}`, { params: { serviceName }, signal })).data;
+  }
+
   private readonly client: AxiosInstance;
   private token: string | null = null;
   private activeK8sContext: string | null = null;

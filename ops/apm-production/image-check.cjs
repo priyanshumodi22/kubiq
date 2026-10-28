@@ -105,9 +105,30 @@ async function check(enabled, mongoPort) {
       assert.equal(metric.measurementBasis, 'server-requests');
       assert.equal(metric.requestCount, 5);
       assert.equal(metric.errorCount, 0);
+      const completion = db.collection('logs');
+      for (let attempt = 0; attempt < 100 && await completion.countDocuments({ sourceName: 'http-requests' }) < 5; attempt++) await pause(100);
+      const requestLogs = await completion.find({ sourceName: 'http-requests' }).toArray();
+      assert.equal(requestLogs.length, 5, 'Exactly one completion log per eligible request');
+      for (const log of requestLogs) {
+        const event = JSON.parse(log.message);
+        const parent = rows.find(row => row.traceId === event.trace_id && row.spanId === event.span_id);
+        assert(parent && String(parent.kind) === '2', 'Bundled backend must share SDK active SERVER context');
+        assert.equal(log.traceId, event.trace_id);
+        assert.equal(event.event, 'http_request_completed');
+        assert.equal(event.route, parent.attributes['http.route']);
+        assert(!JSON.stringify(log).includes('SYNTHETIC_'), 'Correlation logs must exclude secrets');
+      }
+      const target = requestLogs[0];
+      const correlated = await fetch(base + '/kubiq-api/api/logs/trace/' + target.traceId, { headers });
+      assert.equal(correlated.status, 200);
+      const found = await correlated.json();
+      assert(found.logs.some(row => row.traceId === target.traceId));
+      assert.equal((await fetch(base + '/kubiq-api/api/logs/trace/' + target.traceId, { headers: { Authorization: 'Bearer invalid' } })).status, 401);
+      const completionCount = await completion.countDocuments({ sourceName: 'http-requests' });
       const count = await spans.countDocuments({});
       await pause(4500);
       assert.equal(await spans.countDocuments({}), count, 'Background work/export/persistence must not feed back into tracing');
+      assert.equal(await completion.countDocuments({ sourceName: 'http-requests' }), completionCount, 'Trace-log lookups must not create more correlation logs');
     } else {
       assert.equal(await spans.countDocuments({}), 0);
       // Disabling the producer must leave authenticated ingestion and analytics operational.

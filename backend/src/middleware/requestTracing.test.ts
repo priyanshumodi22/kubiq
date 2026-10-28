@@ -17,3 +17,10 @@ test.each([
     expect(called).toBe(true);
     expect(route?.()).toBe(expected);
 });
+
+test('correlation searches do not create observer traces or completion logs', () => {
+    let traced = false, called = false;
+    const middleware = requestTracing((_req, _res, action) => { traced = true; return action(); }, '/kubiq-api');
+    middleware({ originalUrl: '/kubiq-api/api/logs/trace/1234567890abcdef1234567890abcdef' } as Request, {} as Response, () => { called = true; });
+    expect(called).toBe(true); expect(traced).toBe(false);
+});

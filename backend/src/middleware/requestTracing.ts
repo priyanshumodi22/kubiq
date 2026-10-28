@@ -1,3 +1,4 @@
+import { requestCompletionLog } from './requestCompletionLog';
 import type { NextFunction, Request, Response } from 'express';
 
 type RequestTracer = <T>(request: Request, response: Response, action: () => T, options: { route: () => string }) => T;
@@ -10,10 +11,12 @@ export function requestTracing(trace: RequestTracer, contextPath: string) {
         try { pathname = new URL(request.originalUrl, 'https://local').pathname; }
         catch { /* Invalid URLs must not change business request handling. */ }
         const prefix = groups.map(group => contextPath + '/api/' + group).find(group => pathname === group || pathname.startsWith(group + '/'));
-        trace(request, response, next, { route: () => {
+        if (pathname.startsWith(contextPath + '/api/logs/trace/')) { next(); return; }
+        const routeName = () => {
             const route: unknown = request.route?.path;
             if (!prefix) return '/*';
             return prefix + (typeof route === 'string' ? route : '/*');
-        } });
+        };
+        trace(request, response, () => { requestCompletionLog(request, response, routeName); next(); }, { route: routeName });
     };
 }

@@ -9,6 +9,7 @@ vi.mock('../hooks/useServices', () => ({ useServices: () => ({ services: [{ id: 
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ hasPermission: () => mocks.manage }) }));
 vi.mock('../contexts/ToastContext', () => ({ useToast: () => ({ addToast: vi.fn() }) }));
 vi.mock('../services/api', () => ({ apiClient: { getDiscoveredLogServices: async () => ['k8s:apps:web'], getKubernetesLogSources: async () => [] } }));
+vi.mock('../components/TraceLogSearch', () => ({ TraceLogSearch: ({ traceId, serviceName, onAllSources }: { traceId: string; serviceName?: string; onAllSources: () => void }) => <div>Correlated {traceId}: {serviceName || 'all'}<button onClick={onAllSources}>All sources</button></div> }));
 vi.mock('../components/LogViewer', () => ({ LogViewer: ({ serviceName, initialSearchQuery }: { serviceName: string; initialSearchQuery?: string }) => <p data-trace={initialSearchQuery}>VM viewer: {serviceName}</p> }));
 vi.mock('../components/K8sLogViewer', () => ({ K8sLogViewer: ({ namespace, deploymentName, initialSearchQuery }: { namespace: string; deploymentName: string; initialSearchQuery?: string }) => <p data-trace={initialSearchQuery}>K8s viewer: {namespace}/{deploymentName}</p> }));
 vi.mock('../components/ConfigureLogModal', () => ({ ConfigureLogModal: ({ isOpen }: { isOpen: boolean }) => isOpen ? <p>Configure logs</p> : null }));
@@ -17,14 +18,17 @@ afterEach(() => { cleanup(); mocks.manage = true; });
 const renderLogs = (path = '/logs') => render(<MemoryRouter initialEntries={[path]}><LogsPage /></MemoryRouter>);
 
 describe('log sidebar native selection', () => {
-  it('preserves the correlated trace after explicit VM or workload selection', async () => {
+  it('opens correlation automatically and permits narrowing without starting a stream', async () => {
     const trace = '29a74ad1415a68c437baccbe5289e648';
     const view = renderLogs(`/logs?search=${trace}`);
-    expect(view.getByText(`Trace ${trace}: select a source to search its retained logs.`)).toBeTruthy();
+    expect(view.getByText(`Correlated ${trace}: all`)).toBeTruthy();
     fireEvent.click(view.getByRole('button', { name: 'View logs for api' }));
-    expect(view.getByText('VM viewer: api').getAttribute('data-trace')).toBe(trace);
+    expect(view.getByText(`Correlated ${trace}: api`)).toBeTruthy();
     fireEvent.click(await view.findByRole('button', { name: 'View logs for k8s:apps:web' }));
-    expect(view.getByText('K8s viewer: apps/web').getAttribute('data-trace')).toBe(trace);
+    expect(view.getByText(`Correlated ${trace}: k8s:apps:web`)).toBeTruthy();
+    expect(view.queryByText('K8s viewer: apps/web')).toBeNull();
+    fireEvent.click(view.getByText('All sources'));
+    expect(view.getByText(`Correlated ${trace}: all`)).toBeTruthy();
   });
 
   it('does not interpret arbitrary URL text as a trace correlation filter', () => {

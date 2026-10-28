@@ -1,4 +1,5 @@
-import { ILogRepository } from '../../interfaces/ILogRepository';
+import { traceIdFromRecord, traceMessagePattern } from '../../../utils/logCorrelation';
+import { ILogRepository, LogQueryOptions } from '../../interfaces/ILogRepository';
 import { LogModel } from '../../schemas/LogSchema';
 import { ensureRetentionIndex } from './ensureRetentionIndex';
 import { retentionSeconds } from '../../../utils/RetentionPolicy';
@@ -10,19 +11,12 @@ export class MongoLogRepository implements ILogRepository {
 
     async insertLogs(logs: any[]): Promise<void> {
         if (!logs || logs.length === 0) return;
-        await LogModel.insertMany(logs, { ordered: false });
+        await LogModel.insertMany(logs.map(log => ({ ...log, traceId: traceIdFromRecord(log) || undefined })), { ordered: false });
     }
 
-    async queryLogs(serviceName: string, opts: {
-        sourceName?: string;
-        from: Date;
-        to: Date;
-        level?: string;
-        search?: string;
-        limit?: number;
-    }): Promise<any[]> {
+    async queryLogs(serviceName: string, opts: LogQueryOptions): Promise<any[]> {
         const query: any = {
-            serviceName,
+            serviceName: opts.serviceNames ? { $in: opts.serviceNames } : serviceName,
             timestamp: { $gte: opts.from, $lte: opts.to }
         };
 
@@ -34,6 +28,9 @@ export class MongoLogRepository implements ILogRepository {
             query.level = opts.level.toUpperCase();
         }
 
+        if (opts.traceId) {
+            query.$or = [{ traceId: opts.traceId }, { 'metadata.traceId': opts.traceId }, { 'metadata.trace_id': opts.traceId }, { message: { $regex: traceMessagePattern(opts.traceId), $options: 'i' } }];
+        }
         if (opts.search) {
             query.$text = { $search: opts.search };
         }
@@ -44,6 +41,7 @@ export class MongoLogRepository implements ILogRepository {
             mQuery = mQuery.limit(opts.limit);
         }
 
+        if (opts.traceId) mQuery = mQuery.maxTimeMS(5000);
         const results = await mQuery.lean().exec();
         return results;
     }

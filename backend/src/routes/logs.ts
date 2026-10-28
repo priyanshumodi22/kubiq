@@ -1,3 +1,4 @@
+import { traceLogs } from '../controllers/TraceLogController';
 import { Request, Response, Router } from 'express';
 import fs from 'node:fs';
 import { DatabaseFactory } from '../database/DatabaseFactory';
@@ -21,6 +22,8 @@ logRouter.use(async (req, res, next) => {
     }
     next();
 });
+
+logRouter.get('/trace/:traceId', requirePermission('apm.read'), traceLogs);
 
 logRouter.get('/check', requirePermission('logs.raw.read'), (req: Request, res: Response) => {
     const filePath = req.query.path as string;

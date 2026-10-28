@@ -1,6 +1,7 @@
+import { traceIdFromRecord, traceMessagePattern } from '../../../utils/logCorrelation';
 import { retentionSeconds } from '../../../utils/RetentionPolicy';
 import { ensureClickhouseRetention } from './ensureClickhouseRetention';
-import { ILogRepository } from '../../interfaces/ILogRepository';
+import { ILogRepository, LogQueryOptions } from '../../interfaces/ILogRepository';
 import { clickhouseService } from '../../../services/ClickhouseService';
 
 export class ClickhouseLogRepository implements ILogRepository {
@@ -21,6 +22,7 @@ export class ClickhouseLogRepository implements ILogRepository {
             await client.command({
                 query: `
                     CREATE TABLE IF NOT EXISTS ${dbName}.app_logs (
+                        traceId String DEFAULT '',
                         serviceName String,
                         sourceName String,
                         level String,
@@ -30,6 +32,7 @@ export class ClickhouseLogRepository implements ILogRepository {
                     ORDER BY (serviceName, sourceName, timestamp)
                 `
             });
+            await client.command({ query: `ALTER TABLE ${dbName}.app_logs ADD COLUMN IF NOT EXISTS traceId String DEFAULT ''` });
             await ensureClickhouseRetention(client, dbName, 'app_logs', seconds);
             this.isInitialized = true;
             console.log('Clickhouse Log Repository Initialized');
@@ -52,6 +55,7 @@ export class ClickhouseLogRepository implements ILogRepository {
                 .toISOString().replace('T', ' ').substring(0, 19);
             
             return {
+                traceId: traceIdFromRecord(log),
                 serviceName: log.serviceName || 'unknown',
                 sourceName: log.sourceName || 'unknown',
                 level: log.level || 'INFO',
@@ -71,16 +75,9 @@ export class ClickhouseLogRepository implements ILogRepository {
         }
     }
 
-    async queryLogs(serviceName: string, opts: {
-        sourceName?: string;
-        from: Date;
-        to: Date;
-        level?: string;
-        search?: string;
-        limit?: number;
-    }): Promise<any[]> {
+    async queryLogs(serviceName: string, opts: LogQueryOptions): Promise<any[]> {
         const client = clickhouseService.getClient();
-        if (!client) return [];
+        if (!client) { if (opts.traceId) throw new Error('ClickHouse log storage unavailable'); return []; }
 
         const dbName = clickhouseService.getDatabase();
         let whereClause = `serviceName = {serviceName: String} AND timestamp >= {from: DateTime} AND timestamp <= {to: DateTime}`;
@@ -89,6 +86,9 @@ export class ClickhouseLogRepository implements ILogRepository {
             from: opts.from.toISOString().replace('T', ' ').substring(0, 19),
             to: opts.to.toISOString().replace('T', ' ').substring(0, 19)
         };
+
+        if (opts.serviceNames) { whereClause = whereClause.replace('serviceName = {serviceName: String}', 'serviceName IN {serviceNames: Array(String)}'); queryParams.serviceNames = opts.serviceNames; }
+        if (opts.traceId) { whereClause += ' AND (traceId = {traceId: String} OR match(message, {tracePattern: String}))'; queryParams.traceId = opts.traceId; queryParams.tracePattern = '(?i)' + traceMessagePattern(opts.traceId); }
 
         if (opts.sourceName) {
             whereClause += ` AND sourceName = {sourceName: String}`;
@@ -116,11 +116,13 @@ export class ClickhouseLogRepository implements ILogRepository {
                     LIMIT ${limit}
                 `,
                 query_params: queryParams,
-                format: 'JSONEachRow'
+                format: 'JSONEachRow',
+                ...(opts.traceId ? { clickhouse_settings: { max_execution_time: 5 } } : {}),
             });
             return await resultSet.json();
         } catch (err) {
             console.error('ClickhouseLogRepository queryLogs error:', err);
+            if (opts.traceId) throw err;
             return [];
         }
     }
@@ -166,7 +168,7 @@ export class ClickhouseLogRepository implements ILogRepository {
     }
     async getServices(): Promise<string[]> {
         const client = clickhouseService.getClient();
-        if (!client) return [];
+        if (!client) throw new Error('ClickHouse log storage unavailable');
         const dbName = clickhouseService.getDatabase();
 
         try {
@@ -181,7 +183,7 @@ export class ClickhouseLogRepository implements ILogRepository {
             return data.map((d: any) => d.serviceName);
         } catch (err) {
             console.error('ClickhouseLogRepository getServices error:', err);
-            return [];
+            throw err;
         }
     }
 }

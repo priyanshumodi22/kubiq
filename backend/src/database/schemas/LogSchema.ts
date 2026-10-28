@@ -7,6 +7,7 @@ export interface ILog extends Document {
     timestamp: Date;
     level: string;
     message: string;
+    traceId?: string;
     metadata?: Record<string, any>;
 }
 
@@ -16,6 +17,7 @@ const logSchema = new Schema<ILog>({
     timestamp: { type: Date, required: true },
     level: { type: String, required: true, index: true },
     message: { type: String, required: true },
+    traceId: { type: String },
     metadata: { type: Schema.Types.Mixed }
 }, { autoIndex: false });
 

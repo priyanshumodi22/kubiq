@@ -54,3 +54,14 @@ Log configuration uses kubiq's shared log-dialog shell with a top-right close co
 Completed Job/CronJob pods are read without follow mode and shown as ended; their finished streams are not repeatedly reopened while the saved target continues discovering new Jobs.
 
 Finished-container tails use reliable Socket.IO packets (live streams remain volatile under backpressure), capped by the Kubernetes request at 256 KiB per container. This prevents the single finite log response being lost while bounding its response/queue size.
+
+
+## Trace-to-log correlation
+
+The APM waterfall's **View Trace Logs** link opens a retained-log search automatically across sources the signed-in user may read. It uses an exact trace ID, the stored trace's time window with a one-minute margin, and at most 500 results. Selecting a sidebar source narrows the search; **Search all permitted sources** resets it. This search does not start a live Kubernetes stream. Namespace restrictions apply before querying, and both `logs.read` and `apm.read` are required.
+
+When controlled kubiq tracing is enabled (`KUBIQ_TRACING_ENABLED=true`), eligible HTTP requests record one completion event with trace/span IDs, normalized route, method, status, duration and completion/abort outcome. Bodies, headers, cookies, raw URLs and query strings are excluded. The existing bounded ingestion buffer persists these events directly as `kubiq-backend / http-requests`; no connected log viewer is required. Existing log retention applies independently of APM retention. Export, persistence, health/SSE/asset exclusions and correlation lookups create no completion events.
+
+MongoDB and ClickHouse support this retained search. ClickHouse adds its trace-ID column idempotently, keeping existing rows. Structured IDs and complete IDs in legacy message text are supported; SQL/JSON deployments without retained log storage receive an explicit unsupported response rather than an empty success. Database failures are shown as errors through kubiq's toast and inline message.
+
+A trace alone does not create historical application logs. An older trace can correctly have no matches. Other applications must emit trace IDs in logs and arrange collection; Kubernetes sources remain viewer-connected. Missing/deleted traces use a seven-day fallback search window, with the actual window shown in the UI. A source filter with no retained records may be unavailable and can be reset to all permitted sources.

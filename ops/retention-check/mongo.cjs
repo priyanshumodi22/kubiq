@@ -38,6 +38,18 @@ const { ensureRetentionIndex } = require(path.join(base,'database/adapters/mongo
   await model.collection.drop();
   await ensureRetentionIndex(model,60);
  }
+
+ const id='1234567890abcdef1234567890abcdef', timestamp=new Date();
+ await repos[1].insertLogs([
+  {serviceName:'correlation',sourceName:'structured',timestamp,level:'INFO',message:'event',metadata:{trace_id:id}},
+  {serviceName:'correlation',sourceName:'plain',timestamp,level:'INFO',message:'trace_id='+id},
+  {serviceName:'correlation',sourceName:'near',timestamp,level:'INFO',message:'f'+id+'0'},
+  {serviceName:'denied',sourceName:'hidden',timestamp,level:'INFO',message:id},
+ ]);
+ const matches=await repos[1].queryLogs('',{from:new Date(timestamp.getTime()-2000),to:new Date(timestamp.getTime()+2000),serviceNames:['correlation'],traceId:id,limit:500});
+ assert.deepEqual(matches.map(row=>row.sourceName).sort(),['plain','structured']);
+ const none=await repos[1].queryLogs('',{from:new Date(timestamp.getTime()-2000),to:new Date(timestamp.getTime()+2000),serviceNames:[],traceId:id,limit:500});
+ assert.equal(none.length,0);
  console.log(JSON.stringify({passed:true,tests:['legacy plain index conversion','connected-repository initialization','expired APM and logs removed','recent records retained','unrelated index preserved','TTL change','idempotent restart','fresh collection'],mongoVersion:(await mongoose.connection.db.admin().serverInfo()).version}));
  await mongoose.disconnect();
 })().catch(e=>{console.error(e);process.exitCode=1;mongoose.disconnect();});

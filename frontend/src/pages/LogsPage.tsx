@@ -1,3 +1,4 @@
+import { TraceLogSearch } from '../components/TraceLogSearch';
 import { SavedKubernetesLogSources } from '../components/SavedKubernetesLogSources';
 import { KubernetesLogSourceModal } from '../components/KubernetesLogSourceModal';
 import { LogSourceTypeDialog } from '../components/LogSourceTypeDialog';
@@ -51,7 +52,7 @@ export function SelectedLogViewer({ serviceName, service, initialSearchQuery = '
 
 export default function LogsPage() {
     const [params] = useSearchParams();
-    const requestedTrace = params.get('search') || '';
+    const requestedTrace = params.get('traceId') || params.get('search') || '';
     const traceSearch = /^[a-f\d]{16}(?:[a-f\d]{16})?$/i.test(requestedTrace) ? requestedTrace : '';
     const { services, refresh } = useServices();
     const { hasPermission } = useAuth();
@@ -273,7 +274,7 @@ export default function LogsPage() {
 
             {/* Main Log Viewer Area */}
             <div className="flex-1 flex flex-col min-h-0 bg-bg-surface/30 border border-gray-800 rounded-xl overflow-hidden backdrop-blur-sm relative z-10">
-                {selectedKubeSource ? <K8sLogViewer key={`${selectedKubeSource.id}-${selectedKubeSource.updatedAt}-${kubeVersion}`} namespace={selectedKubeSource.namespace} sourceId={selectedKubeSource.id} sourceName={selectedKubeSource.name} containers={[]} initialSearchQuery={traceSearch} /> : <SelectedLogViewer serviceName={selectedServiceName} service={selectedService} initialSearchQuery={traceSearch} />}
+                {traceSearch ? <TraceLogSearch traceId={traceSearch} serviceName={selectedKubeSource ? `k8s:${selectedKubeSource.namespace}:${selectedKubeSource.id}` : selectedServiceName || undefined} onAllSources={() => { setSelectedKubeSource(null); setSelectedServiceName(null); }} /> : selectedKubeSource ? <K8sLogViewer key={`${selectedKubeSource.id}-${selectedKubeSource.updatedAt}-${kubeVersion}`} namespace={selectedKubeSource.namespace} sourceId={selectedKubeSource.id} sourceName={selectedKubeSource.name} containers={[]} initialSearchQuery={traceSearch} /> : <SelectedLogViewer serviceName={selectedServiceName} service={selectedService} initialSearchQuery={traceSearch} />}
             </div>
 
             {chooserOpen && <LogSourceTypeDialog kubernetes={hasPermission('kubernetes.read')} onVM={() => { setChooserOpen(false); setIsConfigModalOpen(true); }} onKubernetes={() => { setChooserOpen(false); setKubeDraft(null); }} onClose={() => setChooserOpen(false)} />}

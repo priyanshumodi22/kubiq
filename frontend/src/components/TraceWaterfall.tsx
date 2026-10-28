@@ -160,14 +160,14 @@ export default function TraceWaterfall({ spans }: Readonly<TraceWaterfallProps>)
                 <div className="flex items-center gap-4">
                     {traceId && (
                         <Link
-                            to={`/logs?search=${encodeURIComponent(traceId)}`}
+                            to={`/logs?traceId=${encodeURIComponent(traceId)}`}
                             target="_blank"
                             rel="noreferrer"
                             className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-semibold transition-all"
                             title="View all logs correlated to this trace ID"
                         >
                             <FileText className="w-3.5 h-3.5" />
-                            <span>View Spanned Logs</span>
+                            <span>View Trace Logs</span>
                         </Link>
                     )}
                     <div className="text-sm font-mono text-gray-400">

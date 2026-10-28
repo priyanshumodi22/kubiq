@@ -25,6 +25,18 @@ const { ensureClickhouseRetention } = require(path.join(base,'database/adapters/
   assert.deepEqual(await result.json(),[{id:'recent'}]);
   await ensureClickhouseRetention(client,'default',table,60);
  }
+
+ const id='1234567890abcdef1234567890abcdef', timestamp=new Date();
+ await log.insertLogs([
+  {serviceName:'correlation',sourceName:'structured',timestamp,level:'INFO',message:'event',metadata:{trace_id:id}},
+  {serviceName:'correlation',sourceName:'plain',timestamp,level:'INFO',message:'trace_id='+id},
+  {serviceName:'correlation',sourceName:'near',timestamp,level:'INFO',message:'f'+id+'0'},
+  {serviceName:'denied',sourceName:'hidden',timestamp,level:'INFO',message:id},
+ ]);
+ const matches=await log.queryLogs('',{from:new Date(timestamp.getTime()-2000),to:new Date(timestamp.getTime()+2000),serviceNames:['correlation'],traceId:id,limit:500});
+ assert.deepEqual(matches.map(row=>row.sourceName).sort(),['plain','structured']);
+ const none=await log.queryLogs('',{from:new Date(timestamp.getTime()-2000),to:new Date(timestamp.getTime()+2000),serviceNames:[],traceId:id,limit:500});
+ assert.equal(none.length,0);
  const result = await client.query({query:'SELECT version() AS version',format:'JSONEachRow'});
  console.log(JSON.stringify({passed:true,version:await result.json(),tests:['fresh tables','legacy TTL migration','idempotency','expiry during merge','recent preserved','TTL change']}));
  await client.close();

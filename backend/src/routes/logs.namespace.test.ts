@@ -28,3 +28,8 @@ it('checks namespace scope for retained query, source and summary requests', asy
     expect((await fetch(origin + '/query?fromMs=1&toMs=2&serviceName=k8s:apps:web')).status).toBe(200);
     expect((await fetch(origin + '/summarize', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ serviceName: 'k8s:private:secret', logs: [{ message: 'fixture' }] }) })).status).toBe(403);
 });
+
+it('requires both logs and APM access for trace correlation', async () => {
+    const route = origin + '/trace/1234567890abcdef1234567890abcdef';
+    for (const permissions of ['logs.read', 'apm.read', 'kubernetes.read']) expect((await fetch(route, { headers: { 'x-permissions': permissions } })).status).toBe(403);
+});
