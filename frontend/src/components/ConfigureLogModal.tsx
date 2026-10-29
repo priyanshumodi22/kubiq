@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import React, { useState, useEffect, useRef, useId } from 'react';
 import { X, ChevronDown, Check, Plus, Trash2, ShieldAlert } from 'lucide-react';
 import { apiClient } from '../services/api';
@@ -179,7 +180,7 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
 
   const selectedServiceObj = services.find(s => s.name === selectedServiceName);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-bg-surface border border-white/10 rounded-2xl w-full max-w-lg max-h-[calc(100dvh-2rem)] flex flex-col shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden text-sm">
         
@@ -309,8 +310,8 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
               {/* Add New Source - Only visible if canEdit */}
               {canEdit && (
                 <div className="bg-black/20 border border-white/10 rounded-xl p-3 flex flex-col gap-3">
-                    <div className="flex gap-3">
-                        <div className="w-1/3">
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                        <div className="w-full sm:w-1/3">
                             <input
                                 type="text"
                                 value={newLabel}
@@ -330,7 +331,7 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
                                 className="w-full bg-white/5 border border-transparent rounded-lg py-2 px-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary/50 font-mono text-sm"
                             />
                         </div>
-                        <div className="w-20">
+                        <div className="w-full sm:w-20">
                             <input
                                 type="number"
                                 aria-label="Log source file limit"
@@ -378,6 +379,6 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
           </div>
         </form>
       </div>
-    </div>
+    </div>, document.body
   );
 }

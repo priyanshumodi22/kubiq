@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useState, useEffect, useCallback, useId } from 'react';
 import { X, Settings, AlertCircle, Save } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
@@ -57,8 +58,8 @@ export function ApmConfigModal({ isOpen, onClose }: Readonly<ApmConfigModalProps
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
       <button type="button" aria-label="Close APM configuration"
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
@@ -120,7 +121,7 @@ export function ApmConfigModal({ isOpen, onClose }: Readonly<ApmConfigModalProps
         </div>
 
         {/* Footer */}
-        <div className="p-4 sm:p-6 border-t border-gray-800 flex justify-end gap-3 bg-bg-surface/50">
+        <div className="p-4 sm:p-6 border-t border-gray-800 flex flex-col-reverse sm:flex-row justify-end gap-3 bg-bg-surface/50">
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-300 hover:text-white bg-transparent hover:bg-white/5 border border-transparent rounded-lg transition-colors"
@@ -141,6 +142,6 @@ export function ApmConfigModal({ isOpen, onClose }: Readonly<ApmConfigModalProps
           </button>
         </div>
       </div>
-    </div>
+    </div>, document.body
   );
 }

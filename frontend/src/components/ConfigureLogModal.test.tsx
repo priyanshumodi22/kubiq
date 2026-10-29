@@ -53,7 +53,7 @@ describe('log configuration draft and keyboard lifecycle', () => {
   it('prevents a read-only form submission and uses the kubiq toast', () => {
     mocks.allowed = false;
     const view = render(<ConfigureLogModal isOpen preSelectedService="api" onClose={vi.fn()} onSuccess={vi.fn()} />);
-    fireEvent.submit(view.container.querySelector('form')!);
+    fireEvent.submit(view.baseElement.querySelector('form')!);
     expect(mocks.warning).toHaveBeenCalledWith('You do not have permission to perform this action.');
     expect(mocks.update).not.toHaveBeenCalled();
   });

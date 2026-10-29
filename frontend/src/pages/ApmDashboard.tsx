@@ -718,7 +718,7 @@ function ApmExportDialog({ model }: Readonly<{ model: ApmDashboardModel }>) {
         isExportDurationOpen,
         setIsExportDurationOpen,
     } = model;
-    return (<div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+    return createPortal(<div className="fixed inset-0 z-100 flex items-center justify-center p-4">
                     <button type="button" tabIndex={-1} aria-label="Close export dialog" className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity duration-300" onClick={() => setIsExportModalOpen(false)} />
                     <div className="relative bg-[#0B0C10] bg-linear-to-b from-[#13151A] to-[#0B0C10] border border-gray-700/60 rounded-2xl shadow-2xl shadow-green-900/10 w-full max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain animate-fade-in ring-1 ring-white/5">
                         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-800/80 bg-white/2 rounded-t-2xl">
@@ -864,7 +864,7 @@ function ApmExportDialog({ model }: Readonly<{ model: ApmDashboardModel }>) {
                                 Up to 2,000 spans, slowest first. Columns: traceId, spanName, service, startTime, durationMs, status, db.system, db.statement, http.method, http.url, net.peer.name, rpc.service, messaging.destination
                             </p>
                         </div>
-                        <div className="px-6 py-5 border-t border-gray-800/80 bg-white/2 rounded-b-2xl flex justify-end gap-3">
+                        <div className="px-6 py-5 border-t border-gray-800/80 bg-white/2 rounded-b-2xl flex flex-wrap justify-end gap-3">
                             <button onClick={() => setIsExportModalOpen(false)}
                                 className="px-5 py-2.5 text-sm font-medium text-gray-400 hover:text-white bg-transparent border border-gray-700 hover:border-gray-500 rounded-xl transition-all hover:bg-white/5">
                                 Cancel
@@ -918,7 +918,7 @@ function ApmExportDialog({ model }: Readonly<{ model: ApmDashboardModel }>) {
                             </button>)}
                         </div>
                     </div>
-                </div>);
+                </div>, document.body);
 }
 
 function ApmTimeRangePicker({ model }: Readonly<{ model: ApmDashboardModel }>) {
