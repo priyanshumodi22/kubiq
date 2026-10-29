@@ -1,3 +1,4 @@
+import { popoverBounds } from '../utils/popoverBounds';
 import { useSearchParams } from 'react-router-dom';
 import { notify } from '../utils/notify';
 import { useState, useEffect, useRef, useEffectEvent } from 'react';
@@ -571,7 +572,7 @@ function ApmInspector({ model }: Readonly<{ model: ApmDashboardModel }>) {
                                     {isLatencyOpen && latencyRect && createPortal(
                                         <div
                                             ref={latencyPanelRef}
-                                            style={{ position: 'fixed', top: latencyRect.top, left: latencyRect.left, width: latencyRect.width, zIndex: 9999 }}
+                                            style={{ position: 'fixed', ...popoverBounds(latencyRect, { width: window.innerWidth, height: window.innerHeight }, 220), overflowY: 'auto', zIndex: 9999 }}
                                             className="bg-bg-surface border border-white/10 rounded-xl shadow-xl overflow-hidden"
                                         >
                                             {[
@@ -994,10 +995,10 @@ function ApmTimeRangePicker({ model }: Readonly<{ model: ApmDashboardModel }>) {
                             ref={timeRangePanelRef}
                             style={{
                                 position: 'fixed',
-                                top: timeRangeRect.top,
-                                left: window.innerWidth < 640 ? '16px' : timeRangeRect.left,
-                                right: window.innerWidth < 640 ? '16px' : 'auto',
-                                width: window.innerWidth < 640 ? 'auto' : timeRangeRect.width,
+                                ...popoverBounds({ ...timeRangeRect,
+                                    left: window.innerWidth < 640 ? 16 : timeRangeRect.left,
+                                    width: window.innerWidth < 640 ? window.innerWidth - 32 : timeRangeRect.width,
+                                }, { width: window.innerWidth, height: window.innerHeight }),
                                 zIndex: 9999
                             }}
                             className="bg-bg-surface border border-white/10 rounded-xl shadow-2xl overflow-y-auto max-h-[60dvh] flex flex-col"
@@ -1149,7 +1150,7 @@ function ApmPercentilePicker({ model }: Readonly<{ model: ApmDashboardModel }>) 
                         {isLatencyOpen && latencyRect && createPortal(
                             <div
                                 ref={latencyPanelRef}
-                                style={{ position: 'fixed', top: latencyRect.top, left: latencyRect.left, width: latencyRect.width, zIndex: 9999 }}
+                                style={{ position: 'fixed', ...popoverBounds(latencyRect, { width: window.innerWidth, height: window.innerHeight }, 220), overflowY: 'auto', zIndex: 9999 }}
                                 className="bg-[#1e1e1e] border border-gray-700 rounded-xl shadow-2xl overflow-hidden py-1 animate-fade-in"
                             >
                                 <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-500 border-b border-gray-800 uppercase tracking-wider bg-[#151515]">
