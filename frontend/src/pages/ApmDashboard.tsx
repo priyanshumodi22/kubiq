@@ -1,3 +1,4 @@
+import { scrollAppContentToTop } from '../utils/appScroll';
 import { popoverBounds } from '../utils/popoverBounds';
 import { useSearchParams } from 'react-router-dom';
 import { notify } from '../utils/notify';
@@ -195,8 +196,19 @@ function useApmDashboardModel() {
                 setIsTimeRangeOpen(false);
             }
         };
+        const scroll = (event: Event) => {
+            if (event.target instanceof Node && timeRangePanelRef.current?.contains(event.target)) return;
+            setIsTimeRangeOpen(false);
+        };
+        const resize = () => setIsTimeRangeOpen(false);
         document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
+        window.addEventListener('scroll', scroll, true);
+        window.addEventListener('resize', resize);
+        return () => {
+            document.removeEventListener('mousedown', handler);
+            window.removeEventListener('scroll', scroll, true);
+            window.removeEventListener('resize', resize);
+        };
     }, []);
 
     // Fetch map data when switching to map view
@@ -221,7 +233,7 @@ function useApmDashboardModel() {
 
     const handleServiceClick = async (serviceName: string) => {
         setSelectedInspectorService(serviceName);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollAppContentToTop();
         await fetchTracesWithFilters(serviceName, minDurationFilter, errorOnlyFilter, routeSearch, true);
     };
 
@@ -281,7 +293,7 @@ function useApmDashboardModel() {
                 setTraceIdInput(data.traceId);
                 fetchTrace(data.traceId);
                 // Scroll to the Trace Waterfall view
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                scrollAppContentToTop();
             }
         } catch (e: unknown) {
             if (requestErrorStatus(e) === 404) {
@@ -392,7 +404,7 @@ function ApmHeader({ model }: Readonly<{ model: ApmDashboardModel }>) {
         setExportToTime,
         handleRefresh,
     } = model;
-    return (<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+    return (<div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-white to-gray-400">
                         APM & Traces
@@ -400,14 +412,14 @@ function ApmHeader({ model }: Readonly<{ model: ApmDashboardModel }>) {
                     <p className="text-gray-400 mt-1">Monitor application performance and distributed traces</p>
                 </div>
 
-                <div className="flex flex-wrap lg:flex-nowrap items-center gap-1.5 sm:gap-2 w-full sm:w-auto mt-4 sm:mt-0">
+                <div className="grid w-full grid-cols-2 gap-2 rounded-lg border border-gray-800 bg-bg-surface p-3 sm:flex sm:flex-wrap sm:items-center sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 xl:w-auto xl:flex-nowrap">
                     {/* Time Range — Custom Portal Dropdown */}
                     <ApmTimeRangePicker model={model} />
 
                     <button
                         onClick={handleRefresh}
                         disabled={apmLoading || mapLoading}
-                        className="px-3 h-[40px] bg-bg-elevated border border-gray-700 hover:border-blue-500 text-text rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50 text-xs sm:text-sm"
+                        className="order-3 flex h-11 items-center justify-center gap-2 rounded-lg border border-gray-700 bg-bg-elevated px-3 text-sm text-text transition-colors hover:border-blue-500 disabled:opacity-50 sm:order-0 sm:h-10"
                     >
                         <Activity className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${apmLoading ? 'animate-spin' : ''}`} />
                         Refresh
@@ -434,7 +446,7 @@ function ApmHeader({ model }: Readonly<{ model: ApmDashboardModel }>) {
                             setExportService(selectedInspectorService || '');
                             setIsExportModalOpen(true);
                         }}
-                        className="px-3 h-[40px] bg-bg-elevated border border-gray-700 hover:border-green-500/70 text-text rounded-lg flex items-center gap-1.5 transition-colors text-xs sm:text-sm"
+                        className="order-4 flex h-11 items-center justify-center gap-2 rounded-lg border border-gray-700 bg-bg-elevated px-3 text-sm text-text transition-colors hover:border-green-500/70 sm:order-0 sm:h-10"
                         title="Export Slow Queries as CSV"
                     >
                         <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-400" />
@@ -446,20 +458,21 @@ function ApmHeader({ model }: Readonly<{ model: ApmDashboardModel }>) {
 
                     <button
                         onClick={() => setIsInstrumentationModalOpen(true)}
-                        className="px-3 h-[40px] bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-colors whitespace-nowrap"
+                        className="order-5 flex h-11 items-center justify-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 text-xs font-semibold text-primary transition-colors hover:bg-primary/20 sm:order-0 sm:h-10"
                         title="Auto-Instrumentation SDK Snippets Generator"
                     >
                         <Code2 className="w-4 h-4" />
-                        <span className="hidden sm:inline">Instrument Service</span>
+                        <span className="sm:hidden">Instrument</span><span className="hidden sm:inline">Instrument Service</span>
                     </button>
 
                     {isAdmin && (
                         <button
                             onClick={() => setIsConfigModalOpen(true)}
-                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text rounded-lg flex items-center justify-center transition-colors w-[40px] h-[40px] shrink-0"
+                            className="order-6 flex h-11 items-center justify-center gap-2 rounded-lg border border-gray-700 bg-bg-elevated px-3 text-sm text-text transition-colors hover:border-primary/50 sm:order-0 sm:size-10 sm:shrink-0 sm:p-0"
                             title="APM Configuration"
                         >
                             <Settings className="w-5 h-5 text-gray-400" />
+                            <span className="sm:hidden">Settings</span>
                         </button>
                     )}
                 </div>
@@ -951,7 +964,7 @@ function ApmTimeRangePicker({ model }: Readonly<{ model: ApmDashboardModel }>) {
         sliderToMs,
         todayString,
     } = model;
-    return (<> <div className="relative">
+    return (<> <div className="relative order-1 min-w-0 sm:order-0">
                         <button
                             ref={timeRangeTriggerRef}
                             type="button"
@@ -967,7 +980,7 @@ function ApmTimeRangePicker({ model }: Readonly<{ model: ApmDashboardModel }>) {
                                 }
                                 setIsTimeRangeOpen(o => !o);
                             }}
-                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text text-xs sm:text-sm rounded-lg flex items-center justify-between gap-1.5 px-2.5 h-[40px] transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-[130px] sm:min-w-[145px]"
+                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text text-xs sm:text-sm rounded-lg flex items-center justify-between gap-1.5 px-2.5 h-11 w-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 sm:h-10 sm:min-w-[145px]"
                         >
                             <div className="flex items-center gap-1.5 min-w-0">
                                 <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
@@ -1123,7 +1136,7 @@ function ApmPercentilePicker({ model }: Readonly<{ model: ApmDashboardModel }>) 
         percentileFilter,
         setPercentileFilter,
     } = model;
-    return (<div className="relative">
+    return (<div className="relative order-2 min-w-0 sm:order-0">
                         <button
                             ref={latencyTriggerRef}
                             type="button"
@@ -1135,13 +1148,14 @@ function ApmPercentilePicker({ model }: Readonly<{ model: ApmDashboardModel }>) 
                                 }
                                 setIsLatencyOpen(o => !o);
                             }}
-                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text text-xs sm:text-sm rounded-lg flex items-center justify-between gap-1.5 px-2.5 h-[40px] transition-colors focus:outline-none min-w-[155px] sm:min-w-[175px]"
+                            className="bg-bg-elevated border border-gray-700 hover:border-primary/50 text-text text-xs sm:text-sm rounded-lg flex items-center justify-between gap-1.5 px-2.5 h-11 w-full transition-colors focus:outline-none sm:h-10 sm:min-w-[175px]"
                             title="Latency Percentile Metric"
                         >
                             <div className="flex items-center gap-1.5 min-w-0">
                                 <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400 shrink-0" />
                                 <span className="truncate text-xs font-medium text-gray-200">
-                                    {latencyLabel(percentileFilter)}
+                                    <span className="sm:hidden">{latencyLabel(percentileFilter).split(" (")[0]}</span>
+                                    <span className="hidden sm:inline">{latencyLabel(percentileFilter)}</span>
                                 </span>
                             </div>
                             <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isLatencyOpen ? 'rotate-180' : ''}`} />

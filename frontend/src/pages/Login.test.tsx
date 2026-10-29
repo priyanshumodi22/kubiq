@@ -17,6 +17,19 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('login compatibility', () => {
+  it('toggles password visibility without changing the entered value', () => {
+    const view = render(<MemoryRouter><Login /></MemoryRouter>);
+    const input = view.getByLabelText('Password') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'fixture-password' } });
+    expect(input.type).toBe('password');
+    fireEvent.click(view.getByRole('button', { name: 'Show password' }));
+    expect(input.type).toBe('text');
+    expect(input.value).toBe('fixture-password');
+    fireEvent.click(view.getByRole('button', { name: 'Hide password' }));
+    expect(input.type).toBe('password');
+    expect(input.value).toBe('fixture-password');
+  });
+
   it.each([
     [{ name: 'NotAllowedError' }, 'Biometric login cancelled or timed out'],
     [{ response: { data: { error: 'Server error', message: 'Server message' } }, message: 'Transport error' }, 'Server error'],

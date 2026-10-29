@@ -335,7 +335,7 @@ const Profile: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen text-text p-6 md:p-12">
+    <div className="relative min-h-full text-text p-6 md:p-12">
       {/* Background Effects matching Dashboard */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         {/* Gradient base */}

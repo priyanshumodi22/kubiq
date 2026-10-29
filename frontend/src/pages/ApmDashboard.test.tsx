@@ -282,3 +282,25 @@ it('loads a valid incoming log-to-trace URL automatically', async () => {
     await waitFor(() => expect(mocks.fetchTrace).toHaveBeenCalledWith(id));
     expect(view.getByDisplayValue(id)).toBeTruthy();
 });
+
+
+describe('APM picker anchoring in the scrollable app shell', () => {
+  it('keeps latency options open while their menu scrolls, then closes on page scroll', async () => {
+    const view = render(<ApmDashboard />);
+    fireEvent.click(await view.findByTitle('Latency Percentile Metric'));
+    const menu = view.getByText('Latency Percentiles').parentElement!;
+    fireEvent.scroll(menu);
+    expect(view.getByText('Latency Percentiles')).toBeTruthy();
+    fireEvent.scroll(window);
+    expect(view.queryByText('Latency Percentiles')).toBeNull();
+  });
+
+  it('keeps custom time controls open during internal scrolling and closes on viewport change', async () => {
+    const view = render(<ApmDashboard />);
+    fireEvent.click(await view.findByRole('button', { name: /^Last hour$/ }));
+    fireEvent.scroll(view.getByText('Presets').parentElement!);
+    expect(view.getByRole('button', { name: 'Set time' })).toBeTruthy();
+    fireEvent.resize(window);
+    expect(view.queryByRole('button', { name: 'Set time' })).toBeNull();
+  });
+});

@@ -60,7 +60,7 @@ export default function Dashboard() {
 
   if (loading && services.length === 0) {
     return (
-      <div className="relative min-h-screen">
+      <div className="relative min-h-full">
         <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
           <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
@@ -81,7 +81,7 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="relative min-h-screen">
+      <div className="relative min-h-full">
         <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
           <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
@@ -107,7 +107,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="relative min-h-screen pt-4 sm:pt-0">
+    <div className="relative min-h-full pb-6">
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-linear-to-br from-bg via-bg to-bg-surface"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]"></div>
@@ -129,43 +129,31 @@ export default function Dashboard() {
 
         {/* SERVICES TAB */}
         <div className={`${activeTab === 'services' ? 'block animate-fade-in space-y-6' : 'hidden'}`}>
-            {/* Stats Overview */}
-            {stats && (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-                <StatsCard label="Total Services" value={stats.totalServices} color="text-primary" />
-                <StatsCard label="Healthy" value={stats.healthyServices} color="text-success" />
-                <StatsCard label="Unhealthy" value={stats.unhealthyServices} color="text-error" />
-                <StatsCard label="Unknown" value={stats.unknownServices} color="text-warning" />
-            </div>
-            )}
-
-        {/* Filters and Search */}
-        <div className="bg-bg-surface rounded-lg p-3 sm:p-4 border border-gray-800">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+          {/* Search and actions */}
+          <div className="grid min-w-0 grid-cols-2 gap-3 rounded-lg border border-gray-800 bg-bg-surface p-3 sm:grid-cols-6 sm:p-4">
+            <div className="contents">
             {/* Search */}
-            <div className="flex-1 relative">
+            <div className="relative col-span-2 min-w-0 sm:col-span-4">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-text-dim" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search services..."
-                className="w-full pl-9 sm:pl-10 pr-4 py-2 text-sm sm:text-base bg-bg-elevated rounded-lg border border-gray-700 focus:border-primary focus:outline-none"
+                className="h-11 w-full pl-9 sm:pl-10 pr-4 py-2 text-sm sm:text-base bg-bg-elevated rounded-lg border border-gray-700 focus:border-primary focus:outline-none"
               />
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
-              {/* Filter and Refresh Group */}
-              <div className="flex gap-3 sm:gap-4 w-full sm:w-auto">
                 {/* Filter */}
-                <div className="flex items-center gap-2 flex-1 sm:flex-none min-w-0">
-                  <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-text-dim shrink-0" />
+                <div className="col-span-1 min-w-0 sm:col-span-2">
                   <div className="relative flex-1 min-w-0" ref={filterDropdownRef}>
                     <button
                       onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
-                      className="flex items-center justify-between w-full gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base bg-bg-elevated rounded-lg border border-gray-700 hover:border-primary focus:border-primary focus:outline-none transition-colors cursor-pointer"
+                      className="flex h-11 items-center justify-between w-full gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base bg-bg-elevated rounded-lg border border-gray-700 hover:border-primary focus:border-primary focus:outline-none transition-colors cursor-pointer"
                     >
-                      <span className="whitespace-nowrap truncate">
+                      <span className="flex min-w-0 items-center gap-2 whitespace-nowrap truncate">
+                        <Filter className="size-4 shrink-0 text-text-dim" />
                         {statusFilter === 'all' && 'All Status'}
                         {statusFilter === 'healthy' && 'Healthy'}
                         {statusFilter === 'unhealthy' && 'Unhealthy'}
@@ -230,23 +218,23 @@ export default function Dashboard() {
                   </div>
                 </div>
 
+            </div>
+            <div className="contents">
                 {/* Refresh */}
                 <button
                   onClick={refresh}
                   disabled={loading}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-bg-elevated border border-gray-700 hover:border-blue-500 text-text hover:text-blue-400 rounded-lg transition-all whitespace-nowrap h-[42px] sm:h-[42px] h-auto disabled:opacity-50"
+                  className="col-span-1 sm:col-span-2 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-bg-elevated border border-gray-700 hover:border-blue-500 text-text hover:text-blue-400 rounded-lg transition-all whitespace-nowrap h-11 disabled:opacity-50"
                 >
                   <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 ${loading ? 'animate-spin' : ''}`} />
                   <span className="text-sm sm:text-base">Refresh</span>
                 </button>
-              </div>
-
               {/* Admin Actions */}
               {isAdmin && (
-                <div className="flex gap-3 sm:gap-4 w-full sm:w-auto">
+                <div className="contents">
                   <button
                     onClick={() => setShowStatusModal(true)}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-bg-elevated border border-gray-700 hover:border-cyan-500 hover:text-cyan-400 text-text rounded-lg transition-all whitespace-nowrap h-auto sm:h-[42px]"
+                    className="col-span-1 sm:col-span-2 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-bg-elevated border border-gray-700 hover:border-cyan-500 hover:text-cyan-400 text-text rounded-lg transition-all whitespace-nowrap h-11"
                     title="Configure Public Status Page"
                   >
                     <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -254,7 +242,7 @@ export default function Dashboard() {
                   </button>
                   <button
                     onClick={() => setShowAddModal(true)}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-primary hover:bg-primary/80 text-white rounded-lg transition-colors whitespace-nowrap h-auto sm:h-[42px] shadow-lg shadow-indigo-900/20"
+                    className="col-span-1 sm:col-span-2 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-primary hover:bg-primary/80 text-white rounded-lg transition-colors whitespace-nowrap h-11 shadow-lg shadow-indigo-900/20"
                   >
                     <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span className="text-sm sm:text-base inline sm:inline">Add Service</span>
@@ -263,6 +251,14 @@ export default function Dashboard() {
               )}
             </div>
           </div>
+          {stats && (
+            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-gray-800 bg-gray-800 sm:gap-3 sm:overflow-visible sm:rounded-none sm:border-0 sm:bg-transparent">
+                <StatsCard label="Total Services" value={stats.totalServices} color="text-primary" />
+                <StatsCard label="Healthy" value={stats.healthyServices} color="text-success" />
+                <StatsCard label="Unhealthy" value={stats.unhealthyServices} color="text-error" />
+                <StatsCard label="Unknown" value={stats.unknownServices} color="text-warning" />
+            </div>
+          )}
         </div>
 
         {/* Services Grid */}
@@ -347,9 +343,9 @@ export default function Dashboard() {
 
 function StatsCard({ label, value, color }: Readonly<{ label: string; value: number; color: string }>) {
   return (
-    <div className="bg-bg-surface rounded-lg p-3 sm:p-4 border border-gray-800">
-      <p className="text-xs sm:text-sm text-text-dim mb-1">{label}</p>
-      <p className={`text-2xl sm:text-3xl font-bold ${color}`}>{value}</p>
+    <div className="flex min-w-0 items-center justify-between gap-3 bg-bg-surface px-4 py-3 sm:rounded-lg sm:border sm:border-gray-800">
+      <p className="text-xs sm:text-sm text-text-dim">{label}</p>
+      <p className={`text-2xl font-semibold tabular-nums ${color}`}>{value}</p>
     </div>
   );
 }

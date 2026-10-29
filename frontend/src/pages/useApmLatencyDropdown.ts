@@ -18,9 +18,18 @@ export function useApmLatencyDropdown() {
             setIsLatencyOpen(false);
             latencyTriggerRef.current?.focus();
         };
+        const scroll = (event: Event) => {
+            if (event.target instanceof Node && latencyPanelRef.current?.contains(event.target)) return;
+            setIsLatencyOpen(false);
+        };
+        const resize = () => setIsLatencyOpen(false);
+        window.addEventListener('scroll', scroll, true);
+        window.addEventListener('resize', resize);
         document.addEventListener('mousedown', outside);
         document.addEventListener('keydown', escape);
         return () => {
+            window.removeEventListener('scroll', scroll, true);
+            window.removeEventListener('resize', resize);
             document.removeEventListener('mousedown', outside);
             document.removeEventListener('keydown', escape);
         };

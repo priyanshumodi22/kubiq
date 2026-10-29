@@ -358,7 +358,7 @@ export default function KubernetesDashboard() {
     }
 
     return (
-        <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-(--breakpoint-2xl) mx-auto w-full animate-fade-in relative z-10 flex flex-col h-full">
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-(--breakpoint-2xl) mx-auto w-full animate-fade-in relative z-10 flex flex-col lg:h-full lg:min-h-0">
             {/* Background */}
             <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none bg-bg">
                 <div className="absolute top-0 w-full h-96 bg-linear-to-b from-primary/5 to-transparent" />
@@ -379,16 +379,16 @@ export default function KubernetesDashboard() {
                 </div>
 
                 {available && (
-                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <div className="grid w-full grid-cols-2 items-center gap-3 sm:flex sm:flex-wrap md:w-auto">
                         {/* Auto refresh indicator */}
-                        <div className="text-xs text-gray-500 flex items-center gap-2 mr-2 w-full sm:w-auto justify-between sm:justify-start">
+                        <div className="col-span-2 text-xs text-gray-500 flex items-center gap-2 sm:mr-2 w-full sm:w-auto justify-between sm:justify-start">
                             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                             Refreshes in {countdown}s
                         </div>
 
                         {/* Context Dropdown */}
                         {contexts.length > 0 && (
-                            <div className="relative w-full sm:w-auto">
+                            <div className="relative col-span-2 min-w-0 w-full sm:w-auto">
                                 <button
                                     ref={ctxTriggerRef}
                                     type="button"
@@ -402,7 +402,7 @@ export default function KubernetesDashboard() {
                                     }}
                                     onMouseEnter={() => { if (!isCtxOpen) setHoveredCtx(context); }}
                                     onMouseLeave={() => setHoveredCtx(null)}
-                                    className="bg-bg-surface border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2 transition-colors focus:outline-none w-full sm:w-[240px]"
+                                    className="bg-bg-surface border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2 h-11 sm:h-auto transition-colors focus:outline-none w-full sm:w-[240px]"
                                 >
                                     <Server className="w-4 h-4 text-gray-400 shrink-0" />
                                     <span className="flex-1 text-left truncate w-[170px] font-mono text-xs font-semibold">{formatContextName(context, contexts) || 'Select context'}</span>
@@ -526,7 +526,7 @@ export default function KubernetesDashboard() {
                         )}
 
                         {/* Namespace Dropdown */}
-                        <div className="relative w-full sm:w-auto">
+                        <div className="relative min-w-0 w-full sm:w-auto">
                             <button
                                 ref={nsTriggerRef}
                                 type="button"
@@ -537,10 +537,10 @@ export default function KubernetesDashboard() {
                                     }
                                     setIsNsOpen(o => !o);
                                 }}
-                                className="bg-bg-surface border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2 transition-colors focus:outline-none w-full sm:min-w-[160px]"
+                                className="bg-bg-surface border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-between gap-2 px-3 py-2 h-11 sm:h-auto transition-colors focus:outline-none w-full sm:min-w-[160px]"
                             >
                                 <Layers className="w-4 h-4 text-gray-400 shrink-0" />
-                                <span className="flex-1 text-left">{selectedNamespace || 'Select namespace'}</span>
+                                <span className="min-w-0 flex-1 truncate text-left">{selectedNamespace || 'Select namespace'}</span>
                                 <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isNsOpen ? 'rotate-180' : ''}`} />
                             </button>
 
@@ -568,7 +568,7 @@ export default function KubernetesDashboard() {
                         <button
                             onClick={() => fetchData()}
                             disabled={loading}
-                            className="bg-bg-surface border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-center gap-2 px-3 py-2 transition-colors w-full sm:w-auto"
+                            className="bg-bg-surface border border-gray-700 hover:border-primary/50 text-gray-300 text-sm rounded-lg flex items-center justify-center gap-2 px-3 py-2 h-11 sm:h-auto transition-colors w-full sm:w-auto"
                         >
                             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                             Refresh
@@ -680,7 +680,7 @@ export default function KubernetesDashboard() {
                     </div>
 
                     {/* ── RIGHT CONTENT PANEL ── */}
-                    <div className="flex-1 bg-[#141414] border border-gray-800 rounded-xl overflow-hidden flex flex-col relative shadow-xl min-h-[500px] h-[500px] lg:h-[75vh]">
+                    <div className="flex-1 bg-[#141414] border border-gray-800 rounded-xl overflow-hidden flex flex-col relative shadow-xl min-h-[500px] h-[500px] lg:min-h-0 lg:h-auto">
                         {loading && (
                             <div className="absolute top-0 left-0 w-full h-0.5 bg-gray-800 overflow-hidden z-20">
                                 <div className="h-full bg-primary w-1/3 animate-[slide-right_1s_ease-in-out_infinite]" />

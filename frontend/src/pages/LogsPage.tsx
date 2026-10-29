@@ -128,9 +128,8 @@ export default function LogsPage() {
     };
 
     return (
-        // Height Calculation: 100vh - (Header+TopPadding) - (Footer+BottomPadding)
-        // using calc to ensure it fits without scrolling the page
-        <div className="relative flex flex-col lg:flex-row gap-4 lg:gap-6 h-auto lg:h-[calc(100dvh-14rem)] mt-4">
+        // Fill the desktop app content region; keep natural document scrolling on mobile.
+        <div className="relative flex flex-col lg:flex-row gap-4 lg:gap-6 h-auto lg:h-full mt-4 lg:mt-0">
             
             {/* Background Effects (Matched to Dashboard) */}
             <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">

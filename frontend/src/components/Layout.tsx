@@ -1,4 +1,6 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { scrollAppContentToTop } from '../utils/appScroll';
 import Header from './Header';
 import Footer from './Footer';
 import ProLicenseWelcome from './ProLicenseWelcome';
@@ -9,8 +11,11 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: Readonly<LayoutProps>) {
+  const { pathname, search } = useLocation();
+  useEffect(() => { scrollAppContentToTop('auto'); }, [pathname, search]);
+
   return (
-    <div className="min-h-screen bg-linear-to-br from-bg via-bg to-bg-surface relative overflow-hidden">
+    <div className="min-h-dvh lg:h-dvh bg-linear-to-br from-bg via-bg to-bg-surface relative overflow-hidden">
       {/* Subtle animated background effect - unique pattern */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.04),transparent_50%)]"></div>
       <div className="absolute -top-20 right-1/4 w-md h-112 bg-primary/4 rounded-full blur-3xl"></div>
@@ -18,13 +23,15 @@ export default function Layout({ children }: Readonly<LayoutProps>) {
       <div className="absolute bottom-20 right-1/3 w-96 h-96 bg-primary/3 rounded-full blur-3xl"></div>
       <div className="absolute bottom-1/4 left-1/2 w-120 h-120 bg-primary/2 rounded-full blur-3xl"></div>
 
-      <div className="relative z-10 flex min-h-dvh flex-col">
+      <div className="relative z-10 flex min-h-dvh flex-col lg:h-full lg:min-h-0">
         <ProLicenseWelcome />
-        <div className="fixed top-0 left-0 right-0 z-50">
+        <div className="sticky top-0 z-50 shrink-0 lg:static">
           <Header />
         </div>
-        <main className="container mx-auto w-full flex-1 px-3 sm:px-4 lg:px-6 pt-36 sm:pt-24 pb-20 sm:pb-24">
-          {children}
+        <main id="app-content" className="scrollbar-hide min-w-0 flex-1 lg:min-h-0 lg:overflow-y-auto">
+          <div className="container mx-auto w-full px-3 py-6 sm:px-4 lg:h-full lg:px-6">
+            {children}
+          </div>
         </main>
         <Footer />
         <KubiPanel />
