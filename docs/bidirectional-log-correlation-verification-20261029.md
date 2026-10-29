@@ -55,6 +55,6 @@ The identifier model follows [OpenTelemetry log TraceId/SpanId correlation](http
 - Production-image fixture peak observations: 117,440,512 bytes without tracing, 102,273,024 bytes with tracing. These are independent test samples, not a claim of reduced tracing overhead; no OOM/restart occurred.
 - A live snapshot allocated 487,424 bytes for log data and 2,220,032 bytes for log indexes. Existing seven-day log TTL (604,800 seconds), three-day APM retention, queue bounds, MongoDB authentication and signing/ingestion secrets were preserved. No sampling, VM resize or retention reduction was introduced.
 - New stdout/source mirrors can add retained storage while viewers are connected. A representative 24-hour growth/index measurement remains unobserved; short verification traffic is not a completed capacity forecast.
-- The on-demand Sonar VM was already stopped by its existing idle policy after its successful exported analysis. Routine publishing used the verified exact-commit workflow evidence; no globally bypassed Access policy or new credential was introduced.
+- The on-demand Sonar VM was observed stopped after its successful exported analysis; its existing idle policy was unchanged. Routine publishing used the verified exact-commit workflow evidence; no globally bypassed Access policy or new credential was introduced.
 
 Rollback remains a GitOps image change to the prior release, without changing databases, deleting retained logs or removing application secrets. See [log-source operations](kubernetes-log-sources.md).
