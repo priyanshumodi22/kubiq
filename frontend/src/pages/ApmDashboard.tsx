@@ -517,7 +517,7 @@ function ApmInspector({ model }: Readonly<{ model: ApmDashboardModel }>) {
                                     className={`relative p-4 rounded-xl cursor-pointer transition-all border ${borderClass}`}
                                 >
 <button type="button" onClick={() => handleServiceClick(service.serviceName)} aria-label={`Inspect ${service.serviceName}`} className="absolute inset-0 z-10 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" />
-                                    <h3 className="text-sm font-bold text-white flex justify-between">
+                                    <h3 className="text-sm font-bold text-white flex justify-between gap-2 [overflow-wrap:anywhere]">
                                         {service.serviceName}
                                         <span className={`text-xs ${serviceErrorClass(isRed, isYellow)}`}>{service.errorRate.toFixed(1)}% err</span>
                                     </h3>

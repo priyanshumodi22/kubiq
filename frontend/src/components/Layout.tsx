@@ -18,12 +18,12 @@ export default function Layout({ children }: Readonly<LayoutProps>) {
       <div className="absolute bottom-20 right-1/3 w-96 h-96 bg-primary/3 rounded-full blur-3xl"></div>
       <div className="absolute bottom-1/4 left-1/2 w-120 h-120 bg-primary/2 rounded-full blur-3xl"></div>
 
-      <div className="relative z-10">
+      <div className="relative z-10 flex min-h-dvh flex-col">
         <ProLicenseWelcome />
         <div className="fixed top-0 left-0 right-0 z-50">
           <Header />
         </div>
-        <main className="container mx-auto px-3 sm:px-4 lg:px-6 pt-36 sm:pt-24 pb-20 sm:pb-24">
+        <main className="container mx-auto w-full flex-1 px-3 sm:px-4 lg:px-6 pt-36 sm:pt-24 pb-20 sm:pb-24">
           {children}
         </main>
         <Footer />
