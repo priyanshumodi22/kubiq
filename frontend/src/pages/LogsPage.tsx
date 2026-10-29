@@ -130,7 +130,7 @@ export default function LogsPage() {
     return (
         // Height Calculation: 100vh - (Header+TopPadding) - (Footer+BottomPadding)
         // using calc to ensure it fits without scrolling the page
-        <div className="relative flex flex-col lg:flex-row gap-6 h-[calc(100vh-14rem)] mt-4">
+        <div className="relative flex flex-col lg:flex-row gap-4 lg:gap-6 h-auto lg:h-[calc(100dvh-14rem)] mt-4">
             
             {/* Background Effects (Matched to Dashboard) */}
             <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
@@ -142,7 +142,7 @@ export default function LogsPage() {
             </div>
 
             {/* Sidebar List */}
-            <div className="w-full lg:w-1/4 flex flex-col bg-bg-surface/50 backdrop-blur-sm border border-gray-800 rounded-xl overflow-hidden z-10">
+            <div className="w-full min-h-0 max-h-80 shrink-0 lg:max-h-none lg:w-1/4 flex flex-col bg-bg-surface/50 backdrop-blur-sm border border-gray-800 rounded-xl overflow-hidden z-10">
                 <div className="p-4 border-b border-gray-800 flex flex-col gap-3">
                     <div className="flex items-center justify-between">
                         <h2 className="font-bold text-gray-200 text-sm">Log Sources</h2>
@@ -280,7 +280,7 @@ export default function LogsPage() {
             </div>
 
             {/* Main Log Viewer Area */}
-            <div className="flex-1 flex flex-col min-h-0 bg-bg-surface/30 border border-gray-800 rounded-xl overflow-hidden backdrop-blur-sm relative z-10">
+            <div className="h-[75dvh] min-h-[32rem] min-w-0 shrink-0 lg:h-auto lg:min-h-0 lg:shrink lg:flex-1 flex flex-col bg-bg-surface/30 border border-gray-800 rounded-xl overflow-hidden backdrop-blur-sm relative z-10">
                 {renderLogsContent({ traceId: traceSearch, spanId: spanSearch, onWholeTrace: () => { const next = new URLSearchParams(params); next.delete('spanId'); setParams(next); } }, selectedKubeSource, selectedServiceName, selectedService, kubeVersion, () => { setSelectedKubeSource(null); setSelectedServiceName(null); })}
             </div>
 

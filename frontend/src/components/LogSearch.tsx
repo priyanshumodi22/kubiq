@@ -315,7 +315,7 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName, initialQuery 
             </div>
 
             {/* Results Area */}
-            <div className="flex-1 relative font-mono text-xs overflow-hidden">
+            <div className="min-h-0 flex-1 relative font-mono text-xs overflow-hidden">
                 {logs.length > 0 ? (
                     <Virtuoso
                         data={logs}
@@ -379,7 +379,7 @@ export const LogSearch: React.FC<LogSearchProps> = ({ serviceName, initialQuery 
                                 initial={{ scale: 0.95, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 exit={{ scale: 0.95, opacity: 0 }}
-                                className="flex w-full max-w-3xl max-h-[85vh] flex-col overflow-hidden rounded-2xl border border-white/15 bg-[#101116] shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
+                                className="flex w-full max-w-3xl max-h-[calc(100dvh-2rem)] flex-col overflow-hidden rounded-2xl border border-white/15 bg-[#101116] shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <div className="flex items-center justify-between border-b border-white/10 bg-[#15161b] px-6 py-5">

@@ -8,7 +8,7 @@ import { useToast } from '../contexts/ToastContext';
 
 function renderLog(_index: number, log: TraceLogResult['logs'][number]) {
     return <article className="border-b border-gray-800 px-4 py-3 font-mono text-xs">
-        <div className="mb-2 flex flex-wrap gap-3 text-text-dim"><time>{new Date(log.timestamp).toLocaleString()}</time><span>{log.level}</span><span>{log.serviceName} / {log.sourceName}</span></div>
+        <div className="mb-2 break-words [overflow-wrap:anywhere] flex flex-wrap gap-3 text-text-dim"><time>{new Date(log.timestamp).toLocaleString()}</time><span>{log.level}</span><span>{log.serviceName} / {log.sourceName}</span></div>
         <pre className="whitespace-pre-wrap break-all text-gray-200">{log.message}</pre><LogCorrelationLinks message={log.message} record={log} />
     </article>;
 }
@@ -32,7 +32,7 @@ export function TraceLogSearch({ traceId, serviceName, onAllSources, spanId, onW
         return () => controller.abort();
     }, [traceId, serviceName, spanId, attempt, addToast]);
     return <section className="flex min-h-0 flex-1 flex-col" aria-label="Trace logs">
-        <header className="space-y-3 border-b border-gray-800 p-4">
+        <header className="shrink-0 break-words [overflow-wrap:anywhere] space-y-3 border-b border-gray-800 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="flex items-center gap-2 font-semibold text-gray-100"><Search className="h-4 w-4 text-primary" />Trace logs</h2>
                 <button type="button" onClick={() => setAttempt(value => value + 1)} className="flex items-center gap-2 rounded-lg border border-gray-700 px-3 py-2 text-xs text-gray-200 focus-visible:ring-2 focus-visible:ring-primary"><RefreshCw className="h-3 w-3" />Search again</button></div>
             <p className="break-all font-mono text-xs text-text-dim">Trace ID: {traceId}</p>

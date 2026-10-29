@@ -12,14 +12,14 @@ export function LogSourceDialog({ title, description, busy = false, onClose, chi
     return () => { element?.close(); if (trigger instanceof HTMLElement && trigger.isConnected) trigger.focus(); };
   }, []);
   return <dialog ref={dialog} aria-label={title} onCancel={event => { event.preventDefault(); if (!busy) onClose(); }} className="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none border-0 bg-transparent p-4 text-text backdrop:bg-black/60 backdrop:backdrop-blur-sm">
-    <div className="flex min-h-full items-center justify-center">
-      <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-bg-surface shadow-2xl">
-        <header className="flex items-start justify-between gap-4 p-6 pb-4">
+    <div className="flex h-full min-h-0 items-center justify-center">
+      <div className="flex max-h-full min-h-0 w-full max-w-lg flex-col rounded-2xl border border-white/10 bg-bg-surface shadow-2xl">
+        <header className="flex shrink-0 items-start justify-between gap-4 p-4 pb-3 sm:p-6 sm:pb-4">
           <div><h2 className="text-xl font-bold text-text text-balance">{title}</h2><p className="mt-2 text-sm text-text-dim text-pretty">{description}</p></div>
           <button type="button" aria-label={`Close ${title}`} disabled={busy} onClick={onClose} className="rounded-lg p-1 text-text-dim hover:bg-white/5 hover:text-text focus-visible:outline focus-visible:outline-primary disabled:opacity-50"><X className="size-5" /></button>
         </header>
-        {children && <div className="px-6 pb-5">{children}</div>}
-        <footer className="mx-6 flex gap-3 border-t border-white/10 py-5">{actions}</footer>
+        {children && <div className="min-h-0 overflow-y-auto overscroll-contain px-4 pb-4 sm:px-6 sm:pb-5">{children}</div>}
+        <footer className="mx-4 flex shrink-0 gap-3 sm:mx-6 border-t border-white/10 py-5">{actions}</footer>
       </div>
     </div>
   </dialog>;

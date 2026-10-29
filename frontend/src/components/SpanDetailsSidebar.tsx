@@ -73,11 +73,11 @@ export const SpanDetailsSidebar: React.FC<SpanDetailsSidebarProps> = ({ span, on
             />
 
             {/* Sidebar drawer */}
-            <div className="fixed top-0 right-0 h-full w-full max-w-xl bg-bg-surface/95 backdrop-blur-xl border-l border-gray-800 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col pt-16 lg:pt-0">
+            <div className="fixed top-0 right-0 h-dvh w-full max-w-xl bg-bg-surface/95 backdrop-blur-xl border-l border-gray-800 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col pb-[env(safe-area-inset-bottom)]">
 
                 {/* Header */}
-                <div className="p-4 border-b border-gray-800 flex justify-between items-start bg-bg-card/50">
-                    <div className="flex items-start gap-3">
+                <div className="p-4 shrink-0 border-b border-gray-800 flex justify-between items-start bg-bg-card/50">
+                    <div className="flex min-w-0 items-start gap-3">
                         <div className="p-2 bg-white/5 rounded-lg border border-gray-700">
                             {getSystemIcon()}
                         </div>
@@ -96,7 +96,7 @@ export const SpanDetailsSidebar: React.FC<SpanDetailsSidebarProps> = ({ span, on
                 </div>
 
                 {/* Content Body */}
-                <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 custom-scrollbar">
 
                     {/* Status & Timing Banner */}
                     <div className={`p-4 rounded-xl mb-6 border ${isError ? 'bg-red-500/10 border-red-500/30' : 'bg-primary/5 border-primary/20'}`}>

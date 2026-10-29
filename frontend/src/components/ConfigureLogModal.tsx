@@ -181,9 +181,9 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-bg-surface border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden text-sm">
+      <div className="bg-bg-surface border border-white/10 rounded-2xl w-full max-w-lg max-h-[calc(100dvh-2rem)] flex flex-col shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden text-sm">
         
-        <div className="flex items-center justify-between p-6 pb-4 bg-bg-surface">
+        <div className="flex shrink-0 items-center justify-between p-4 sm:p-6 pb-4 bg-bg-surface">
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold bg-linear-to-r from-white to-gray-400 bg-clip-text text-transparent">Configure Log Sources</h2>
             {!canEdit && (
@@ -198,7 +198,7 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 pt-2 space-y-6">
+        <form onSubmit={handleSubmit} className="min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 pt-2 space-y-6">
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-xl text-xs">
               {error}

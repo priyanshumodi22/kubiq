@@ -33,7 +33,7 @@ export default function Footer() {
 
   return (
     <>
-      <footer className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-700 bg-bg-surface/90 backdrop-blur-sm">
+      <footer className="relative z-40 border-t border-gray-700 bg-bg-surface/90 backdrop-blur-sm">
         <div className="container mx-auto px-3 py-3 sm:px-4 sm:py-4 lg:px-6">
           <div className="flex flex-col items-center justify-between gap-2 text-center text-xs text-text-dim sm:flex-row sm:text-left sm:text-sm">
             <div className="flex flex-col items-center gap-1 sm:items-start">

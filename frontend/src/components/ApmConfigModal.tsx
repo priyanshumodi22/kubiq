@@ -64,7 +64,7 @@ export function ApmConfigModal({ isOpen, onClose }: Readonly<ApmConfigModalProps
         onClick={onClose}
       />
       
-      <div className="bg-bg-surface border border-gray-800 rounded-xl shadow-2xl w-full max-w-lg relative z-10 animate-fade-in-up">
+      <div className="bg-bg-surface border border-gray-800 rounded-xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain relative z-10 animate-fade-in-up">
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-800">
           <div className="flex items-center gap-3">

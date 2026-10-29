@@ -484,7 +484,7 @@ function ApmInspector({ model }: Readonly<{ model: ApmDashboardModel }>) {
     } = model;
     return (<div className="flex flex-col lg:flex-row gap-6 animate-fade-in">
                     {/* Left Panel: Service Cards List */}
-                    <div className="w-full lg:w-1/3 xl:w-1/4 shrink-0 flex flex-col gap-3 max-h-[800px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="w-full lg:w-1/3 xl:w-1/4 shrink-0 flex flex-col gap-3 max-h-64 lg:max-h-[800px] overflow-y-auto pr-2 custom-scrollbar">
                         <div className="flex items-center justify-between mb-2">
                             <h2 className="text-lg font-bold text-white">Services</h2>
                             <button onClick={() => {
@@ -533,7 +533,7 @@ function ApmInspector({ model }: Readonly<{ model: ApmDashboardModel }>) {
 
 
                     {/* Right Panel: Trace Dropdown & Waterfall */}
-                    <div className="flex-1 flex flex-col gap-4">
+                    <div className="min-w-0 flex-1 flex flex-col gap-4">
                         <div className="bg-bg-surface border border-gray-800 rounded-xl p-4 shadow-sm flex flex-col gap-4">
                             <h2 className="text-xl font-bold text-white flex items-start sm:items-center gap-2 mb-2">
                                 <Search className="w-5 h-5 text-primary shrink-0 mt-1 sm:mt-0" />
@@ -720,7 +720,7 @@ function ApmExportDialog({ model }: Readonly<{ model: ApmDashboardModel }>) {
     } = model;
     return (<div className="fixed inset-0 z-100 flex items-center justify-center p-4">
                     <button type="button" tabIndex={-1} aria-label="Close export dialog" className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity duration-300" onClick={() => setIsExportModalOpen(false)} />
-                    <div className="relative bg-[#0B0C10] bg-linear-to-b from-[#13151A] to-[#0B0C10] border border-gray-700/60 rounded-2xl shadow-2xl shadow-green-900/10 w-full max-w-lg animate-fade-in ring-1 ring-white/5">
+                    <div className="relative bg-[#0B0C10] bg-linear-to-b from-[#13151A] to-[#0B0C10] border border-gray-700/60 rounded-2xl shadow-2xl shadow-green-900/10 w-full max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain animate-fade-in ring-1 ring-white/5">
                         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-800/80 bg-white/2 rounded-t-2xl">
                             <div className="flex items-center gap-4">
                                 <div className="p-2.5 bg-green-500/10 rounded-xl border border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]">
@@ -1000,7 +1000,7 @@ function ApmTimeRangePicker({ model }: Readonly<{ model: ApmDashboardModel }>) {
                                 width: window.innerWidth < 640 ? 'auto' : timeRangeRect.width,
                                 zIndex: 9999
                             }}
-                            className="bg-bg-surface border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col"
+                            className="bg-bg-surface border border-white/10 rounded-xl shadow-2xl overflow-y-auto max-h-[60dvh] flex flex-col"
                         >
                             {/* Header */}
                             <div className="flex border-b border-white/10 bg-black/20">

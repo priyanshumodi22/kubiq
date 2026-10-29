@@ -193,7 +193,7 @@ function renderLogRow(index: number, log: LogLine) {
     return (
         <div className={`px-4 py-0.5 hover:bg-white/5 border-l-2 border-transparent hover:border-gray-600 flex gap-3 ${LEVEL_COLORS[log.level] || LEVEL_COLORS.plain}`}>
             <span className="select-none opacity-30 w-8 text-right shrink-0 text-[10px] pt-px">{index + 1}</span>
-            <span className="break-all whitespace-pre-wrap flex-1 select-text leading-relaxed">{log.content}<LogCorrelationLinks message={log.content} /></span>
+            <span className="min-w-0 break-all whitespace-pre-wrap flex-1 select-text leading-relaxed">{log.content}<LogCorrelationLinks message={log.content} /></span>
         </div>
     );
 }
@@ -438,7 +438,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                                 initial={{ scale: 0.95, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 exit={{ scale: 0.95, opacity: 0 }}
-                                className="flex w-full max-w-3xl max-h-[85vh] flex-col overflow-hidden rounded-2xl border border-white/15 bg-[#101116] shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
+                                className="flex w-full max-w-3xl max-h-[calc(100dvh-2rem)] flex-col overflow-hidden rounded-2xl border border-white/15 bg-[#101116] shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <div className="flex items-center justify-between border-b border-white/10 bg-[#15161b] px-6 py-5">
@@ -482,10 +482,10 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
     );
 
     const content = (
-            <div className={`bg-[#0f1115] border border-gray-800 rounded-xl w-full h-full flex flex-col overflow-hidden ${isEmbedded ? '' : 'max-w-5xl h-[85vh] shadow-2xl'}`}>
+            <div className={`bg-[#0f1115] border border-gray-800 rounded-xl w-full h-full flex flex-col overflow-hidden ${isEmbedded ? '' : 'max-w-5xl h-[calc(100dvh-2rem)] shadow-2xl'}`}>
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 bg-[#161920]">
-                    <div className="flex items-center space-x-3">
+                <div className="flex shrink-0 flex-wrap gap-3 items-center justify-between px-4 py-3 border-b border-gray-800 bg-[#161920]">
+                    <div className="flex min-w-0 items-center space-x-3">
                         <FileText className="w-5 h-5 text-gray-400 shrink-0" />
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
@@ -514,7 +514,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                         </div>
                     </div>
 
-                    <div className="flex items-center space-x-2 ml-4 shrink-0">
+                    <div className="flex items-center space-x-2 sm:ml-4 shrink-0">
                         {/* Tab Switcher */}
                         <div className="flex bg-black/40 rounded-lg p-1 mr-2 border border-gray-800">
                             <button
@@ -582,7 +582,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logPath, logSources, isOpe
                 {activeTab === 'search' ? (
                     <LogSearch serviceName={serviceName} initialQuery={initialSearchQuery} />
                 ) : (
-                    <div className="flex-1 relative bg-[#0d0d0d] font-mono text-xs">
+                    <div className="min-h-0 flex-1 relative pb-20 bg-[#0d0d0d] font-mono text-xs">
                         {/* Floating Actions inside Terminal */}
                         <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
                             {/* Auto-scroll / Pause Status */}

@@ -68,7 +68,7 @@ function renderLogRow(index: number, log: LogLine) {
     return (
         <div className={`px-4 py-0.5 hover:bg-white/5 border-l-2 border-transparent hover:border-gray-600 flex gap-3 ${LEVEL_COLORS[log.level]}`}>
             <span className="select-none opacity-30 w-8 text-right shrink-0 text-[10px] pt-px">{index + 1}</span>
-            <span className="break-all whitespace-pre-wrap flex-1 select-text leading-relaxed">{log.content}<LogCorrelationLinks message={log.content} /></span>
+            <span className="min-w-0 break-all whitespace-pre-wrap flex-1 select-text leading-relaxed">{log.content}<LogCorrelationLinks message={log.content} /></span>
         </div>
     );
 }
@@ -94,7 +94,7 @@ function K8sLogModals({ showSummaryModal, summary, summarizing, showUpgradeModal
                                 initial={{ scale: 0.95, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 exit={{ scale: 0.95, opacity: 0 }}
-                                className="relative w-full max-w-3xl max-h-[85vh] overflow-hidden rounded-2xl border border-white/15 bg-[#101116] shadow-[0_24px_80px_rgba(0,0,0,0.55)] flex flex-col"
+                                className="relative w-full max-w-3xl max-h-[calc(100dvh-2rem)] overflow-hidden rounded-2xl border border-white/15 bg-[#101116] shadow-[0_24px_80px_rgba(0,0,0,0.55)] flex flex-col"
                             >
                                 <div className="flex items-center justify-between border-b border-white/10 bg-[#15161b] px-6 py-5">
                                     <div>
@@ -335,7 +335,7 @@ export function K8sLogViewer({ sourceId, sourceName, namespace, podName, deploym
     return (
         <div className="flex flex-col h-full bg-[#0d0d0d] font-mono text-xs overflow-hidden">
             <K8sLogModals showSummaryModal={showSummaryModal} summary={summary} summarizing={summarizing} showUpgradeModal={showUpgradeModal} onCloseSummary={() => setShowSummaryModal(false)} onCloseUpgrade={() => setShowUpgradeModal(false)} />
-            {sourceName && <p className="border-b border-white/10 px-3 py-2 text-xs text-text-dim">{sourceName} · {namespace} · following saved target</p>}
+            {sourceName && <p className="shrink-0 break-words border-b border-white/10 px-3 py-2 text-xs text-text-dim">{sourceName} · {namespace} · following saved target</p>}
             {/* ── Toolbar ────────────────────────────────────────── */}
             <div className="flex flex-row items-center gap-2 px-3 py-2 border-b border-gray-800 bg-[#111111] shrink-0 flex-wrap">
                 
@@ -456,7 +456,7 @@ export function K8sLogViewer({ sourceId, sourceName, namespace, podName, deploym
             </div>
 
             {activeTab === 'search' ? (
-                <div className="flex-1 overflow-hidden relative">
+                <div className="min-h-0 flex-1 overflow-hidden relative">
                     <LogSearch serviceName={k8sServiceName} initialQuery={initialSearchQuery} />
                 </div>
             ) : (
@@ -476,7 +476,7 @@ export function K8sLogViewer({ sourceId, sourceName, namespace, podName, deploym
             )}
 
             {/* ── Log Output ─────────────────────────────────────── */}
-            <div className="flex-1 relative min-h-0">
+            <div className="flex-1 relative min-h-0 pb-20">
                 {/* New lines badge */}
                 {newLogsCount > 0 && (
                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">

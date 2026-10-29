@@ -54,7 +54,7 @@ export function ApmInstrumentationModal({ isOpen, onClose }: Readonly<ApmInstrum
                 const bounds = event.currentTarget.getBoundingClientRect();
                 if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose();
             }}
-            className="fixed inset-0 m-auto flex max-h-[85vh] w-[calc(100%_-_2rem)] max-w-3xl flex-col overflow-hidden rounded-2xl border border-gray-800 bg-[#111111] p-0 text-inherit shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-md">
+            className="fixed inset-0 m-auto flex max-h-[calc(100dvh-2rem)] w-[calc(100%_-_2rem)] max-w-3xl flex-col overflow-hidden rounded-2xl border border-gray-800 bg-[#111111] p-0 text-inherit shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-md">
             <header className="flex items-center justify-between gap-3 border-b border-gray-800 bg-[#161616] p-5">
                 <div className="flex items-center gap-3"><Code2 className="size-6 shrink-0 text-primary" /><div>
                     <h3 id="apm-guide-title" className="text-base font-bold text-white">Instrument New Service</h3>

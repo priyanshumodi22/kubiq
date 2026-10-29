@@ -153,12 +153,12 @@ export default function TraceWaterfall({ spans, focusSpanId }: Readonly<TraceWat
 
     return (
         <div className="bg-bg-surface/40 backdrop-blur-md border border-gray-800 rounded-xl overflow-hidden shadow-2xl mt-8 animate-fade-in-up relative z-10">
-            <div className="p-4 border-b border-gray-800 bg-bg-surface/60 flex justify-between items-center">
+            <div className="p-4 border-b border-gray-800 bg-bg-surface/60 flex flex-wrap gap-3 justify-between items-center">
                 <h3 className="font-bold text-white flex items-center gap-2">
                     <Clock className="w-5 h-5 text-primary" />
                     Trace Waterfall
                 </h3>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-3">
                     {traceId && (
                         <Link
                             to={`/logs?traceId=${encodeURIComponent(traceId)}`}
