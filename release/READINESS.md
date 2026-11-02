@@ -27,7 +27,7 @@ The divergent local main/login fix is preserved; the newer upstream login alread
 ## Local verification
 - Frontend: 413 tests, lint and TypeScript/Vite production build passed.
 - Backend: 512 tests and TypeScript build passed. Existing lint: 0 errors, 382 warnings.
-- 20 package/release gate unit tests passed; workflow YAML and JavaScript syntax parsed successfully.
+- 21 package/release gate unit tests passed; workflow YAML and JavaScript syntax parsed successfully.
 - Installed production tracing runtime: 8 tests passed with overridden propagator dependency.
 - Real request/child-span log-context fixture passed (exported spans match retained/stdout events).
 - Real HTTP/Socket.IO Kubernetes log transport fixture passed, including replacement pods, permission
@@ -71,7 +71,8 @@ Updated package references:
 - [x] Replace obsolete Linux packaging with supported runtime and smoke-test gates.
 - [x] Run frontend/backend builds, tests and local masked-UI checks.
 - [ ] Review moderate dependency findings and resolve or approve scoped exceptions.
-- [ ] Verify both Linux architectures (local AMD64 plus CI ARM64 as available).
+- [x] Verify local AMD64 execution and ARM64 execution under QEMU (see ARM64-VERIFICATION.md).
+- [ ] Run the complete ARM64 CI build/ZIP workflow before publication.
 - [x] Run Linux-only Sonar operations tests under WSL: 12 passed.
 - [ ] Review/merge the release branch and reconcile local main with upstream, preserving login fix.
 - [ ] Obtain exact-final-commit application verification and fresh Sonar proof on main.
@@ -81,3 +82,5 @@ Updated package references:
 The duplicate local monitor and retention sweeps are disabled using a worktree-specific preload.
 The local PC initially had no Docker command. WSL Ubuntu required a startup retry; Linux tests use an
 independently checksum-verified official Node 22 runtime and task-owned temporary storage.
+
+ARM64 user-mode execution passed locally with Node 22.23.4 and QEMU aarch64 10.2.1. This is an emulated execution check, not native hardware or full cross-architecture build proof.
