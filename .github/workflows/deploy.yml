@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Require exact-commit Sonar release approval
         run: node .github/scripts/verify-sonar-release.cjs
         env:
@@ -101,6 +101,9 @@ jobs:
               npm run build --prefix backend
               npm run build:ncc --prefix backend
               npm ci --prefix telemetry --omit=dev --ignore-scripts
+              node scripts/check-production-dependencies.cjs
+              node ops/apm-production/dependency-boundary-check.cjs backend
+              node ops/apm-production/dependency-boundary-check.cjs telemetry
               node --test scripts/package-linux.test.cjs
               node scripts/package-linux.cjs "$RELEASE_ARCH" "release-$RELEASE_ASSET" /usr/local/bin/node
               "./release-$RELEASE_ASSET/kubiq" --check

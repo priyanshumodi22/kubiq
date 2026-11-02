@@ -1,0 +1,19 @@
+{
+  "scope": "kubiq application Docker/Linux launchers only; excludes publishing or enabling kubiq-apm/auto",
+  "reviewedOn": "2026-11-02",
+  "reviewBefore": "2026-12-02",
+  "sdkVersion": "1.1.1",
+  "roots": ["backend", "telemetry"],
+  "advisories": {
+    "GHSA-8988-4f7v-96qf": {
+      "packages": ["@opentelemetry/core"],
+      "assessment": "Not reachable in the application runtime: only W3CTraceContextPropagator is registered and traceRequest supplies only traceparent to extraction. Baggage headers are never read.",
+      "evidence": "ops/apm-production/dependency-boundary-check.cjs"
+    },
+    "GHSA-qqmp-wf37-98f9": {
+      "packages": ["@opentelemetry/instrumentation-cassandra-driver", "@opentelemetry/instrumentation-knex", "@opentelemetry/instrumentation-mongoose", "@opentelemetry/instrumentation-mysql", "@opentelemetry/instrumentation-mysql2", "@opentelemetry/instrumentation-pg", "@opentelemetry/instrumentation-tedious"],
+      "assessment": "Not reachable through the automatic database instrumentations: the application runtime registers only HTTP transport instrumentation; the affected database auto-instrumentation modules are not loaded. Explicit application database attributes remain subject to its existing tracing policy.",
+      "evidence": "ops/apm-production/dependency-boundary-check.cjs"
+    }
+  }
+}

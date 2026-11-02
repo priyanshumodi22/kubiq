@@ -27,7 +27,7 @@ The divergent local main/login fix is preserved; the newer upstream login alread
 ## Local verification
 - Frontend: 413 tests, lint and TypeScript/Vite production build passed.
 - Backend: 512 tests and TypeScript build passed. Existing lint: 0 errors, 382 warnings.
-- 21 package/release gate unit tests passed; workflow YAML and JavaScript syntax parsed successfully.
+- 25 package/release/policy unit tests passed; workflow YAML and JavaScript syntax parsed successfully.
 - Installed production tracing runtime: 8 tests passed with overridden propagator dependency.
 - Real request/child-span log-context fixture passed (exported spans match retained/stdout events).
 - Real HTTP/Socket.IO Kubernetes log transport fixture passed, including replacement pods, permission
@@ -43,14 +43,16 @@ The divergent local main/login fix is preserved; the newer upstream login alread
 
 ## Dependency audit scope and remaining findings
 Audited locked production dependency graphs (npm audit --omit=dev); not a full exploitability proof.
-All three high/critical audit gates pass. Remaining moderate findings require review before final sign-off:
-frontend 2, backend 46, tracing 44. Many are dependency-chain repeats of the same advisory.
+All three high/critical audit gates pass. The moderate review is complete for the application scope:
+frontend 0, backend 42 and tracing 42 graph findings. The latter graphs repeat the same two
+OpenTelemetry advisories. [DEPENDENCY-REVIEW.md](DEPENDENCY-REVIEW.md) records four patched
+advisories and the two tested, narrowly scoped non-reachability assessments. The machine-readable
+assessment expires 2026-12-02; CI rejects unknown findings, elevated severity, SDK/scope drift,
+incomplete audit data or expired assessments. No findings are hidden from the output.
 
-The older SDK pins OpenTelemetry 1.x: baggage memory bounds and legacy database-user instrumentation
-advisories require a coordinated SDK migration/review. kubiq/runtime explicitly registers W3C trace-context
-propagation, not baggage or Jaeger, but this is not a blanket exemption for every legacy SDK entry point.
-Other remaining findings include glob/minimatch cancellation/complexity, uuid supplied-buffer bounds and
-PostCSS selector parsing (trusted build input). No audit suppression or forced major SDK upgrade was used.
+The Docker image and application CI now use supported Node 22, matching the tested Linux bundles.
+The unchanged standalone SDK/auto entry point is explicitly outside this assessment. Its next
+publication needs a separate migration/review.
 
 NPMScan enrichment reported no KEV-listed finding; this does not make an advisory harmless. Flagged-package
 maintainer/provenance checks found no source/provenance mismatch. OpenTelemetry has recent legitimate
@@ -70,7 +72,7 @@ Updated package references:
 - [x] Remove high/critical production dependency findings; document remaining moderate findings.
 - [x] Replace obsolete Linux packaging with supported runtime and smoke-test gates.
 - [x] Run frontend/backend builds, tests and local masked-UI checks.
-- [ ] Review moderate dependency findings and resolve or approve scoped exceptions.
+- [x] Review moderate dependency findings: four patched; two application-scoped assessments verified and guarded until 2026-12-02 (standalone SDK excluded).
 - [x] Verify local AMD64 execution and ARM64 execution under QEMU (see ARM64-VERIFICATION.md).
 - [ ] Run the complete ARM64 CI build/ZIP workflow before publication.
 - [x] Run Linux-only Sonar operations tests under WSL: 12 passed.
@@ -84,3 +86,5 @@ The local PC initially had no Docker command. WSL Ubuntu required a startup retr
 independently checksum-verified official Node 22 runtime and task-owned temporary storage.
 
 ARM64 user-mode execution passed locally with Node 22.23.4 and QEMU aarch64 10.2.1. This is an emulated execution check, not native hardware or full cross-architecture build proof.
+
+After the moderate dependency updates, AMD64 and emulated ARM64 bundle smoke checks passed again, as did both installed-runtime boundary checks and the real LogStreamService glob check under Node 22.23.4. The changed Docker image still requires its normal CI image build before release.

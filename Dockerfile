@@ -1,5 +1,5 @@
 # Stage 1: Build Frontend
-FROM node:20-slim AS ui-build
+FROM node:22-bookworm-slim AS ui-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
@@ -19,7 +19,7 @@ ENV VITE_FRONTEND_BASE_PATH=$VITE_FRONTEND_BASE_PATH \
 RUN npm run build 
 
 # Stage 2: Build Backend
-FROM node:20-slim AS server-build
+FROM node:22-bookworm-slim AS server-build
 WORKDIR /app/backend
 # Install build tools for native modules (bcrypt, etc.)
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
@@ -31,13 +31,13 @@ RUN npm run build
 RUN npm run build:ncc
 
 # Install only the external tracing runtime, independently of the bundled application.
-FROM node:20-slim AS tracing-deps
+FROM node:22-bookworm-slim AS tracing-deps
 WORKDIR /app
 COPY telemetry/package*.json ./
 RUN npm ci --omit=dev --ignore-scripts
 
 # Production Runner
-FROM node:20-slim
+FROM node:22-bookworm-slim
 WORKDIR /app
 
 # This production image runs inside k3s with a projected service-account token.

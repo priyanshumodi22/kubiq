@@ -11,6 +11,8 @@ on:
       - telemetry/**
       - release/**
       - scripts/**
+      - ops/apm-production/**
+      - .github/scripts/**
       - .github/workflows/deploy.yml
       - .github/workflows/gcp-k3s.yml
   workflow_dispatch:
@@ -46,7 +48,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: |
             backend/package-lock.json
@@ -57,11 +59,13 @@ jobs:
           npm audit --package-lock-only --omit=dev --audit-level=high --prefix backend
           npm audit --package-lock-only --omit=dev --audit-level=high --prefix frontend
           npm audit --package-lock-only --omit=dev --audit-level=high --prefix telemetry
+          node scripts/check-production-dependencies.cjs
       - run: node scripts/generate-apm-guide.cjs --check
       - run: npm ci --prefix kubiq-apm/node --ignore-scripts
       - run: node --test ops/apm-guide-check/exporter-failure.test.cjs ops/apm-guide-check/manifest.test.cjs
       - run: node --test .github/scripts/*.test.cjs
       - run: node --test scripts/package-linux.test.cjs
+      - run: node --test scripts/check-production-dependencies.test.cjs
       - run: python3 -m unittest discover -s ops/sonarqube -p 'test_*.py'
       - run: node scripts/verify-sonar-ledger.cjs
       - run: python3 -m unittest discover -s kubiq-apm/python -p test_wrapper.py
@@ -69,8 +73,14 @@ jobs:
       - run: npm run lint --prefix backend
       - run: npm test --prefix backend -- --runInBand
       - run: npm run build --prefix backend
+      - run: node ops/apm-production/glob-compatibility-check.cjs
       - name: Verify real request and child-span log context
         run: node ops/apm-production/log-context-check.cjs
+      - name: Verify scoped dependency assessments against installed runtimes
+        run: |
+          npm ci --prefix telemetry --omit=dev --ignore-scripts
+          node ops/apm-production/dependency-boundary-check.cjs backend
+          node ops/apm-production/dependency-boundary-check.cjs telemetry
       - run: npm ci --prefix frontend
       - name: Verify saved Kubernetes logs through real HTTP and Socket.IO transports
         run: node ops/kubernetes-logs/transport.cjs
@@ -90,7 +100,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Require exact-commit Sonar release approval
         run: node .github/scripts/verify-sonar-release.cjs
         env:
