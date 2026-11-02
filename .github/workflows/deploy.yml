@@ -63,80 +63,58 @@ jobs:
           cache-to: type=gha,mode=max
 
   build-binaries:
+    name: Package Linux (${{ matrix.arch }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            platform: linux/amd64
+            asset: amd64
+          - arch: arm64
+            platform: linux/arm64
+            asset: arm64
     permissions:
       contents: write
       actions: read
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - name: Require exact-commit Sonar release approval
+          node-version: '22'
+      - name: Require exact-commit release approval
         run: node .github/scripts/verify-sonar-release.cjs
         env:
           GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Build Frontend & Backend (AMD64)
+      - uses: docker/setup-qemu-action@v3
+      - name: Build, package and smoke-test supported runtime
         run: |
-          npm ci --prefix frontend
-          npm run build --prefix frontend
-          npm ci --prefix backend
-          npm run build --prefix backend
-
-      - name: Package AMD64 Binary
-        run: |
-          cd backend
-          npx pkg . -t node18-linux-x64 --output ../kubiq-linux-amd64
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Build ARM64 Binary & Node Modules (via Docker)
-        run: |
-          # Build binary AND keep the native node_modules
-          docker run --rm --platform linux/arm64 \
-            -v ${{ github.workspace }}:/app \
-            -w /app/backend \
-            node:20-slim \
-            /bin/bash -c "apt-get update && apt-get install -y python3 make g++ && npm ci && npm run build && npx pkg . -t node18-linux-arm64 --output ../kubiq-linux-arm64 && cp -r node_modules ../node_modules-arm64"
-
-      - name: Zip Bundle (Binaries + Frontend)
-        run: |
-          # AMD64 Bundle
-          mkdir release-amd64
-          cp kubiq-linux-amd64 release-amd64/kubiq
-          cp -r frontend/dist release-amd64/public
-          cp backend/.env release-amd64/.env.example
-          cp backend/package.json release-amd64/package.json
-          cp -r backend/node_modules release-amd64/node_modules # these are AMD64 from 'npm ci' step
-
-          # ARM64 Bundle
-          mkdir release-arm64
-          cp kubiq-linux-arm64 release-arm64/kubiq
-          cp -r frontend/dist release-arm64/public
-          cp backend/.env release-arm64/.env.example
-          cp backend/package.json release-arm64/package.json
-          cp -r node_modules-arm64 release-arm64/node_modules # these are ARM64 from Docker step
-
-          # Zip them
-          cd release-amd64 && zip -r ../kubiq-linux-amd64.zip . && cd ..
-          cd release-arm64 && zip -r ../kubiq-linux-arm64.zip . && cd ..
-
+          docker run --rm --platform ${{ matrix.platform }} \
+            -e RELEASE_ARCH=${{ matrix.arch }} -e RELEASE_ASSET=${{ matrix.asset }} \
+            -e RELEASE_SHA=${{ github.sha }} -e RELEASE_VERSION=${{ github.ref_name }} \
+            -v "${{ github.workspace }}:/workspace" -w /workspace node:22-bookworm-slim \
+            bash -euc '
+              apt-get update && apt-get install -y --no-install-recommends python3 make g++ zip
+              npm ci --prefix frontend
+              npm run build --prefix frontend
+              npm ci --prefix backend
+              npm run build --prefix backend
+              npm run build:ncc --prefix backend
+              npm ci --prefix telemetry --omit=dev --ignore-scripts
+              node --test scripts/package-linux.test.cjs
+              node scripts/package-linux.cjs "$RELEASE_ARCH" "release-$RELEASE_ASSET" /usr/local/bin/node
+              "./release-$RELEASE_ASSET/kubiq" --check
+              "./release-$RELEASE_ASSET/kubiq" --version
+              node scripts/smoke-linux.cjs "release-$RELEASE_ASSET"
+              cd "release-$RELEASE_ASSET"
+              zip -qr "../kubiq-linux-$RELEASE_ASSET.zip" .
+            '
       - name: Recheck release gates before asset publication
         if: github.event_name == 'release'
         run: node .github/scripts/verify-sonar-release.cjs
         env:
           GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Upload Release Assets
-        uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v2
         if: github.event_name == 'release'
         with:
-          files: |
-            kubiq-linux-amd64.zip
-            kubiq-linux-arm64.zip
-
+          files: kubiq-linux-${{ matrix.asset }}.zip

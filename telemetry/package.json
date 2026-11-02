@@ -4,5 +4,8 @@
   "dependencies": {
     "kubiq-apm": "1.1.1",
     "@opentelemetry/api": "1.7.0"
+  },
+  "overrides": {
+    "@opentelemetry/propagator-jaeger": "2.12.0"
   }
 }

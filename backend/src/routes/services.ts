@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { ServiceMonitor } from '../services/ServiceMonitor';
 import { requirePermission, getUserFromReq } from '../middleware/auth';
 import { AuditLogService } from '../services/AuditLogService';
-import { maskServiceEndpoint } from '../utils/sensitiveData';
+import { maskServiceEndpoint, redactEndpointPassword, resolveEndpointUpdate } from '../utils/sensitiveData';
 import { RbacRoleService } from '../services/RbacRoleService';
 import { withoutRawLogConfig } from '../utils/serviceVisibility';
 import { startPollingStream } from '../utils/pollingStream';
@@ -202,7 +202,7 @@ router.post('/custom-check', requirePermission('services.manage'), async (req: R
     }
 
     console.log(
-      `🔍 Custom endpoint check: Service="${service}", Endpoint="${endpoint}", Method="${
+      `🔍 Custom endpoint check: Service="${service}", Endpoint="${redactEndpointPassword(String(endpoint))}", Method="${
         method || 'GET'
       }"`
     );
@@ -216,7 +216,7 @@ router.post('/custom-check', requirePermission('services.manage'), async (req: R
     res.json(result);
   } catch (error) {
     console.error(
-      `❌ Custom endpoint check failed: Service="${req.body?.service}", Endpoint="${req.body?.endpoint}"`,
+      `❌ Custom endpoint check failed: Service="${req.body?.service}", Endpoint="${redactEndpointPassword(String(req.body?.endpoint))}"`,
       error
     );
     next(error);
@@ -232,7 +232,7 @@ router.post(
     try {
       const { name, endpoint, headers, type, ignoreSSL, logPath, logSources, interval, retries } = req.body;
 
-      if (!name || !endpoint) {
+      if (!name || typeof endpoint !== 'string' || !endpoint) {
         return res.status(400).json({
           error: 'Bad Request',
           message: 'Both name and endpoint are required',
@@ -249,7 +249,7 @@ router.post(
       });
       res.status(201).json({
         message: 'Service created successfully',
-        service: newService,
+        service: await maskServiceEndpoint(newService, req.user),
       });
     } catch (error: any) {
       if (error.message?.includes('already exists')) {
@@ -273,14 +273,20 @@ router.put(
       const { name } = req.params;
       const { endpoint, headers, type, ignoreSSL, logPath, logSources, interval, retries } = req.body;
 
-      if (!endpoint) {
+      if (typeof endpoint !== 'string' || !endpoint) {
         return res.status(400).json({
           error: 'Bad Request',
           message: 'Endpoint is required',
         });
       }
 
-      const updatedService = await monitor.updateService(name as string, { endpoint, headers, type, ignoreSSL, logPath, logSources, interval, retries });
+      const stored = monitor.getServiceByName(name as string);
+      let resolvedEndpoint = endpoint;
+      if (stored) {
+        try { resolvedEndpoint = resolveEndpointUpdate(endpoint, stored.endpoint); }
+        catch (error) { return res.status(400).json({ error: 'Bad Request', message: (error as Error).message }); }
+      }
+      const updatedService = await monitor.updateService(name as string, { endpoint: resolvedEndpoint, headers, type, ignoreSSL, logPath, logSources, interval, retries });
       auditLog.log({
         user: getUserFromReq(req),
         action: 'SERVICE_UPDATE',
@@ -290,7 +296,7 @@ router.put(
       });
       res.json({
         message: 'Service updated successfully',
-        service: updatedService,
+        service: await maskServiceEndpoint(updatedService, req.user),
       });
     } catch (error: any) {
       if (error.message?.includes('not found')) {

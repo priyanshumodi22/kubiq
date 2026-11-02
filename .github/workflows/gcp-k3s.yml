@@ -8,8 +8,17 @@ on:
       - backend/**
       - frontend/**
       - kubiq-apm/**
+      - telemetry/**
+      - release/**
+      - scripts/**
+      - .github/workflows/deploy.yml
       - .github/workflows/gcp-k3s.yml
   workflow_dispatch:
+    inputs:
+      publish_image:
+        description: Publish the image and update Flux after exact-commit release approval
+        type: boolean
+        default: false
 
 concurrency:
   group: kubiq-production
@@ -43,10 +52,16 @@ jobs:
             backend/package-lock.json
             frontend/package-lock.json
       - run: npm ci --prefix backend
+      - name: Reject high-severity production dependency advisories
+        run: |
+          npm audit --package-lock-only --omit=dev --audit-level=high --prefix backend
+          npm audit --package-lock-only --omit=dev --audit-level=high --prefix frontend
+          npm audit --package-lock-only --omit=dev --audit-level=high --prefix telemetry
       - run: node scripts/generate-apm-guide.cjs --check
       - run: npm ci --prefix kubiq-apm/node --ignore-scripts
       - run: node --test ops/apm-guide-check/exporter-failure.test.cjs ops/apm-guide-check/manifest.test.cjs
       - run: node --test .github/scripts/*.test.cjs
+      - run: node --test scripts/package-linux.test.cjs
       - run: python3 -m unittest discover -s ops/sonarqube -p 'test_*.py'
       - run: node scripts/verify-sonar-ledger.cjs
       - run: python3 -m unittest discover -s kubiq-apm/python -p test_wrapper.py
@@ -68,7 +83,7 @@ jobs:
 
   build-and-push:
     name: Build and publish image
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish_image
     needs: [verify, sdk-compatibility, database-compatibility]
     runs-on: ubuntu-latest
     steps:

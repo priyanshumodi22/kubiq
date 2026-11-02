@@ -4,8 +4,13 @@ import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, test, jest } from '@jest/globals';
 import { servicesRouter } from './services';
 
-const service = { name: 'api', endpoint: 'https://example.test', type: 'http', currentStatus: 'healthy', history: [], logPath: '/private/app.log', logSources: [{ path: '/private/other.log' }] };
-jest.mock('../services/ServiceMonitor', () => ({ ServiceMonitor: { getInstance: () => ({ getAllServices: () => [service], getServiceByName: () => service, getStats: () => ({}) }) } }));
+const service = { name: 'api', endpoint: 'mongodb://reader:FIXTURE_DB_PASSWORD@db.internal/app', type: 'mongodb', currentStatus: 'healthy', history: [], logPath: '/private/app.log', logSources: [{ path: '/private/other.log' }] };
+let persistedEndpoint = '';
+jest.mock('../services/ServiceMonitor', () => ({ ServiceMonitor: { getInstance: () => ({
+  getAllServices: () => [service], getServiceByName: () => service, getStats: () => ({}),
+  addService: async (config: object) => ({ ...service, ...config }),
+  updateService: async (_name: string, config: { endpoint: string }) => { persistedEndpoint = config.endpoint; return { ...service, ...config }; },
+}) } }));
 jest.mock('../services/AuditLogService', () => ({ AuditLogService: { getInstance: () => ({ log: jest.fn() }) } }));
 jest.mock('../services/RbacRoleService', () => ({ RbacRoleService: { hasPermission: async (user: { raw?: boolean }, permission: string) => permission !== 'logs.raw.read' || user.raw === true } }));
 
@@ -15,6 +20,7 @@ describe('service raw-log permission boundary over HTTP', () => {
   let origin: string;
   beforeAll(async () => {
     app.use(compression({ threshold: 0 }));
+    app.use(express.json());
     app.use((req, _res, next) => { req.user = { raw: req.headers['x-test-raw'] === 'yes' }; next(); });
     app.use('/services', servicesRouter);
     server = app.listen(0);
@@ -28,6 +34,7 @@ describe('service raw-log permission boundary over HTTP', () => {
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(JSON.stringify(body)).not.toContain('/private/');
+    expect(JSON.stringify(body)).not.toContain('FIXTURE_DB_PASSWORD');
     expect(service.logPath).toBe('/private/app.log');
   });
   test('authorized status consumers still receive their configured sources', async () => {
@@ -47,7 +54,28 @@ describe('service raw-log permission boundary over HTTP', () => {
       const first = new TextDecoder().decode((await reader.read()).value);
       expect(first).toContain('data: ');
       expect(first).not.toContain('/private/');
+      expect(first).not.toContain('FIXTURE_DB_PASSWORD');
       await reader.cancel();
     } finally { clearTimeout(deadline); abort.abort(); }
+  });
+  test('saving other settings preserves the real password, while save responses redact it', async () => {
+    const response = await fetch(`${origin}/services/api`, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint: 'mongodb://reader:*****@db.internal/app', interval: 60000 }) });
+    expect(response.status).toBe(200);
+    expect(persistedEndpoint).toBe(service.endpoint);
+    expect(JSON.stringify(await response.json())).not.toContain('FIXTURE_DB_PASSWORD');
+  });
+  test('changing a masked connection fails before credentials can be overwritten', async () => {
+    persistedEndpoint = '';
+    const response = await fetch(`${origin}/services/api`, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint: 'mongodb://reader:*****@new-db/app' }) });
+    expect(response.status).toBe(400);
+    expect(persistedEndpoint).toBe('');
+  });
+  test('new connections do not echo their password', async () => {
+    const response = await fetch(`${origin}/services`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'api', type: 'mongodb', endpoint: service.endpoint }) });
+    expect(response.status).toBe(201);
+    expect(JSON.stringify(await response.json())).not.toContain('FIXTURE_DB_PASSWORD');
   });
 });
