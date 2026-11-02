@@ -1,22 +1,51 @@
 import { RbacRoleService } from '../services/RbacRoleService';
 
-export const REDACTED_PASSWORD = '*****';
+// A UI placeholder, never a connection credential.
+export const ENDPOINT_MASK = '*****';
 
-/** Preserve connection identity and spelling (including MongoDB seed lists), never its password. */
+function redactAuthority(endpoint: string): string {
+  const schemeEnd = endpoint.indexOf('://');
+  if (schemeEnd < 0) return endpoint;
+  const start = schemeEnd + 3;
+  let end = endpoint.length;
+  for (const delimiter of ['/', '?', '#']) {
+    const position = endpoint.indexOf(delimiter, start);
+    if (position >= 0) end = Math.min(end, position);
+  }
+  const authority = endpoint.slice(start, end);
+  const at = authority.lastIndexOf('@');
+  const colon = authority.indexOf(':');
+  if (at < 0 || colon < 0 || colon > at) return endpoint;
+  return endpoint.slice(0, start + colon + 1) + ENDPOINT_MASK + endpoint.slice(start + at);
+}
+
+function redactQueryPart(part: string): string {
+  const equals = part.indexOf('=');
+  if (equals < 0) return part;
+  let key: string;
+  try { key = decodeURIComponent(part.slice(0, equals).replaceAll('+', ' ')).toLowerCase(); }
+  catch { return part; }
+  return ['password', 'passwd', 'pwd', 'pass'].includes(key)
+    ? part.slice(0, equals + 1) + ENDPOINT_MASK : part;
+}
+
+/** Preserve connection spelling (including MongoDB seed lists), never its password.
+ * Authority and query parsing use bounded string scans rather than overlapping regexes.
+ */
 export function redactEndpointPassword(endpoint: string): string {
-  return endpoint.replace(/^(\w[\w+.-]*:\/\/)([^/?#]*)(.*)$/s, (_match, scheme: string, authority: string, suffix: string) => {
-    const at = authority.lastIndexOf('@');
-    const colon = authority.slice(0, at).indexOf(':');
-    return at >= 0 && colon >= 0
-      ? `${scheme}${authority.slice(0, colon + 1)}${REDACTED_PASSWORD}${authority.slice(at)}${suffix}`
-      : `${scheme}${authority}${suffix}`;
-  }).replace(/([?&](?:password|passwd|pwd|pass)=)[^&#]*/gi, `$1${REDACTED_PASSWORD}`);
+  const redacted = redactAuthority(endpoint);
+  const query = redacted.indexOf('?');
+  const fragment = redacted.indexOf('#');
+  if (query < 0 || (fragment >= 0 && fragment < query)) return redacted;
+  const end = fragment < 0 ? redacted.length : fragment;
+  const parts = redacted.slice(query + 1, end).split('&').map(redactQueryPart);
+  return redacted.slice(0, query + 1) + parts.join('&') + redacted.slice(end);
 }
 
 /** An unchanged redacted form preserves the stored credential. Never persist a display mask. */
 export function resolveEndpointUpdate(endpoint: string, stored: string): string {
   if (endpoint === redactEndpointPassword(stored)) return stored;
-  if (endpoint.includes(REDACTED_PASSWORD)) {
+  if (endpoint.includes(ENDPOINT_MASK)) {
     throw new Error('Enter the complete connection endpoint, including its password, when changing a redacted endpoint.');
   }
   return endpoint;

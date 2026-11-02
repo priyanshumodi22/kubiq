@@ -10,8 +10,18 @@ describe('connection password visibility and safe editing', () => {
     ['mysql://host/db?password=secret&x=1', 'mysql://host/db?password=*****&x=1'],
     ['https://example.test/health', 'https://example.test/health'],
     ['mongodb://user@host/db', 'mongodb://user@host/db'],
+    ['mysql://user@host:3306/db', 'mysql://user@host:3306/db'],
+    ['mysql://host?PASSWORD=secret&%70wd=hidden#keep', 'mysql://host?PASSWORD=*****&%70wd=*****#keep'],
+    ['mysql://host/db?flag&%broken=x&key=value', 'mysql://host/db?flag&%broken=x&key=value'],
+    ['mysql://host/db#fragment?flag=true', 'mysql://host/db#fragment?flag=true'],
+    ['host/db?pass=secret', 'host/db?pass=*****'],
   ])('redacts %s without changing connection identity', (input, expected) => {
     expect(redactEndpointPassword(input)).toBe(expected);
+  });
+
+  it('handles long noncredential authorities without regex backtracking', () => {
+    const input = `mongodb://${'a'.repeat(100000)}/db`;
+    expect(redactEndpointPassword(input)).toBe(input);
   });
 
   it('preserves the stored password when other service settings are edited', () => {
