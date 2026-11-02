@@ -37,6 +37,6 @@ describe('RBAC acceptance matrix primitives', () => {
     const masked = await maskServiceEndpoint(service, { roles: ['kubiq-viewer'] });
     expect(masked.endpoint).toBe('*****');
     const readable = await maskServiceEndpoint(service, { roles: ['kubiq-user'] });
-    expect(readable.endpoint).toBe(service.endpoint);
+    expect(readable.endpoint).toBe('mongodb://user:*****@db.internal/orders');
   });
 });
