@@ -4,10 +4,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import KubernetesDashboard from './KubernetesDashboard';
 
 const mocks = vi.hoisted(() => ({
+  observeFrames: false, frames: [] as string[],
   available: true as boolean | null, switchContext: vi.fn(), setNamespace: vi.fn(),
   workloads: vi.fn(), pods: vi.fn(), deployments: vi.fn(), services: vi.fn(), configMaps: vi.fn(), secrets: vi.fn(), events: vi.fn(), metrics: vi.fn(),
   nodes: vi.fn(), endpoints: vi.fn(), ingresses: vi.fn(), volumes: vi.fn(), claims: vi.fn(), classes: vi.fn(),
 }));
+vi.mock('./KubernetesResourceHead', async importActual => {
+  const actual = await importActual<typeof import('./KubernetesResourceHead')>();
+  const { useLayoutEffect } = await import('react');
+  return { KubernetesResourceHead: (props: Parameters<typeof actual.KubernetesResourceHead>[0]) => {
+    useLayoutEffect(() => {
+      if (mocks.observeFrames) mocks.frames.push(document.querySelector('table')?.textContent || '');
+    });
+    return <actual.KubernetesResourceHead {...props} />;
+  } };
+});
 vi.mock('../hooks/useKubernetes', () => ({ useKubernetes: () => ({ available: mocks.available, context: 'fixture-context', contexts: [{ name: 'fixture-context', cluster: 'fixture', user: 'fixture-user' }, { name: 'gke_fixture_region_cluster', cluster: 'cluster' }], switchContext: mocks.switchContext, namespaces: ['fixture', 'apps'], selectedNamespace: 'fixture', setSelectedNamespace: mocks.setNamespace }) }));
 vi.mock('../services/api', () => ({ apiClient: {
   getKubernetesWorkloads: mocks.workloads, getKubernetesPods: mocks.pods, getKubernetesDeployments: mocks.deployments, getKubernetesServices: mocks.services,
@@ -23,7 +34,7 @@ vi.mock('../components/K8sDetailPanel', () => ({ K8sDetailPanel: ({ onClose }: {
 vi.mock('../components/K8sRbacPermissionBanner', () => ({ K8sRbacPermissionBanner: ({ onRetry }: { onRetry: () => void }) => <button onClick={onRetry}>Retry denied resource</button> }));
 
 beforeEach(() => {
-  vi.resetAllMocks(); mocks.available = true; localStorage.clear();
+  vi.resetAllMocks(); mocks.available = true; mocks.observeFrames = false; mocks.frames = []; localStorage.clear();
   for (const key of ['workloads', 'pods', 'deployments', 'services', 'configMaps', 'secrets', 'events', 'metrics', 'nodes', 'endpoints', 'ingresses', 'volumes', 'claims', 'classes'] as const) mocks[key].mockResolvedValue([]);
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -181,4 +192,17 @@ it('keeps a pending resource response distinct from an empty result and provides
   expect(inspect.tabIndex).toBe(0);
   fireEvent.click(inspect);
   expect(view.getByRole('button', { name: 'Close fixture detail' })).toBeTruthy();
+});
+
+it('shows loading in the first committed table frame before passive request effects run', async () => {
+  const view = render(<KubernetesDashboard />);
+  await act(async () => { await Promise.resolve(); });
+  let finish!: (value: unknown[]) => void;
+  mocks.pods.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+  mocks.observeFrames = true;
+  fireEvent.click(view.getByRole('button', { name: /^Pods$/ }));
+  expect(mocks.frames.some(frame => frame.includes('Loading resources'))).toBe(true);
+  expect(mocks.frames.some(frame => frame.includes('No pods found'))).toBe(false);
+  await act(async () => finish([]));
+  expect(view.getByText('No pods found')).toBeTruthy();
 });
