@@ -122,7 +122,13 @@ export default function KubernetesDashboard() {
             return {};
         }
     });
-    const [loading, setLoading] = useState(false);
+    const [fetching, setLoading] = useState(false);
+    const [settledQuery, setSettledQuery] = useState('');
+    const resourceQuery = JSON.stringify([context, selectedNamespace, activeResource]);
+    const hasCurrentData = settledQuery === resourceQuery;
+    // A selection changes before its passive request effect starts. Treat that
+    // first committed frame as pending too, rather than rendering stale/empty data.
+    const loading = fetching || !hasCurrentData;
     const requestGeneration = useRef(0);
     const [resourceError, setResourceError] = useState('');
     const [rbacError, setRbacError] = useState<{ resource: string; namespace: string; message: string } | null>(null);
@@ -296,9 +302,10 @@ export default function KubernetesDashboard() {
                 });
             } else { setResourceError(requestErrorMessage(e, 'Kubernetes data is unavailable. Retry the request.')); }
         } finally {
+            latestUpdate(requestGeneration, request, setSettledQuery, resourceQuery);
             latestUpdate(requestGeneration, request, setLoading, false);
         }
-    }, [available, selectedNamespace, activeResource]);
+    }, [available, selectedNamespace, activeResource, resourceQuery]);
 
     const invalidateRequests = useCallback(() => { requestGeneration.current++; }, []);
 
@@ -687,7 +694,7 @@ export default function KubernetesDashboard() {
                             </div>
                         )}
 
-                        <KubernetesSpecialContent failure={resourceError} error={rbacError} resource={activeResource} namespace={selectedNamespace} data={overviewData}
+                        <KubernetesSpecialContent failure={hasCurrentData ? resourceError : ''} error={hasCurrentData ? rbacError : null} resource={activeResource} namespace={selectedNamespace} data={hasCurrentData ? overviewData : null}
                             onRetry={fetchData} onSwitchTab={tab => { setActiveResource(tab); setSearchQuery(''); }} onSelectItem={setSelectedItem}>
                             <>
                                 {/* Toolbar */}
