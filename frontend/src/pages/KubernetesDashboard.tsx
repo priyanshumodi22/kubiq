@@ -122,7 +122,7 @@ export default function KubernetesDashboard() {
             return {};
         }
     });
-    const [fetching, setLoading] = useState(false);
+    const [fetching, setFetching] = useState(false);
     const [settledQuery, setSettledQuery] = useState('');
     const resourceQuery = JSON.stringify([context, selectedNamespace, activeResource]);
     const hasCurrentData = settledQuery === resourceQuery;
@@ -132,6 +132,9 @@ export default function KubernetesDashboard() {
     const requestGeneration = useRef(0);
     const [resourceError, setResourceError] = useState('');
     const [rbacError, setRbacError] = useState<{ resource: string; namespace: string; message: string } | null>(null);
+    const currentContent = hasCurrentData
+        ? { failure: resourceError, error: rbacError, data: overviewData }
+        : { failure: '', error: null, data: null };
 
     useEffect(() => {
         if (!metrics || metrics.length === 0) return;
@@ -220,7 +223,7 @@ export default function KubernetesDashboard() {
         const writeData = (value: KubernetesResourceDetails[]) => latestUpdate(requestGeneration, request, setResourceData, value);
         const writeOverview = (value: ComponentProps<typeof KubernetesSpecialContent>['data']) => latestUpdate(requestGeneration, request, setOverviewData, value);
         setResourceError('');
-        setLoading(true);
+        setFetching(true);
         setRbacError(null);
         try {
             if (additionalWorkloadTypes.has(activeResource)) {
@@ -303,7 +306,7 @@ export default function KubernetesDashboard() {
             } else { setResourceError(requestErrorMessage(e, 'Kubernetes data is unavailable. Retry the request.')); }
         } finally {
             latestUpdate(requestGeneration, request, setSettledQuery, resourceQuery);
-            latestUpdate(requestGeneration, request, setLoading, false);
+            latestUpdate(requestGeneration, request, setFetching, false);
         }
     }, [available, selectedNamespace, activeResource, resourceQuery]);
 
@@ -694,7 +697,7 @@ export default function KubernetesDashboard() {
                             </div>
                         )}
 
-                        <KubernetesSpecialContent failure={hasCurrentData ? resourceError : ''} error={hasCurrentData ? rbacError : null} resource={activeResource} namespace={selectedNamespace} data={hasCurrentData ? overviewData : null}
+                        <KubernetesSpecialContent {...currentContent} resource={activeResource} namespace={selectedNamespace}
                             onRetry={fetchData} onSwitchTab={tab => { setActiveResource(tab); setSearchQuery(''); }} onSelectItem={setSelectedItem}>
                             <>
                                 {/* Toolbar */}
