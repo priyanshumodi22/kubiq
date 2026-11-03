@@ -694,7 +694,7 @@ export default function KubernetesDashboard() {
                                 <div className="p-3 border-b border-gray-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-bg-surface shrink-0 text-left gap-2">
                                     <div className="flex items-center gap-2 px-2">
                                         <span className="text-sm font-semibold text-white capitalize">{activeResource.replace('persistent', 'Persistent ')}</span>
-                                        <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">{filteredAndSortedData.length}</span>
+                                        <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">{loading ? '…' : filteredAndSortedData.length}</span>
                                     </div>
                                     <div className="relative w-full sm:w-auto">
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
@@ -714,13 +714,15 @@ export default function KubernetesDashboard() {
                                 </div>
 
                                 {/* Dynamic Table View */}
-                                <div className="flex-1 overflow-auto custom-scrollbar">
+                                <div aria-busy={loading} className="flex-1 overflow-auto custom-scrollbar">
                                     <table className="w-full text-sm">
                                         <thead className="bg-bg-surface sticky top-0 z-10 shadow-sm">
                                             <KubernetesResourceHead resource={activeResource} sort={sortCol} onSort={handleSort} />
                                         </thead>
                                         <tbody className="divide-y divide-gray-800/40">
-                                            {filteredAndSortedData.length === 0 ? (
+                                            {loading ? (
+                                                <tr><td colSpan={10} className="p-8 text-center text-gray-400"><span role="status">Loading resources…</span></td></tr>
+                                            ) : filteredAndSortedData.length === 0 ? (
                                                 <tr><td colSpan={10} className="p-8 text-center text-gray-500">No {activeResource} found</td></tr>
                                             ) : filteredAndSortedData.map((item, idx) => {
                                                 const name = item.name || item.metadata?.name;
@@ -732,7 +734,7 @@ export default function KubernetesDashboard() {
                                                         <td className="px-4 py-2.5">
                                                             <div className="flex items-center gap-2">
                                                                 <FileJson className="w-3.5 h-3.5 text-gray-500 group-hover:text-primary transition-colors" />
-                                                                <span className="font-mono text-xs text-gray-200">{name}</span>
+                                                                <button type="button" aria-label={`Inspect ${activeResource} ${name}`} onClick={event => { event.stopPropagation(); setSelectedItem({type: activeResource, data: item}); }} className="rounded text-left font-mono text-xs text-gray-200 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">{name}</button>
                                                             </div>
                                                         </td>
 

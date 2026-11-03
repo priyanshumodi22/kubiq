@@ -1,3 +1,5 @@
+import { ModalDialog } from './ModalDialog';
+import { popoverRoot } from '../utils/popoverRoot';
 
 import React, { useState, useRef, useEffect, useId } from 'react';
 import { apiErrorMessage } from '../utils/apiErrorMessage';
@@ -79,7 +81,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
       } else {
           // HTTP / Database
           if (!endpoint.trim()) {
-             setError(type === 'http' ? 'Endpoint URL is required' : 'Connection String is required');
+             setError(type === 'http' ? 'Endpoint URL is required' : type === 'icmp' ? 'Hostname or IP address is required' : 'Connection String is required');
              return;
           }
           finalEndpoint = endpoint.trim();
@@ -129,14 +131,15 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
   ];
 
   return createPortal(
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-bg-surface border border-white/10 rounded-2xl w-full max-w-md shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden">
+    <ModalDialog label="Add New Service" onClose={handleClose} busy={isSubmitting}>
+    <div data-dialog-backdrop className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-bg-surface border border-white/10 rounded-2xl w-full max-w-md shadow-2xl scale-100 animate-in zoom-in-95 duration-200 max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain">
         
         {/* Header */}
         <div className="flex items-center justify-between p-6 pb-4">
           <h2 className="text-xl font-bold bg-linear-to-r from-white to-gray-400 bg-clip-text text-transparent">Add New Service</h2>
           <button
-            type="button" aria-label="Close add service dialog"
+            disabled={isSubmitting} type="button" aria-label="Close add service dialog"
             onClick={handleClose}
             className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
           >
@@ -206,7 +209,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
                     </button>
                   ))}
                 </div>,
-                document.body
+                popoverRoot(typeTriggerRef.current)
              )}
 
             <div className="space-y-1.5">
@@ -218,7 +221,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
                   <Server className="w-5 h-5" />
                 </div>
                 <input
-                  id={`${formId}-name`}
+                  data-dialog-initial-focus id={`${formId}-name`}
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -266,7 +269,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
                     htmlFor={`${formId}-endpoint`}
                     className="block text-sm font-medium text-gray-400 ml-1"
                   >
-                    {type === 'http' ? 'Endpoint URL' : 'Connection String'}
+                    {type === 'http' ? 'Endpoint URL' : type === 'icmp' ? 'Hostname or IP address' : 'Connection String'}
                     {type === 'http' && <span className="text-gray-600"> | headers (optional)</span>}
                   </label>
                   <div className="relative group">
@@ -364,7 +367,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
                 </button>
               ))}
             </div>,
-            document.body
+            popoverRoot(triggerRef.current)
           )}
 
           {/* Actions */}
@@ -392,7 +395,8 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
           </div>
         </form>
       </div>
-    </div>,
+    </div>
+    </ModalDialog>,
     document.body
   );
 }

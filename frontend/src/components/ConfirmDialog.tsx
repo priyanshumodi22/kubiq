@@ -1,3 +1,4 @@
+import { ModalDialog } from './ModalDialog';
 import type { ReactNode } from 'react';
 
 import { AlertTriangle, Trash2, Info } from 'lucide-react';
@@ -13,6 +14,7 @@ interface ConfirmDialogProps {
   type?: 'danger' | 'warning' | 'info';
   isLoading?: boolean;
   children?: ReactNode;
+  contained?: boolean;
 }
 
 export function ConfirmDialog({
@@ -25,7 +27,8 @@ export function ConfirmDialog({
   cancelText = 'Cancel',
   type = 'danger',
   isLoading = false,
-  children
+  children,
+  contained = false
 }: Readonly<ConfirmDialogProps>) {
   if (!isOpen) return null;
 
@@ -52,8 +55,8 @@ export function ConfirmDialog({
 
   const style = styles[type];
 
-  return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+  const content = (
+    <div data-dialog-backdrop className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-bg-surface border border-white/10 rounded-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto shadow-2xl scale-100 animate-in zoom-in-95 duration-200 relative">
         
         {/* Subtle Gradient Glow at top */}
@@ -97,4 +100,5 @@ export function ConfirmDialog({
       </div>
     </div>
   );
+  return contained ? content : <ModalDialog label={title} onClose={onClose} busy={isLoading}>{content}</ModalDialog>;
 }

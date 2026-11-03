@@ -1,3 +1,4 @@
+import { ModalDialog } from './ModalDialog';
 import { useState } from 'react';
 import { apiErrorMessage } from '../utils/apiErrorMessage';
 import { Trash2, X } from 'lucide-react';
@@ -43,7 +44,8 @@ export function DeleteConfirmDialog({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <ModalDialog label="Delete Service" onClose={onClose} busy={isDeleting}>
+    <div data-dialog-backdrop className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-bg-surface border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden relative">
         
         {/* Subtle Gradient Glow at top */}
@@ -105,7 +107,8 @@ export function DeleteConfirmDialog({
             </div>
         </div>
       </div>
-    </div>,
+    </div>
+    </ModalDialog>,
     document.body
   );
 }

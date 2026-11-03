@@ -1,3 +1,5 @@
+import { ModalDialog } from './ModalDialog';
+import { popoverRoot } from '../utils/popoverRoot';
 import React, { useState, useEffect, useId } from 'react';
 import { apiErrorMessage } from '../utils/apiErrorMessage';
 import { createPortal } from 'react-dom';
@@ -155,7 +157,7 @@ function ChannelForm({
                         </button>
                     ))}
                 </div>,
-                document.body
+                popoverRoot(typeTriggerRef.current)
             )}
 
             <div className="p-5 rounded-2xl bg-white/2 border border-white/5 space-y-5">
@@ -588,7 +590,8 @@ export function NotificationConfigModal({ isOpen, onClose }: Readonly<Notificati
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+        <ModalDialog label="Notification Center" onClose={onClose}>
+        <div data-dialog-backdrop className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
             <div className="bg-bg-surface rounded-xl border border-gray-800 shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto scrollbar-hide">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-800 sticky top-0 bg-bg-surface z-10">
@@ -596,7 +599,7 @@ export function NotificationConfigModal({ isOpen, onClose }: Readonly<Notificati
                         <Bell className="w-5 h-5 text-blue-500" />
                         <h2 className="text-xl font-bold text-white">Notification Center</h2>
                     </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+                    <button type="button" aria-label="Close notification center" onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -804,5 +807,6 @@ export function NotificationConfigModal({ isOpen, onClose }: Readonly<Notificati
                 />
             </div>
         </div>
+        </ModalDialog>
     );
 }

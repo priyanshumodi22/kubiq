@@ -73,7 +73,7 @@ export class MongoServiceRepository implements IServiceRepository {
       $push: {
         history: {
           $each: [result],
-          $sort: { timestamp: -1 },
+          $sort: { timestamp: 1 },
           $slice: -100 // Keep last 100 records (as per MAX_HISTORY_SIZE default)
         }
       }
@@ -90,8 +90,9 @@ export class MongoServiceRepository implements IServiceRepository {
   }
 
   async getServiceHistory(serviceName: string, limit: number = 50): Promise<HealthCheck[]> {
-    const service = await ServiceModel.findOne({ name: serviceName }, { history: { $slice: limit } }).lean();
-    return service?.history || [];
+    // Normalize legacy newest-first arrays before selecting the latest checks.
+    const service = await ServiceModel.findOne({ name: serviceName }, { history: 1 }).lean();
+    return [...(service?.history || [])].sort((a, b) => a.timestamp - b.timestamp).slice(-limit);
   }
 
   async getSystemConfig(): Promise<SystemConfig> {
@@ -122,8 +123,8 @@ export class MongoServiceRepository implements IServiceRepository {
   }
 
   private mapToServiceStatus(doc: any): ServiceStatus {
-    const history = doc.history || [];
-    const lastCheck = history.length > 0 ? history[0] : undefined;
+    const history = [...(doc.history || [])].sort((a, b) => a.timestamp - b.timestamp);
+    const lastCheck = history[history.length - 1];
 
     return {
       id: doc._id.toString(),

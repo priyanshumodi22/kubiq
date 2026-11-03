@@ -15,7 +15,7 @@ export default function Layout({ children }: Readonly<LayoutProps>) {
   useEffect(() => { scrollAppContentToTop('auto'); }, [pathname, search]);
 
   return (
-    <div className="min-h-dvh lg:h-dvh bg-linear-to-br from-bg via-bg to-bg-surface relative overflow-hidden">
+    <div className="min-h-dvh lg:h-dvh bg-linear-to-br from-bg via-bg to-bg-surface relative overflow-clip">
       {/* Subtle animated background effect - unique pattern */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.04),transparent_50%)]"></div>
       <div className="absolute -top-20 right-1/4 w-md h-112 bg-primary/4 rounded-full blur-3xl"></div>

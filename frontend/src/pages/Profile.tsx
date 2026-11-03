@@ -359,10 +359,10 @@ const Profile: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+        <div className="grid min-w-0 grid-cols-1 md:grid-cols-12 gap-8">
 
           {/* Sidebar Nav */}
-          <div className="md:col-span-3 flex flex-row md:flex-col md:self-start gap-4 md:gap-6">
+          <div className="min-w-0 md:col-span-3 flex flex-col md:self-start gap-4 md:gap-6">
             <div className="w-full shrink-0 min-h-[260px] md:h-[260px] bg-bg-surface/30 backdrop-blur-md border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center">
               <div className="relative mb-2 md:mb-4 shrink-0">
                 <div className="w-16 h-16 md:w-24 md:h-24 overflow-hidden bg-linear-to-br from-primary to-blue-600 rounded-full flex items-center justify-center shadow-xl shadow-blue-500/20 ring-4 ring-bg/50">
@@ -421,7 +421,7 @@ const Profile: React.FC = () => {
           </div>
 
           {/* Main Content */}
-          <div className="md:col-span-9 md:max-w-3xl">
+          <div className="min-w-0 md:col-span-9 md:max-w-3xl">
             <div className="bg-bg-surface/30 backdrop-blur-md border border-white/5 rounded-3xl p-6 md:p-7 relative overflow-hidden">
               {/* Background Glow */}
               <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/20 rounded-full blur-[100px] pointer-events-none" />
