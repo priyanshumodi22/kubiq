@@ -720,11 +720,13 @@ export default function KubernetesDashboard() {
                                             <KubernetesResourceHead resource={activeResource} sort={sortCol} onSort={handleSort} />
                                         </thead>
                                         <tbody className="divide-y divide-gray-800/40">
-                                            {loading ? (
-                                                <tr><td colSpan={10} className="p-8 text-center text-gray-400"><span role="status">Loading resources…</span></td></tr>
-                                            ) : filteredAndSortedData.length === 0 ? (
+                                            {loading && (
+                                                <tr><td colSpan={10} className="p-8 text-center text-gray-400"><output>Loading resources…</output></td></tr>
+                                            )}
+                                            {!loading && filteredAndSortedData.length === 0 && (
                                                 <tr><td colSpan={10} className="p-8 text-center text-gray-500">No {activeResource} found</td></tr>
-                                            ) : filteredAndSortedData.map((item, idx) => {
+                                            )}
+                                            {!loading && filteredAndSortedData.map((item, idx) => {
                                                 const name = item.name || item.metadata?.name;
                                                 const cTime = item.startTime || item.metadata?.creationTimestamp;
                                                 const structuredStatus = typeof item.status === 'object' ? item.status : undefined;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { KeyboardEvent, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 const focusableSelector = 'button, a[href], input, select, textarea, [tabindex]';
 const restorationTargets = new WeakMap<HTMLDialogElement, HTMLElement[]>();
@@ -10,6 +10,19 @@ function focusableElements(dialog: HTMLDialogElement) {
       ? element.checkVisibility({ checkVisibilityCSS: true })
       : getComputedStyle(element).display !== 'none' && getComputedStyle(element).visibility !== 'hidden';
   });
+}
+
+function containDialogFocus(event: KeyboardEvent, dialog: HTMLDialogElement) {
+  if (event.defaultPrevented || event.key !== 'Tab') return;
+  const controls = focusableElements(dialog);
+  const first = controls[0];
+  const last = controls.at(-1);
+  if (!first) { event.preventDefault(); dialog.focus(); return; }
+  if (event.shiftKey && (document.activeElement === first || document.activeElement === dialog)) {
+    event.preventDefault(); last?.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault(); first.focus();
+  }
 }
 
 /** kubiq visuals remain in the caller; the native shell owns modality and focus. */
@@ -40,28 +53,25 @@ export function ModalDialog({ label, onClose, busy = false, children, className 
     };
   }, [openers]);
 
-  const handleKeyDown = (event: KeyboardEvent<HTMLDialogElement>) => {
-    if (event.defaultPrevented || event.key !== 'Tab') return;
-    const dialog = event.currentTarget;
-    const controls = focusableElements(dialog);
-    const first = controls[0];
-    const last = controls.at(-1);
-    if (!first) { event.preventDefault(); dialog.focus(); return; }
-    if (event.shiftKey && (document.activeElement === first || document.activeElement === dialog)) {
-      event.preventDefault(); last?.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault(); first.focus();
-    }
-  };
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const keyDown = (event: KeyboardEvent) => containDialogFocus(event, dialog);
+    const click = (event: MouseEvent) => {
+      const target = event.target;
+      if (!busy && target instanceof HTMLElement && target.closest('dialog') === dialog
+        && (target === dialog || target.dataset.dialogBackdrop !== undefined)) onClose();
+    };
+    dialog.addEventListener('keydown', keyDown);
+    dialog.addEventListener('click', click);
+    return () => {
+      dialog.removeEventListener('keydown', keyDown);
+      dialog.removeEventListener('click', click);
+    };
+  }, [busy, onClose]);
 
   return <dialog ref={dialogRef} aria-label={label} aria-modal="true" tabIndex={-1}
-    onKeyDown={handleKeyDown}
     onCancel={event => { event.preventDefault(); event.stopPropagation(); if (!busy) onClose(); }}
-    onClick={event => {
-      if (!busy && event.target instanceof HTMLElement
-        && event.target.closest('dialog') === event.currentTarget
-        && (event.target === event.currentTarget || event.target.hasAttribute('data-dialog-backdrop'))) onClose();
-    }}
     className={className ?? 'fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none overflow-y-auto border-0 bg-transparent p-0 text-inherit backdrop:bg-transparent'}>
     {children}
   </dialog>;
