@@ -1,3 +1,4 @@
+import { ModalDialog } from './ModalDialog';
 import { useRef, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { createPortal } from 'react-dom';
@@ -172,7 +173,7 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
 
   const statusPresentation = serviceStatusPresentation(service.currentStatus);
   const modalContent = (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-100 flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-200">
+    <div data-dialog-backdrop className="fixed inset-0 bg-black/80 backdrop-blur-sm z-100 flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-200">
       <div className="bg-bg-surface rounded-xl border border-gray-800 max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto scrollbar-hide scale-100 animate-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="sticky top-0 bg-bg-surface border-b border-gray-800 p-4 sm:p-6 flex items-start justify-between z-10 gap-2 sm:gap-4">
@@ -457,7 +458,7 @@ export default function ServiceDetail({ service, onClose }: ServiceDetailProps) 
     </div>
   );
 
-  return createPortal(modalContent, document.body);
+  return createPortal(<ModalDialog label={`${service.name} details`} onClose={onClose}>{modalContent}</ModalDialog>, document.body);
 }
 
 function StatCard({ icon: Icon, label, value, color }: Readonly<{ icon: LucideIcon; label: string; value: string; color?: string }>) {

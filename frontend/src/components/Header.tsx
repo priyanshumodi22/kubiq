@@ -142,11 +142,11 @@ export default function Header() {
         <div className="absolute top-0 right-20 w-80 h-80 bg-primary/3 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 relative z-10 flex flex-col md:block">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 relative z-10 flex flex-col xl:block">
         <div className="flex items-center justify-between gap-2 sm:gap-4 w-full">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Link to="/dashboard" className="flex items-center gap-2 sm:gap-3 min-w-0 hover:opacity-90 transition-opacity">
-              <div className="inline-flex items-center justify-center w-12 h-12 sm:w-12 sm:h-12 bg-linear-to-br from-primary/20 to-primary/5 rounded-2xl shadow-lg shadow-primary/10">
+              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-linear-to-br from-primary/20 to-primary/5 rounded-2xl shadow-lg shadow-primary/10">
                 <img
                   src={`${import.meta.env.BASE_URL.endsWith('/')
                     ? import.meta.env.BASE_URL
@@ -158,7 +158,7 @@ export default function Header() {
               </div>
               <div className="min-w-0">
                 <h1 className="text-lg sm:text-xl font-bold text-text leading-tight">kubiq</h1>
-                <p className="text-[12px] sm:text-xs text-text-dim mt-0.5">Uptime Radar</p>
+                <p className="hidden min-[360px]:block text-[12px] sm:text-xs text-text-dim mt-0.5">Uptime Radar</p>
               </div>
             </Link>
             {isProActive && (
@@ -173,13 +173,14 @@ export default function Header() {
             )}
           </div>
 
-          <nav className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <nav className="hidden xl:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
             <div className="bg-bg-card border border-gray-700/50 p-1 rounded-xl flex space-x-1 shadow-lg backdrop-blur-md">
               {renderNavLinks()}
             </div>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+            {isAuthenticated && <div id="kubi-launcher-slot" className="flex size-10 items-center justify-center md:hidden" />}
             {isAuthenticated && (
               <button
                 onClick={() => setIsNotificationModalOpen(true)}
@@ -198,7 +199,7 @@ export default function Header() {
                   className="flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-2 bg-bg-surface hover:bg-gray-800 rounded-lg transition-colors group"
                 >
                   <UserAvatar avatarUrl={user?.avatarUrl} initials={userInitials} className="w-7 h-7 sm:w-8 sm:h-8" />
-                  <div className="text-left hidden md:block">
+                  <div className="text-left hidden xl:block">
                     <div className="text-sm font-medium text-text truncate max-w-[120px] lg:max-w-none">
                       {userDisplayName}
                     </div>
@@ -299,7 +300,7 @@ export default function Header() {
         </div>
 
         {/* Mobile Navigation Tabs */}
-        <nav className="md:hidden mt-[20px] mb-2 overflow-x-auto overflow-y-hidden scrollbar-hide">
+        <nav className="xl:hidden mt-[20px] mb-2 overflow-x-auto overflow-y-hidden scrollbar-hide">
           <div className="bg-bg-card border border-gray-700/50 p-1 rounded-xl flex space-x-1 shadow-lg backdrop-blur-md w-max mx-auto">
             {renderNavLinks()}
           </div>

@@ -122,3 +122,11 @@ describe('kubi panel completion and history', () => {
     expect((view.getByRole('button', { name: 'Current choice' }) as HTMLButtonElement).disabled).toBe(false);
   });
 });
+
+it('places mobile assistant access in the header slot instead of over page content', async () => {
+  vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: query.includes('max-width'), media: query, addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn() })));
+  const view = render(<><div id="kubi-launcher-slot" /><KubiPanel /></>);
+  await waitFor(() => expect(view.getByRole('button', { name: 'Ask kubi' }).parentElement?.id).toBe('kubi-launcher-slot'));
+  fireEvent.click(view.getByRole('button', { name: 'Ask kubi' }));
+  expect(view.getByRole('dialog', { name: 'kubi assistant' })).toBeTruthy();
+});

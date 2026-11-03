@@ -2,6 +2,7 @@ type MonitorType = import('../types').ServiceConfig['type'];
 
 export function serviceEndpointPlaceholder(type: MonitorType, editing = false): string {
   if (type === 'http') return editing ? 'https://...' : 'https://api.example.com/health';
+  if (type === 'icmp') return 'e.g. example.com or 192.168.1.100';
   if (type === 'mysql') return editing ? 'mysql://...' : 'mysql://user:pass@host:3306';
   return editing ? 'mongodb://...' : 'mongodb://user:pass@host:27017';
 }

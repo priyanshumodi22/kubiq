@@ -1086,12 +1086,14 @@ function ApmTimeRangePicker({ model }: Readonly<{ model: ApmDashboardModel }>) {
                                                 type="date"
                                                 max={todayString}
                                                 className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none w-full"
+                                                aria-label="Start date"
                                                 value={customFromDate}
                                                 onChange={e => setCustomFromDate(e.target.value)}
                                             />
                                             <input
                                                 type="time"
                                                 className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none"
+                                                aria-label="Start time"
                                                 value={customFromTime}
                                                 onChange={e => setCustomFromTime(e.target.value)}
                                             />
@@ -1102,12 +1104,14 @@ function ApmTimeRangePicker({ model }: Readonly<{ model: ApmDashboardModel }>) {
                                                 type="date"
                                                 max={todayString}
                                                 className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none w-full"
+                                                aria-label="End date"
                                                 value={customToDate}
                                                 onChange={e => setCustomToDate(e.target.value)}
                                             />
                                             <input
                                                 type="time"
                                                 className="bg-bg-elevated border border-gray-700 rounded text-sm px-2 py-1 sm:py-1.5 text-white focus:border-primary outline-none"
+                                                aria-label="End time"
                                                 value={customToTime}
                                                 onChange={e => setCustomToTime(e.target.value)}
                                             />

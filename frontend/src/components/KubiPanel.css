@@ -117,3 +117,7 @@
   .kubi-steps li { font-size: 11px; }
 }
 @media (prefers-reduced-motion: reduce) { .kubi-spin { animation: none; } .kubi-panel * { scroll-behavior: auto; transition: none; } }
+
+/* Mobile assistant access lives in the header, outside the content/footers. */
+.kubi-launcher.kubi-launcher-inline { position: static; width: 40px; height: 40px; z-index: auto; }
+.kubi-launcher-inline .kubi-thought { display: none; }

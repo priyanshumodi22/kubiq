@@ -167,3 +167,18 @@ it('ignores an older workload response after selecting another resource', async 
   await act(async () => finish([{ name: 'stale-statefulset' }]));
   expect(view.getByText('current-daemonset')).toBeTruthy(); expect(view.queryByText('stale-statefulset')).toBeNull();
 });
+
+it('keeps a pending resource response distinct from an empty result and provides a named detail button', async () => {
+  const view = render(<KubernetesDashboard />);
+  await act(async () => { await Promise.resolve(); });
+  let finish!: (value: unknown[]) => void;
+  mocks.pods.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+  fireEvent.click(view.getByRole('button', { name: /^Pods$/ }));
+  expect(view.getByRole('status').textContent).toBe('Loading resources…');
+  expect(view.queryByText('No pods found')).toBeNull();
+  await act(async () => finish([{ name: 'keyboard-pod', status: 'Running', readyCount: 1, totalContainers: 1 }]));
+  const inspect = await view.findByRole('button', { name: 'Inspect pods keyboard-pod' });
+  expect(inspect.tabIndex).toBe(0);
+  fireEvent.click(inspect);
+  expect(view.getByRole('button', { name: 'Close fixture detail' })).toBeTruthy();
+});

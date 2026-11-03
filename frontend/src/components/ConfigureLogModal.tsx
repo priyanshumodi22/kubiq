@@ -1,3 +1,4 @@
+import { ModalDialog } from './ModalDialog';
 import { createPortal } from 'react-dom';
 import React, { useState, useEffect, useRef, useId } from 'react';
 import { X, ChevronDown, Check, Plus, Trash2, ShieldAlert } from 'lucide-react';
@@ -181,7 +182,8 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
   const selectedServiceObj = services.find(s => s.name === selectedServiceName);
 
   return createPortal(
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <ModalDialog label="Configure Log Sources" onClose={onClose} busy={isSubmitting}>
+    <div data-dialog-backdrop className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-bg-surface border border-white/10 rounded-2xl w-full max-w-lg max-h-[calc(100dvh-2rem)] flex flex-col shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden text-sm">
         
         <div className="flex shrink-0 items-center justify-between p-4 sm:p-6 pb-4 bg-bg-surface">
@@ -379,6 +381,7 @@ export function ConfigureLogModal({ isOpen, onClose, onSuccess, preSelectedServi
           </div>
         </form>
       </div>
-    </div>, document.body
+    </div>
+    </ModalDialog>, document.body
   );
 }

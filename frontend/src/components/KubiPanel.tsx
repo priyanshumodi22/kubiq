@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Activity, Boxes, FileText, History, Plus, Send, ShieldCheck, Trash2, Waypoints, X } from 'lucide-react';
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -60,6 +61,14 @@ export function KubiPanel() {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const reducedMotion = useReducedMotion();
+  const [launcherSlot, setLauncherSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    const query = globalThis.matchMedia?.('(max-width: 767px)');
+    const update = () => setLauncherSlot(query?.matches ? document.getElementById('kubi-launcher-slot') : null);
+    update();
+    query?.addEventListener('change', update);
+    return () => query?.removeEventListener('change', update);
+  }, []);
 
   const isAvailable = Boolean(status?.enabled && status?.proActive && status?.providerConfigured);
   const messages = useMemo(() => [
@@ -181,13 +190,15 @@ export function KubiPanel() {
 
   if (!isAuthenticated) return null;
 
+  const launcher = (<button ref={triggerRef} type="button" onClick={() => isAvailable ? setOpen(true) : setUpgradeOpen(true)}
+        className={`kubi-launcher${launcherSlot ? ' kubi-launcher-inline' : ''}`} hidden={open}
+        aria-label="Ask kubi">
+        <span className="kubi-thought">Ask kubi</span><KubiAvatar size={launcherSlot ? 40 : 76} paused={open} />
+      </button>);
+
   return (
     <>
-      <button ref={triggerRef} type="button" onClick={() => isAvailable ? setOpen(true) : setUpgradeOpen(true)}
-        className="kubi-launcher" hidden={open}
-        aria-label="Ask kubi">
-        <span className="kubi-thought">Ask kubi</span><KubiAvatar size={76} paused={open} />
-      </button>
+      {launcherSlot ? createPortal(launcher, launcherSlot) : launcher}
 
       <AnimatePresence>
         {open && (

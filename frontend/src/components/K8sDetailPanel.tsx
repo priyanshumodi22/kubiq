@@ -549,7 +549,7 @@ export function K8sDetailPanel(props: Readonly<K8sDetailPanelProps>) {
     if (!item) return null;
     return createPortal(
         <div className="fixed inset-0 z-50 flex justify-end">
-            <button type="button" tabIndex={-1} aria-label="Close resource details" className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={onClose} />
+            <button type="button" tabIndex={-1} aria-label="Dismiss resource details backdrop" className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={onClose} />
             <div className="relative w-full max-w-2xl bg-[#111111] border-l border-gray-800 shadow-2xl flex flex-col h-full overflow-hidden animate-slide-in-right">
                 <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-bg-surface gap-3">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -570,7 +570,7 @@ export function K8sDetailPanel(props: Readonly<K8sDetailPanelProps>) {
                                 <span>AI Diagnose</span>
                             </button>
                         )}
-                        <button type="button" onClick={onClose} className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors shrink-0">
+                        <button type="button" aria-label="Close resource details" onClick={onClose} className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors shrink-0">
                             <X className="w-5 h-5" />
                         </button>
                     </div>
