@@ -6,7 +6,7 @@ import { apiErrorMessage } from '../utils/apiErrorMessage';
 import { createPortal } from 'react-dom';
 import { X, Server, Link as LinkIcon, AlertCircle, Database, Activity, ChevronDown, Terminal } from 'lucide-react';
 import { apiClient } from '../services/api';
-import { isHttpEndpoint, serviceEndpointPlaceholder } from '../utils/serviceForm';
+import { isHttpEndpoint, serviceEndpointLabel, serviceEndpointPlaceholder } from '../utils/serviceForm';
 
 interface AddServiceModalProps {
   isOpen: boolean;
@@ -81,7 +81,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
       } else {
           // HTTP / Database
           if (!endpoint.trim()) {
-             setError(type === 'http' ? 'Endpoint URL is required' : type === 'icmp' ? 'Hostname or IP address is required' : 'Connection String is required');
+             setError(`${serviceEndpointLabel(type)} is required`);
              return;
           }
           finalEndpoint = endpoint.trim();
@@ -269,7 +269,7 @@ export function AddServiceModal({ isOpen, onClose, onSuccess }: AddServiceModalP
                     htmlFor={`${formId}-endpoint`}
                     className="block text-sm font-medium text-gray-400 ml-1"
                   >
-                    {type === 'http' ? 'Endpoint URL' : type === 'icmp' ? 'Hostname or IP address' : 'Connection String'}
+                    {serviceEndpointLabel(type)}
                     {type === 'http' && <span className="text-gray-600"> | headers (optional)</span>}
                   </label>
                   <div className="relative group">

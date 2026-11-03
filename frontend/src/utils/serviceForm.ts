@@ -1,5 +1,11 @@
 type MonitorType = import('../types').ServiceConfig['type'];
 
+export function serviceEndpointLabel(type: MonitorType): string {
+  if (type === 'http') return 'Endpoint URL';
+  if (type === 'icmp') return 'Hostname or IP address';
+  return 'Connection String';
+}
+
 export function serviceEndpointPlaceholder(type: MonitorType, editing = false): string {
   if (type === 'http') return editing ? 'https://...' : 'https://api.example.com/health';
   if (type === 'icmp') return 'e.g. example.com or 192.168.1.100';

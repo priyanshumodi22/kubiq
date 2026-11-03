@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom';
 import { X, ChevronDown, Activity, Link as LinkIcon, Database, Terminal } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
-import { serviceEndpointPlaceholder } from '../utils/serviceForm';
+import { serviceEndpointLabel, serviceEndpointPlaceholder } from '../utils/serviceForm';
 
 type MonitorType = 'http' | 'tcp' | 'mysql' | 'mongodb' | 'icmp';
 
@@ -288,7 +288,7 @@ export function EditServiceModal({
             ) : (
                 <div className="space-y-1.5">
                     <label htmlFor={`${formId}-endpoint`} className="block text-sm font-medium text-gray-400 ml-1">
-                        {type === 'http' ? 'Endpoint URL | headers (optional)' : type === 'icmp' ? 'Hostname or IP address' : 'Connection String'}
+                        {serviceEndpointLabel(type)}{type === 'http' && ' | headers (optional)'}
                     </label>
                     <input
                         id={`${formId}-endpoint`}

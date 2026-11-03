@@ -27,6 +27,25 @@ function TransitionFixture() {
 }
 
 describe('shared dialog lifecycle', () => {
+  it('keeps focus inside a modal without enabled controls', () => {
+    const view = render(<ModalDialog label="Read only" onClose={vi.fn()}><button disabled>Unavailable</button></ModalDialog>);
+    const dialog = view.getByRole('dialog');
+    fireEvent.keyDown(dialog, { key: 'Tab' });
+    expect(document.activeElement).toBe(dialog);
+  });
+
+  it('dismisses only backdrop clicks and blocks them while saving', () => {
+    const onClose = vi.fn();
+    const content = <div data-dialog-backdrop data-testid="backdrop"><button>Form action</button></div>;
+    const view = render(<ModalDialog label="Backdrop" onClose={onClose} busy>{content}</ModalDialog>);
+    fireEvent.click(view.getByTestId('backdrop'));
+    expect(onClose).not.toHaveBeenCalled();
+    view.rerender(<ModalDialog label="Backdrop" onClose={onClose}>{content}</ModalDialog>);
+    fireEvent.click(view.getByRole('button', { name: 'Form action' }));
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.click(view.getByTestId('backdrop'));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
   it('restores the stable page trigger after replacing a chooser with a form', () => {
     const view = render(<TransitionFixture />);
     const trigger = view.getByRole('button', { name: 'Configure' });
